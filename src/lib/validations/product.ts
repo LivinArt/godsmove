@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { ProductStatus } from '@prisma/client';
+
+const ProductStatusEnum = z.enum(['DRAFT', 'ACTIVE', 'HIDDEN', 'ARCHIVED', 'SOLD_OUT']);
+const ProductImageSideEnum = z.enum(['front', 'back']);
 
 export const CreateProductSchema = z.object({
   name: z.string().min(1, 'Name is required').max(120),
@@ -11,7 +13,7 @@ export const CreateProductSchema = z.object({
   shortDesc: z.string().max(300).optional(),
   description: z.string().min(1, 'Description is required'),
   symbolism: z.string().optional(),
-  status: z.nativeEnum(ProductStatus).default('DRAFT'),
+  status: ProductStatusEnum.default('DRAFT'),
   isFeatured: z.boolean().default(false),
   categoryId: z.string().cuid('Invalid category'),
   dropId: z.string().cuid().optional().nullable(),
@@ -19,7 +21,7 @@ export const CreateProductSchema = z.object({
   enableImageToggle: z.boolean().default(false),
   frontImageUrl: z.string().url().optional().nullable().or(z.literal('')),
   backImageUrl: z.string().url().optional().nullable().or(z.literal('')),
-  defaultImageSide: z.enum(['front', 'back']).default('front'),
+  defaultImageSide: ProductImageSideEnum.default('front'),
   seoTitle: z.string().max(60).optional(),
   seoDescription: z.string().max(160).optional(),
 });
