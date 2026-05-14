@@ -1,0 +1,112 @@
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.header {
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--border-subtle, #2a2b33);
+  padding-bottom: 24px;
+}
+
+.title {
+  font-family: var(--font-heading, serif);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary, #ffffff);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-secondary, #a1a1aa);
+  margin-bottom: 16px;
+}
+
+.count {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: var(--surface-2, #17181c);
+  border: 1px solid var(--border-medium, #2a2b33);
+  padding: 4px 12px;
+  border-radius: 100px;
+  color: var(--text-muted, #7a7b8a);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 32px;
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 24px;
+}
+
+.emptyIcon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--surface-2, #17181c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #7a7b8a);
+  margin-bottom: 32px;
+}
+
+.emptyTitle {
+  font-family: var(--font-heading, serif);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary, #ffffff);
+  margin-bottom: 12px;
+}
+
+.emptyText {
+  font-size: 16px;
+  color: var(--text-secondary, #a1a1aa);
+  margin-bottom: 40px;
+}
+
+.exploreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px;
+  height: 56px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.exploreBtn:hover {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+}

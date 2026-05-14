@@ -1,0 +1,138 @@
+.page {
+  padding-top: calc(var(--nav-height) + var(--space-3xl));
+  padding-bottom: var(--space-4xl);
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-3xl);
+  max-width: 640px;
+}
+
+.title {
+  margin-top: var(--space-sm);
+}
+
+.intro {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xl);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: transform var(--duration-base) var(--ease-cinematic);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.cardImage {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background-color: var(--ivory);
+}
+
+.cardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-slow) var(--ease-cinematic);
+}
+
+.card:hover .cardImg {
+  transform: scale(1.03);
+}
+
+.cardBody {
+  padding: var(--space-lg) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.cardType {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: var(--black);
+  color: var(--cream);
+  padding: 3px 8px;
+}
+
+.cardDate {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.cardTitle {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-top: var(--space-xs);
+}
+
+.cardExcerpt {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+.tags {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-xs);
+}
+
+.tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.footer {
+  text-align: center;
+  padding-top: var(--space-3xl);
+  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-2xl);
+}
+
+.footerText {
+  font-size: 14px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  font-style: italic;
+}

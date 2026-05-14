@@ -1,0 +1,193 @@
+'use client';
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export interface CartItem {
+  product: any; // Prisma Product with images and variants
+  size: string;
+  quantity: number;
+}
+
+export type WishlistItem = {
+  productId: string;
+  slug: string;
+  name: string;
+  tagline?: string | null;
+  shortDesc?: string | null;
+  images: string[];
+  price: number;
+  comparePrice?: number | null;
+  defaultVariantId?: string;
+  addedAt: string;
+};
+
+interface StoreState {
+  // Cart
+  cart: CartItem[];
+  addToCart: (product: any, size: string, quantity?: number) => void;
+  removeFromCart: (productId: string, size: string) => void;
+  updateQuantity: (productId: string, size: string, quantity: number) => void;
+  clearCart: () => void;
+  getCartTotal: () => number;
+  getCartCount: () => number;
+
+  // Instant Checkout Bypass
+  instantCheckout: CartItem | null;
+  setInstantCheckout: (item: CartItem | null) => void;
+
+  // Wishlist
+  wishlist: WishlistItem[];
+  toggleWishlist: (product: Partial<WishlistItem> | any) => void;
+  isInWishlist: (productId: string) => boolean;
+  removeFromWishlist: (productId: string) => void;
+  clearWishlist: () => void;
+  setWishlist: (items: WishlistItem[]) => void;
+
+  // UI State
+  isCartOpen: boolean;
+  setCartOpen: (open: boolean) => void;
+  isMobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
+  isNewsletterOpen: boolean;
+  setNewsletterOpen: (open: boolean) => void;
+}
+
+export const useStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      // Cart
+      cart: [],
+
+      addToCart: (product, size, quantity = 1) => {
+        const { cart } = get();
+        const existing = cart.find(
+          (item) => item.product.id === product.id && item.size === size
+        );
+
+        if (existing) {
+          set({
+            cart: cart.map((item) =>
+              item.product.id === product.id && item.size === size
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            ),
+          });
+        } else {
+          set({ cart: [...cart, { product, size, quantity }] });
+        }
+
+        // Auto-open cart drawer
+        set({ isCartOpen: true });
+      },
+
+      removeFromCart: (productId, size) => {
+        set({
+          cart: get().cart.filter(
+            (item) => !(item.product.id === productId && item.size === size)
+          ),
+        });
+      },
+
+      updateQuantity: (productId, size, quantity) => {
+        if (quantity <= 0) {
+          get().removeFromCart(productId, size);
+          return;
+        }
+        set({
+          cart: get().cart.map((item) =>
+            item.product.id === productId && item.size === size
+              ? { ...item, quantity }
+              : item
+          ),
+        });
+      },
+
+      clearCart: () => set({ cart: [] }),
+
+      getCartTotal: () => {
+        return get().cart.reduce((total, item) => {
+          const variant = item.product.variants?.find((v: any) => v.size === item.size);
+          const price = variant?.price ? Number(variant.price) : 0;
+          return total + price * item.quantity;
+        }, 0);
+      },
+
+      getCartCount: () => {
+        return get().cart.reduce((count, item) => count + item.quantity, 0);
+      },
+
+      // Instant Checkout Bypass
+      instantCheckout: null,
+      setInstantCheckout: (item) => set({ instantCheckout: item }),
+
+      // Wishlist
+      wishlist: [],
+
+      toggleWishlist: (productInput) => {
+        const { wishlist } = get();
+        const productId = productInput.id || productInput.productId;
+        
+        if (wishlist.some(item => item.productId === productId)) {
+          set({ wishlist: wishlist.filter((item) => item.productId !== productId) });
+        } else {
+          // Extract lightweight fields to prevent huge localStorage and stale data
+          const baseVariant = productInput.variants?.[0];
+          const price = baseVariant?.price ? Number(baseVariant.price) : 0;
+          const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
+          const images = productInput.images?.map((img: any) => img.url) || [];
+
+          const newItem: WishlistItem = {
+            productId,
+            slug: productInput.slug || '',
+            name: productInput.name || '',
+            tagline: productInput.drop?.name || productInput.tagline || null,
+            shortDesc: productInput.description || null,
+            images,
+            price,
+            comparePrice,
+            defaultVariantId: baseVariant?.id,
+            addedAt: new Date().toISOString(),
+          };
+
+          set({ wishlist: [...wishlist, newItem] });
+        }
+      },
+
+      isInWishlist: (productId) => {
+        return get().wishlist.some((item) => item.productId === productId);
+      },
+
+      removeFromWishlist: (productId) => {
+        set({ wishlist: get().wishlist.filter((item) => item.productId !== productId) });
+      },
+
+      clearWishlist: () => set({ wishlist: [] }),
+      
+      setWishlist: (items) => set({ wishlist: items }),
+
+      // UI
+      isCartOpen: false,
+      setCartOpen: (open) => set({ isCartOpen: open }),
+      isMobileMenuOpen: false,
+      setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
+      isNewsletterOpen: false,
+      setNewsletterOpen: (open) => set({ isNewsletterOpen: open }),
+    }),
+    {
+      name: 'godsmove-store',
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0 || version === 1) {
+          // If migrating from v1 where wishlist was string[], clear it to prevent hydration issues
+          persistedState.wishlist = [];
+        }
+        return persistedState;
+      },
+      partialize: (state) => ({
+        cart: state.cart,
+        wishlist: state.wishlist,
+      }),
+    }
+  )
+);

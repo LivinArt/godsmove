@@ -1,0 +1,133 @@
+.card {
+  position: relative;
+  opacity: 0;
+  animation: fadeInUp 0.6s var(--ease-cinematic) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.imageWrap {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background-color: var(--ivory);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-slow) var(--ease-cinematic);
+}
+
+.imageWrap:hover .image {
+  transform: scale(1.04);
+}
+
+.tag {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: var(--black);
+  color: var(--cream);
+  padding: 4px 10px;
+}
+
+.wishBtn {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-smooth),
+              color var(--duration-fast) var(--ease-smooth);
+}
+
+.imageWrap:hover .wishBtn {
+  opacity: 1;
+}
+
+.wishBtn.wishlisted {
+  opacity: 1;
+  color: var(--accent-red);
+}
+
+.wishBtn:hover {
+  color: var(--accent-red);
+}
+
+.info {
+  padding: var(--space-md) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  transition: opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.name:hover {
+  opacity: 0.6;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.color {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.comparePrice {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.price {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}

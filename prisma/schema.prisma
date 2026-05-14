@@ -1,0 +1,685 @@
+// GODSMOVE — Production Schema
+// Phase 2 Backend Infrastructure
+// Last updated: 2026-05-09
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URLs configured in prisma.config.ts (Prisma 7 spec)
+  // DATABASE_URL      = Transaction Pooler (queries)
+  // DIRECT_DATABASE_URL = Direct connection (migrations only)
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 1: IDENTITY & AUTH
+// ─────────────────────────────────────────────
+
+model Profile {
+  id        String   @id // mirrors supabase auth.users.id (UUID)
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  wallet        Wallet?
+  wishlistItems WishlistItem[]
+  returnReqs    ReturnRequest[]
+  couponUsages  CouponUsage[]
+
+  @@map("profiles")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  CONTENT_EDITOR  // future: can manage editorial, archive
+  OPERATIONS      // future: can manage orders, inventory
+  SUPPORT         // future: can manage returns, customers
+  MARKETING       // future: can manage coupons, drops
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  firstName String
+  lastName  String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  phone     String
+  isDefault Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 2: CATALOGUE — PRODUCTS & VARIANTS
+// ─────────────────────────────────────────────
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique // "Tees", "Hoodies", "Accessories"
+  slug     String    @unique
+  position Int       @default(0)
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  tagline     String? // "First contact." — editorial one-liner
+  shortDesc   String? // one-liner for product cards
+  description String // full editorial description
+  symbolism   String? // cultural/symbolic meaning of the piece
+  status      ProductStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+
+  // Relations
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  dropId     String?
+  drop       Drop?    @relation(fields: [dropId], references: [id])
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Children
+  variants      ProductVariant[]
+  images        ProductImage[]
+  tags          ProductTag[]
+  wishlistItems WishlistItem[]
+
+  @@index([status])
+  @@index([dropId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku          String   @unique
+  size         String // "S", "M", "L", "XL", "XXL"
+  color        String?
+  colorHex     String?
+  price        Decimal  @db.Decimal(10, 2)
+  comparePrice Decimal? @db.Decimal(10, 2)
+  position     Int      @default(0) // sort order within product
+  isActive     Boolean  @default(true)
+
+  inventory  Inventory?
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url      String // Supabase Storage public URL
+  alt      String?
+  position Int     @default(0)
+  isCover  Boolean @default(false)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductTag {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       String
+
+  @@unique([productId, tag])
+  @@index([tag])
+  @@map("product_tags")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([profileId, productId])
+  @@map("wishlist_items")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+  SOLD_OUT
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 3: DROPS — LIMITED RELEASE SYSTEM
+// ─────────────────────────────────────────────
+
+model Drop {
+  id          String     @id @default(cuid())
+  name        String // "Drop 001"
+  slug        String     @unique
+  tagline     String // "First contact."
+  description String
+  status      DropStatus @default(SCHEDULED)
+  season      String? // "SS26"
+
+  // Scheduling
+  releaseAt DateTime? // scheduled release timestamp (null = manual)
+  endsAt    DateTime? // optional end-of-drop window
+
+  // Assets
+  heroImageUrl     String?
+  campaignImageUrls String[] @default([])
+
+  // Access control
+  isPasswordProtected Boolean @default(false)
+  accessPasswordHash  String? // bcrypt hash — for pre-release access
+
+  // Relations
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("drops")
+}
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  ENDED
+  ARCHIVED
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 4: INVENTORY
+// ─────────────────────────────────────────────
+
+model Inventory {
+  id        String         @id @default(cuid())
+  variantId String         @unique
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  type          InventoryType @default(PERMANENT)
+  totalStock    Int           @default(0)
+  reservedStock Int           @default(0) // in active checkouts, not yet paid
+  soldStock     Int           @default(0)
+  lowStockAt    Int           @default(5) // below this triggers low-stock state
+
+  updatedAt DateTime @updatedAt
+
+  movements InventoryMovement[]
+
+  // Computed: availableStock = totalStock - reservedStock - soldStock
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id          String        @id @default(cuid())
+  inventoryId String
+  inventory   Inventory     @relation(fields: [inventoryId], references: [id])
+  delta       Int // + = stock added, - = stock removed
+  type        MovementType
+  reason      String?
+  orderId     String? // reference for purchase/cancel/return movements
+  createdAt   DateTime      @default(now())
+
+  @@index([inventoryId])
+  @@map("inventory_movements")
+}
+
+enum InventoryType {
+  PERMANENT // always restockable
+  LIMITED   // finite drop quantity — no planned restock
+}
+
+enum MovementType {
+  PURCHASE    // order confirmed and paid
+  RESERVE     // checkout started — stock soft-reserved
+  UNRESERVE   // checkout abandoned / expired
+  CANCEL      // order cancelled before dispatch
+  RETURN      // item returned, back in stock
+  RESTOCK     // admin manual restock
+  ADJUSTMENT  // admin manual correction
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 5: ORDERS
+// ─────────────────────────────────────────────
+
+model Order {
+  id          String        @id @default(cuid())
+  orderNumber String        @unique // "SS-2026-001" — human readable
+  profileId   String? // null = guest order
+  profile     Profile?      @relation(fields: [profileId], references: [id])
+  email       String // always present, even for guests
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentMethod PaymentMethod @default(RAZORPAY)
+
+  // Financials (stored in paise-equivalent Decimal for accuracy)
+  subtotal       Decimal @db.Decimal(10, 2)
+  shippingCost   Decimal @db.Decimal(10, 2) @default(0)
+  discountAmount Decimal @db.Decimal(10, 2) @default(0)
+  walletCredit   Decimal @db.Decimal(10, 2) @default(0) // wallet applied at checkout
+  total          Decimal @db.Decimal(10, 2)
+
+  // Coupon applied
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  // Shipping snapshot (JSON so historical orders are never corrupted by address edits)
+  shippingAddress Json
+
+  // Fulfillment
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  // 3PL hook — modular: when integrated, populate these fields
+  fulfillmentProvider String? // "shiprocket", "delhivery", "manual"
+  fulfillmentRef      String? // 3PL order/shipment reference ID
+
+  // Payment gateway refs
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+
+  // Admin
+  notes     String?
+  adminNotes String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paidAt      DateTime?
+  fulfilledAt DateTime?
+
+  // Relations
+  items          OrderItem[]
+  shipments      Shipment[]
+  returnRequests ReturnRequest[]
+  walletTxns     WalletTransaction[]
+
+  @@index([profileId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  // Snapshots — never lose order data if product changes
+  productName  String
+  variantSku   String
+  size         String
+  color        String?
+  imageUrl     String?
+  price        Decimal @db.Decimal(10, 2)
+  quantity     Int
+  total        Decimal @db.Decimal(10, 2)
+
+  returnItems ReturnItem[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Shipment {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  carrier        String?
+  trackingNumber String?
+  trackingUrl    String?
+
+  // 3PL modular fields — populate when integrated
+  provider       String? // "shiprocket", "delhivery", "manual"
+  providerRef    String? // external shipment ID
+  providerStatus String? // raw status string from 3PL
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([orderId])
+  @@map("shipments")
+}
+
+enum OrderStatus {
+  PENDING       // created, awaiting payment
+  CONFIRMED     // payment received
+  PROCESSING    // being packed
+  SHIPPED       // dispatched
+  DELIVERED     // confirmed delivered
+  CANCELLED     // cancelled before dispatch
+  EXCHANGE_REQUESTED // exchange in progress
+  RETURN_REQUESTED   // return in progress
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  COD
+  WALLET      // 100% wallet
+  MIXED       // wallet + razorpay combined
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  RETURNED
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 6: WALLET & CREDITS (LEDGER-BASED)
+// ─────────────────────────────────────────────
+
+model Wallet {
+  id        String  @id @default(cuid())
+  profileId String  @unique
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Cached balance — source of truth is wallet_transactions table
+  balance  Decimal @db.Decimal(10, 2) @default(0)
+  currency String  @default("INR")
+
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id       String @id @default(cuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+
+  // Positive = credit, negative = debit
+  amount      Decimal         @db.Decimal(10, 2)
+  type        WalletTxnType
+  description String?
+
+  // Reference links — at most one will be populated
+  orderId  String?
+  order    Order?         @relation(fields: [orderId], references: [id])
+  returnId String?
+  returnReq ReturnRequest? @relation(fields: [returnId], references: [id])
+
+  // For expiring promotional credits
+  expiresAt DateTime?
+  isExpired Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([walletId])
+  @@index([orderId])
+  @@map("wallet_transactions")
+}
+
+enum WalletTxnType {
+  CREDIT_RETURN       // issued from approved exchange/return
+  CREDIT_PROMOTIONAL  // manually issued by admin (launch, campaigns)
+  CREDIT_REFERRAL     // future: referral program
+  CREDIT_ADJUSTMENT   // admin correction
+  DEBIT_ORDER         // applied during checkout
+  DEBIT_EXPIRED       // promotional credit expired
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 7: DISCOUNTS & COUPONS
+// ─────────────────────────────────────────────
+
+model Coupon {
+  id   String @id @default(cuid())
+  code String @unique
+
+  type  DiscountType
+  value Decimal      @db.Decimal(10, 2) // % or flat INR
+
+  // Constraints
+  minOrderAmount Decimal? @db.Decimal(10, 2)
+  maxUses        Int? // null = unlimited
+  usedCount      Int      @default(0)
+  perUserLimit   Int      @default(1)
+  isActive       Boolean  @default(true)
+
+  // Scheduling
+  startsAt  DateTime?
+  expiresAt DateTime?
+
+  // Scope — empty arrays mean "applies to everything"
+  applicableDropIds     String[] @default([]) // drop IDs
+  applicableCategoryIds String[] @default([]) // category IDs
+
+  // Admin
+  description String? // internal note: "Launch campaign - influencer @xyz"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  usages CouponUsage[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  orderId   String
+  usedAt    DateTime @default(now())
+
+  @@unique([couponId, profileId]) // enforce perUserLimit = 1 at DB level
+  @@index([couponId])
+  @@map("coupon_usages")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT_AMOUNT
+  FREE_SHIPPING
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 8: EXCHANGE & RETURN MANAGEMENT
+// ─────────────────────────────────────────────
+
+model ReturnRequest {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id])
+
+  type       ReturnType
+  status     ReturnStatus     @default(PENDING)
+  resolution ReturnResolution?
+
+  reason      String
+  adminNotes  String?
+
+  // Customer evidence uploads (Supabase Storage URLs)
+  evidenceUrls String[] @default([])
+
+  // Credit issued on resolution
+  creditAmount Decimal? @db.Decimal(10, 2)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  items      ReturnItem[]
+  walletTxns WalletTransaction[]
+
+  @@index([orderId])
+  @@index([status])
+  @@map("return_requests")
+}
+
+model ReturnItem {
+  id          String        @id @default(cuid())
+  returnReqId String
+  returnReq   ReturnRequest @relation(fields: [returnReqId], references: [id], onDelete: Cascade)
+  orderItemId String
+  orderItem   OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  quantity Int
+  reason   String?
+
+  @@index([returnReqId])
+  @@map("return_items")
+}
+
+enum ReturnType {
+  EXCHANGE           // customer wants a different size/product
+  RETURN_FOR_CREDIT  // customer wants store credit
+}
+
+enum ReturnStatus {
+  PENDING   // submitted, awaiting admin review
+  APPROVED  // admin approved, awaiting item receipt
+  REJECTED  // admin rejected with reason
+  RECEIVED  // returned item received by GODSMOVE
+  COMPLETED // credit issued / exchange dispatched
+}
+
+enum ReturnResolution {
+  STORE_CREDIT     // issued to wallet
+  EXCHANGE_SAME    // same product, different size
+  EXCHANGE_DIFF    // different product entirely
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 9: EDITORIAL & CMS
+// ─────────────────────────────────────────────
+
+model ArchivePost {
+  id     String          @id @default(cuid())
+  title  String
+  slug   String          @unique
+  type   ArchivePostType
+  status ContentStatus   @default(DRAFT)
+
+  excerpt    String
+  body       String? // Markdown / rich text
+  coverImage String? // Supabase Storage URL
+
+  tags String[] @default([])
+
+  authorId String? // references Profile.id — optional
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@map("archive_posts")
+}
+
+// Editable homepage content blocks — key/value CMS
+model HomepageContent {
+  id    String @id @default(cuid())
+  key   String @unique
+  // Examples: "hero_tagline", "hero_cta_text", "editorial_quote", "drop_banner"
+  value String
+
+  updatedAt DateTime @updatedAt
+  updatedBy String? // Profile.id of last editor
+
+  @@map("homepage_content")
+}
+
+// Campaign & editorial media assets
+model CampaignAsset {
+  id   String       @id @default(cuid())
+  name String
+  type CampaignType
+
+  url      String // Supabase Storage URL
+  alt      String?
+  dropId   String?
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([dropId])
+  @@index([type])
+  @@map("campaign_assets")
+}
+
+enum ArchivePostType {
+  EDITORIAL
+  MOODBOARD
+  OBSERVATION
+  ARTIFACT
+  CAMPAIGN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CampaignType {
+  HERO
+  EDITORIAL
+  PRODUCT
+  LOOKBOOK
+}
