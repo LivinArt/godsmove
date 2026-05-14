@@ -15,6 +15,11 @@ export const CreateProductSchema = z.object({
   isFeatured: z.boolean().default(false),
   categoryId: z.string().cuid('Invalid category'),
   dropId: z.string().cuid().optional().nullable(),
+  isExclusiveRack: z.boolean().default(false),
+  enableImageToggle: z.boolean().default(false),
+  frontImageUrl: z.string().url().optional().nullable().or(z.literal('')),
+  backImageUrl: z.string().url().optional().nullable().or(z.literal('')),
+  defaultImageSide: z.enum(['front', 'back']).default('front'),
   seoTitle: z.string().max(60).optional(),
   seoDescription: z.string().max(160).optional(),
 });
@@ -60,6 +65,23 @@ export const UpsertProductSchema = CreateProductSchema.extend({
   id: z.string().cuid().optional(),
   variants: z.array(FormVariantSchema).min(1, 'At least one variant is required'),
   images: z.array(ProductImageSchema).optional(),
+}).superRefine((data, ctx) => {
+  if (data.enableImageToggle) {
+    if (!data.frontImageUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Front Image URL is required when Image Toggle is enabled',
+        path: ['frontImageUrl'],
+      });
+    }
+    if (!data.backImageUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Back Image URL is required when Image Toggle is enabled',
+        path: ['backImageUrl'],
+      });
+    }
+  }
 });
 
 export const CreateDropSchema = z.object({

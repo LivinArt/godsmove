@@ -1,53 +1,99 @@
 .nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
   z-index: 1000;
-  transition: background-color var(--duration-base) var(--ease-smooth),
-              backdrop-filter var(--duration-base) var(--ease-smooth),
-              border-color var(--duration-base) var(--ease-smooth);
-  background-color: transparent;
-  border-bottom: 1px solid transparent;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(10, 10, 10, 0.32);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .nav.scrolled {
-  background-color: rgba(250, 248, 245, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 88px;
+  padding: 0 36px;
+}
+
+@media (max-width: 767px) {
+  .nav {
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    border-radius: 16px;
+  }
+  .inner {
+    padding: 0 20px;
+    height: 72px;
+  }
+}
+
+.leftZone {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: var(--nav-height);
-  padding: 0 var(--container-padding);
-  max-width: var(--container-max);
-  margin: 0 auto;
+  justify-content: flex-start;
 }
 
-.logo {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  transition: opacity var(--duration-fast) var(--ease-smooth);
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.centerZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logo:hover {
-  opacity: 0.7;
+.rightZone {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.logoWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease;
+}
+
+.logoWrap:hover {
+  transform: scale(1.02);
+}
+
+.logoImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 767px) {
+  .img {
+    height: 28px;
+  }
 }
 
 .links {
   display: none;
-  gap: var(--space-xl);
+  gap: 36px;
 }
 
 @media (min-width: 768px) {
@@ -58,38 +104,42 @@
 
 .link {
   font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 11px;
+  font-weight: 600;
+  font-size: 0.82rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-secondary);
-  transition: color var(--duration-fast) var(--ease-smooth);
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
-.link::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background-color: var(--text-primary);
-  transition: width var(--duration-base) var(--ease-cinematic);
+.link:hover, .link:focus-visible {
+  color: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
 }
 
-.link:hover {
-  color: var(--text-primary);
+.nav.scrolled .link {
+  color: #111111;
+  text-shadow: none;
 }
 
-.link:hover::after {
-  width: 100%;
+.nav.scrolled .link:hover, .nav.scrolled .link:focus-visible {
+  color: #000000;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: 24px;
+}
+
+.actionWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .actionBtn {
@@ -97,42 +147,103 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--text-primary);
-  transition: opacity var(--duration-fast) var(--ease-smooth);
+  width: auto;
+  height: auto;
+  color: rgba(255, 255, 255, 0.94);
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.45));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.actionBtn:hover {
-  opacity: 0.6;
+.actionBtn:hover, .actionBtn:focus-visible {
+  color: #ffffff;
+  transform: translateY(-2px) scale(1.05);
+  opacity: 1;
+  outline: none;
+}
+
+.nav.scrolled .actionBtn {
+  color: #111111;
+  filter: none;
+}
+
+.nav.scrolled .actionBtn:hover, .nav.scrolled .actionBtn:focus-visible {
+  color: #000000;
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background-color: var(--black, #111);
+  color: var(--cream, #f5f5f5);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.actionBtn:hover + .tooltip,
+.actionBtn:focus-visible + .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(8px);
 }
 
 .badge {
   position: absolute;
-  top: 4px;
-  right: 2px;
-  background-color: var(--text-primary);
-  color: var(--cream);
+  top: -6px;
+  right: -8px;
+  background-color: #ffffff;
+  color: #111111;
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   letter-spacing: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.nav.scrolled .badge {
+  background-color: #111111;
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .menuBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--text-primary);
+  width: auto;
+  height: auto;
+  color: rgba(255, 255, 255, 0.94);
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.45));
+  background: transparent;
+  border: none;
+  cursor: pointer;
   z-index: 1001;
+}
+
+.nav.scrolled .menuBtn {
+  color: #111111;
+  filter: none;
 }
 
 @media (min-width: 768px) {

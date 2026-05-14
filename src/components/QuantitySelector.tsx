@@ -2,14 +2,18 @@
 
 import { Minus, Plus } from 'lucide-react';
 import styles from './QuantitySelector.module.css';
+import { useStore } from '@/store/useStore';
 
 interface QuantitySelectorProps {
   quantity: number;
   onChange: (quantity: number) => void;
   max?: number;
+  isExclusiveRack?: boolean;
 }
 
-export default function QuantitySelector({ quantity, onChange, max = 99 }: QuantitySelectorProps) {
+export default function QuantitySelector({ quantity, onChange, max = 99, isExclusiveRack = false }: QuantitySelectorProps) {
+  const { showToast } = useStore();
+
   const handleDecrement = () => {
     if (quantity > 1) {
       onChange(quantity - 1);
@@ -17,6 +21,10 @@ export default function QuantitySelector({ quantity, onChange, max = 99 }: Quant
   };
 
   const handleIncrement = () => {
+    if (isExclusiveRack && quantity >= 1) {
+      showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+      return;
+    }
     if (quantity < max) {
       onChange(quantity + 1);
     }
@@ -39,7 +47,7 @@ export default function QuantitySelector({ quantity, onChange, max = 99 }: Quant
         <button
           type="button"
           onClick={handleIncrement}
-          disabled={quantity >= max}
+          disabled={quantity >= max || (isExclusiveRack && quantity >= 1)}
           className={styles.button}
           aria-label="Increase quantity"
         >

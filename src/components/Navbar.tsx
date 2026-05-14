@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Heart, Menu, X } from 'lucide-react';
+import { ShoppingBag, Heart, Menu, X, User } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import Image from 'next/image';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
@@ -33,43 +34,71 @@ export default function Navbar() {
     <>
       <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
-          <button
-            className={styles.menuBtn}
-            onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-            id="mobile-menu-toggle"
-          >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-
-          <Link href="/" className={styles.logo} id="nav-logo">
-            GODSMOVE
-          </Link>
-
-          <div className={styles.links}>
-            <Link href="/shop" className={styles.link}>Shop</Link>
-            <Link href="/shop?collection=drop-001" className={styles.link}>Drops</Link>
-            <Link href="/archive" className={styles.link}>Archive</Link>
+          <div className={styles.leftZone}>
+            <button
+              className={styles.menuBtn}
+              onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+              id="mobile-menu-toggle"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className={styles.links}>
+              <Link href="/" className={styles.link}>Home</Link>
+              <Link href="/drops" className={styles.link}>Drops</Link>
+              <Link href="/our-story" className={styles.link}>Our Story</Link>
+            </div>
           </div>
 
-          <div className={styles.actions}>
-            <Link href="/wishlist" className={styles.actionBtn} aria-label="Wishlist" id="nav-wishlist">
-              <Heart size={18} />
-              {wishlistCount > 0 && (
-                <span className={styles.badge}>{wishlistCount}</span>
-              )}
+          <div className={styles.centerZone}>
+            <Link href="/" className={styles.logoWrap} id="nav-logo" aria-label="GODSMOVE Home">
+              <div className={styles.logoImage}>
+                <Image 
+                  src="/images/godsmove-logo.png" 
+                  alt="GODSMOVE" 
+                  width={300} 
+                  height={36} 
+                  priority
+                  className={styles.img}
+                />
+              </div>
             </Link>
-            <button
-              className={styles.actionBtn}
-              onClick={() => setCartOpen(true)}
-              aria-label="Open cart"
-              id="nav-cart"
-            >
-              <ShoppingBag size={18} />
-              {cartCount > 0 && (
-                <span className={styles.badge}>{cartCount}</span>
-              )}
-            </button>
+          </div>
+
+          <div className={styles.rightZone}>
+            <div className={styles.actions}>
+              <div className={styles.actionWrapper}>
+                <Link href="/wishlist" className={styles.actionBtn} aria-label="Your Wishlist" id="nav-wishlist">
+                  <Heart size={20} strokeWidth={1.8} />
+                  {wishlistCount > 0 && (
+                    <span className={styles.badge}>{wishlistCount}</span>
+                  )}
+                </Link>
+                <span className={styles.tooltip}>Your Wishlist</span>
+              </div>
+
+              <div className={styles.actionWrapper}>
+                <Link href="/profile" className={styles.actionBtn} aria-label="Your Profile" id="nav-profile">
+                  <User size={20} strokeWidth={1.8} />
+                </Link>
+                <span className={styles.tooltip}>Your Profile</span>
+              </div>
+
+              <div className={styles.actionWrapper}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => setCartOpen(true)}
+                  aria-label="Your Bag"
+                  id="nav-cart"
+                >
+                  <ShoppingBag size={20} strokeWidth={1.8} />
+                  {cartCount > 0 && (
+                    <span className={styles.badge}>{cartCount}</span>
+                  )}
+                </button>
+                <span className={styles.tooltip}>Your Bag</span>
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -79,25 +108,49 @@ export default function Navbar() {
         <div className={styles.mobileContent}>
           <div className={styles.mobileLinks}>
             <Link
-              href="/shop"
+              href="/"
               className={styles.mobileLink}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Shop
+              Home
             </Link>
             <Link
-              href="/shop?collection=drop-001"
+              href="/drops"
               className={styles.mobileLink}
               onClick={() => setMobileMenuOpen(false)}
             >
               Drops
             </Link>
             <Link
-              href="/archive"
+              href="/our-story"
               className={styles.mobileLink}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Archive
+              Our Story
+            </Link>
+            <Link
+              href="/profile"
+              className={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Profile
+            </Link>
+            <Link
+              href="/wishlist"
+              className={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Wishlist
+            </Link>
+            <Link
+              href="/cart"
+              className={styles.mobileLink}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setCartOpen(true);
+              }}
+            >
+              Cart
             </Link>
           </div>
           <div className={styles.mobileMeta}>

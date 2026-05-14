@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 // NOTE: Razorpay integration requires RAZORPAY_KEY_SECRET env variable
 // This is scaffolded for production use - currently returns mock order
 
 export async function POST(req: Request) {
   try {
-    const { amount } = await req.json();
+    const { amount, items } = await req.json();
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
         { error: 'Invalid amount' },
         { status: 400 }
       );
+    }
+
+    if (items && Array.isArray(items)) {
+      for (const item of items) {
+        if (item.quantity > 1 && item.productId) {
+          const product = await prisma.product.findUnique({
+             where: { id: item.productId }
+          });
+          if (product?.isExclusiveRack) {
+            return NextResponse.json(
+              { error: 'One Artifact Per Custodian', message: 'Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.' },
+              { status: 400 }
+            );
+          }
+        }
+      }
     }
 
     // In production, uncomment and use:

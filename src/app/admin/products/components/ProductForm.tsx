@@ -6,6 +6,7 @@ import { Save, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { UpsertProductSchema, type UpsertProductInput, type FormVariantInput, type ProductImageInput } from '@/lib/validations/product';
 import { upsertProductRecord } from '@/actions/product.actions';
 import { ImageUploader } from './ImageUploader';
+import { SingleImageUploader } from './SingleImageUploader';
 import { VariantManager } from './VariantManager';
 import Link from 'next/link';
 
@@ -33,6 +34,11 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     isFeatured: initialData?.isFeatured || false,
     categoryId: initialData?.categoryId || categories[0]?.id || '',
     dropId: initialData?.dropId || '',
+    isExclusiveRack: initialData?.isExclusiveRack || false,
+    enableImageToggle: initialData?.enableImageToggle || false,
+    frontImageUrl: initialData?.frontImageUrl || '',
+    backImageUrl: initialData?.backImageUrl || '',
+    defaultImageSide: initialData?.defaultImageSide || 'front',
     seoTitle: initialData?.seoTitle || '',
     seoDescription: initialData?.seoDescription || '',
   });
@@ -324,6 +330,76 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 Feature on homepage
               </label>
             </div>
+
+            <div className="flex gap-2" style={{ paddingTop: '12px' }}>
+              <input
+                type="checkbox"
+                id="isExclusiveRack"
+                name="isExclusiveRack"
+                checked={formData.isExclusiveRack}
+                onChange={handleChange}
+                style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }}
+              />
+              <label htmlFor="isExclusiveRack" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-text)' }}>
+                Feature in Exclusive Rack
+                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 400 }}>
+                  Show this product in the flagship homepage showcase.
+                </div>
+              </label>
+            </div>
+          </section>
+
+          {/* Product Presentation Settings */}
+          <section className="admin-card">
+            <div className="flex gap-2 mb-4">
+              <h2 style={{ fontSize: '16px', margin: 0 }}>Presentation Settings</h2>
+            </div>
+
+            <div className="flex gap-2" style={{ paddingBottom: formData.enableImageToggle ? '16px' : '0', borderBottom: formData.enableImageToggle ? '1px solid var(--admin-border)' : 'none' }}>
+              <input
+                type="checkbox"
+                id="enableImageToggle"
+                name="enableImageToggle"
+                checked={formData.enableImageToggle}
+                onChange={handleChange}
+                style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }}
+              />
+              <label htmlFor="enableImageToggle" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-text)' }}>
+                Enable Front/Back Image Toggle
+              </label>
+            </div>
+
+            {formData.enableImageToggle && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <SingleImageUploader
+                    label="Front View Image"
+                    description="Upload the front-facing product visual."
+                    value={formData.frontImageUrl}
+                    onChange={(url) => setFormData((prev) => ({ ...prev, frontImageUrl: url ?? '' }))}
+                  />
+                  <SingleImageUploader
+                    label="Back View Image"
+                    description="Upload the reverse-side product visual."
+                    value={formData.backImageUrl}
+                    onChange={(url) => setFormData((prev) => ({ ...prev, backImageUrl: url ?? '' }))}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Default Display Side</label>
+                  <select
+                    name="defaultImageSide"
+                    value={formData.defaultImageSide}
+                    onChange={handleChange}
+                    className="admin-input admin-select"
+                  >
+                    <option value="front">Front</option>
+                    <option value="back">Back</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* SEO Metadata */}

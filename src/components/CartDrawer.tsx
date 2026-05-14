@@ -61,7 +61,7 @@ export default function CartDrawer() {
             <div className={styles.empty}>
               <p className={styles.emptyText}>Nothing here yet.</p>
               <Link
-                href="/shop"
+                href="/drops"
                 className="btn btn-primary"
                 onClick={() => setCartOpen(false)}
               >

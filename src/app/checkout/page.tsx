@@ -50,7 +50,7 @@ export default function CheckoutPage() {
           <div className="container">
             <div className={styles.empty}>
               <p>Your cart is empty.</p>
-              <Link href="/shop" className="btn btn-primary">Shop Now</Link>
+              <Link href="/drops" className="btn btn-primary">Shop Now</Link>
             </div>
           </div>
         </main>

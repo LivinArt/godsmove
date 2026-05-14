@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
@@ -14,8 +15,17 @@ interface ProductCardProps {
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useStore();
   const wishlisted = isInWishlist(product.id);
+  const [isFlipped, setIsFlipped] = useState(false);
 
-  const imageUrl = product.images?.[0]?.url || '/placeholder.png';
+  const { enableImageToggle, frontImageUrl, backImageUrl, defaultImageSide } = product;
+
+  // Determine current image
+  let currentImageUrl = product.images?.[0]?.url || '/placeholder.png';
+  if (enableImageToggle && frontImageUrl && backImageUrl) {
+    const defaultIsFront = defaultImageSide === 'front';
+    const showFront = defaultIsFront ? !isFlipped : isFlipped;
+    currentImageUrl = showFront ? frontImageUrl : backImageUrl;
+  }
   const baseVariant = product.variants?.[0];
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
   const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
@@ -31,13 +41,27 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     >
       <Link href={`/product/${product.slug}`} className={styles.imageWrap}>
         <Image
-          src={imageUrl}
+          src={currentImageUrl}
           alt={product.name}
           width={600}
           height={750}
-          className={styles.image}
+          className={`${styles.image} ${isFlipped ? styles.flipped : ''}`}
           priority={index < 4}
         />
+        {enableImageToggle && frontImageUrl && backImageUrl && (
+          <button
+            className={styles.imageToggleBtn}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsFlipped(!isFlipped);
+            }}
+          >
+            {isFlipped 
+              ? (defaultImageSide === 'front' ? 'Tap to See Front' : 'Tap to See Back') 
+              : (defaultImageSide === 'front' ? 'Tap to See Back' : 'Tap to See Front')}
+          </button>
+        )}
         {isNew && (
           <span className={styles.tag}>New</span>
         )}

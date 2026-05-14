@@ -108,6 +108,13 @@ model Product {
   updatedAt   DateTime  @updatedAt
   publishedAt DateTime?
 
+  // Flags
+  isExclusiveRack   Boolean @default(false)
+  enableImageToggle Boolean @default(false)
+  frontImageUrl     String?
+  backImageUrl      String?
+  defaultImageSide  ProductImageSide @default(front)
+
   // Children
   variants      ProductVariant[]
   images        ProductImage[]
@@ -183,6 +190,11 @@ enum ProductStatus {
   HIDDEN
   ARCHIVED
   SOLD_OUT
+}
+
+enum ProductImageSide {
+  front
+  back
 }
 
 // ─────────────────────────────────────────────

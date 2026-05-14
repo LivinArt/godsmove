@@ -44,6 +44,11 @@ interface StoreState {
   clearWishlist: () => void;
   setWishlist: (items: WishlistItem[]) => void;
 
+  // Toast
+  toast: { title: string; message: string; isOpen: boolean } | null;
+  showToast: (title: string, message: string) => void;
+  hideToast: () => void;
+
   // UI State
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
@@ -61,11 +66,21 @@ export const useStore = create<StoreState>()(
 
       addToCart: (product, size, quantity = 1) => {
         const { cart } = get();
+
+        if (product.isExclusiveRack) {
+          quantity = 1;
+        }
+
         const existing = cart.find(
           (item) => item.product.id === product.id && item.size === size
         );
 
         if (existing) {
+          if (product.isExclusiveRack) {
+            get().showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+            return;
+          }
+
           set({
             cart: cart.map((item) =>
               item.product.id === product.id && item.size === size
@@ -94,6 +109,15 @@ export const useStore = create<StoreState>()(
           get().removeFromCart(productId, size);
           return;
         }
+
+        const { cart } = get();
+        const item = cart.find(i => i.product.id === productId && i.size === size);
+        
+        if (item?.product.isExclusiveRack && quantity > 1) {
+          get().showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+          return;
+        }
+
         set({
           cart: get().cart.map((item) =>
             item.product.id === productId && item.size === size
@@ -119,7 +143,12 @@ export const useStore = create<StoreState>()(
 
       // Instant Checkout Bypass
       instantCheckout: null,
-      setInstantCheckout: (item) => set({ instantCheckout: item }),
+      setInstantCheckout: (item) => {
+        if (item?.product.isExclusiveRack) {
+          item.quantity = 1;
+        }
+        set({ instantCheckout: item });
+      },
 
       // Wishlist
       wishlist: [],
@@ -166,6 +195,11 @@ export const useStore = create<StoreState>()(
       
       setWishlist: (items) => set({ wishlist: items }),
 
+      // Toast
+      toast: null,
+      showToast: (title, message) => set({ toast: { title, message, isOpen: true } }),
+      hideToast: () => set((state) => ({ toast: state.toast ? { ...state.toast, isOpen: false } : null })),
+
       // UI
       isCartOpen: false,
       setCartOpen: (open) => set({ isCartOpen: open }),
@@ -181,6 +215,14 @@ export const useStore = create<StoreState>()(
         if (version === 0 || version === 1) {
           // If migrating from v1 where wishlist was string[], clear it to prevent hydration issues
           persistedState.wishlist = [];
+        }
+        if (persistedState.cart) {
+          persistedState.cart = persistedState.cart.map((item: any) => {
+            if (item.product?.isExclusiveRack && item.quantity > 1) {
+              return { ...item, quantity: 1 };
+            }
+            return item;
+          });
         }
         return persistedState;
       },

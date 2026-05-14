@@ -3,7 +3,6 @@
    Controlled Chaos. Editorial Precision.
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 /* ── Color Tokens ── */
 :root {
@@ -36,8 +35,8 @@
   --border-medium: rgba(10, 10, 10, 0.15);
 
   /* Typography */
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-heading: var(--font-plus-jakarta), system-ui, sans-serif;
+  --font-body: var(--font-plus-jakarta), system-ui, sans-serif;
 
   /* Spacing */
   --space-2xs: 2px;

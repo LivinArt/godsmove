@@ -1,0 +1,192 @@
+.main {
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  height: 80vh;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.heroImageWrap {
+  position: absolute;
+  inset: 0;
+}
+
+.heroImage {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(10, 10, 10, 0.6);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 0 var(--container-padding);
+  max-width: 800px;
+}
+
+.heroTitle {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(48px, 10vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  margin-bottom: var(--space-md);
+}
+
+.heroSubtitle {
+  font-family: var(--font-body);
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--fog);
+  letter-spacing: 0.02em;
+}
+
+/* ── SECTIONS ── */
+.section {
+  padding: var(--space-4xl) 0;
+}
+
+.sectionDark {
+  background-color: var(--black);
+  color: var(--cream);
+}
+
+/* ── GRID LAYOUT ── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4xl);
+  }
+}
+
+.gridReverse {
+  /* For reversing layout on desktop if needed */
+}
+
+@media (min-width: 768px) {
+  .gridReverse .textBlock {
+    order: 2;
+  }
+  .gridReverse .imageBlock {
+    order: 1;
+  }
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.bodyText {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 500px;
+}
+
+.imageBlock {
+  width: 100%;
+}
+
+.gridImg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.gridImgSq {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* ── CENTERED QUOTE BLOCK ── */
+.centeredBlock {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.quoteTitle {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: clamp(32px, 5vw, 64px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  font-style: italic;
+}
+
+.centeredText {
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--fog);
+  max-width: 600px;
+}
+
+/* ── MANIFESTO ── */
+.manifestoSection {
+  background-color: var(--bg-secondary);
+  text-align: center;
+  padding: var(--space-5xl) 0;
+}
+
+.manifesto {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.manifestoContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.manifestoText {
+  font-size: 20px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  max-width: 600px;
+}
+
+.manifestoSignature {
+  margin-top: var(--space-xl);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 14px;
+}

@@ -20,28 +20,27 @@ export default function Footer() {
       <div className={styles.inner}>
         <div className={styles.top}>
           <div className={styles.brand}>
-            <Link href="/" className={styles.logo}>GODSMOVE</Link>
+            <Link href="/" className={styles.logoWrap} aria-label="GODSMOVE Home">
+              <img src="/images/godsmove-logo.png" alt="GODSMOVE" className={styles.logoImage} />
+            </Link>
             <p className={styles.tagline}>Doomed to Drip. SS26.</p>
           </div>
 
           <div className={styles.columns}>
             <div className={styles.col}>
               <h4 className={styles.colTitle}>Shop</h4>
-              <Link href="/shop" className={styles.colLink}>All Products</Link>
-              <Link href="/shop?collection=drop-001" className={styles.colLink}>Drop 001</Link>
-              <Link href="/shop?collection=drop-002" className={styles.colLink}>Drop 002</Link>
+              <Link href="/drops" className={styles.colLink}>Explore Drops</Link>
             </div>
             <div className={styles.col}>
               <h4 className={styles.colTitle}>World</h4>
               <Link href="/archive" className={styles.colLink}>Archive</Link>
-              <Link href="#" className={styles.colLink}>About</Link>
+              <Link href="/our-story" className={styles.colLink}>Our Story</Link>
               <Link href="#" className={styles.colLink}>Contact</Link>
             </div>
             <div className={styles.col}>
               <h4 className={styles.colTitle}>Help</h4>
-              <Link href="#" className={styles.colLink}>Sizing</Link>
-              <Link href="#" className={styles.colLink}>Shipping</Link>
-              <Link href="#" className={styles.colLink}>Returns</Link>
+              <Link href="/sizing" className={styles.colLink}>Sizing</Link>
+              <Link href="/shipping" className={styles.colLink}>Shipping</Link>
             </div>
           </div>
         </div>
@@ -56,7 +55,7 @@ export default function Footer() {
               id="footer-email"
               aria-label="Email for newsletter"
             />
-            <button type="submit" className={styles.nlBtn} id="footer-subscribe">
+            <button type="submit" className={styles.nlBtn} id="footer-subscribe" aria-label="Subscribe">
               <ArrowUpRight size={18} />
             </button>
           </form>
@@ -65,8 +64,8 @@ export default function Footer() {
         <div className={styles.bottom}>
           <div className={styles.legal}>
             <span>© 2026 GODSMOVE. All rights reserved.</span>
-            <Link href="#">Privacy</Link>
-            <Link href="#">Terms</Link>
+            <Link href="/policies">Our Policies</Link>
+            <Link href="/terms">Terms & Conditions</Link>
           </div>
           <div className={styles.social}>
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">

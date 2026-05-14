@@ -126,24 +126,30 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  height: 48px;
-  background: #ffffff;
-  color: #000000;
-  border: none;
+  height: 52px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .buyNowBtn:hover:not(:disabled) {
-  background: #e0e0e0;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
+  background: #111111;
+  border-color: #ffffff;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+}
+
+.buyNowBtn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
 }
 
 .buyNowBtn:disabled {

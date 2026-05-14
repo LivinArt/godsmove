@@ -1,4 +1,3 @@
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ArrowDown } from 'lucide-react';
@@ -7,12 +6,14 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
+import ExclusiveRack from '@/components/ExclusiveRack';
 import { getStorefrontProducts, getActiveDrop } from '@/actions/storefront.actions';
 import styles from './page.module.css';
 
 export default async function Home() {
-  const [featured, activeDrop] = await Promise.all([
-    getStorefrontProducts({ isFeatured: true, take: 4 }),
+  const [featured, exclusiveRackProducts, activeDrop] = await Promise.all([
+    getStorefrontProducts({ isFeatured: true, take: 8 }),
+    getStorefrontProducts({ isExclusiveRack: true, take: 5 }),
     getActiveDrop()
   ]);
   
@@ -24,18 +25,29 @@ export default async function Home() {
     slug: 'permanent'
   };
 
+  const limitedPieces = featured.filter(p => {
+    const stock = p.variants.reduce((acc, v) => {
+      const inv = v.inventory;
+      if (!inv) return acc;
+      return acc + (inv.totalStock - inv.reservedStock - inv.soldStock);
+    }, 0);
+    return stock <= 10 && stock > 0;
+  }).slice(0, 4);
+
+  const displayLimited = limitedPieces.length > 0 ? limitedPieces : featured.slice(0, 4);
+
   return (
     <>
       <Navbar />
       <CartDrawer />
 
       <main>
-        {/* ── HERO ── */}
+        {/* ── CINEMATIC HERO ── */}
         <section className={styles.hero} id="hero">
           <div className={styles.heroImageWrap}>
             <Image
               src="/images/hero/hero-main.png"
-              alt="GODSMOVE SS26 Campaign"
+              alt="GODSMOVE Campaign"
               fill
               className={styles.heroImage}
               priority
@@ -46,18 +58,25 @@ export default async function Home() {
 
           <div className={styles.heroContent}>
             <div className={styles.heroBadge}>
-              <span className="caption">SS26 / Drop 001</span>
+              <span className="caption">SS26 / {drop001.name}</span>
             </div>
             <h1 className={styles.heroTitle}>
-              GODS<span className={styles.heroTitleAccent}>MOVE</span>
+              Doomed<br />to <span className={styles.heroTitleAccent}>Drip.</span>
             </h1>
             <p className={styles.heroSub}>
-              Doomed to Drip.
+              No Coincidence.
             </p>
-            <Link href="/shop" className={`btn btn-secondary ${styles.heroCta}`} id="hero-cta">
-              Shop Drop 001
-              <ArrowRight size={14} />
-            </Link>
+            <p className={styles.heroDesc}>
+              Every piece is deliberate. Limited in quantity. Heavy in meaning.
+            </p>
+            <div className={styles.heroCtas}>
+              <Link href="/drops" className={`btn btn-primary ${styles.heroCta}`} id="hero-cta">
+                Explore the Drop
+              </Link>
+              <Link href="/our-story" className={`btn btn-secondary ${styles.heroCtaSecondary}`} id="hero-cta-secondary">
+                Our Story
+              </Link>
+            </div>
           </div>
 
           <div className={styles.heroScroll}>
@@ -66,51 +85,27 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── DROP INTRO ── */}
-        <section className={styles.dropIntro} id="drop-intro">
-          <div className="container">
-            <ScrollReveal>
-              <div className={styles.dropIntroInner}>
-                <div className={styles.dropIntroText}>
-                  <span className="caption">{drop001.name}</span>
-                  <h2 className={`h1 ${styles.dropTitle}`}>{drop001.tagline}</h2>
-                  <p className={styles.dropDesc}>{drop001.description}</p>
-                  <Link href="/shop?collection=drop-001" className="btn-ghost" id="drop-cta">
-                    View Full Drop
-                  </Link>
-                </div>
-                <div className={styles.dropIntroImage}>
-                  <Image
-                    src={drop001.heroImageUrl || '/images/hero/hero-main.png'}
-                    alt={drop001.name}
-                    width={640}
-                    height={800}
-                    className={styles.dropImg}
-                  />
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </section>
+        {/* ── EXCLUSIVE RACK ── */}
+        <ExclusiveRack products={exclusiveRackProducts} />
 
-        {/* ── FEATURED PRODUCTS ── */}
+        {/* ── STAR PIECES ── */}
         <section className={styles.products} id="products">
           <div className="container">
             <ScrollReveal>
               <div className={styles.productsHeader}>
-                <span className="caption">The Collection</span>
-                <h2 className="h2">Selected Pieces</h2>
+                <span className="caption">Featured Drop</span>
+                <h2 className="h2">Star Pieces</h2>
               </div>
             </ScrollReveal>
             <div className={styles.productsGrid}>
-              {featured.map((product, i) => (
+              {featured.slice(0, 4).map((product, i) => (
                 <ProductCard key={product.id} product={product} index={i} />
               ))}
             </div>
             <ScrollReveal delay={200}>
               <div className={styles.productsCta}>
-                <Link href="/shop" className="btn btn-secondary" id="products-cta">
-                  View All
+                <Link href="/drops" className="btn btn-secondary" id="products-cta">
+                  View All Pieces
                   <ArrowRight size={14} />
                 </Link>
               </div>
@@ -118,7 +113,26 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── EDITORIAL BREAK ── */}
+        {/* ── EXPLORE OUR RANGES ── */}
+        {displayLimited.length > 0 && (
+          <section className={styles.limited} id="limited">
+            <div className="container">
+              <ScrollReveal>
+                <div className={styles.limitedHeader}>
+                  <h2 className="h2">Explore Our Ranges</h2>
+                  <p className={styles.limitedDesc}>Discover the worlds we are building.</p>
+                </div>
+              </ScrollReveal>
+              <div className={styles.productsGrid}>
+                {displayLimited.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── OUR STORY PREVIEW ── */}
         <section className={styles.editorial} id="editorial">
           <div className={styles.editorialImageWrap}>
             <Image
@@ -132,88 +146,13 @@ export default async function Home() {
           </div>
           <div className={styles.editorialContent}>
             <ScrollReveal>
-              <span className="caption" style={{ color: 'var(--fog)' }}>Observation</span>
+              <span className="caption" style={{ color: 'var(--fog)' }}>Philosophy</span>
               <h2 className={styles.editorialQuote}>
-                Comfort looks different when you stop performing it.
+                Nothing is accidental. Every design carries meaning.
               </h2>
-            </ScrollReveal>
-          </div>
-        </section>
-
-        {/* ── BRAND WORLD / TEXTURE ── */}
-        <section className={styles.world} id="world">
-          <div className="container">
-            <div className={styles.worldGrid}>
-              <ScrollReveal className={styles.worldTextBlock}>
-                <span className="caption">Material</span>
-                <h3 className="h3">300 GSM. Heavyweight.</h3>
-                <p className={styles.worldBody}>
-                  Every piece starts at 300 grams per square meter. Dense cotton that holds its shape 
-                  after fifty washes. The kind of weight you notice when you pick it up.
-                </p>
-              </ScrollReveal>
-              <ScrollReveal delay={100} className={styles.worldImageBlock}>
-                <Image
-                  src="/images/textures/fabric-texture.png"
-                  alt="Fabric texture closeup"
-                  width={600}
-                  height={400}
-                  className={styles.worldImg}
-                />
-              </ScrollReveal>
-              <ScrollReveal delay={200} className={styles.worldTextBlock2}>
-                <span className="caption">Fit</span>
-                <h3 className="h3">Drop Shoulder. Oversized.</h3>
-                <p className={styles.worldBody}>
-                  Cut to sit below the natural shoulder line. Relaxed through the body. 
-                  Room to move. Designed to look better the longer you wear it.
-                </p>
-              </ScrollReveal>
-            </div>
-          </div>
-        </section>
-
-        {/* ── ARCHIVE TEASER ── */}
-        <section className={styles.archiveTeaser} id="archive-teaser">
-          <div className="container">
-            <ScrollReveal>
-              <div className={styles.archiveInner}>
-                <div className={styles.archiveText}>
-                  <span className="caption">The Archive</span>
-                  <h2 className="h2">Process. Culture. Observation.</h2>
-                  <p className={styles.archiveDesc}>
-                    Dispatches from inside the move. Production diaries, 
-                    colour studies, and deliberate observations.
-                  </p>
-                  <Link href="/archive" className="btn-ghost" id="archive-cta">
-                    Enter the Archive
-                  </Link>
-                </div>
-                <div className={styles.archiveCards}>
-                  <div className={styles.archiveCard}>
-                    <Image
-                      src="/images/textures/fabric-texture.png"
-                      alt="Fabric study"
-                      width={300}
-                      height={200}
-                      style={{ objectFit: 'cover', width: '100%', height: '160px' }}
-                    />
-                    <span className={`caption ${styles.archiveCardType}`}>Editorial</span>
-                    <h4 className={styles.archiveCardTitle}>The Weight of a T-Shirt</h4>
-                  </div>
-                  <div className={styles.archiveCard}>
-                    <Image
-                      src="/images/campaign/editorial-01.png"
-                      alt="Scroll fatigue"
-                      width={300}
-                      height={200}
-                      style={{ objectFit: 'cover', width: '100%', height: '160px' }}
-                    />
-                    <span className={`caption ${styles.archiveCardType}`}>Observation</span>
-                    <h4 className={styles.archiveCardTitle}>Scroll Fatigue</h4>
-                  </div>
-                </div>
-              </div>
+              <Link href="/our-story" className={`btn btn-secondary ${styles.editorialCta}`}>
+                Read Our Story
+              </Link>
             </ScrollReveal>
           </div>
         </section>
@@ -223,9 +162,9 @@ export default async function Home() {
           <div className="container">
             <ScrollReveal>
               <div className={styles.nlInner}>
-                <h2 className="h2">Stay inside.</h2>
+                <h2 className="h2">Get Early Access.</h2>
                 <p className={styles.nlDesc}>
-                  Drop alerts, archive updates, and nothing you didn't ask for.
+                  Be first when the next move drops.
                 </p>
                 <form className={styles.nlForm} action="/api/newsletter" method="POST">
                   <input
@@ -237,7 +176,7 @@ export default async function Home() {
                     aria-label="Email for newsletter"
                   />
                   <button type="submit" className="btn btn-primary" id="newsletter-submit">
-                    Subscribe
+                    Join the Inner Circle
                   </button>
                 </form>
               </div>

@@ -61,7 +61,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="container">
           {/* Breadcrumb */}
           <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-            <Link href="/shop">Shop</Link>
+            <Link href="/drops">Drops</Link>
             <span>/</span>
             <span>{product.name}</span>
           </nav>

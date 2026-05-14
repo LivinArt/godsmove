@@ -31,17 +31,19 @@
   gap: var(--space-sm);
 }
 
-.logo {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 24px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cream);
+.logoWrap {
+  display: flex;
+  align-items: center;
   transition: opacity var(--duration-fast) var(--ease-smooth);
 }
 
-.logo:hover {
+.logoImage {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logoWrap:hover {
   opacity: 0.7;
 }
 

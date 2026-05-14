@@ -124,7 +124,7 @@ export async function createProduct(input: CreateProductInput) {
   });
 
   revalidatePath('/admin/products');
-  revalidatePath('/shop');
+  revalidatePath('/drops');
   return product;
 }
 
@@ -146,7 +146,7 @@ export async function updateProduct(input: UpdateProductInput) {
 
   revalidatePath('/admin/products');
   revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/shop');
+  revalidatePath('/drops');
   return product;
 }
 
@@ -233,7 +233,7 @@ export async function deleteProduct(id: string) {
 
   revalidatePath('/admin/products');
   revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/shop');
+  revalidatePath('/drops');
   revalidatePath('/');
 }
 
@@ -334,7 +334,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
 
   revalidatePath('/admin/products');
   if (product.slug) revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/shop');
+  revalidatePath('/drops');
   return product;
 }
 
@@ -445,7 +445,7 @@ export async function updateDropStatus(
     data: { status },
   });
   revalidatePath('/admin/drops');
-  revalidatePath('/shop');
+  revalidatePath('/drops');
   return drop;
 }
 

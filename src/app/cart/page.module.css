@@ -119,12 +119,26 @@
   letter-spacing: 0.03em;
 }
 
+.itemPriceWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: auto;
+}
+
+.itemComparePrice {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
 .itemPrice {
   font-family: var(--font-heading);
   font-weight: 500;
   font-size: 13px;
   color: var(--text-secondary);
-  margin-top: auto;
 }
 
 .itemQuantity {
@@ -247,4 +261,33 @@
 
 .continueLink:hover {
   color: var(--text-primary);
+}
+
+.summarySavings {
+  color: var(--accent-olive);
+  font-weight: 500;
+}
+
+.trustSignals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.trustSignal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.trustSignal svg {
+  color: var(--text-muted);
 }

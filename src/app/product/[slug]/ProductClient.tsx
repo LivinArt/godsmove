@@ -62,7 +62,14 @@ export default function ProductClient({ product, availableSizes }: { product: an
     <div className={styles.layout}>
       {/* Image Gallery */}
       <div className={styles.gallery}>
-        <ImageGallery images={product.images?.map((i: any) => i.url) || ['/placeholder.png']} alt={product.name} />
+        <ImageGallery 
+          images={product.images?.map((i: any) => i.url) || ['/placeholder.png']} 
+          alt={product.name} 
+          enableToggle={product.enableImageToggle}
+          frontImage={product.frontImageUrl}
+          backImage={product.backImageUrl}
+          defaultSide={product.defaultImageSide}
+        />
       </div>
 
       {/* Product Info */}
@@ -106,6 +113,7 @@ export default function ProductClient({ product, availableSizes }: { product: an
             quantity={quantity}
             onChange={setQuantity}
             max={availableStock}
+            isExclusiveRack={product.isExclusiveRack}
           />
         </div>
 

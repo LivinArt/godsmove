@@ -63,9 +63,9 @@ export default function WishlistClient() {
           <Heart size={48} strokeWidth={1} />
         </div>
         <h1 className={styles.emptyTitle}>Your wishlist is empty.</h1>
-        <p className={styles.emptyText}>Pieces worth claiming belong here.</p>
-        <Link href="/shop" className={styles.exploreBtn}>
-          Explore the Collection
+        <p className={styles.emptyText}>Drip doesn't lie.</p>
+        <Link href="/drops" className={styles.exploreBtn}>
+          Explore the Drop
         </Link>
       </div>
     );

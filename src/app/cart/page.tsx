@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Minus, Plus, X, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Minus, Plus, X, ArrowLeft, Lock, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -10,8 +11,28 @@ import { useStore } from '@/store/useStore';
 import styles from './page.module.css';
 
 export default function CartPage() {
-  const { cart, updateQuantity, removeFromCart, getCartTotal } = useStore();
-  const total = getCartTotal();
+  const { cart, removeFromCart, updateQuantity, clearCart, showToast } = useStore();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const total = cart.reduce((acc, item) => {
+    const variant = item.product.variants?.find((v: any) => v.size === item.size);
+    const price = variant?.price ? Number(variant.price) : 0;
+    return acc + price * item.quantity;
+  }, 0);
+
+  const savings = cart.reduce((acc, item) => {
+    const variant = item.product.variants?.find((v: any) => v.size === item.size);
+    const price = variant?.price ? Number(variant.price) : 0;
+    const comparePrice = variant?.comparePrice ? Number(variant.comparePrice) : price;
+    if (comparePrice > price) {
+      return acc + (comparePrice - price) * item.quantity;
+    }
+    return acc;
+  }, 0);
 
   return (
     <>
@@ -25,7 +46,7 @@ export default function CartPage() {
           {cart.length === 0 ? (
             <div className={styles.empty}>
               <p className={styles.emptyText}>Your cart is empty.</p>
-              <Link href="/shop" className="btn btn-primary">
+              <Link href="/drops" className="btn btn-primary">
                 Continue Shopping
               </Link>
             </div>
@@ -37,49 +58,70 @@ export default function CartPage() {
                   <span>Quantity</span>
                   <span>Total</span>
                 </div>
-                {cart.map((item) => (
-                  <div key={`${item.product.id}-${item.size}`} className={styles.item}>
-                    <div className={styles.itemProduct}>
-                      <div className={styles.itemImage}>
-                        <Image
-                          src={item.product.images[0]}
-                          alt={item.product.name}
-                          width={100}
-                          height={125}
-                          style={{ objectFit: 'cover' }}
-                        />
+                {cart.map((item) => {
+                  const variant = item.product.variants?.find((v: any) => v.size === item.size);
+                  const price = variant?.price ? Number(variant.price) : 0;
+                  const comparePrice = variant?.comparePrice ? Number(variant.comparePrice) : price;
+                  const hasDiscount = comparePrice > price;
+
+                  return (
+                    <div key={`${item.product.id}-${item.size}`} className={styles.item}>
+                      <div className={styles.itemProduct}>
+                        <div className={styles.itemImage}>
+                          <Image
+                            src={item.product.images[0]?.url || item.product.images[0]}
+                            alt={item.product.name}
+                            width={100}
+                            height={125}
+                            style={{ objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div className={styles.itemInfo}>
+                          <Link href={`/product/${item.product.slug}`} className={styles.itemName}>
+                            {item.product.name}
+                          </Link>
+                          <p className={styles.itemMeta}>{item.product.color || 'Default'} / {item.size}</p>
+                          <div className={styles.itemPriceWrap}>
+                            {hasDiscount && (
+                              <span className={styles.itemComparePrice}>₹{comparePrice.toLocaleString('en-IN')}</span>
+                            )}
+                            <span className={styles.itemPrice}>₹{price.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className={styles.itemInfo}>
-                        <Link href={`/product/${item.product.slug}`} className={styles.itemName}>
-                          {item.product.name}
-                        </Link>
-                        <p className={styles.itemMeta}>{item.product.color} / {item.size}</p>
-                        <p className={styles.itemPrice}>₹{item.product.price.toLocaleString('en-IN')}</p>
+                      <div className={styles.itemQuantity}>
+                        <div className={styles.quantity}>
+                          <button onClick={() => updateQuantity(item.product.id, item.size, item.quantity - 1)}>
+                            <Minus size={12} />
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button 
+                            onClick={() => {
+                              if (item.product.isExclusiveRack && item.quantity >= 1) {
+                                showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+                              } else {
+                                updateQuantity(item.product.id, item.size, item.quantity + 1);
+                              }
+                            }}
+                            disabled={item.product.isExclusiveRack && item.quantity >= 1}
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className={styles.itemQuantity}>
-                      <div className={styles.quantity}>
-                        <button onClick={() => updateQuantity(item.product.id, item.size, item.quantity - 1)}>
-                          <Minus size={12} />
+                      <div className={styles.itemTotal}>
+                        <span>₹{(price * item.quantity).toLocaleString('en-IN')}</span>
+                        <button
+                          className={styles.removeBtn}
+                          onClick={() => removeFromCart(item.product.id, item.size)}
+                          aria-label={`Remove ${item.product.name}`}
+                        >
+                          <X size={14} />
                         </button>
-                        <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}>
-                          <Plus size={12} />
-                        </button>
                       </div>
                     </div>
-                    <div className={styles.itemTotal}>
-                      <span>₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
-                      <button
-                        className={styles.removeBtn}
-                        onClick={() => removeFromCart(item.product.id, item.size)}
-                        aria-label={`Remove ${item.product.name}`}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className={styles.summary}>
@@ -88,6 +130,12 @@ export default function CartPage() {
                   <span>Subtotal</span>
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
+                {savings > 0 && (
+                  <div className={`${styles.summaryRow} ${styles.summarySavings}`}>
+                    <span>Total Savings</span>
+                    <span>-₹{savings.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 <div className={styles.summaryRow}>
                   <span>Shipping</span>
                   <span className={styles.summaryFree}>Calculated at checkout</span>
@@ -96,11 +144,27 @@ export default function CartPage() {
                   <span>Total</span>
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
-                <Link href="/checkout" className="btn btn-primary" id="cart-checkout">
-                  Proceed to Checkout
-                  <ArrowRight size={14} />
+                
+                <Link href="/checkout" className="btn btn-primary" id="cart-checkout" style={{ width: '100%', padding: '18px 0', marginTop: 'var(--space-md)' }}>
+                  <Lock size={14} style={{ marginRight: '8px' }} /> Secure Checkout
                 </Link>
-                <Link href="/shop" className={styles.continueLink}>
+                
+                <div className={styles.trustSignals}>
+                  <div className={styles.trustSignal}>
+                    <ShieldCheck size={16} />
+                    <span>Secure Encrypted Payment</span>
+                  </div>
+                  <div className={styles.trustSignal}>
+                    <Truck size={16} />
+                    <span>Fast Pan-India Delivery</span>
+                  </div>
+                  <div className={styles.trustSignal}>
+                    <RotateCcw size={16} />
+                    <span>Hassle-Free Returns</span>
+                  </div>
+                </div>
+
+                <Link href="/drops" className={styles.continueLink}>
                   <ArrowLeft size={12} />
                   Continue Shopping
                 </Link>
