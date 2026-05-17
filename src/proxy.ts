@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -62,8 +62,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Check admin role via Prisma — we use a DB fetch here
-    // Note: We check the profile.role rather than a Supabase claim
+    // Check admin role via Supabase — we check the profile.role
     // so that role changes take effect immediately without token refresh
     const { data: profile } = await supabase
       .from('profiles')
