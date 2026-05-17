@@ -13,7 +13,7 @@ import Link from 'next/link';
 interface ProductFormProps {
   initialData?: any; // The full product object from DB, if editing
   categories: { id: string; name: string }[];
-  drops: { id: string; name: string; slug: string; season: string | null }[];
+  drops: { id: string; name: string; slug: string }[];
 }
 
 export function ProductForm({ initialData, categories, drops }: ProductFormProps) {
@@ -272,7 +272,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               variants={variants} 
               onChange={setVariants} 
               productSlug={formData.slug || 'XXXX'}
-              seasonPrefix={selectedDrop?.season || undefined}
+              seasonPrefix={undefined}
               dropPrefix={selectedDrop?.slug?.toUpperCase() || undefined}
             />
           </section>

@@ -32,7 +32,7 @@ export async function getStorefrontProducts(params?: {
     },
     include: {
       category: true,
-      drop: { select: { id: true, name: true, slug: true, status: true, season: true } },
+      drop: { select: { id: true, name: true, slug: true, status: true } },
       images: { orderBy: { position: 'asc' } },
       variants: {
         where: { isActive: true },
@@ -83,7 +83,7 @@ export async function getStorefrontDrops() {
         select: { id: true, name: true, slug: true, images: { take: 1, orderBy: { position: 'asc' } } },
       },
     },
-    orderBy: { releaseAt: 'desc' },
+    orderBy: { launchAt: 'desc' },
   });
 
   return serializePrisma(data);
@@ -92,7 +92,7 @@ export async function getStorefrontDrops() {
 export async function getActiveDrop() {
   const data = await prisma.drop.findFirst({
     where: { status: 'LIVE' },
-    orderBy: { releaseAt: 'desc' },
+    orderBy: { launchAt: 'desc' },
   });
 
   return data ? serializePrisma(data) : null;

@@ -1,4 +1,5 @@
-import { getCategories, getDrops, getProductById } from '@/actions/product.actions';
+import { getCategories, getProductById } from '@/actions/product.actions';
+import { getDrops } from '@/actions/drop.actions';
 import { ProductForm } from '../../components/ProductForm';
 import { notFound } from 'next/navigation';
 
@@ -26,7 +27,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <ProductForm
         initialData={product}
         categories={categories.map(c => ({ id: c.id, name: c.name }))}
-        drops={drops.map(d => ({ id: d.id, name: d.name, slug: d.slug, season: d.season }))}
+        drops={drops.map(d => ({ id: d.id, name: d.name, slug: d.slug }))}
       />
     </div>
   );

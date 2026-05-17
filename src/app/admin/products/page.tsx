@@ -1,4 +1,5 @@
-import { getProducts, getCategories, getDrops } from '@/actions/product.actions';
+import { getProducts, getCategories } from '@/actions/product.actions';
+import { getDrops } from '@/actions/drop.actions';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { ProductsTable } from './components/ProductsTable';

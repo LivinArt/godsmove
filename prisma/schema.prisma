@@ -203,24 +203,26 @@ enum ProductImageSide {
 
 model Drop {
   id          String     @id @default(cuid())
-  name        String // "Drop 001"
+  name        String // e.g. "PRIMAL ARCHETYPES // DROP 001"
   slug        String     @unique
-  tagline     String // "First contact."
-  description String
-  status      DropStatus @default(SCHEDULED)
-  season      String? // "SS26"
+  tagline     String? // editorial one-liner
+  description String? // full editorial description
+  manifesto   String? // brand philosophy / launch story
+  heroImageUrl String?
 
   // Scheduling
-  releaseAt DateTime? // scheduled release timestamp (null = manual)
-  endsAt    DateTime? // optional end-of-drop window
+  launchAt DateTime? // scheduled release timestamp (null = draft/manual)
+  endAt    DateTime? // optional end-of-drop window
 
-  // Assets
-  heroImageUrl     String?
-  campaignImageUrls String[] @default([])
+  // Status
+  status      DropStatus @default(DRAFT)
 
-  // Access control
-  isPasswordProtected Boolean @default(false)
-  accessPasswordHash  String? // bcrypt hash — for pre-release access
+  // Visibility
+  isFeatured    Boolean @default(false) // feature on homepage
+  showCountdown Boolean @default(true)  // show countdown timer when SCHEDULED
+
+  // Scarcity
+  maxUnits Int? // null = unlimited
 
   // Relations
   products Product[]
@@ -228,6 +230,8 @@ model Drop {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([status])
+  @@index([isFeatured])
   @@map("drops")
 }
 

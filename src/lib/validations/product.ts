@@ -86,23 +86,9 @@ export const UpsertProductSchema = CreateProductSchema.extend({
   }
 });
 
-export const CreateDropSchema = z.object({
-  name: z.string().min(1).max(80),
-  slug: z.string().regex(/^[a-z0-9-]+$/),
-  tagline: z.string().min(1).max(200),
-  description: z.string().min(1),
-  season: z.string().optional(),
-  releaseAt: z.string().datetime().optional().nullable(),
-  endsAt: z.string().datetime().optional().nullable(),
-  heroImageUrl: z.string().url().optional().nullable(),
-  isPasswordProtected: z.boolean().default(false),
-  accessPassword: z.string().min(6).optional().nullable(),
-});
-
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type CreateVariantInput = z.infer<typeof CreateVariantSchema>;
 export type FormVariantInput = z.infer<typeof FormVariantSchema>;
-export type CreateDropInput = z.infer<typeof CreateDropSchema>;
 export type UpsertProductInput = z.infer<typeof UpsertProductSchema>;
 export type ProductImageInput = z.infer<typeof ProductImageSchema>;

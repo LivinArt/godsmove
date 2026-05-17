@@ -7,12 +7,10 @@ import {
   CreateProductSchema,
   UpdateProductSchema,
   CreateVariantSchema,
-  CreateDropSchema,
   UpsertProductSchema,
   type CreateProductInput,
   type UpdateProductInput,
   type CreateVariantInput,
-  type CreateDropInput,
   type UpsertProductInput,
 } from '@/lib/validations/product';
 
@@ -411,42 +409,6 @@ export async function adjustInventory(
 
     return updated;
   });
-}
-
-// ── DROPS ────────────────────────────────────────────────────────────────────
-
-export async function getDrops() {
-  return prisma.drop.findMany({
-    include: {
-      products: {
-        select: { id: true, name: true, status: true },
-      },
-    },
-    orderBy: { releaseAt: 'desc' },
-  });
-}
-
-export async function createDrop(input: CreateDropInput) {
-  await requireAdmin();
-  const data = CreateDropSchema.parse(input);
-
-  const drop = await prisma.drop.create({ data: data as any });
-  revalidatePath('/admin/drops');
-  return drop;
-}
-
-export async function updateDropStatus(
-  dropId: string,
-  status: 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'ARCHIVED'
-) {
-  await requireAdmin();
-  const drop = await prisma.drop.update({
-    where: { id: dropId },
-    data: { status },
-  });
-  revalidatePath('/admin/drops');
-  revalidatePath('/drops');
-  return drop;
 }
 
 // ── CATEGORIES ───────────────────────────────────────────────────────────────
