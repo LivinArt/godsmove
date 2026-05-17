@@ -30,8 +30,30 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // ── ADMIN BYPASS LOGIC (SECRET VIA URL) ───────────────────────────
+  const secretParam = request.nextUrl.searchParams.get('secret');
+  if (secretParam && secretParam === process.env.ADMIN_SECRET) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.searchParams.delete('secret');
+    const response = NextResponse.redirect(redirectUrl);
+    response.cookies.set('admin_bypass', secretParam, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+    return response;
+  }
+
+  const hasAdminBypass = request.cookies.get('admin_bypass')?.value === process.env.ADMIN_SECRET;
+
   // ── ADMIN ROUTE PROTECTION ──────────────────────────────────────────
   if (pathname.startsWith('/admin')) {
+    if (hasAdminBypass) {
+      return supabaseResponse; // Completely bypass auth for this session
+    }
+
     if (!user) {
       // Not logged in → redirect to login
       const redirectUrl = request.nextUrl.clone();

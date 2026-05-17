@@ -1,13 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { hasAdminBypass } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 async function requireAdminOrEditor() {
+  const bypass = await hasAdminBypass();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  
+  if (bypass) return user || { id: 'bypass-admin', email: 'admin@godsmove.in' } as any;
+
   if (!user) throw new Error('UNAUTHORIZED');
 
   const profile = await prisma.profile.findUnique({
