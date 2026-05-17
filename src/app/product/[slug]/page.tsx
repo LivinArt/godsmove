@@ -6,6 +6,8 @@ import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import { getStorefrontProductBySlug, getStorefrontProducts } from '@/actions/storefront.actions';
+import { getActiveDraw, getProductUnlockStatus } from '@/actions/exclusive.actions';
+import { createClient } from '@/lib/supabase/server';
 import ProductClient from './ProductClient';
 import styles from './page.module.css';
 
@@ -52,6 +54,23 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     };
   }).filter(Boolean) as { label: string, available: boolean }[];
 
+  const isExclusiveUnlock = product.isExclusiveUnlock;
+  let access = { unlocked: true, reservation: null as any };
+  let draw = null;
+
+  let isLoggedIn = false;
+  if (isExclusiveUnlock) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isLoggedIn = !!user;
+    access = user
+      ? await getProductUnlockStatus(product.id)
+      : { unlocked: false, reservation: null };
+    draw = await getActiveDraw(product.id);
+  }
+
+  const coverImage = product.images?.[0]?.url ?? product.frontImageUrl ?? null;
+
   return (
     <>
       <Navbar />
@@ -66,7 +85,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <span>{product.name}</span>
           </nav>
 
-          <ProductClient product={product} availableSizes={availableSizes} />
+          <ProductClient
+            product={product}
+            availableSizes={availableSizes}
+            exclusiveAccess={isExclusiveUnlock ? access : undefined}
+            exclusiveDraw={isExclusiveUnlock ? (draw as { id: string; endsAt: string; status: string } | null) : undefined}
+            coverImage={coverImage}
+            isLoggedIn={isLoggedIn}
+          />
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (

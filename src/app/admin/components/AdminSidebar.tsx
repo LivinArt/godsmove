@@ -19,6 +19,7 @@ const navGroups = [
       { href: '/admin/products', label: 'Products', icon: ShirtIcon },
       { href: '/admin/drops', label: 'Drops', icon: ZapIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TagIcon },
+      { href: '/admin/exclusive-draws', label: 'Exclusive Draws', icon: LockIcon },
     ],
   },
   {
@@ -38,7 +39,7 @@ const navGroups = [
 // Role-based nav restrictions
 const ROLE_RESTRICTIONS: Record<string, string[]> = {
   CONTENT_EDITOR: ['/admin/editorial'],
-  OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns'],
+  OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/exclusive-draws'],
   SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/customers'],
   MARKETING: ['/admin', '/admin/discounts', '/admin/drops'],
 };
@@ -181,6 +182,15 @@ function PenIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
     </svg>
   );
 }

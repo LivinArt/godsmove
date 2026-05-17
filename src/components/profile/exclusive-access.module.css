@@ -1,0 +1,97 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.balance {
+  font-size: 32px;
+  font-weight: 300;
+  margin: 0;
+}
+
+.empty {
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.productList,
+.reservationList,
+.creditList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.productCard {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.thumb {
+  width: 72px;
+  height: 88px;
+  object-fit: cover;
+}
+
+.productName {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.meta {
+  font-size: 12px;
+  opacity: 0.5;
+  margin: 4px 0 0;
+}
+
+.countdown {
+  margin-top: 12px;
+}
+
+.reservationItem {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.statusBadge {
+  margin-left: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.statusBadge[data-status='WINNER'] {
+  color: #c9a962;
+}
+
+.link {
+  font-size: 13px;
+  margin-top: 8px;
+  display: inline-block;
+  text-decoration: underline;
+  opacity: 0.7;
+}
+
+.creditList li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}

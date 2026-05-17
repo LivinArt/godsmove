@@ -18,6 +18,17 @@ export const CreateProductSchema = z.object({
   categoryId: z.string().cuid('Invalid category'),
   dropId: z.string().cuid().optional().nullable(),
   isExclusiveRack: z.boolean().default(false),
+  isExclusiveUnlock: z.boolean().default(false),
+  unlockTeaser: z.string().max(500).optional().nullable(),
+  exclusiveStory: z.string().max(5000).optional().nullable(),
+  countdownDurationDays: z.number().int().min(1).max(90).default(10),
+  winnerCount: z.number().int().min(1).max(100).default(3),
+  reservationPrice: z.number().positive().max(100000).optional().nullable(),
+  refundNonWinnersToWallet: z.boolean().default(true),
+  refundWinnersToWallet: z.boolean().default(true),
+  exclusiveBadgeText: z.string().max(80).optional().nullable(),
+  unlockButtonText: z.string().max(60).optional().nullable(),
+  reserveButtonText: z.string().max(60).optional().nullable(),
   enableImageToggle: z.boolean().default(false),
   frontImageUrl: z.string().url().optional().nullable().or(z.literal('')),
   backImageUrl: z.string().url().optional().nullable().or(z.literal('')),
@@ -68,6 +79,15 @@ export const UpsertProductSchema = CreateProductSchema.extend({
   variants: z.array(FormVariantSchema).min(1, 'At least one variant is required'),
   images: z.array(ProductImageSchema).optional(),
 }).superRefine((data, ctx) => {
+  if (data.isExclusiveUnlock) {
+    if (data.reservationPrice == null || data.reservationPrice <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reservation price is required when Exclusive Unlock is enabled',
+        path: ['reservationPrice'],
+      });
+    }
+  }
   if (data.enableImageToggle) {
     if (!data.frontImageUrl) {
       ctx.addIssue({

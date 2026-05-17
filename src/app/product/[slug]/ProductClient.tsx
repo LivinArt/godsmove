@@ -8,9 +8,30 @@ import SizeSelector from '@/components/SizeSelector';
 import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import { useStore } from '@/store/useStore';
+import { LockedProductOverlay } from '@/components/exclusive/LockedProductOverlay';
+import { ExclusiveProductExperience } from '@/components/exclusive/ExclusiveProductExperience';
 import styles from './page.module.css';
 
-export default function ProductClient({ product, availableSizes }: { product: any, availableSizes: { label: string, available: boolean }[] }) {
+type ExclusiveAccess = {
+  unlocked: boolean;
+  reservation?: { id: string; status: string; variant?: { size: string } } | null;
+};
+
+export default function ProductClient({
+  product,
+  availableSizes,
+  exclusiveAccess,
+  exclusiveDraw,
+  coverImage,
+  isLoggedIn = false,
+}: {
+  product: any;
+  availableSizes: { label: string; available: boolean }[];
+  exclusiveAccess?: ExclusiveAccess;
+  exclusiveDraw?: { id: string; endsAt: string; status: string } | null;
+  coverImage?: string | null;
+  isLoggedIn?: boolean;
+}) {
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -19,6 +40,13 @@ export default function ProductClient({ product, availableSizes }: { product: an
 
   const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist } = useStore();
   const wishlisted = isInWishlist(product.id);
+
+  const isExclusiveUnlock = product.isExclusiveUnlock;
+  const isLocked = isExclusiveUnlock && !exclusiveAccess?.unlocked;
+  const showStandardPurchase = !isExclusiveUnlock || exclusiveAccess?.reservation?.status === 'WINNER';
+
+  const selectedVariantData = product.variants?.find((v: any) => v.size === selectedSize);
+  const selectedVariantId = selectedVariantData?.id ?? null;
 
   const baseVariant = product.variants?.[0];
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
@@ -29,8 +57,6 @@ export default function ProductClient({ product, availableSizes }: { product: an
   const discountPercent = hasDiscount ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
   const savingsAmount = hasDiscount ? comparePrice - price : 0;
 
-  // Calculate available stock for the selected variant, or default to overall max
-  const selectedVariantData = product.variants?.find((v: any) => v.size === selectedSize);
   const availableStock = selectedVariantData?.inventory 
     ? selectedVariantData.inventory.totalStock - selectedVariantData.inventory.soldStock - selectedVariantData.inventory.reservedStock 
     : 99;
@@ -62,14 +88,26 @@ export default function ProductClient({ product, availableSizes }: { product: an
     <div className={styles.layout}>
       {/* Image Gallery */}
       <div className={styles.gallery}>
-        <ImageGallery 
-          images={product.images?.map((i: any) => i.url) || ['/placeholder.png']} 
-          alt={product.name} 
-          enableToggle={product.enableImageToggle}
-          frontImage={product.frontImageUrl}
-          backImage={product.backImageUrl}
-          defaultSide={product.defaultImageSide}
-        />
+        {isLocked ? (
+          <LockedProductOverlay
+            productId={product.id}
+            productSlug={product.slug}
+            teaser={product.unlockTeaser}
+            unlockButtonText={product.unlockButtonText}
+            endsAt={exclusiveDraw?.endsAt}
+            coverImage={coverImage}
+            isLoggedIn={isLoggedIn}
+          />
+        ) : (
+          <ImageGallery
+            images={product.images?.map((i: any) => i.url) || ['/placeholder.png']}
+            alt={product.name}
+            enableToggle={product.enableImageToggle}
+            frontImage={product.frontImageUrl}
+            backImage={product.backImageUrl}
+            defaultSide={product.defaultImageSide}
+          />
+        )}
       </div>
 
       {/* Product Info */}
@@ -108,15 +146,29 @@ export default function ProductClient({ product, availableSizes }: { product: an
           )}
         </div>
 
-        <div className={styles.quantityWrap} style={{ marginBottom: '24px' }}>
-          <QuantitySelector
-            quantity={quantity}
-            onChange={setQuantity}
-            max={availableStock}
-            isExclusiveRack={product.isExclusiveRack}
-          />
-        </div>
+        {showStandardPurchase && (
+          <div className={styles.quantityWrap} style={{ marginBottom: '24px' }}>
+            <QuantitySelector
+              quantity={quantity}
+              onChange={setQuantity}
+              max={availableStock}
+              isExclusiveRack={product.isExclusiveRack}
+            />
+          </div>
+        )}
 
+        {isExclusiveUnlock && exclusiveAccess && (
+          <ExclusiveProductExperience
+            product={product}
+            draw={exclusiveDraw ?? null}
+            access={exclusiveAccess}
+            selectedVariantId={selectedVariantId}
+            selectedSize={selectedSize}
+            onSizeRequired={() => setSizeError(true)}
+          />
+        )}
+
+        {showStandardPurchase && (
         <div className={styles.actions}>
           <button
             className={`btn btn-primary ${styles.buyNowBtn}`}
@@ -143,6 +195,19 @@ export default function ProductClient({ product, availableSizes }: { product: an
             </button>
           </div>
         </div>
+        )}
+
+        {isExclusiveUnlock && exclusiveAccess?.unlocked && !showStandardPurchase && (
+          <div className={styles.actionRow} style={{ marginTop: 16 }}>
+            <button
+              className={`${styles.wishBtn} ${wishlisted ? styles.wishlisted : ''}`}
+              onClick={() => toggleWishlist(product)}
+              aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+            >
+              <Heart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        )}
 
         <div className={styles.trustSignals}>
           <span>Secure Checkout</span>

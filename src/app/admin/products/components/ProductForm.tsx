@@ -35,6 +35,17 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     categoryId: initialData?.categoryId || categories[0]?.id || '',
     dropId: initialData?.dropId || '',
     isExclusiveRack: initialData?.isExclusiveRack || false,
+    isExclusiveUnlock: initialData?.isExclusiveUnlock || false,
+    unlockTeaser: initialData?.unlockTeaser || '',
+    exclusiveStory: initialData?.exclusiveStory || '',
+    countdownDurationDays: initialData?.countdownDurationDays ?? 10,
+    winnerCount: initialData?.winnerCount ?? 3,
+    reservationPrice: initialData?.reservationPrice ? Number(initialData.reservationPrice) : undefined,
+    refundNonWinnersToWallet: initialData?.refundNonWinnersToWallet ?? true,
+    refundWinnersToWallet: initialData?.refundWinnersToWallet ?? true,
+    exclusiveBadgeText: initialData?.exclusiveBadgeText || 'Member Access',
+    unlockButtonText: initialData?.unlockButtonText || 'Unlock Access',
+    reserveButtonText: initialData?.reserveButtonText || 'Reserve This Drop',
     enableImageToggle: initialData?.enableImageToggle || false,
     frontImageUrl: initialData?.frontImageUrl || '',
     backImageUrl: initialData?.backImageUrl || '',
@@ -347,6 +358,31 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 </div>
               </label>
             </div>
+          </section>
+
+          {/* Exclusive Unlock */}
+          <section className="admin-card">
+            <h2 style={{ fontSize: '16px', marginBottom: '16px' }}>Exclusive Unlock</h2>
+            <div className="flex gap-2" style={{ paddingBottom: formData.isExclusiveUnlock ? '16px' : 0, borderBottom: formData.isExclusiveUnlock ? '1px solid var(--admin-border)' : 'none' }}>
+              <input type="checkbox" id="isExclusiveUnlock" name="isExclusiveUnlock" checked={!!formData.isExclusiveUnlock} onChange={handleChange} style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }} />
+              <label htmlFor="isExclusiveUnlock" style={{ fontSize: '14px', fontWeight: 500 }}>Enable Exclusive Unlock</label>
+            </div>
+            {formData.isExclusiveUnlock && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                <div className="form-group"><label className="form-label">Unlock Teaser</label><textarea name="unlockTeaser" value={formData.unlockTeaser || ''} onChange={handleChange} rows={2} className="admin-input admin-textarea" /></div>
+                <div className="form-group"><label className="form-label">Exclusive Story</label><textarea name="exclusiveStory" value={formData.exclusiveStory || ''} onChange={handleChange} rows={4} className="admin-input admin-textarea" /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="form-group"><label className="form-label">Countdown (days)</label><input type="number" name="countdownDurationDays" min={1} max={90} value={formData.countdownDurationDays} onChange={handleChange} className="admin-input" /></div>
+                  <div className="form-group"><label className="form-label">Winners</label><input type="number" name="winnerCount" min={1} max={100} value={formData.winnerCount} onChange={handleChange} className="admin-input" /></div>
+                </div>
+                <div className="form-group"><label className="form-label">Reservation Price (₹)</label><input type="number" name="reservationPrice" min={1} value={formData.reservationPrice ?? ''} onChange={handleChange} className="admin-input" /></div>
+                <div className="form-group"><label className="form-label">Badge Text</label><input name="exclusiveBadgeText" value={formData.exclusiveBadgeText || ''} onChange={handleChange} className="admin-input" /></div>
+                <div className="form-group"><label className="form-label">Unlock Button</label><input name="unlockButtonText" value={formData.unlockButtonText || ''} onChange={handleChange} className="admin-input" /></div>
+                <div className="form-group"><label className="form-label">Reserve Button</label><input name="reserveButtonText" value={formData.reserveButtonText || ''} onChange={handleChange} className="admin-input" /></div>
+                <div className="flex gap-2"><input type="checkbox" id="refundWinnersToWallet" name="refundWinnersToWallet" checked={!!formData.refundWinnersToWallet} onChange={handleChange} /><label htmlFor="refundWinnersToWallet">Credit winners</label></div>
+                <div className="flex gap-2"><input type="checkbox" id="refundNonWinnersToWallet" name="refundNonWinnersToWallet" checked={!!formData.refundNonWinnersToWallet} onChange={handleChange} /><label htmlFor="refundNonWinnersToWallet">Credit non-winners</label></div>
+              </div>
+            )}
           </section>
 
           {/* Product Presentation Settings */}

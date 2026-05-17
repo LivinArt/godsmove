@@ -8,10 +8,12 @@ import {
   ShoppingBag, 
   Heart, 
   Wallet, 
-  RotateCcw, 
+  RotateCcw,
+  Sparkles,
   LogOut,
   ChevronRight
 } from 'lucide-react';
+import { ExclusiveAccessClient } from '@/components/profile/ExclusiveAccessClient';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -23,6 +25,7 @@ const TABS = [
   { id: 'orders', label: 'Order History', icon: ShoppingBag },
   { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
   { id: 'wallet', label: 'Store Credit', icon: Wallet },
+  { id: 'exclusive', label: 'Exclusive Access', icon: Sparkles },
   { id: 'returns', label: 'Returns & Exchanges', icon: RotateCcw },
 ];
 
@@ -153,6 +156,16 @@ export default function ProfilePage() {
                     <h3 className="h4">Recent Transactions</h3>
                     <p className={styles.panelDesc}>No recent wallet activity.</p>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'exclusive' && (
+                <div className={styles.panel}>
+                  <h2 className="h3">Exclusive Access</h2>
+                  <p className={styles.panelDesc}>
+                    Unlocked products, reservations, draw status, and wallet credits.
+                  </p>
+                  <ExclusiveAccessClient />
                 </div>
               )}
 

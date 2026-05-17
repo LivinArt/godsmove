@@ -27,11 +27,14 @@ model Profile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  addresses     Address[]
-  orders        Order[]
-  wallet        Wallet?
-  wishlistItems WishlistItem[]
-  returnReqs    ReturnRequest[]
+  addresses              Address[]
+  orders                 Order[]
+  wallet                 Wallet?
+  wishlistItems          WishlistItem[]
+  returnReqs             ReturnRequest[]
+  productUnlocks         ProductUnlock[]
+  exclusiveReservations  ExclusiveReservation[]
+  exclusiveDrawWins      ExclusiveDrawWinner[]
 
   @@map("profiles")
 }
@@ -114,16 +117,32 @@ model Product {
   backImageUrl      String?
   defaultImageSide  ProductImageSide @default(front)
 
+  // Exclusive Unlock System
+  isExclusiveUnlock         Boolean  @default(false)
+  unlockTeaser              String?
+  exclusiveStory            String?
+  countdownDurationDays     Int      @default(10)
+  winnerCount               Int      @default(3)
+  reservationPrice          Decimal? @db.Decimal(10, 2)
+  refundNonWinnersToWallet  Boolean  @default(true)
+  refundWinnersToWallet     Boolean  @default(true)
+  exclusiveBadgeText        String?
+  unlockButtonText          String?
+  reserveButtonText         String?
+
   // Children
-  variants      ProductVariant[]
-  images        ProductImage[]
-  tags          ProductTag[]
-  wishlistItems WishlistItem[]
-  discounts     Discount[]
+  variants         ProductVariant[]
+  images           ProductImage[]
+  tags             ProductTag[]
+  wishlistItems    WishlistItem[]
+  discounts        Discount[]
+  productUnlocks   ProductUnlock[]
+  exclusiveDraws   ExclusiveDraw[]
 
   @@index([status])
   @@index([dropId])
   @@index([categoryId])
+  @@index([isExclusiveUnlock])
   @@map("products")
 }
 
@@ -140,8 +159,9 @@ model ProductVariant {
   position     Int      @default(0) // sort order within product
   isActive     Boolean  @default(true)
 
-  inventory  Inventory?
-  orderItems OrderItem[]
+  inventory             Inventory?
+  orderItems              OrderItem[]
+  exclusiveReservations   ExclusiveReservation[]
 
   @@index([productId])
   @@map("product_variants")
@@ -523,6 +543,8 @@ model WalletTransaction {
   order    Order?         @relation(fields: [orderId], references: [id])
   returnId String?
   returnReq ReturnRequest? @relation(fields: [returnId], references: [id])
+  exclusiveReservationId String?
+  exclusiveReservation   ExclusiveReservation? @relation(fields: [exclusiveReservationId], references: [id])
 
   // For expiring promotional credits
   expiresAt DateTime?
@@ -540,6 +562,7 @@ enum WalletTxnType {
   CREDIT_PROMOTIONAL  // manually issued by admin (launch, campaigns)
   CREDIT_REFERRAL     // future: referral program
   CREDIT_ADJUSTMENT   // admin correction
+  CREDIT_EXCLUSIVE_DRAW // wallet credit from exclusive draw resolution
   DEBIT_ORDER         // applied during checkout
   DEBIT_EXPIRED       // promotional credit expired
 }
@@ -694,4 +717,106 @@ enum CampaignType {
   EDITORIAL
   PRODUCT
   LOOKBOOK
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 10: EXCLUSIVE UNLOCK SYSTEM
+// ─────────────────────────────────────────────
+
+model ProductUnlock {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unlockedAt DateTime @default(now())
+
+  @@unique([profileId, productId])
+  @@index([productId])
+  @@index([profileId])
+  @@map("product_unlocks")
+}
+
+model ExclusiveDraw {
+  id        String              @id @default(cuid())
+  productId String
+  product   Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  status    ExclusiveDrawStatus @default(OPEN)
+  startsAt  DateTime            @default(now())
+  endsAt    DateTime
+  winnerCount Int
+
+  drawnAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations ExclusiveReservation[]
+  winners      ExclusiveDrawWinner[]
+
+  @@index([productId])
+  @@index([status])
+  @@index([endsAt])
+  @@map("exclusive_draws")
+}
+
+model ExclusiveReservation {
+  id        String                    @id @default(cuid())
+  drawId    String
+  draw      ExclusiveDraw             @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  profileId String
+  profile   Profile                   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant            @relation(fields: [variantId], references: [id])
+
+  amount    Decimal                   @db.Decimal(10, 2)
+  status    ExclusiveReservationStatus @default(PENDING)
+
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  winnerRecord ExclusiveDrawWinner?
+  walletTxns   WalletTransaction[]
+
+  @@unique([drawId, profileId])
+  @@index([drawId])
+  @@index([profileId])
+  @@index([status])
+  @@map("exclusive_reservations")
+}
+
+model ExclusiveDrawWinner {
+  id            String               @id @default(cuid())
+  drawId        String
+  draw          ExclusiveDraw        @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  reservationId String               @unique
+  reservation   ExclusiveReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  profileId     String
+  profile       Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  selectedAt DateTime @default(now())
+  walletCredited Boolean @default(false)
+
+  @@index([drawId])
+  @@index([profileId])
+  @@map("exclusive_draw_winners")
+}
+
+enum ExclusiveDrawStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+enum ExclusiveReservationStatus {
+  PENDING
+  PAID
+  WINNER
+  NON_WINNER
+  REFUNDED
+  CANCELLED
 }

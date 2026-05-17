@@ -35,6 +35,7 @@ export const IssueWalletCreditSchema = z.object({
     'CREDIT_PROMOTIONAL',
     'CREDIT_REFERRAL',
     'CREDIT_ADJUSTMENT',
+    'CREDIT_EXCLUSIVE_DRAW',
   ]),
   description: z.string().min(1, 'Provide a description for this credit').max(300),
   expiresAt: z.string().datetime().optional().nullable(),

@@ -1,0 +1,130 @@
+.lockedWrap {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #0a0a0a;
+}
+
+.lockedBg {
+  position: absolute;
+  inset: -20px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) brightness(0.35) saturate(0.6);
+  transform: scale(1.1);
+}
+
+.lockedVeil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.2) 0%, rgba(10, 10, 10, 0.85) 100%);
+}
+
+.lockedContent {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 48px 32px;
+  max-width: 480px;
+}
+
+.lockedTeaser {
+  font-size: 1.25rem;
+  font-weight: 300;
+  line-height: 1.5;
+  margin: 20px 0 0;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.lockedCountdown {
+  margin-top: 32px;
+}
+
+.lockedScarcity {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-top: 20px;
+}
+
+.revealBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 16px;
+}
+
+.exclusiveStory {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.exclusiveStory h3 {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.exclusiveStory p {
+  font-size: 15px;
+  line-height: 1.75;
+  opacity: 0.85;
+  white-space: pre-wrap;
+}
+
+.revealEnter {
+  animation: revealFade 0.8s ease forwards;
+}
+
+@keyframes revealFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardLocked {
+  position: relative;
+}
+
+.cardLocked img {
+  filter: blur(12px) brightness(0.5);
+}
+
+.cardLockedOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 16px;
+  text-align: center;
+}
+
+.cardLockedLabel {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}

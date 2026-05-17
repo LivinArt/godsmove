@@ -333,9 +333,15 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     return p;
   });
 
+  if (product.isExclusiveUnlock && product.status === 'ACTIVE') {
+    const { syncExclusiveDrawForProduct } = await import('@/actions/exclusive.actions');
+    await syncExclusiveDrawForProduct(product.id);
+  }
+
   revalidatePath('/admin/products');
   if (product.slug) revalidatePath(`/product/${product.slug}`);
   revalidatePath('/drops');
+  revalidatePath('/admin/exclusive-draws');
   return product;
 }
 
