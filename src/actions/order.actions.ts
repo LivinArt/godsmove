@@ -97,43 +97,49 @@ export async function createOrder(input: CreateOrderInput) {
       };
     });
 
-    // 4. Validate and apply coupon
+    // 4. Validate and apply discount
     let discountAmount = 0;
-    let couponId: string | null = null;
+    let discountId: string | null = null;
 
     if (data.couponCode) {
-      const coupon = await tx.coupon.findUnique({
+      const discount = await tx.discount.findUnique({
         where: { code: data.couponCode.toUpperCase() },
       });
 
-      if (!coupon || !coupon.isActive) throw new Error('Invalid coupon code');
-      if (coupon.expiresAt && coupon.expiresAt < new Date())
-        throw new Error('Coupon has expired');
-      if (coupon.startsAt && coupon.startsAt > new Date())
-        throw new Error('Coupon is not yet active');
-      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
-        throw new Error('Coupon usage limit reached');
-      if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount))
+      if (!discount || !discount.isActive) throw new Error('Invalid discount code');
+      if (discount.endsAt && discount.endsAt < new Date())
+        throw new Error('Discount has expired');
+      if (discount.startsAt && discount.startsAt > new Date())
+        throw new Error('Discount is not yet active');
+      if (discount.usageLimit && discount.usageCount >= discount.usageLimit)
+        throw new Error('Discount usage limit reached');
+      if (discount.minimumOrderValue && subtotal < Number(discount.minimumOrderValue))
         throw new Error(
-          `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}`
+          `Minimum order amount for this discount is ₹${discount.minimumOrderValue}`
         );
 
       // Per-user limit check
-      if (user && coupon.perUserLimit > 0) {
-        const userUsages = await tx.couponUsage.count({
-          where: { couponId: coupon.id, profileId: user.id },
+      if (user && discount.perCustomerLimit > 0) {
+        const userUsages = await tx.order.count({
+          where: { discountId: discount.id, profileId: user.id },
         });
-        if (userUsages >= coupon.perUserLimit)
-          throw new Error('You have already used this coupon');
+        if (userUsages >= discount.perCustomerLimit)
+          throw new Error('You have already used this discount');
       }
 
-      if (coupon.type === 'PERCENTAGE') {
-        discountAmount = (subtotal * Number(coupon.value)) / 100;
-      } else if (coupon.type === 'FLAT_AMOUNT') {
-        discountAmount = Math.min(Number(coupon.value), subtotal);
+      if (discount.type === 'PERCENTAGE') {
+        let calc = (subtotal * Number(discount.value)) / 100;
+        if (discount.maximumDiscount) {
+          calc = Math.min(calc, Number(discount.maximumDiscount));
+        }
+        discountAmount = calc;
+      } else if (discount.type === 'FIXED_AMOUNT') {
+        discountAmount = Math.min(Number(discount.value), subtotal);
+      } else if (discount.type === 'FREE_SHIPPING') {
+        // Free shipping is handled in shipping cost calculation
       }
 
-      couponId = coupon.id;
+      discountId = discount.id;
     }
 
     // 5. Apply wallet credit
@@ -163,7 +169,7 @@ export async function createOrder(input: CreateOrderInput) {
         discountAmount: discountAmount,
         walletCredit: walletCredit,
         total: total,
-        couponId,
+        discountId,
         shippingAddress: data.shippingAddress,
         items: {
           create: itemSnapshots,
@@ -189,21 +195,12 @@ export async function createOrder(input: CreateOrderInput) {
       });
     }
 
-    // 9. Update coupon usage counter
-    if (couponId) {
-      await tx.coupon.update({
-        where: { id: couponId },
-        data: { usedCount: { increment: 1 } },
+    // 9. Update discount usage counter
+    if (discountId) {
+      await tx.discount.update({
+        where: { id: discountId },
+        data: { usageCount: { increment: 1 } },
       });
-      if (user) {
-        await tx.couponUsage.create({
-          data: {
-            couponId,
-            profileId: user.id,
-            orderId: order.id,
-          },
-        });
-      }
     }
 
     return order;

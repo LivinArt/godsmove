@@ -48,13 +48,8 @@ async function main() {
       description:
         'Heavyweight essentials for the interior monologue. 300 GSM. Oversized. Washed. Quiet on the outside.',
       status: 'LIVE',
-      season: 'SS26',
-      releaseAt: new Date('2026-05-15'),
+      launchAt: new Date('2026-05-15'),
       heroImageUrl: '/images/campaign/editorial-01.png',
-      campaignImageUrls: [
-        '/images/campaign/editorial-01.png',
-        '/images/campaign/editorial-02.png',
-      ],
     },
   });
 
@@ -68,8 +63,7 @@ async function main() {
       description:
         'Heavier weight. Heavier wash. The same quiet rebellion at 320 GSM.',
       status: 'SCHEDULED',
-      season: 'SS26',
-      releaseAt: new Date('2026-06-01'),
+      launchAt: new Date('2026-06-01'),
       heroImageUrl: '/images/campaign/editorial-02.png',
     },
   });

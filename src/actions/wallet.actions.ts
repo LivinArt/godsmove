@@ -156,61 +156,67 @@ export async function expireWalletCredits() {
   return { expired: expiredTxns.length };
 }
 
-// ── VALIDATE COUPON ───────────────────────────────────────────────────────────
+// ── VALIDATE DISCOUNT ───────────────────────────────────────────────────────────
 
-export async function validateCoupon(
+export async function validateDiscount(
   code: string,
   orderAmount: number,
   profileId?: string
 ) {
-  const coupon = await prisma.coupon.findUnique({
+  const discount = await prisma.discount.findUnique({
     where: { code: code.toUpperCase() },
   });
 
-  if (!coupon || !coupon.isActive) {
-    return { valid: false, error: 'Invalid coupon code' };
+  if (!discount || !discount.isActive) {
+    return { valid: false, error: 'Invalid discount code' };
   }
 
   const now = new Date();
-  if (coupon.expiresAt && coupon.expiresAt < now) {
-    return { valid: false, error: 'Coupon has expired' };
+  if (discount.endsAt && discount.endsAt < now) {
+    return { valid: false, error: 'Discount has expired' };
   }
-  if (coupon.startsAt && coupon.startsAt > now) {
-    return { valid: false, error: 'Coupon is not yet active' };
+  if (discount.startsAt && discount.startsAt > now) {
+    return { valid: false, error: 'Discount is not yet active' };
   }
-  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-    return { valid: false, error: 'Coupon usage limit reached' };
+  if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+    return { valid: false, error: 'Discount usage limit reached' };
   }
-  if (coupon.minOrderAmount && orderAmount < Number(coupon.minOrderAmount)) {
+  if (discount.minimumOrderValue && orderAmount < Number(discount.minimumOrderValue)) {
     return {
       valid: false,
-      error: `Minimum order of ₹${coupon.minOrderAmount} required`,
+      error: `Minimum order of ₹${discount.minimumOrderValue} required`,
     };
   }
 
-  if (profileId && coupon.perUserLimit > 0) {
-    const usages = await prisma.couponUsage.count({
-      where: { couponId: coupon.id, profileId },
+  if (profileId && discount.perCustomerLimit > 0) {
+    const usages = await prisma.order.count({
+      where: { discountId: discount.id, profileId },
     });
-    if (usages >= coupon.perUserLimit) {
-      return { valid: false, error: 'You have already used this coupon' };
+    if (usages >= discount.perCustomerLimit) {
+      return { valid: false, error: 'You have already used this discount' };
     }
   }
 
   let discountAmount = 0;
-  if (coupon.type === 'PERCENTAGE') {
-    discountAmount = (orderAmount * Number(coupon.value)) / 100;
-  } else if (coupon.type === 'FLAT_AMOUNT') {
-    discountAmount = Math.min(Number(coupon.value), orderAmount);
+  if (discount.type === 'PERCENTAGE') {
+    let calc = (orderAmount * Number(discount.value)) / 100;
+    if (discount.maximumDiscount) {
+      calc = Math.min(calc, Number(discount.maximumDiscount));
+    }
+    discountAmount = calc;
+  } else if (discount.type === 'FIXED_AMOUNT') {
+    discountAmount = Math.min(Number(discount.value), orderAmount);
+  } else if (discount.type === 'FREE_SHIPPING') {
+    // Free shipping doesn't deduct from subtotal usually, or it zeroes shipping cost
   }
 
   return {
     valid: true,
-    coupon: {
-      id: coupon.id,
-      code: coupon.code,
-      type: coupon.type,
-      value: coupon.value,
+    discount: {
+      id: discount.id,
+      code: discount.code,
+      type: discount.type,
+      value: discount.value,
       discountAmount,
     },
   };
