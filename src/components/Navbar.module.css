@@ -93,7 +93,7 @@
 
 .links {
   display: none;
-  gap: clamp(20px, 2.5vw, 32px);
+  gap: clamp(14px, 1.6vw, 24px);
 }
 
 @media (min-width: 768px) {

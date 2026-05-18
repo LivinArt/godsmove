@@ -37,7 +37,7 @@ export default async function ExclusiveUnlockPage() {
                   Locked Drops
                 </Link>
                 <Link href="/exclusive-rack" className={styles.accessNavLink}>
-                  Archive
+                  Exclusive Rack
                 </Link>
               </nav>
             </header>

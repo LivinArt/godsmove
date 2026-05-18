@@ -23,7 +23,7 @@ export function getProductBreadcrumb(product: { channel?: string }): {
     case 'EXCLUSIVE_UNLOCK':
       return { href: '/exclusive-unlock', label: 'Access' };
     case 'EXCLUSIVE_RACK':
-      return { href: '/exclusive-rack', label: 'Archive' };
+      return { href: '/exclusive-rack', label: 'Exclusive Rack' };
     default:
       return { href: '/drops', label: 'Drops' };
   }

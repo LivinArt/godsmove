@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/drops', label: 'Drops' },
   { href: '/exclusive-unlock', label: 'Access' },
+  { href: '/exclusive-rack', label: 'Exclusive Rack' },
   { href: '/our-story', label: 'Story' },
 ] as const;
 
@@ -133,23 +134,6 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <div className={styles.mobileAccessGroup}>
-              <span className={styles.mobileAccessLabel}>Access</span>
-              <Link
-                href="/exclusive-unlock"
-                className={styles.mobileSubLink}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Locked Drops
-              </Link>
-              <Link
-                href="/exclusive-rack"
-                className={styles.mobileSubLink}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Archive
-              </Link>
-            </div>
             <Link
               href="/profile"
               className={styles.mobileLinkSecondary}
