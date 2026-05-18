@@ -48,7 +48,9 @@ export default function Navbar() {
             <button
               className={styles.menuBtn}
               onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
               id="mobile-menu-toggle"
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -121,7 +123,13 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <div className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
+      <div
+        id="mobile-nav-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Site navigation"
+        className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}
+      >
         <div className={styles.mobileContent}>
           <div className={styles.mobileLinks}>
             {NAV_LINKS.map((item) => (

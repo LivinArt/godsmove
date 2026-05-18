@@ -259,3 +259,16 @@
   background-color: #c8a46a;
   color: #0a0a0a;
 }
+
+@media (max-width: 767px) {
+  .infoDark .cardCta {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .wishBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

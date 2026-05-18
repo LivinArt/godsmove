@@ -201,3 +201,39 @@
 .social a:hover {
   color: var(--cream);
 }
+
+@media (max-width: 767px) {
+  .footer {
+    padding: var(--space-3xl) 0 var(--space-xl);
+  }
+
+  .columns {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .colLink {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .nlForm {
+    max-width: 100%;
+  }
+
+  .nlBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .social a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .legal {
+    flex-wrap: wrap;
+    gap: var(--space-md);
+  }
+}

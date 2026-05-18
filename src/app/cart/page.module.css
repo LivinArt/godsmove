@@ -291,3 +291,36 @@
 .trustSignal svg {
   color: var(--text-muted);
 }
+
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + var(--space-lg));
+    padding-bottom: calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .item {
+    padding: var(--space-md) 0;
+  }
+
+  .itemImage {
+    width: 88px;
+    height: 110px;
+  }
+
+  .summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin-left: calc(-1 * var(--container-padding));
+    margin-right: calc(-1 * var(--container-padding));
+    padding: var(--space-lg) var(--container-padding);
+    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 40px rgba(10, 10, 10, 0.12);
+    border-top: 1px solid var(--border-medium);
+  }
+
+  .summary .btn {
+    width: 100%;
+    min-height: 52px;
+  }
+}

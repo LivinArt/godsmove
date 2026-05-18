@@ -300,3 +300,72 @@
 .nlInput::placeholder {
   color: var(--smoke);
 }
+
+@media (max-width: 767px) {
+  .hero {
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
+
+  .heroContent {
+    padding: var(--space-2xl) var(--container-padding);
+    gap: var(--space-md);
+  }
+
+  .heroCtas {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .heroCtas .btn {
+    width: 100%;
+  }
+
+  .heroScroll {
+    display: none;
+  }
+
+  .products {
+    padding: var(--space-2xl) 0 var(--space-3xl);
+  }
+
+  .productsHeader {
+    margin-bottom: var(--space-xl);
+  }
+
+  .productsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .productsCta .btn {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .editorial {
+    height: 60vh;
+    min-height: 360px;
+  }
+
+  .newsletter {
+    padding: var(--space-3xl) 0;
+  }
+
+  .nlForm {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .nlForm .btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  .productsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+}

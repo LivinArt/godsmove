@@ -190,3 +190,18 @@
   letter-spacing: 0.2em;
   font-size: 14px;
 }
+
+@media (max-width: 767px) {
+  .hero {
+    height: 70vh;
+    min-height: 400px;
+  }
+
+  .heroTitle {
+    font-size: clamp(36px, 10vw, 56px);
+  }
+
+  .manifestoText {
+    font-size: 17px;
+  }
+}

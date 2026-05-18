@@ -33,14 +33,16 @@
 
 @media (max-width: 767px) {
   .nav {
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
     border-radius: 16px;
   }
   .inner {
-    padding: 0 20px;
+    padding: 0 12px;
     height: 72px;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
   }
 }
 
@@ -134,6 +136,21 @@
   display: flex;
   align-items: center;
   gap: 24px;
+}
+
+@media (max-width: 767px) {
+  .actions {
+    gap: 4px;
+  }
+
+  .actionBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .tooltip {
+    display: none;
+  }
 }
 
 .actionWrapper {
@@ -232,6 +249,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   width: auto;
   height: auto;
   color: rgba(255, 255, 255, 0.94);
@@ -260,8 +279,11 @@
   z-index: 999;
   background-color: var(--cream);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--nav-height) + var(--space-xl)) var(--container-padding) var(--space-3xl);
   opacity: 0;
   visibility: hidden;
   transition: opacity var(--duration-slow) var(--ease-cinematic),
@@ -290,11 +312,15 @@
 .mobileLink {
   font-family: var(--font-heading);
   font-weight: 700;
-  font-size: clamp(36px, 8vw, 56px);
+  font-size: clamp(28px, 7vw, 44px);
   letter-spacing: -0.02em;
   color: var(--text-primary);
   transition: opacity var(--duration-fast) var(--ease-smooth);
   line-height: 1.1;
+  padding: 4px 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .mobileLink:hover {
@@ -357,6 +383,10 @@
   border: none;
   cursor: pointer;
   transition: opacity var(--duration-fast) var(--ease-smooth);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobileLinkSecondary:hover {

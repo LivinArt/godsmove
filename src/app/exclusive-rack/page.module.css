@@ -20,3 +20,10 @@
   text-transform: uppercase;
   color: #9ca3af;
 }
+
+@media (max-width: 767px) {
+  .empty {
+    padding-top: calc(var(--nav-height) + var(--space-3xl));
+    min-height: 50vh;
+  }
+}

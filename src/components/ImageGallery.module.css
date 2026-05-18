@@ -11,6 +11,19 @@
   }
 }
 
+@media (max-width: 767px) {
+  .imageWrap {
+    max-height: min(70vh, 520px);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    padding: 8px;
+    box-sizing: content-box;
+  }
+}
+
 .thumbnails {
   display: none;
   flex-direction: column;

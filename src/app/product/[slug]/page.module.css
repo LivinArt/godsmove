@@ -332,3 +332,75 @@
     gap: var(--space-lg);
   }
 }
+
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + var(--space-lg));
+    padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .breadcrumb {
+    flex-wrap: wrap;
+    margin-bottom: var(--space-lg);
+  }
+
+  .layout {
+    gap: var(--space-xl);
+  }
+
+  .info {
+    gap: var(--space-lg);
+  }
+
+  .name {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+
+  .trustSignals {
+    flex-wrap: wrap;
+    line-height: 1.5;
+  }
+
+  .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    margin-left: calc(-1 * var(--container-padding));
+    margin-right: calc(-1 * var(--container-padding));
+    padding: var(--space-md) var(--container-padding);
+    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+      to top,
+      var(--cream) 85%,
+      rgba(250, 248, 245, 0.98) 100%
+    );
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .actionRow {
+    width: 100%;
+  }
+
+  .addBtn {
+    min-height: 48px;
+  }
+
+  .wishBtn {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .buyNowBtn {
+    min-height: 52px;
+  }
+
+  .related {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-2xl);
+  }
+
+  .relatedGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+}

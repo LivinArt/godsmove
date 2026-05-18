@@ -279,39 +279,64 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .section {
-    padding: 80px 0;
+    padding: 64px 0 80px;
   }
-  
+
   .layout {
     grid-template-columns: 1fr;
+    gap: 32px;
     text-align: center;
   }
-  
+
   .leftCol {
     align-items: center;
+    gap: 16px;
   }
-  
+
+  .headline {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
   .centerCol {
-    min-height: 400px;
+    min-height: min(52vh, 420px);
   }
-  
+
   .imageWrap {
-    height: 400px;
+    height: min(52vh, 420px);
+    max-height: 480px;
   }
-  
+
   .haloRing {
-    width: 280px;
-    height: 280px;
+    width: min(72vw, 280px);
+    height: min(72vw, 280px);
   }
-  
+
   .rightCol {
     grid-template-columns: 1fr;
     text-align: left;
+    gap: 20px;
   }
-  
+
   .cta {
     width: 100%;
+    min-height: 52px;
+  }
+
+  .navBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .navDot {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .carouselNav {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }

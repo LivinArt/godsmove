@@ -88,3 +88,29 @@
   font-size: 14px;
   letter-spacing: 0.04em;
 }
+
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + var(--space-xl));
+    padding-bottom: var(--space-3xl);
+  }
+
+  .hero {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .title {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+
+  .accessNav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+}

@@ -376,3 +376,22 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+
+/* ── Mobile storefront (320px–767px) — desktop rules above unchanged ── */
+@media (max-width: 767px) {
+  :root {
+    --space-3xl: 72px;
+    --space-4xl: 96px;
+    --nav-height: 88px;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .h2 {
+    font-size: clamp(24px, 7vw, 36px);
+  }
+}
