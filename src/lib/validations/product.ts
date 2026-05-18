@@ -4,6 +4,9 @@ const ProductStatusEnum = z.enum(['DRAFT', 'ACTIVE', 'HIDDEN', 'ARCHIVED', 'SOLD
 const ProductImageSideEnum = z.enum(['front', 'back']);
 export const ProductChannelEnum = z.enum(['DROP', 'EXCLUSIVE_UNLOCK', 'EXCLUSIVE_RACK']);
 
+/** HTML number inputs submit strings; empty string should become null for optional fields */
+const emptyStringToNull = (val: unknown) => (val === '' ? null : val);
+
 export const CreateProductSchema = z.object({
   name: z.string().min(1, 'Name is required').max(120),
   slug: z
@@ -21,9 +24,12 @@ export const CreateProductSchema = z.object({
   channel: ProductChannelEnum.default('DROP'),
   unlockTeaser: z.string().max(500).optional().nullable(),
   exclusiveStory: z.string().max(5000).optional().nullable(),
-  countdownDurationDays: z.number().int().min(1).max(90).default(10),
-  winnerCount: z.number().int().min(1).max(100).default(3),
-  reservationPrice: z.number().positive().max(100000).optional().nullable(),
+  countdownDurationDays: z.coerce.number().int().min(1).max(90).default(10),
+  winnerCount: z.coerce.number().int().min(1).max(100).default(3),
+  reservationPrice: z.preprocess(
+    emptyStringToNull,
+    z.coerce.number().positive().max(100000).optional().nullable()
+  ),
   refundNonWinnersToWallet: z.boolean().default(true),
   refundWinnersToWallet: z.boolean().default(true),
   exclusiveBadgeText: z.string().max(80).optional().nullable(),
@@ -52,14 +58,17 @@ export const CreateVariantSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
     .optional()
     .nullable(),
-  price: z
+  price: z.coerce
     .number()
     .positive('Price must be positive')
     .max(100000, 'Price seems unrealistic'),
-  comparePrice: z.number().positive().optional().nullable(),
-  position: z.number().int().min(0).default(0),
+  comparePrice: z.preprocess(
+    emptyStringToNull,
+    z.coerce.number().positive().max(100000).optional().nullable()
+  ),
+  position: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
-  initialStock: z.number().int().min(0).default(0).optional(),
+  initialStock: z.coerce.number().int().min(0).default(0).optional(),
 });
 
 // Used inside UpsertProductSchema — productId NOT required from the client.
@@ -70,7 +79,7 @@ export const ProductImageSchema = z.object({
   id: z.string().optional(),
   url: z.string().url(),
   alt: z.string().optional().nullable(),
-  position: z.number().int().default(0),
+  position: z.coerce.number().int().default(0),
   isCover: z.boolean().default(false),
 });
 

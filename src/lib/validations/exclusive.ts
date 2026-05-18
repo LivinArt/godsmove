@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { ProductChannelEnum } from './product';
 
-const positiveDecimal = z
+const emptyStringToNull = (val: unknown) => (val === '' ? null : val);
+
+const positiveDecimal = z.coerce
   .number()
   .positive('Amount must be positive')
   .max(100000, 'Amount exceeds maximum');
@@ -11,9 +13,12 @@ export const ExclusiveProductConfigSchema = z
     channel: ProductChannelEnum.default('DROP'),
     unlockTeaser: z.string().max(500).optional().nullable(),
     exclusiveStory: z.string().max(5000).optional().nullable(),
-    countdownDurationDays: z.number().int().min(1).max(90).default(10),
-    winnerCount: z.number().int().min(1).max(100).default(3),
-    reservationPrice: positiveDecimal.optional().nullable(),
+    countdownDurationDays: z.coerce.number().int().min(1).max(90).default(10),
+    winnerCount: z.coerce.number().int().min(1).max(100).default(3),
+    reservationPrice: z.preprocess(
+      emptyStringToNull,
+      positiveDecimal.optional().nullable()
+    ),
     refundNonWinnersToWallet: z.boolean().default(true),
     refundWinnersToWallet: z.boolean().default(true),
     exclusiveBadgeText: z.string().max(80).optional().nullable(),
