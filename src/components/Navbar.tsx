@@ -46,6 +46,8 @@ export default function Navbar() {
             <div className={styles.links}>
               <Link href="/" className={styles.link}>Home</Link>
               <Link href="/drops" className={styles.link}>Drops</Link>
+              <Link href="/exclusive-unlock" className={styles.link}>Exclusive Unlock</Link>
+              <Link href="/exclusive-rack" className={styles.link}>Exclusive Rack</Link>
               <Link href="/our-story" className={styles.link}>Our Story</Link>
             </div>
           </div>
@@ -120,6 +122,20 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Drops
+            </Link>
+            <Link
+              href="/exclusive-unlock"
+              className={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Exclusive Unlock
+            </Link>
+            <Link
+              href="/exclusive-rack"
+              className={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Exclusive Rack
             </Link>
             <Link
               href="/our-story"

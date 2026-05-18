@@ -102,18 +102,48 @@ export default async function Home() {
               </ScrollReveal>
               <div className={styles.productsGrid}>
                 {exclusiveUnlockProducts.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} theme="dark" />
+                  <ProductCard key={product.id} product={product} index={i} theme="dark" showCta />
                 ))}
               </div>
+              <ScrollReveal delay={200}>
+                <div className={styles.productsCta}>
+                  <Link
+                    href="/exclusive-unlock"
+                    className="btn btn-primary"
+                    id="exclusive-unlock-cta"
+                  >
+                    Enter Locked Drops
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </ScrollReveal>
             </div>
           </section>
         )}
 
         {/* 3. Exclusive Rack */}
         {exclusiveRackProducts.length > 0 && (
-          <ExclusiveRack
-            products={exclusiveRackProducts as unknown as ExclusiveRackProduct[]}
-          />
+          <>
+            <ExclusiveRack
+              products={exclusiveRackProducts as unknown as ExclusiveRackProduct[]}
+            />
+            <section className={styles.products} style={{ backgroundColor: 'var(--black)' }}>
+              <div className="container">
+                <ScrollReveal delay={200}>
+                  <div className={styles.productsCta}>
+                    <Link
+                      href="/exclusive-rack"
+                      className="btn btn-primary"
+                      id="exclusive-rack-cta"
+                    >
+                      View Full Archive
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </ScrollReveal>
+              </div>
+            </section>
+          </>
         )}
 
         {/* 4. Explore Our Ranges — featured DROP products only */}

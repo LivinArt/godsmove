@@ -6,13 +6,15 @@ import { getStorefrontProducts, getStorefrontDrops, getStorefrontCategories } fr
 import ShopClient from './ShopClient';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Shop — GODSMOVE',
 };
 
 export default async function ShopPage() {
   const [products, drops, categories] = await Promise.all([
-    getStorefrontProducts(),
+    getStorefrontProducts({ channel: 'DROP' }),
     getStorefrontDrops(),
     getStorefrontCategories(),
   ]);

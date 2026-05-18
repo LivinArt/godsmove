@@ -31,10 +31,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   // Fetch related products (same category or drop)
-  const relatedProducts = await getStorefrontProducts({ 
-    dropId: product.dropId || undefined,
-    take: 5 
-  }).then(res => res.filter(p => p.id !== product.id).slice(0, 4));
+  const relatedProducts = await getStorefrontProducts({
+    channel: product.channel,
+    take: 5,
+  }).then((res) => res.filter((p) => p.id !== product.id).slice(0, 4));
 
   // Extract available sizes from variants & inventory
   const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'ONE_SIZE'];
