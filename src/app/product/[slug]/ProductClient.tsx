@@ -11,6 +11,7 @@ import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import { LockedProductOverlay } from '@/components/exclusive/LockedProductOverlay';
 import { ExclusiveProductExperience } from '@/components/exclusive/ExclusiveProductExperience';
+import { getProductChannelLabel } from '@/lib/product-channel-label';
 import styles from './page.module.css';
 
 type ExclusiveAccess = {
@@ -125,7 +126,11 @@ export default function ProductClient({
       {/* Product Info */}
       <div className={styles.info}>
         <div className={styles.infoTop}>
-          <span className="caption">{product.drop?.name || 'Permanent Collection'}</span>
+          <span
+            className={`caption ${isExclusiveUnlock ? styles.channelLabelExclusive : ''}`}
+          >
+            {getProductChannelLabel(product)}
+          </span>
           <h1 className={styles.name}>{product.name}</h1>
           
           <div className={styles.priceRow}>

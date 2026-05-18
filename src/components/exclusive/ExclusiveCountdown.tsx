@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import styles from './exclusive.module.css';
 
 function getTimeLeft(endsAt: string) {
   const diff = new Date(endsAt).getTime() - Date.now();
@@ -12,8 +13,22 @@ function getTimeLeft(endsAt: string) {
   return { days, hours, minutes, seconds };
 }
 
-export function ExclusiveCountdown({ endsAt, compact }: { endsAt: string; compact?: boolean }) {
+const UNITS = [
+  { key: 'days', label: 'Days' },
+  { key: 'hours', label: 'Hours' },
+  { key: 'minutes', label: 'Minutes' },
+  { key: 'seconds', label: 'Seconds' },
+] as const;
+
+export function ExclusiveCountdown({
+  endsAt,
+  variant = 'vault',
+}: {
+  endsAt: string;
+  variant?: 'vault' | 'compact';
+}) {
   const [left, setLeft] = useState(() => getTimeLeft(endsAt));
+  const isVault = variant === 'vault';
 
   useEffect(() => {
     const t = setInterval(() => setLeft(getTimeLeft(endsAt)), 1000);
@@ -21,32 +36,29 @@ export function ExclusiveCountdown({ endsAt, compact }: { endsAt: string; compac
   }, [endsAt]);
 
   if (!left) {
-    return <span style={{ fontSize: compact ? 12 : 14, opacity: 0.7 }}>Selection window closed</span>;
+    return (
+      <p className={isVault ? styles.countdownClosed : styles.countdownClosedCompact}>
+        Selection window closed
+      </p>
+    );
   }
 
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
     <div
-      style={{
-        display: 'flex',
-        gap: compact ? 8 : 16,
-        alignItems: 'center',
-        fontVariantNumeric: 'tabular-nums',
-        letterSpacing: '0.08em',
-      }}
+      className={isVault ? styles.countdownVault : styles.countdownCompact}
+      role="timer"
+      aria-live="polite"
     >
-      {[
-        { label: 'D', value: left.days },
-        { label: 'H', value: left.hours },
-        { label: 'M', value: left.minutes },
-        { label: 'S', value: left.seconds },
-      ].map((u) => (
-        <div key={u.label} style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: compact ? 18 : 28, fontWeight: 300, lineHeight: 1 }}>
-            {pad(u.value)}
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.5, marginTop: 4 }}>{u.label}</div>
+      {UNITS.map((unit) => (
+        <div key={unit.key} className={styles.countdownUnit}>
+          <span className={isVault ? styles.countdownDigit : styles.countdownDigitCompact}>
+            {pad(left[unit.key])}
+          </span>
+          <span className={isVault ? styles.countdownLabel : styles.countdownLabelCompact}>
+            {unit.label}
+          </span>
         </div>
       ))}
     </div>

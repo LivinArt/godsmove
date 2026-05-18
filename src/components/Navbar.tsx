@@ -7,9 +7,16 @@ import { useStore } from '@/store/useStore';
 import Image from 'next/image';
 import styles from './Navbar.module.css';
 
+const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/drops', label: 'Drops' },
+  { href: '/exclusive-unlock', label: 'Access' },
+  { href: '/our-story', label: 'Story' },
+] as const;
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { getCartCount, setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
+  const { setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
   const cartCount = useStore((s) => s.cart.length > 0 ? s.getCartCount() : 0);
   const wishlistCount = useStore((s) => s.wishlist.length);
 
@@ -27,7 +34,9 @@ export default function Navbar() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isMobileMenuOpen]);
 
   return (
@@ -43,23 +52,23 @@ export default function Navbar() {
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className={styles.links}>
-              <Link href="/" className={styles.link}>Home</Link>
-              <Link href="/drops" className={styles.link}>Drops</Link>
-              <Link href="/exclusive-unlock" className={styles.link}>Exclusive Unlock</Link>
-              <Link href="/exclusive-rack" className={styles.link}>Exclusive Rack</Link>
-              <Link href="/our-story" className={styles.link}>Our Story</Link>
-            </div>
+            <nav className={styles.links} aria-label="Primary">
+              {NAV_LINKS.map((item) => (
+                <Link key={item.href} href={item.href} className={styles.link}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
 
           <div className={styles.centerZone}>
             <Link href="/" className={styles.logoWrap} id="nav-logo" aria-label="GODSMOVE Home">
               <div className={styles.logoImage}>
-                <Image 
-                  src="/images/godsmove-logo.png" 
-                  alt="GODSMOVE" 
-                  width={300} 
-                  height={36} 
+                <Image
+                  src="/images/godsmove-logo.png"
+                  alt="GODSMOVE"
+                  width={320}
+                  height={40}
                   priority
                   className={styles.img}
                 />
@@ -70,17 +79,25 @@ export default function Navbar() {
           <div className={styles.rightZone}>
             <div className={styles.actions}>
               <div className={styles.actionWrapper}>
-                <Link href="/wishlist" className={styles.actionBtn} aria-label="Your Wishlist" id="nav-wishlist">
+                <Link
+                  href="/wishlist"
+                  className={styles.actionBtn}
+                  aria-label="Your Wishlist"
+                  id="nav-wishlist"
+                >
                   <Heart size={20} strokeWidth={1.8} />
-                  {wishlistCount > 0 && (
-                    <span className={styles.badge}>{wishlistCount}</span>
-                  )}
+                  {wishlistCount > 0 && <span className={styles.badge}>{wishlistCount}</span>}
                 </Link>
                 <span className={styles.tooltip}>Your Wishlist</span>
               </div>
 
               <div className={styles.actionWrapper}>
-                <Link href="/profile" className={styles.actionBtn} aria-label="Your Profile" id="nav-profile">
+                <Link
+                  href="/profile"
+                  className={styles.actionBtn}
+                  aria-label="Your Profile"
+                  id="nav-profile"
+                >
                   <User size={20} strokeWidth={1.8} />
                 </Link>
                 <span className={styles.tooltip}>Your Profile</span>
@@ -94,9 +111,7 @@ export default function Navbar() {
                   id="nav-cart"
                 >
                   <ShoppingBag size={20} strokeWidth={1.8} />
-                  {cartCount > 0 && (
-                    <span className={styles.badge}>{cartCount}</span>
-                  )}
+                  {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
                 </button>
                 <span className={styles.tooltip}>Your Bag</span>
               </div>
@@ -105,69 +120,60 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
       <div className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}>
         <div className={styles.mobileContent}>
           <div className={styles.mobileLinks}>
-            <Link
-              href="/"
-              className={styles.mobileLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/drops"
-              className={styles.mobileLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Drops
-            </Link>
-            <Link
-              href="/exclusive-unlock"
-              className={styles.mobileLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Exclusive Unlock
-            </Link>
-            <Link
-              href="/exclusive-rack"
-              className={styles.mobileLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Exclusive Rack
-            </Link>
-            <Link
-              href="/our-story"
-              className={styles.mobileLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Our Story
-            </Link>
+            {NAV_LINKS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.mobileLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className={styles.mobileAccessGroup}>
+              <span className={styles.mobileAccessLabel}>Access</span>
+              <Link
+                href="/exclusive-unlock"
+                className={styles.mobileSubLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Locked Drops
+              </Link>
+              <Link
+                href="/exclusive-rack"
+                className={styles.mobileSubLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Archive
+              </Link>
+            </div>
             <Link
               href="/profile"
-              className={styles.mobileLink}
+              className={styles.mobileLinkSecondary}
               onClick={() => setMobileMenuOpen(false)}
             >
               Profile
             </Link>
             <Link
               href="/wishlist"
-              className={styles.mobileLink}
+              className={styles.mobileLinkSecondary}
               onClick={() => setMobileMenuOpen(false)}
             >
               Wishlist
             </Link>
-            <Link
-              href="/cart"
-              className={styles.mobileLink}
+            <button
+              type="button"
+              className={styles.mobileLinkSecondary}
               onClick={() => {
                 setMobileMenuOpen(false);
                 setCartOpen(true);
               }}
             >
               Cart
-            </Link>
+            </button>
           </div>
           <div className={styles.mobileMeta}>
             <p className="caption">SS26 Collection</p>

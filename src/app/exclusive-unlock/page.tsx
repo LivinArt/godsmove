@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -31,6 +32,14 @@ export default async function ExclusiveUnlockPage() {
                 Gated artifacts with reservation protocols and draw mechanics. One custodian
                 per piece. Not listed in the public shop.
               </p>
+              <nav className={styles.accessNav} aria-label="Access destinations">
+                <Link href="/exclusive-unlock" className={styles.accessNavActive}>
+                  Locked Drops
+                </Link>
+                <Link href="/exclusive-rack" className={styles.accessNavLink}>
+                  Archive
+                </Link>
+              </nav>
             </header>
           </ScrollReveal>
 

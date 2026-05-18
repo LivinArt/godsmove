@@ -119,9 +119,9 @@ export function ExclusiveProductExperience({
       )}
 
       {draw && draw.status === 'OPEN' && (
-        <div style={{ marginTop: 28, padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="caption" style={{ marginBottom: 12 }}>Selection window closes in</p>
-          <ExclusiveCountdown endsAt={draw.endsAt} compact />
+        <div className={styles.drawWindow}>
+          <p className={styles.drawWindowHeading}>Selection window closes in</p>
+          <ExclusiveCountdown endsAt={draw.endsAt} variant="compact" />
         </div>
       )}
 

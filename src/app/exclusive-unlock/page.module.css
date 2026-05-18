@@ -38,6 +38,36 @@
   max-width: 560px;
 }
 
+.accessNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: var(--space-xl);
+}
+
+.accessNavActive,
+.accessNavLink {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.accessNavActive {
+  color: #c8a46a;
+}
+
+.accessNavLink {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.accessNavLink:hover {
+  color: #ffffff;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

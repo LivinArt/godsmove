@@ -73,6 +73,12 @@
   gap: var(--space-sm);
 }
 
+.channelLabelExclusive {
+  color: #c8a46a;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+
 .name {
   font-family: var(--font-heading);
   font-weight: 700;

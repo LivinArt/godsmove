@@ -78,7 +78,7 @@ export function ExclusiveAccessPanel({ data }: { data: DashboardData }) {
                     <p className={styles.meta}>Unlocked {new Date(u.unlockedAt).toLocaleDateString('en-IN')}</p>
                     {draw && draw.status === 'OPEN' && (
                       <div className={styles.countdown}>
-                        <ExclusiveCountdown endsAt={draw.endsAt} compact />
+                        <ExclusiveCountdown endsAt={draw.endsAt} variant="compact" />
                       </div>
                     )}
                   </div>

@@ -9,6 +9,7 @@ import { getStorefrontProductBySlug, getStorefrontProducts } from '@/actions/sto
 import { getActiveDraw, getProductUnlockStatus } from '@/actions/exclusive.actions';
 import { createClient } from '@/lib/supabase/server';
 import ProductClient from './ProductClient';
+import { getProductBreadcrumb } from '@/lib/product-channel-label';
 import styles from './page.module.css';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -70,6 +71,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   const coverImage = product.images?.[0]?.url ?? product.frontImageUrl ?? null;
+  const breadcrumb = getProductBreadcrumb(product);
 
   return (
     <>
@@ -80,7 +82,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="container">
           {/* Breadcrumb */}
           <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-            <Link href="/drops">Drops</Link>
+            <Link href={breadcrumb.href}>{breadcrumb.label}</Link>
             <span>/</span>
             <span>{product.name}</span>
           </nav>
@@ -102,7 +104,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </ScrollReveal>
               <div className={styles.relatedGrid}>
                 {relatedProducts.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} />
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    index={i}
+                    theme={product.channel !== 'DROP' ? 'dark' : 'default'}
+                  />
                 ))}
               </div>
             </section>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
@@ -32,6 +32,8 @@ export function LockedProductOverlay({
   const { showToast } = useStore();
   const [pending, startTransition] = useTransition();
 
+  const ctaLabel = unlockButtonText?.trim() || 'Request Clearance';
+
   const handleUnlock = () => {
     if (!isLoggedIn) {
       router.push(`/login?redirectTo=/product/${productSlug}`);
@@ -41,10 +43,10 @@ export function LockedProductOverlay({
     startTransition(async () => {
       try {
         await unlockProduct({ productId });
-        showToast('Access Unlocked', 'Welcome inside.');
+        showToast('Clearance Granted', 'You may proceed with acquisition.');
         router.refresh();
       } catch (e: unknown) {
-        showToast('Unlock Failed', e instanceof Error ? e.message : 'Please try again.');
+        showToast('Clearance Denied', e instanceof Error ? e.message : 'Please try again.');
       }
     });
   };
@@ -59,35 +61,55 @@ export function LockedProductOverlay({
         />
       )}
       <div className={styles.lockedVeil} />
+      <div className={styles.lockedGlow} aria-hidden />
+
       <div className={styles.lockedContent}>
-        <Lock size={28} strokeWidth={1.2} />
-        <p className={styles.lockedTeaser}>
-          {teaser || 'Some designs are released. Others are earned.'}
-        </p>
-        {endsAt && (
-          <div className={styles.lockedCountdown}>
-            <span className="caption" style={{ display: 'block', marginBottom: 12, opacity: 0.6 }}>
-              Selection closes in
-            </span>
-            <ExclusiveCountdown endsAt={endsAt} />
-          </div>
+        <div className={styles.vaultIcon} aria-hidden>
+          <Lock size={32} strokeWidth={1.25} />
+        </div>
+
+        <p className={styles.vaultStatus}>Invitation Only</p>
+
+        {endsAt ? (
+          <>
+            <p className={styles.vaultCountdownHeading}>Selection Window Closes In</p>
+            <div className={styles.lockedCountdown}>
+              <ExclusiveCountdown endsAt={endsAt} variant="vault" />
+            </div>
+          </>
+        ) : (
+          <p className={styles.vaultCountdownHeading}>Acquisition Window Pending</p>
         )}
-        <p className={styles.lockedScarcity}>Invitation-only access · Limited selection window</p>
+
+        <p className={styles.vaultSupport}>
+          Access is limited to approved custodians.
+          <br />
+          Only one artifact may be secured during this release window.
+        </p>
+
+        {teaser && <p className={styles.vaultTeaser}>{teaser}</p>}
+
         {isLoggedIn ? (
           <button
             type="button"
-            className="btn-primary"
+            className={styles.vaultCta}
             onClick={handleUnlock}
             disabled={pending}
-            style={{ marginTop: 24, minWidth: 220 }}
           >
-            {pending ? 'Unlocking…' : unlockButtonText || 'Unlock Access'}
+            {pending ? 'Processing…' : ctaLabel}
           </button>
         ) : (
-          <Link href={`/login?redirectTo=/product/${productSlug}`} className="btn-primary" style={{ marginTop: 24, display: 'inline-block' }}>
-            {unlockButtonText || 'Unlock Access'}
+          <Link
+            href={`/login?redirectTo=/product/${productSlug}`}
+            className={styles.vaultCta}
+          >
+            {ctaLabel}
           </Link>
         )}
+
+        <p className={styles.vaultTrust}>
+          Approval grants a temporary acquisition opportunity.
+        </p>
       </div>
     </div>
   );
