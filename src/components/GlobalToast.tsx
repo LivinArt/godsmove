@@ -24,7 +24,7 @@ export default function GlobalToast() {
       <div className={styles.toast}>
         <div className={styles.content}>
           <h4 className={styles.title}>{toast.title}</h4>
-          <p className={styles.message}>{toast.message}</p>
+          {toast.message ? <p className={styles.message}>{toast.message}</p> : null}
         </div>
         <button onClick={hideToast} className={styles.closeBtn} aria-label="Close notification">
           <X size={16} />

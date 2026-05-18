@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { EXCLUSIVE_CART_TOAST_MESSAGE, isExclusiveChannel } from '@/lib/cart-rules';
 import { prisma } from '@/lib/prisma';
 
 // NOTE: Razorpay integration requires RAZORPAY_KEY_SECRET env variable
@@ -16,17 +17,32 @@ export async function POST(req: Request) {
     }
 
     if (items && Array.isArray(items)) {
+      const exclusiveQtyByProduct = new Map<string, number>();
+
       for (const item of items) {
-        if (item.quantity > 1 && item.productId) {
-          const product = await prisma.product.findUnique({
-             where: { id: item.productId }
-          });
-          if (product?.channel === 'EXCLUSIVE_RACK' || product?.channel === 'EXCLUSIVE_UNLOCK') {
-            return NextResponse.json(
-              { error: 'Only one piece can be bought from exclusive products.', message: 'Each exclusive piece is reserved as a singular acquisition.' },
-              { status: 400 }
-            );
-          }
+        if (!item.productId) continue;
+
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { channel: true },
+        });
+
+        if (!isExclusiveChannel(product?.channel)) continue;
+
+        const qty = Number(item.quantity) || 0;
+        if (qty > 1) {
+          return NextResponse.json({ error: EXCLUSIVE_CART_TOAST_MESSAGE }, { status: 400 });
+        }
+
+        exclusiveQtyByProduct.set(
+          item.productId,
+          (exclusiveQtyByProduct.get(item.productId) ?? 0) + qty
+        );
+      }
+
+      for (const totalQty of exclusiveQtyByProduct.values()) {
+        if (totalQty > 1) {
+          return NextResponse.json({ error: EXCLUSIVE_CART_TOAST_MESSAGE }, { status: 400 });
         }
       }
     }

@@ -7,6 +7,7 @@ import { X, ShoppingBag, Zap } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
 import QuantitySelector from './QuantitySelector';
 import SizeSelector from '@/components/SizeSelector';
+import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore, WishlistItem } from '@/store/useStore';
 import styles from './WishlistCard.module.css';
 
@@ -17,7 +18,8 @@ interface WishlistCardProps {
 
 export default function WishlistCard({ item, liveProduct }: WishlistCardProps) {
   const router = useRouter();
-  const { removeFromWishlist, addToCart, setInstantCheckout } = useStore();
+  const { removeFromWishlist, addToCart, setInstantCheckout, showExclusiveCartToast } = useStore();
+  const isExclusiveProduct = isExclusiveChannel(liveProduct?.channel);
   
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -57,6 +59,10 @@ export default function WishlistCard({ item, liveProduct }: WishlistCardProps) {
     
     // We must have a live product to add to cart properly (since cart relies on full product data)
     if (liveProduct) {
+      if (isExclusiveChannel(liveProduct.channel) && quantity > 1) {
+        showExclusiveCartToast();
+        return;
+      }
       addToCart(liveProduct, selectedSize || 'ONE_SIZE', quantity);
       removeFromWishlist(item.productId);
     }
@@ -68,8 +74,12 @@ export default function WishlistCard({ item, liveProduct }: WishlistCardProps) {
       return;
     }
     setSizeError(false);
-    
+
     if (liveProduct) {
+      if (isExclusiveChannel(liveProduct.channel) && quantity > 1) {
+        showExclusiveCartToast();
+        return;
+      }
       setInstantCheckout({ product: liveProduct, size: selectedSize || 'ONE_SIZE', quantity });
       router.push('/checkout');
     }
@@ -126,7 +136,7 @@ export default function WishlistCard({ item, liveProduct }: WishlistCardProps) {
               quantity={quantity}
               onChange={setQuantity}
               max={availableStock}
-              isExclusive={liveProduct?.channel === 'EXCLUSIVE_RACK' || liveProduct?.channel === 'EXCLUSIVE_UNLOCK'}
+              isExclusive={isExclusiveProduct}
             />
           </div>
         </div>

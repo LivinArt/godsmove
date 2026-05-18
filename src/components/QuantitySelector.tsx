@@ -12,7 +12,7 @@ interface QuantitySelectorProps {
 }
 
 export default function QuantitySelector({ quantity, onChange, max = 99, isExclusive = false }: QuantitySelectorProps) {
-  const { showToast } = useStore();
+  const { showExclusiveCartToast } = useStore();
 
   const handleDecrement = () => {
     if (quantity > 1) {
@@ -22,7 +22,7 @@ export default function QuantitySelector({ quantity, onChange, max = 99, isExclu
 
   const handleIncrement = () => {
     if (isExclusive && quantity >= 1) {
-      showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
+      showExclusiveCartToast();
       return;
     }
     if (quantity < max) {

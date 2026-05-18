@@ -7,11 +7,12 @@ import { Minus, Plus, X, ArrowLeft, Lock, ShieldCheck, Truck, RotateCcw } from '
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import styles from './page.module.css';
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart, showToast } = useStore();
+  const { cart, removeFromCart, updateQuantity, clearCart, showExclusiveCartToast } = useStore();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -97,13 +98,13 @@ export default function CartPage() {
                           <span>{item.quantity}</span>
                           <button 
                             onClick={() => {
-                              if ((item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity >= 1) {
-                                showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
+                              if (isExclusiveChannel(item.product.channel) && item.quantity >= 1) {
+                                showExclusiveCartToast();
                               } else {
                                 updateQuantity(item.product.id, item.size, item.quantity + 1);
                               }
                             }}
-                            disabled={(item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity >= 1}
+                            disabled={isExclusiveChannel(item.product.channel) && item.quantity >= 1}
                           >
                             <Plus size={12} />
                           </button>

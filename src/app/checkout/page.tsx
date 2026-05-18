@@ -5,11 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Lock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import styles from './page.module.css';
 
 export default function CheckoutPage() {
-  const { cart, instantCheckout, getCartTotal } = useStore();
+  const { cart, instantCheckout, getCartTotal, showExclusiveCartToast } = useStore();
   
   const checkoutItems = instantCheckout ? [instantCheckout] : cart;
   
@@ -38,6 +39,29 @@ export default function CheckoutPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    for (const item of checkoutItems) {
+      if (isExclusiveChannel(item.product?.channel) && item.quantity > 1) {
+        showExclusiveCartToast();
+        return;
+      }
+    }
+
+    const exclusiveCounts = new Map<string, number>();
+    for (const item of checkoutItems) {
+      if (!isExclusiveChannel(item.product?.channel)) continue;
+      exclusiveCounts.set(
+        item.product.id,
+        (exclusiveCounts.get(item.product.id) ?? 0) + item.quantity
+      );
+    }
+    for (const qty of exclusiveCounts.values()) {
+      if (qty > 1) {
+        showExclusiveCartToast();
+        return;
+      }
+    }
+
     // Razorpay integration would trigger here
     alert('Checkout flow would initiate Razorpay here. This is a frontend demo.');
   };

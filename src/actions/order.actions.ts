@@ -5,6 +5,10 @@ import { hasAdminBypass } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import {
+  EXCLUSIVE_CART_TOAST_MESSAGE,
+  isExclusiveChannel,
+} from '@/lib/cart-rules';
+import {
   CreateOrderSchema,
   UpdateOrderStatusSchema,
   AddTrackingSchema,
@@ -57,16 +61,28 @@ export async function createOrder(input: CreateOrderInput) {
       where: { id: { in: variantIds } },
       include: {
         inventory: true,
-        product: { select: { name: true, status: true } },
+        product: { select: { name: true, status: true, channel: true } },
       },
     });
 
-    // 2. Validate stock availability — atomic check
+    // 2. Validate stock, exclusive channel limits, and availability
+    const exclusiveQtyByProduct = new Map<string, number>();
+
     for (const item of data.items) {
       const variant = variants.find((v) => v.id === item.variantId);
       if (!variant) throw new Error(`Product variant not found: ${item.variantId}`);
       if (variant.product.status !== 'ACTIVE')
         throw new Error(`Product "${variant.product.name}" is no longer available`);
+
+      if (isExclusiveChannel(variant.product.channel)) {
+        if (item.quantity > 1) {
+          throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
+        }
+        exclusiveQtyByProduct.set(
+          variant.productId,
+          (exclusiveQtyByProduct.get(variant.productId) ?? 0) + item.quantity
+        );
+      }
 
       const available =
         (variant.inventory?.totalStock ?? 0) -
@@ -77,6 +93,12 @@ export async function createOrder(input: CreateOrderInput) {
         throw new Error(
           `Insufficient stock for ${variant.product.name} (${variant.size}). Only ${available} left.`
         );
+      }
+    }
+
+    for (const totalQty of exclusiveQtyByProduct.values()) {
+      if (totalQty > 1) {
+        throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
       }
     }
 

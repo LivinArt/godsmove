@@ -2,6 +2,13 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  canAddExclusiveToCart,
+  canSetExclusiveQuantity,
+  cartHasExclusiveProduct,
+  EXCLUSIVE_CART_TOAST_MESSAGE,
+  isExclusiveChannel,
+} from '@/lib/cart-rules';
 
 export interface CartItem {
   product: any; // Prisma Product with images and variants
@@ -47,6 +54,7 @@ interface StoreState {
   // Toast
   toast: { title: string; message: string; isOpen: boolean } | null;
   showToast: (title: string, message: string) => void;
+  showExclusiveCartToast: () => void;
   hideToast: () => void;
 
   // UI State
@@ -67,7 +75,18 @@ export const useStore = create<StoreState>()(
       addToCart: (product, size, quantity = 1) => {
         const { cart } = get();
 
-        if (product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK') {
+        if (isExclusiveChannel(product.channel)) {
+          if (
+            !canAddExclusiveToCart({
+              channel: product.channel,
+              quantity,
+              productId: product.id,
+              cart,
+            })
+          ) {
+            get().showExclusiveCartToast();
+            return;
+          }
           quantity = 1;
         }
 
@@ -76,8 +95,8 @@ export const useStore = create<StoreState>()(
         );
 
         if (existing) {
-          if (product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK') {
-            get().showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
+          if (isExclusiveChannel(product.channel)) {
+            get().showExclusiveCartToast();
             return;
           }
 
@@ -92,7 +111,6 @@ export const useStore = create<StoreState>()(
           set({ cart: [...cart, { product, size, quantity }] });
         }
 
-        // Auto-open cart drawer
         set({ isCartOpen: true });
       },
 
@@ -113,8 +131,8 @@ export const useStore = create<StoreState>()(
         const { cart } = get();
         const item = cart.find(i => i.product.id === productId && i.size === size);
         
-        if (item?.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && quantity > 1) {
-          get().showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
+        if (item?.product && !canSetExclusiveQuantity(quantity, item.product.channel)) {
+          get().showExclusiveCartToast();
           return;
         }
 
@@ -144,9 +162,24 @@ export const useStore = create<StoreState>()(
       // Instant Checkout Bypass
       instantCheckout: null,
       setInstantCheckout: (item) => {
-        if (item?.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK')) {
-          item.quantity = 1;
+        if (!item) {
+          set({ instantCheckout: null });
+          return;
         }
+
+        if (isExclusiveChannel(item.product?.channel)) {
+          if (item.quantity > 1) {
+            get().showExclusiveCartToast();
+            return;
+          }
+          const { cart } = get();
+          if (cartHasExclusiveProduct(cart, item.product.id)) {
+            get().showExclusiveCartToast();
+            return;
+          }
+          item = { ...item, quantity: 1 };
+        }
+
         set({ instantCheckout: item });
       },
 
@@ -198,6 +231,8 @@ export const useStore = create<StoreState>()(
       // Toast
       toast: null,
       showToast: (title, message) => set({ toast: { title, message, isOpen: true } }),
+      showExclusiveCartToast: () =>
+        set({ toast: { title: EXCLUSIVE_CART_TOAST_MESSAGE, message: '', isOpen: true } }),
       hideToast: () => set((state) => ({ toast: state.toast ? { ...state.toast, isOpen: false } : null })),
 
       // UI
@@ -218,7 +253,7 @@ export const useStore = create<StoreState>()(
         }
         if (persistedState.cart) {
           persistedState.cart = persistedState.cart.map((item: any) => {
-            if (item.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity > 1) {
+            if (item.product && isExclusiveChannel(item.product.channel) && item.quantity > 1) {
               return { ...item, quantity: 1 };
             }
             return item;

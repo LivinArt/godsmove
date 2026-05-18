@@ -7,6 +7,7 @@ import { Heart, ChevronDown } from 'lucide-react';
 import SizeSelector from '@/components/SizeSelector';
 import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
+import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import { LockedProductOverlay } from '@/components/exclusive/LockedProductOverlay';
 import { ExclusiveProductExperience } from '@/components/exclusive/ExclusiveProductExperience';
@@ -38,7 +39,10 @@ export default function ProductClient({
   const [sizeError, setSizeError] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist } = useStore();
+  const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist, showExclusiveCartToast } =
+    useStore();
+  const isExclusiveProduct =
+    product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK';
   const wishlisted = isInWishlist(product.id);
 
   const isExclusiveUnlock = product.channel === 'EXCLUSIVE_UNLOCK';
@@ -71,6 +75,10 @@ export default function ProductClient({
       return;
     }
     setSizeError(false);
+    if (isExclusiveChannel(product.channel) && quantity > 1) {
+      showExclusiveCartToast();
+      return;
+    }
     addToCart(product, selectedSize, quantity);
   };
 
@@ -80,6 +88,10 @@ export default function ProductClient({
       return;
     }
     setSizeError(false);
+    if (isExclusiveChannel(product.channel) && quantity > 1) {
+      showExclusiveCartToast();
+      return;
+    }
     setInstantCheckout({ product, size: selectedSize, quantity });
     router.push('/checkout');
   };
@@ -152,7 +164,7 @@ export default function ProductClient({
               quantity={quantity}
               onChange={setQuantity}
               max={availableStock}
-              isExclusive={product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK'}
+              isExclusive={isExclusiveProduct}
             />
           </div>
         )}
