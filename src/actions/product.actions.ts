@@ -243,6 +243,11 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   await requireAdmin();
   const { id, variants, images, ...productData } = UpsertProductSchema.parse(input);
 
+  // Feature on homepage applies only to DROP channel
+  if (productData.channel !== 'DROP') {
+    productData.isFeatured = false;
+  }
+
   const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
   const becomingActive = existing?.status !== 'ACTIVE' && productData.status === 'ACTIVE';
 

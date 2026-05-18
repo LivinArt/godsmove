@@ -15,19 +15,27 @@ import { serializePrisma } from '@/lib/serialize-prisma';
 export async function getStorefrontProducts(params?: {
   categoryId?: string;
   dropId?: string;
+  /** @deprecated Use `featured` — kept for backward compatibility */
   isFeatured?: boolean;
+  /** Featured DROP products for Explore Our Ranges (ignored for exclusive channels) */
+  featured?: boolean;
   channel?: string;
   ids?: string[];
   take?: number;
   skip?: number;
 }) {
+  const featuredFilter = params?.featured ?? params?.isFeatured;
+  const channel = params?.channel;
+  const applyFeaturedFilter =
+    featuredFilter !== undefined && (!channel || channel === 'DROP');
+
   const data = await prisma.product.findMany({
     where: {
       status: 'ACTIVE',
       ...(params?.categoryId && { categoryId: params.categoryId }),
       ...(params?.dropId && { dropId: params.dropId }),
-      ...(params?.isFeatured !== undefined && { isFeatured: params.isFeatured }),
-      ...(params?.channel && { channel: params.channel as any }),
+      ...(channel && { channel: channel as any }),
+      ...(applyFeaturedFilter && { isFeatured: featuredFilter }),
       ...(params?.ids && params.ids.length > 0 && { id: { in: params.ids } }),
     },
     include: {

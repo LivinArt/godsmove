@@ -81,6 +81,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+
+    if (name === 'channel' && val !== 'DROP') {
+      setFormData((prev) => ({ ...prev, channel: val as typeof prev.channel, isFeatured: false }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: val }));
   };
 
@@ -327,21 +333,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               </select>
             </div>
 
-            <div className="flex gap-2" style={{ paddingTop: '16px', borderTop: '1px solid var(--admin-border)' }}>
-              <input
-                type="checkbox"
-                id="isFeatured"
-                name="isFeatured"
-                checked={formData.isFeatured}
-                onChange={handleChange}
-                style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }}
-              />
-              <label htmlFor="isFeatured" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-text)' }}>
-                Feature on homepage
-              </label>
-            </div>
-
-            <div className="form-group" style={{ paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--admin-border)' }}>
+            <div className="form-group" style={{ paddingTop: '16px', borderTop: '1px solid var(--admin-border)' }}>
               <label className="form-label">Product Channel</label>
               <select
                 name="channel"
@@ -354,6 +346,25 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 <option value="EXCLUSIVE_RACK">Exclusive Rack (Flagship)</option>
               </select>
             </div>
+
+            {formData.channel === 'DROP' && (
+              <div className="flex gap-2" style={{ paddingTop: '12px' }}>
+                <input
+                  type="checkbox"
+                  id="isFeatured"
+                  name="isFeatured"
+                  checked={formData.isFeatured}
+                  onChange={handleChange}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }}
+                />
+                <label htmlFor="isFeatured" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-text)' }}>
+                  Feature on homepage
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 400 }}>
+                    Shows this product in Explore Our Ranges on the homepage.
+                  </div>
+                </label>
+              </div>
+            )}
           </section>
 
           {/* Exclusive Unlock */}

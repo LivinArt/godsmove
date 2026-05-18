@@ -11,31 +11,21 @@ import { getStorefrontProducts, getActiveDrop } from '@/actions/storefront.actio
 import styles from './page.module.css';
 
 export default async function Home() {
-  const [featured, exclusiveUnlockProducts, exclusiveRackProducts, activeDrop] = await Promise.all([
-    getStorefrontProducts({ channel: 'DROP', isFeatured: true, take: 8 }),
-    getStorefrontProducts({ channel: 'EXCLUSIVE_UNLOCK', take: 4 }),
-    getStorefrontProducts({ channel: 'EXCLUSIVE_RACK', take: 5 }),
-    getActiveDrop()
-  ]);
-  
+  const [featuredDropProducts, exclusiveUnlockProducts, exclusiveRackProducts, activeDrop] =
+    await Promise.all([
+      getStorefrontProducts({ channel: 'DROP', featured: true }),
+      getStorefrontProducts({ channel: 'EXCLUSIVE_UNLOCK' }),
+      getStorefrontProducts({ channel: 'EXCLUSIVE_RACK' }),
+      getActiveDrop(),
+    ]);
+
   const drop001 = activeDrop || {
     name: 'Permanent Collection',
     tagline: 'Always available.',
     description: 'The foundation of the GODSMOVE wardrobe.',
     heroImageUrl: '/images/hero/hero-main.png',
-    slug: 'permanent'
+    slug: 'permanent',
   };
-
-  const limitedPieces = featured.filter(p => {
-    const stock = p.variants.reduce((acc, v) => {
-      const inv = v.inventory;
-      if (!inv) return acc;
-      return acc + (inv.totalStock - inv.reservedStock - inv.soldStock);
-    }, 0);
-    return stock <= 10 && stock > 0;
-  }).slice(0, 4);
-
-  const displayLimited = limitedPieces.length > 0 ? limitedPieces : featured.slice(0, 4);
 
   return (
     <>
@@ -43,7 +33,7 @@ export default async function Home() {
       <CartDrawer />
 
       <main>
-        {/* ── CINEMATIC HERO ── */}
+        {/* 1. Hero Section */}
         <section className={styles.hero} id="hero">
           <div className={styles.heroImageWrap}>
             <Image
@@ -64,9 +54,7 @@ export default async function Home() {
             <h1 className={styles.heroTitle}>
               Doomed<br />to <span className={styles.heroTitleAccent}>Drip.</span>
             </h1>
-            <p className={styles.heroSub}>
-              No Coincidence.
-            </p>
+            <p className={styles.heroSub}>No Coincidence.</p>
             <p className={styles.heroDesc}>
               Every piece is deliberate. Limited in quantity. Heavy in meaning.
             </p>
@@ -74,7 +62,11 @@ export default async function Home() {
               <Link href="/drops" className={`btn btn-primary ${styles.heroCta}`} id="hero-cta">
                 Explore the Drop
               </Link>
-              <Link href="/our-story" className={`btn btn-secondary ${styles.heroCtaSecondary}`} id="hero-cta-secondary">
+              <Link
+                href="/our-story"
+                className={`btn btn-secondary ${styles.heroCtaSecondary}`}
+                id="hero-cta-secondary"
+              >
                 Our Story
               </Link>
             </div>
@@ -86,14 +78,20 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── EXCLUSIVE UNLOCK ── */}
+        {/* 2. Exclusive Unlock System */}
         {exclusiveUnlockProducts.length > 0 && (
-          <section className={styles.products} id="exclusive-unlock" style={{ backgroundColor: 'var(--black)' }}>
+          <section
+            className={styles.products}
+            id="exclusive-unlock"
+            style={{ backgroundColor: 'var(--black)' }}
+          >
             <div className="container">
               <ScrollReveal>
                 <div className={styles.productsHeader}>
-                  <span className="caption" style={{ color: 'var(--admin-warning)' }}>Classified</span>
-                  <h2 className="h2">Exclusive Unlock</h2>
+                  <span className="caption" style={{ color: 'var(--admin-warning)' }}>
+                    Classified
+                  </span>
+                  <h2 className="h2">Exclusive Unlock System</h2>
                   <p className={styles.limitedDesc} style={{ color: 'var(--muted)', marginTop: '8px' }}>
                     Gated artifacts. Strictly limited to one per custodian.
                   </p>
@@ -108,54 +106,40 @@ export default async function Home() {
           </section>
         )}
 
-        {/* ── EXCLUSIVE RACK ── */}
+        {/* 3. Exclusive Rack */}
         <ExclusiveRack products={exclusiveRackProducts} />
 
-        {/* ── STAR PIECES ── */}
-        <section className={styles.products} id="products">
-          <div className="container">
-            <ScrollReveal>
-              <div className={styles.productsHeader}>
-                <span className="caption">Featured Drop</span>
-                <h2 className="h2">Star Pieces</h2>
-              </div>
-            </ScrollReveal>
-            <div className={styles.productsGrid}>
-              {featured.slice(0, 4).map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i} />
-              ))}
-            </div>
-            <ScrollReveal delay={200}>
-              <div className={styles.productsCta}>
-                <Link href="/drops" className="btn btn-secondary" id="products-cta">
-                  View All Pieces
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            </ScrollReveal>
-          </div>
-        </section>
-
-        {/* ── EXPLORE OUR RANGES ── */}
-        {displayLimited.length > 0 && (
-          <section className={styles.limited} id="limited">
+        {/* 4. Explore Our Ranges — featured DROP products only */}
+        {featuredDropProducts.length > 0 && (
+          <section className={styles.products} id="explore-ranges">
             <div className="container">
               <ScrollReveal>
-                <div className={styles.limitedHeader}>
+                <div className={styles.productsHeader}>
+                  <span className="caption">Catalogue</span>
                   <h2 className="h2">Explore Our Ranges</h2>
-                  <p className={styles.limitedDesc}>Discover the worlds we are building.</p>
+                  <p className={styles.limitedDesc} style={{ color: 'var(--muted)', marginTop: '8px' }}>
+                    Discover the worlds we are building.
+                  </p>
                 </div>
               </ScrollReveal>
               <div className={styles.productsGrid}>
-                {displayLimited.map((product, i) => (
+                {featuredDropProducts.map((product, i) => (
                   <ProductCard key={product.id} product={product} index={i} />
                 ))}
               </div>
+              <ScrollReveal delay={200}>
+                <div className={styles.productsCta}>
+                  <Link href="/drops" className="btn btn-secondary" id="explore-ranges-cta">
+                    View All Pieces
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </ScrollReveal>
             </div>
           </section>
         )}
 
-        {/* ── OUR STORY PREVIEW ── */}
+        {/* 5. Philosophy / Our Story */}
         <section className={styles.editorial} id="editorial">
           <div className={styles.editorialImageWrap}>
             <Image
@@ -169,7 +153,9 @@ export default async function Home() {
           </div>
           <div className={styles.editorialContent}>
             <ScrollReveal>
-              <span className="caption" style={{ color: 'var(--fog)' }}>Philosophy</span>
+              <span className="caption" style={{ color: 'var(--fog)' }}>
+                Philosophy
+              </span>
               <h2 className={styles.editorialQuote}>
                 Nothing is accidental. Every design carries meaning.
               </h2>
@@ -180,15 +166,13 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── NEWSLETTER ── */}
+        {/* 6. Newsletter */}
         <section className={styles.newsletter} id="newsletter">
           <div className="container">
             <ScrollReveal>
               <div className={styles.nlInner}>
                 <h2 className="h2">Get Early Access.</h2>
-                <p className={styles.nlDesc}>
-                  Be first when the next move drops.
-                </p>
+                <p className={styles.nlDesc}>Be first when the next move drops.</p>
                 <form className={styles.nlForm} action="/api/newsletter" method="POST">
                   <input
                     type="email"
@@ -208,6 +192,7 @@ export default async function Home() {
         </section>
       </main>
 
+      {/* 7. Footer */}
       <Footer />
     </>
   );
