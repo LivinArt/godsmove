@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Limit parallel static generation to avoid Supabase session pool exhaustion during `next build`
+  experimental: {
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 50,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

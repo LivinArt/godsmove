@@ -32,9 +32,9 @@ function createPrismaClient() {
   });
 }
 
-// Singleton — prevents connection exhaustion in serverless/hot-reload environments
+// Singleton — prevents connection exhaustion in serverless/hot-reload and build workers
 export const prisma = global.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== 'production') {
+if (!global.prisma) {
   global.prisma = prisma;
 }
