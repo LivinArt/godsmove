@@ -102,7 +102,7 @@ export default async function Home() {
               </ScrollReveal>
               <div className={styles.productsGrid}>
                 {exclusiveUnlockProducts.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} />
+                  <ProductCard key={product.id} product={product} index={i} theme="dark" />
                 ))}
               </div>
             </div>

@@ -164,3 +164,27 @@
   letter-spacing: 0.02em;
   color: var(--text-primary);
 }
+
+/* Exclusive Unlock — high contrast on black section background */
+.cardDark .name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.cardDark .name:hover {
+  opacity: 0.75;
+}
+
+.cardDark .color {
+  color: #d1d5db;
+}
+
+.cardDark .price {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.cardDark .comparePrice {
+  color: #9ca3af;
+  opacity: 1;
+}

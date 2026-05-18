@@ -10,9 +10,11 @@ import styles from './ProductCard.module.css';
 interface ProductCardProps {
   product: any; // Using any here to accommodate the Prisma inclusion type without deep typing in this component
   index?: number;
+  /** High-contrast typography for cards on dark section backgrounds */
+  theme?: 'default' | 'dark';
 }
 
-export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+export default function ProductCard({ product, index = 0, theme = 'default' }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useStore();
   const wishlisted = isInWishlist(product.id);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -36,7 +38,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   return (
     <div
-      className={styles.card}
+      className={`${styles.card} ${theme === 'dark' ? styles.cardDark : ''}`}
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <Link href={`/product/${product.slug}`} className={styles.imageWrap}>
