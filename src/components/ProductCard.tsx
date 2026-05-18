@@ -53,7 +53,7 @@ export default function ProductCard({
 
   return (
     <div
-      className={`${styles.card} ${isDark ? styles.cardDark : ''}`}
+      className={styles.card}
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <Link href={`/product/${product.slug}`} className={styles.imageWrap}>
@@ -97,7 +97,7 @@ export default function ProductCard({
         </button>
       </Link>
 
-      <div className={styles.info}>
+      <div className={`${styles.info} ${isDark ? styles.infoDark : ''}`}>
         <Link href={`/product/${product.slug}`} className={styles.name}>
           {product.name}
         </Link>

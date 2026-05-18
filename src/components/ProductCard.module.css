@@ -21,13 +21,28 @@
   overflow: hidden;
   aspect-ratio: 4 / 5;
   background-color: var(--ivory);
+  isolation: isolate;
 }
 
+/* Next.js Image wrapper — fill frame at full brightness (never dim on dark sections) */
+.imageWrap > span {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0;
+}
+
+.imageWrap img,
 .image {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
   object-fit: cover;
-  transition: transform var(--duration-slow) var(--ease-cinematic), opacity 0.3s ease-in-out;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  transition: transform var(--duration-slow) var(--ease-cinematic);
 }
 
 .imageWrap:hover .image {
@@ -165,19 +180,19 @@
   color: var(--text-primary);
 }
 
-/* Dark channel — conversion-optimized contrast on black backgrounds */
-.cardDark .name {
+/* Dark typography only — scoped to .info, never the media area */
+.infoDark .name {
   color: #ffffff;
   font-weight: 700;
   font-size: 16px;
   line-height: 1.25;
 }
 
-.cardDark .name:hover {
+.infoDark .name:hover {
   opacity: 0.85;
 }
 
-.cardDark .discountBadge {
+.infoDark .discountBadge {
   display: inline-block;
   font-family: var(--font-heading);
   font-size: 11px;
@@ -188,7 +203,7 @@
   margin-top: 2px;
 }
 
-.cardDark .priceBlock {
+.infoDark .priceBlock {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -196,20 +211,20 @@
   margin-top: var(--space-xs);
 }
 
-.cardDark .comparePrice {
+.infoDark .comparePrice {
   color: #9ca3af;
   text-decoration: line-through;
   opacity: 1;
   font-size: 13px;
 }
 
-.cardDark .price {
+.infoDark .price {
   color: #ffffff;
   font-weight: 700;
   font-size: 15px;
 }
 
-.cardDark .savings {
+.infoDark .savings {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -217,13 +232,13 @@
   width: 100%;
 }
 
-.cardDark .color {
+.infoDark .color {
   color: #d1d5db;
   font-size: 12px;
   margin-top: 2px;
 }
 
-.cardDark .cardCta {
+.infoDark .cardCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -240,7 +255,7 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.cardDark .cardCta:hover {
+.infoDark .cardCta:hover {
   background-color: #c8a46a;
   color: #0a0a0a;
 }
