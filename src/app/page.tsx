@@ -6,9 +6,12 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
-import ExclusiveRack from '@/components/ExclusiveRack';
+import ExclusiveRack, { type ExclusiveRackProduct } from '@/components/ExclusiveRack';
 import { getStorefrontProducts, getActiveDrop } from '@/actions/storefront.actions';
 import styles from './page.module.css';
+
+/** Merchandising must reflect live DB — avoid stale static homepage without rack/unlock products */
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [featuredDropProducts, exclusiveUnlockProducts, exclusiveRackProducts, activeDrop] =
@@ -107,7 +110,11 @@ export default async function Home() {
         )}
 
         {/* 3. Exclusive Rack */}
-        <ExclusiveRack products={exclusiveRackProducts} />
+        {exclusiveRackProducts.length > 0 && (
+          <ExclusiveRack
+            products={exclusiveRackProducts as unknown as ExclusiveRackProduct[]}
+          />
+        )}
 
         {/* 4. Explore Our Ranges — featured DROP products only */}
         {featuredDropProducts.length > 0 && (

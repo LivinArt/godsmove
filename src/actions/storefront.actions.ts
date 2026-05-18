@@ -1,5 +1,6 @@
 'use server';
 
+import type { ProductChannel } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { serializePrisma } from '@/lib/serialize-prisma';
 
@@ -19,7 +20,7 @@ export async function getStorefrontProducts(params?: {
   isFeatured?: boolean;
   /** Featured DROP products for Explore Our Ranges (ignored for exclusive channels) */
   featured?: boolean;
-  channel?: string;
+  channel?: ProductChannel;
   ids?: string[];
   take?: number;
   skip?: number;
@@ -34,7 +35,7 @@ export async function getStorefrontProducts(params?: {
       status: 'ACTIVE',
       ...(params?.categoryId && { categoryId: params.categoryId }),
       ...(params?.dropId && { dropId: params.dropId }),
-      ...(channel && { channel: channel as any }),
+      ...(channel && { channel }),
       ...(applyFeaturedFilter && { isFeatured: featuredFilter }),
       ...(params?.ids && params.ids.length > 0 && { id: { in: params.ids } }),
     },

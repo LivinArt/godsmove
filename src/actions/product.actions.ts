@@ -347,6 +347,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   if (product.slug) revalidatePath(`/product/${product.slug}`);
   revalidatePath('/drops');
   revalidatePath('/admin/exclusive-draws');
+  revalidatePath('/');
   return product;
 }
 
