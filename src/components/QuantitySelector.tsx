@@ -8,10 +8,10 @@ interface QuantitySelectorProps {
   quantity: number;
   onChange: (quantity: number) => void;
   max?: number;
-  isExclusiveRack?: boolean;
+  isExclusive?: boolean;
 }
 
-export default function QuantitySelector({ quantity, onChange, max = 99, isExclusiveRack = false }: QuantitySelectorProps) {
+export default function QuantitySelector({ quantity, onChange, max = 99, isExclusive = false }: QuantitySelectorProps) {
   const { showToast } = useStore();
 
   const handleDecrement = () => {
@@ -21,8 +21,8 @@ export default function QuantitySelector({ quantity, onChange, max = 99, isExclu
   };
 
   const handleIncrement = () => {
-    if (isExclusiveRack && quantity >= 1) {
-      showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+    if (isExclusive && quantity >= 1) {
+      showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
       return;
     }
     if (quantity < max) {
@@ -47,7 +47,7 @@ export default function QuantitySelector({ quantity, onChange, max = 99, isExclu
         <button
           type="button"
           onClick={handleIncrement}
-          disabled={quantity >= max || (isExclusiveRack && quantity >= 1)}
+          disabled={quantity >= max || (isExclusive && quantity >= 1)}
           className={styles.button}
           aria-label="Increase quantity"
         >

@@ -126,7 +126,7 @@ export default function WishlistCard({ item, liveProduct }: WishlistCardProps) {
               quantity={quantity}
               onChange={setQuantity}
               max={availableStock}
-              isExclusiveRack={liveProduct?.isExclusiveRack}
+              isExclusive={liveProduct?.channel === 'EXCLUSIVE_RACK' || liveProduct?.channel === 'EXCLUSIVE_UNLOCK'}
             />
           </div>
         </div>

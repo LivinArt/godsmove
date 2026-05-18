@@ -21,9 +21,9 @@ export async function POST(req: Request) {
           const product = await prisma.product.findUnique({
              where: { id: item.productId }
           });
-          if (product?.isExclusiveRack) {
+          if (product?.channel === 'EXCLUSIVE_RACK' || product?.channel === 'EXCLUSIVE_UNLOCK') {
             return NextResponse.json(
-              { error: 'One Artifact Per Custodian', message: 'Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.' },
+              { error: 'Only one piece can be bought from exclusive products.', message: 'Each exclusive piece is reserved as a singular acquisition.' },
               { status: 400 }
             );
           }

@@ -67,14 +67,14 @@ async function getOrCreateActiveDraw(productId: string) {
   const product = await prisma.product.findUnique({
     where: { id: productId },
     select: {
-      isExclusiveUnlock: true,
+      channel: true,
       countdownDurationDays: true,
       winnerCount: true,
       status: true,
     },
   });
 
-  if (!product?.isExclusiveUnlock) {
+  if (product?.channel !== 'EXCLUSIVE_UNLOCK') {
     throw new Error('Product is not an exclusive unlock item');
   }
 
@@ -139,13 +139,13 @@ export async function unlockProduct(input: UnlockProductInput) {
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, status: true, isExclusiveUnlock: true, slug: true },
+    select: { id: true, status: true, channel: true, slug: true },
   });
 
   if (!product || product.status !== 'ACTIVE') {
     throw new Error('Product not available');
   }
-  if (!product.isExclusiveUnlock) {
+  if (product.channel !== 'EXCLUSIVE_UNLOCK') {
     throw new Error('This product does not require unlocking');
   }
 
@@ -255,13 +255,13 @@ export async function createReservation(input: CreateReservationInput) {
     select: {
       id: true,
       slug: true,
-      isExclusiveUnlock: true,
+      channel: true,
       reservationPrice: true,
       status: true,
     },
   });
 
-  if (!product?.isExclusiveUnlock || product.status !== 'ACTIVE') {
+  if (product?.channel !== 'EXCLUSIVE_UNLOCK' || product.status !== 'ACTIVE') {
     throw new Error('Exclusive reservation not available');
   }
 
@@ -377,7 +377,7 @@ export async function getActiveDraw(productId: string) {
           id: true,
           name: true,
           slug: true,
-          isExclusiveUnlock: true,
+          channel: true,
           reservationPrice: true,
           winnerCount: true,
           refundWinnersToWallet: true,
@@ -715,14 +715,14 @@ export async function syncExclusiveDrawForProduct(productId: string) {
   const product = await prisma.product.findUnique({
     where: { id: productId },
     select: {
-      isExclusiveUnlock: true,
+      channel: true,
       countdownDurationDays: true,
       winnerCount: true,
       status: true,
     },
   });
 
-  if (!product?.isExclusiveUnlock || product.status !== 'ACTIVE') return null;
+  if (product?.channel !== 'EXCLUSIVE_UNLOCK' || product.status !== 'ACTIVE') return null;
 
   const existing = await prisma.exclusiveDraw.findFirst({
     where: { productId, status: { in: ['OPEN', 'CLOSED'] } },

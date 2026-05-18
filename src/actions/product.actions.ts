@@ -333,7 +333,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     return p;
   });
 
-  if (product.isExclusiveUnlock && product.status === 'ACTIVE') {
+  if (product.channel === 'EXCLUSIVE_UNLOCK' && product.status === 'ACTIVE') {
     const { syncExclusiveDrawForProduct } = await import('@/actions/exclusive.actions');
     await syncExclusiveDrawForProduct(product.id);
   }

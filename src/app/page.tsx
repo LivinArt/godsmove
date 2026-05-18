@@ -11,9 +11,10 @@ import { getStorefrontProducts, getActiveDrop } from '@/actions/storefront.actio
 import styles from './page.module.css';
 
 export default async function Home() {
-  const [featured, exclusiveRackProducts, activeDrop] = await Promise.all([
-    getStorefrontProducts({ isFeatured: true, take: 8 }),
-    getStorefrontProducts({ isExclusiveRack: true, take: 5 }),
+  const [featured, exclusiveUnlockProducts, exclusiveRackProducts, activeDrop] = await Promise.all([
+    getStorefrontProducts({ channel: 'DROP', isFeatured: true, take: 8 }),
+    getStorefrontProducts({ channel: 'EXCLUSIVE_UNLOCK', take: 4 }),
+    getStorefrontProducts({ channel: 'EXCLUSIVE_RACK', take: 5 }),
     getActiveDrop()
   ]);
   
@@ -84,6 +85,28 @@ export default async function Home() {
             <span>Scroll</span>
           </div>
         </section>
+
+        {/* ── EXCLUSIVE UNLOCK ── */}
+        {exclusiveUnlockProducts.length > 0 && (
+          <section className={styles.products} id="exclusive-unlock" style={{ backgroundColor: 'var(--black)' }}>
+            <div className="container">
+              <ScrollReveal>
+                <div className={styles.productsHeader}>
+                  <span className="caption" style={{ color: 'var(--admin-warning)' }}>Classified</span>
+                  <h2 className="h2">Exclusive Unlock</h2>
+                  <p className={styles.limitedDesc} style={{ color: 'var(--muted)', marginTop: '8px' }}>
+                    Gated artifacts. Strictly limited to one per custodian.
+                  </p>
+                </div>
+              </ScrollReveal>
+              <div className={styles.productsGrid}>
+                {exclusiveUnlockProducts.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── EXCLUSIVE RACK ── */}
         <ExclusiveRack products={exclusiveRackProducts} />

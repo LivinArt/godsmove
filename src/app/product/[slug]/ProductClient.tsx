@@ -41,7 +41,7 @@ export default function ProductClient({
   const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist } = useStore();
   const wishlisted = isInWishlist(product.id);
 
-  const isExclusiveUnlock = product.isExclusiveUnlock;
+  const isExclusiveUnlock = product.channel === 'EXCLUSIVE_UNLOCK';
   const isLocked = isExclusiveUnlock && !exclusiveAccess?.unlocked;
   const showStandardPurchase = !isExclusiveUnlock || exclusiveAccess?.reservation?.status === 'WINNER';
 
@@ -152,7 +152,7 @@ export default function ProductClient({
               quantity={quantity}
               onChange={setQuantity}
               max={availableStock}
-              isExclusiveRack={product.isExclusiveRack}
+              isExclusive={product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK'}
             />
           </div>
         )}

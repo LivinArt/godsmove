@@ -34,8 +34,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     isFeatured: initialData?.isFeatured || false,
     categoryId: initialData?.categoryId || categories[0]?.id || '',
     dropId: initialData?.dropId || '',
-    isExclusiveRack: initialData?.isExclusiveRack || false,
-    isExclusiveUnlock: initialData?.isExclusiveUnlock || false,
+    channel: initialData?.channel || 'DROP',
     unlockTeaser: initialData?.unlockTeaser || '',
     exclusiveStory: initialData?.exclusiveStory || '',
     countdownDurationDays: initialData?.countdownDurationDays ?? 10,
@@ -342,33 +341,27 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               </label>
             </div>
 
-            <div className="flex gap-2" style={{ paddingTop: '12px' }}>
-              <input
-                type="checkbox"
-                id="isExclusiveRack"
-                name="isExclusiveRack"
-                checked={formData.isExclusiveRack}
+            <div className="form-group" style={{ paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--admin-border)' }}>
+              <label className="form-label">Product Channel</label>
+              <select
+                name="channel"
+                value={formData.channel || 'DROP'}
                 onChange={handleChange}
-                style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }}
-              />
-              <label htmlFor="isExclusiveRack" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-text)' }}>
-                Feature in Exclusive Rack
-                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 400 }}>
-                  Show this product in the flagship homepage showcase.
-                </div>
-              </label>
+                className="admin-input admin-select"
+              >
+                <option value="DROP">Drops (Standard)</option>
+                <option value="EXCLUSIVE_UNLOCK">Exclusive Unlock (Gated)</option>
+                <option value="EXCLUSIVE_RACK">Exclusive Rack (Flagship)</option>
+              </select>
             </div>
           </section>
 
           {/* Exclusive Unlock */}
+          {formData.channel === 'EXCLUSIVE_UNLOCK' && (
           <section className="admin-card">
-            <h2 style={{ fontSize: '16px', marginBottom: '16px' }}>Exclusive Unlock</h2>
-            <div className="flex gap-2" style={{ paddingBottom: formData.isExclusiveUnlock ? '16px' : 0, borderBottom: formData.isExclusiveUnlock ? '1px solid var(--admin-border)' : 'none' }}>
-              <input type="checkbox" id="isExclusiveUnlock" name="isExclusiveUnlock" checked={!!formData.isExclusiveUnlock} onChange={handleChange} style={{ width: '16px', height: '16px', accentColor: 'var(--admin-accent)', marginTop: '2px' }} />
-              <label htmlFor="isExclusiveUnlock" style={{ fontSize: '14px', fontWeight: 500 }}>Enable Exclusive Unlock</label>
-            </div>
-            {formData.isExclusiveUnlock && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+            <h2 style={{ fontSize: '16px', marginBottom: '16px' }}>Exclusive Unlock Settings</h2>
+            
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className="form-group"><label className="form-label">Unlock Teaser</label><textarea name="unlockTeaser" value={formData.unlockTeaser || ''} onChange={handleChange} rows={2} className="admin-input admin-textarea" /></div>
                 <div className="form-group"><label className="form-label">Exclusive Story</label><textarea name="exclusiveStory" value={formData.exclusiveStory || ''} onChange={handleChange} rows={4} className="admin-input admin-textarea" /></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -382,8 +375,8 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 <div className="flex gap-2"><input type="checkbox" id="refundWinnersToWallet" name="refundWinnersToWallet" checked={!!formData.refundWinnersToWallet} onChange={handleChange} /><label htmlFor="refundWinnersToWallet">Credit winners</label></div>
                 <div className="flex gap-2"><input type="checkbox" id="refundNonWinnersToWallet" name="refundNonWinnersToWallet" checked={!!formData.refundNonWinnersToWallet} onChange={handleChange} /><label htmlFor="refundNonWinnersToWallet">Credit non-winners</label></div>
               </div>
-            )}
           </section>
+          )}
 
           {/* Product Presentation Settings */}
           <section className="admin-card">

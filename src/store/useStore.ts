@@ -67,7 +67,7 @@ export const useStore = create<StoreState>()(
       addToCart: (product, size, quantity = 1) => {
         const { cart } = get();
 
-        if (product.isExclusiveRack) {
+        if (product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK') {
           quantity = 1;
         }
 
@@ -76,8 +76,8 @@ export const useStore = create<StoreState>()(
         );
 
         if (existing) {
-          if (product.isExclusiveRack) {
-            get().showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+          if (product.channel === 'EXCLUSIVE_RACK' || product.channel === 'EXCLUSIVE_UNLOCK') {
+            get().showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
             return;
           }
 
@@ -113,8 +113,8 @@ export const useStore = create<StoreState>()(
         const { cart } = get();
         const item = cart.find(i => i.product.id === productId && i.size === size);
         
-        if (item?.product.isExclusiveRack && quantity > 1) {
-          get().showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+        if (item?.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && quantity > 1) {
+          get().showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
           return;
         }
 
@@ -144,7 +144,7 @@ export const useStore = create<StoreState>()(
       // Instant Checkout Bypass
       instantCheckout: null,
       setInstantCheckout: (item) => {
-        if (item?.product.isExclusiveRack) {
+        if (item?.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK')) {
           item.quantity = 1;
         }
         set({ instantCheckout: item });
@@ -218,7 +218,7 @@ export const useStore = create<StoreState>()(
         }
         if (persistedState.cart) {
           persistedState.cart = persistedState.cart.map((item: any) => {
-            if (item.product?.isExclusiveRack && item.quantity > 1) {
+            if (item.product && (item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity > 1) {
               return { ...item, quantity: 1 };
             }
             return item;

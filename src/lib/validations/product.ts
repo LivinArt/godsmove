@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const ProductStatusEnum = z.enum(['DRAFT', 'ACTIVE', 'HIDDEN', 'ARCHIVED', 'SOLD_OUT']);
 const ProductImageSideEnum = z.enum(['front', 'back']);
+export const ProductChannelEnum = z.enum(['DROP', 'EXCLUSIVE_UNLOCK', 'EXCLUSIVE_RACK']);
 
 export const CreateProductSchema = z.object({
   name: z.string().min(1, 'Name is required').max(120),
@@ -17,8 +18,7 @@ export const CreateProductSchema = z.object({
   isFeatured: z.boolean().default(false),
   categoryId: z.string().cuid('Invalid category'),
   dropId: z.string().cuid().optional().nullable(),
-  isExclusiveRack: z.boolean().default(false),
-  isExclusiveUnlock: z.boolean().default(false),
+  channel: ProductChannelEnum.default('DROP'),
   unlockTeaser: z.string().max(500).optional().nullable(),
   exclusiveStory: z.string().max(5000).optional().nullable(),
   countdownDurationDays: z.number().int().min(1).max(90).default(10),
@@ -79,7 +79,7 @@ export const UpsertProductSchema = CreateProductSchema.extend({
   variants: z.array(FormVariantSchema).min(1, 'At least one variant is required'),
   images: z.array(ProductImageSchema).optional(),
 }).superRefine((data, ctx) => {
-  if (data.isExclusiveUnlock) {
+  if (data.channel === 'EXCLUSIVE_UNLOCK') {
     if (data.reservationPrice == null || data.reservationPrice <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

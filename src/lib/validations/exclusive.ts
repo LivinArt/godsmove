@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProductChannelEnum } from './product';
 
 const positiveDecimal = z
   .number()
@@ -7,7 +8,7 @@ const positiveDecimal = z
 
 export const ExclusiveProductConfigSchema = z
   .object({
-    isExclusiveUnlock: z.boolean().default(false),
+    channel: ProductChannelEnum.default('DROP'),
     unlockTeaser: z.string().max(500).optional().nullable(),
     exclusiveStory: z.string().max(5000).optional().nullable(),
     countdownDurationDays: z.number().int().min(1).max(90).default(10),
@@ -20,7 +21,7 @@ export const ExclusiveProductConfigSchema = z
     reserveButtonText: z.string().max(60).optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.isExclusiveUnlock) {
+    if (data.channel === 'EXCLUSIVE_UNLOCK') {
       if (data.reservationPrice == null || data.reservationPrice <= 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

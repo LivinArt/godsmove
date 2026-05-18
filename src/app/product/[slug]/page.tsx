@@ -54,7 +54,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     };
   }).filter(Boolean) as { label: string, available: boolean }[];
 
-  const isExclusiveUnlock = product.isExclusiveUnlock;
+  const isExclusiveUnlock = product.channel === 'EXCLUSIVE_UNLOCK';
   let access = { unlocked: true, reservation: null as any };
   let draw = null;
 

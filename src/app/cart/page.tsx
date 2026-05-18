@@ -97,13 +97,13 @@ export default function CartPage() {
                           <span>{item.quantity}</span>
                           <button 
                             onClick={() => {
-                              if (item.product.isExclusiveRack && item.quantity >= 1) {
-                                showToast("One Artifact Per Custodian", "Each Exclusive Rack piece is reserved as a singular acquisition. Only one artifact may be claimed by each custodian.");
+                              if ((item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity >= 1) {
+                                showToast("Only one piece can be bought from exclusive products.", "Each exclusive piece is reserved as a singular acquisition.");
                               } else {
                                 updateQuantity(item.product.id, item.size, item.quantity + 1);
                               }
                             }}
-                            disabled={item.product.isExclusiveRack && item.quantity >= 1}
+                            disabled={(item.product.channel === 'EXCLUSIVE_RACK' || item.product.channel === 'EXCLUSIVE_UNLOCK') && item.quantity >= 1}
                           >
                             <Plus size={12} />
                           </button>

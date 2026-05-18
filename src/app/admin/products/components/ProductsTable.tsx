@@ -10,6 +10,7 @@ type ProductRow = {
   name: string;
   slug: string;
   status: string;
+  channel: string;
   images: { isCover: boolean; url: string }[];
   category: { name: string };
   drop: { name: string } | null;
@@ -102,7 +103,7 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                   <td>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--admin-muted)', fontFamily: 'var(--admin-mono)' }}>
-                      {p.slug}
+                      {p.slug} • {p.channel}
                     </div>
                   </td>
                   <td style={{ fontSize: 13 }}>{p.category.name}</td>

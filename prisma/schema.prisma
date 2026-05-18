@@ -111,14 +111,13 @@ model Product {
   publishedAt DateTime?
 
   // Flags
-  isExclusiveRack   Boolean @default(false)
+  channel           ProductChannel @default(DROP)
   enableImageToggle Boolean @default(false)
   frontImageUrl     String?
   backImageUrl      String?
   defaultImageSide  ProductImageSide @default(front)
 
   // Exclusive Unlock System
-  isExclusiveUnlock         Boolean  @default(false)
   unlockTeaser              String?
   exclusiveStory            String?
   countdownDurationDays     Int      @default(10)
@@ -142,7 +141,7 @@ model Product {
   @@index([status])
   @@index([dropId])
   @@index([categoryId])
-  @@index([isExclusiveUnlock])
+  @@index([channel])
   @@map("products")
 }
 
@@ -210,6 +209,12 @@ enum ProductStatus {
   HIDDEN
   ARCHIVED
   SOLD_OUT
+}
+
+enum ProductChannel {
+  DROP
+  EXCLUSIVE_UNLOCK
+  EXCLUSIVE_RACK
 }
 
 enum ProductImageSide {
