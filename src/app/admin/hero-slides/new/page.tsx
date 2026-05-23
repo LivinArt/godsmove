@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import HeroSlideForm from '../components/HeroSlideForm';
+import pageStyles from '../heroSlideEditorPage.module.css';
 
 export default function NewHeroSlidePage() {
   return (
-    <div>
+    <div className={pageStyles.page}>
       <div className="page-header">
         <div>
           <h1 className="page-title">New hero slide</h1>
