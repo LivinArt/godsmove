@@ -23,7 +23,7 @@ export default function Footer() {
             <Link href="/" className={styles.logoWrap} aria-label="GODSMOVE Home">
               <img src="/images/godsmove-logo.png" alt="GODSMOVE" className={styles.logoImage} />
             </Link>
-            <p className={styles.tagline}>Doomed to Drip. SS26.</p>
+            <p className={styles.tagline}>Worn With Intent. SS26.</p>
           </div>
 
           <div className={styles.columns}>

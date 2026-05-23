@@ -332,6 +332,43 @@ async function main() {
   }
 
   console.log('✅ Archive posts seeded');
+
+  const heroCount = await prisma.heroSlide.count();
+  if (heroCount === 0) {
+    await prisma.heroSlide.create({
+      data: {
+        image: '/images/hero/hero-main.png',
+        mobileImage: null,
+        eyebrow: 'SS26 / DROP 001',
+        headline: 'Worn With Intent.',
+        narrative:
+          'Heavy in symbolism.\nLimited in quantity.\nBuilt for custodians, not consumers.',
+        ctaLabel: 'ENTER THE DROP',
+        ctaHref: '/drops',
+        alignment: 'left',
+        overlayOpacity: 0.45,
+        sortOrder: 0,
+        isActive: true,
+      },
+    });
+    await prisma.heroSlide.create({
+      data: {
+        image: '/images/campaign/editorial-01.png',
+        mobileImage: null,
+        eyebrow: 'Archive / Signal',
+        headline: 'Custody over consumption.',
+        narrative: 'Artifacts with intent. Each release is finite — built for those who carry the meaning forward.',
+        ctaLabel: 'READ THE ARCHIVE',
+        ctaHref: '/archive',
+        alignment: 'left',
+        overlayOpacity: 0.5,
+        sortOrder: 1,
+        isActive: true,
+      },
+    });
+    console.log('✅ Homepage hero slides seeded');
+  }
+
   console.log('\n🎉 Database seed complete. GODSMOVE is ready.');
 }
 

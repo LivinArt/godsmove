@@ -127,7 +127,7 @@ export default function OurStoryPage() {
           <div className="container">
             <ScrollReveal>
               <div className={styles.manifesto}>
-                <h2 className="display">Doomed to Drip.</h2>
+                <h2 className="display">Worn With Intent.</h2>
                 <div className={styles.manifestoContent}>
                   <p className={styles.manifestoText}>
                     We are building a uniform for those who move with purpose. 

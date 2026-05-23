@@ -114,3 +114,12 @@ export async function getStorefrontCategories() {
 
   return serializePrisma(data);
 }
+
+/** Public homepage hero frames — active only, editorial order */
+export async function getHomeHeroSlides() {
+  const slides = await prisma.heroSlide.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+  });
+  return serializePrisma(slides);
+}

@@ -684,6 +684,27 @@ model HomepageContent {
   @@map("homepage_content")
 }
 
+/// Cinematic homepage hero slides — admin-managed campaign/editorial frames
+model HeroSlide {
+  id             String   @id @default(cuid())
+  image          String // desktop hero image URL (Supabase public or site path)
+  mobileImage    String?
+  eyebrow        String
+  headline       String
+  narrative      String
+  ctaLabel       String
+  ctaHref        String
+  alignment      String   @default("left") // left | center | right
+  overlayOpacity Float    @default(0.45)
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("hero_slides")
+}
+
 // Campaign & editorial media assets
 model CampaignAsset {
   id   String       @id @default(cuid())

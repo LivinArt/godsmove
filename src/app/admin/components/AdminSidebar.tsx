@@ -32,16 +32,17 @@ const navGroups = [
     label: 'Culture',
     items: [
       { href: '/admin/editorial', label: 'Editorial / CMS', icon: PenIcon },
+      { href: '/admin/hero-slides', label: 'Homepage hero', icon: ImageStackIcon },
     ],
   },
 ];
 
 // Role-based nav restrictions
 const ROLE_RESTRICTIONS: Record<string, string[]> = {
-  CONTENT_EDITOR: ['/admin/editorial'],
+  CONTENT_EDITOR: ['/admin/editorial', '/admin/hero-slides'],
   OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/exclusive-draws'],
   SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/customers'],
-  MARKETING: ['/admin', '/admin/discounts', '/admin/drops'],
+  MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides'],
 };
 
 interface Props {
@@ -191,6 +192,15 @@ function LockIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  );
+}
+
+function ImageStackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="5" width="14" height="12" rx="1" />
+      <rect x="7" y="9" width="14" height="12" rx="1" opacity="0.9" />
     </svg>
   );
 }

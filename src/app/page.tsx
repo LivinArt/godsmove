@@ -1,34 +1,48 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ArrowDown } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import ExclusiveRack, { type ExclusiveRackProduct } from '@/components/ExclusiveRack';
-import { getStorefrontProducts, getActiveDrop } from '@/actions/storefront.actions';
+import CinematicHero, { type CinematicHeroSlide } from '@/components/CinematicHero';
+import { getHomeHeroSlides, getStorefrontProducts } from '@/actions/storefront.actions';
 import styles from './page.module.css';
 
 /** Merchandising must reflect live DB — avoid stale static homepage without rack/unlock products */
 export const dynamic = 'force-dynamic';
 
+const FALLBACK_HERO_SLIDES: CinematicHeroSlide[] = [
+  {
+    id: 'fallback-editorial',
+    image: '/images/hero/hero-main.png',
+    mobileImage: null,
+    eyebrow: 'SS26 / DROP 001',
+    headline: 'Worn With Intent.',
+    narrative:
+      'Heavy in symbolism.\nLimited in quantity.\nBuilt for custodians, not consumers.',
+    ctaLabel: 'ENTER THE DROP',
+    ctaHref: '/drops',
+    alignment: 'left',
+    overlayOpacity: 0.45,
+  },
+];
+
 export default async function Home() {
-  const [featuredDropProducts, exclusiveUnlockProducts, exclusiveRackProducts, activeDrop] =
+  const [featuredDropProducts, exclusiveUnlockProducts, exclusiveRackProducts, heroSlidesRaw] =
     await Promise.all([
       getStorefrontProducts({ channel: 'DROP', featured: true }),
       getStorefrontProducts({ channel: 'EXCLUSIVE_UNLOCK' }),
       getStorefrontProducts({ channel: 'EXCLUSIVE_RACK' }),
-      getActiveDrop(),
+      getHomeHeroSlides(),
     ]);
 
-  const drop001 = activeDrop || {
-    name: 'Permanent Collection',
-    tagline: 'Always available.',
-    description: 'The foundation of the GODSMOVE wardrobe.',
-    heroImageUrl: '/images/hero/hero-main.png',
-    slug: 'permanent',
-  };
+  const heroSlides: CinematicHeroSlide[] =
+    Array.isArray(heroSlidesRaw) && heroSlidesRaw.length > 0
+      ? (heroSlidesRaw as CinematicHeroSlide[])
+      : FALLBACK_HERO_SLIDES;
 
   return (
     <>
@@ -36,50 +50,8 @@ export default async function Home() {
       <CartDrawer />
 
       <main>
-        {/* 1. Hero Section */}
-        <section className={styles.hero} id="hero">
-          <div className={styles.heroImageWrap}>
-            <Image
-              src="/images/hero/hero-main.png"
-              alt="GODSMOVE Campaign"
-              fill
-              className={styles.heroImage}
-              priority
-              sizes="100vw"
-            />
-            <div className={styles.heroOverlay} />
-          </div>
-
-          <div className={styles.heroContent}>
-            <div className={styles.heroBadge}>
-              <span className="caption">SS26 / {drop001.name}</span>
-            </div>
-            <h1 className={styles.heroTitle}>
-              Doomed<br />to <span className={styles.heroTitleAccent}>Drip.</span>
-            </h1>
-            <p className={styles.heroSub}>No Coincidence.</p>
-            <p className={styles.heroDesc}>
-              Every piece is deliberate. Limited in quantity. Heavy in meaning.
-            </p>
-            <div className={styles.heroCtas}>
-              <Link href="/drops" className={`btn btn-primary ${styles.heroCta}`} id="hero-cta">
-                Explore the Drop
-              </Link>
-              <Link
-                href="/our-story"
-                className={`btn btn-secondary ${styles.heroCtaSecondary}`}
-                id="hero-cta-secondary"
-              >
-                Our Story
-              </Link>
-            </div>
-          </div>
-
-          <div className={styles.heroScroll}>
-            <ArrowDown size={16} />
-            <span>Scroll</span>
-          </div>
-        </section>
+        {/* 1. Cinematic hero — admin-managed slides */}
+        <CinematicHero slides={heroSlides} />
 
         {/* 2. Exclusive Unlock System */}
         {exclusiveUnlockProducts.length > 0 && (

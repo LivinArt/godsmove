@@ -11,11 +11,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "GODSMOVE — Make Your Move.",
-  description: "Doomed to Drip. GODSMOVE is built for people who move with purpose — decisive creators who execute at the highest level.",
+  description:
+    "Worn With Intent. GODSMOVE is built for people who move with purpose — decisive creators who execute at the highest level.",
   keywords: ["streetwear", "fashion", "India", "oversized", "drop shoulder", "editorial", "culture", "godsmove"],
   openGraph: {
     title: "GODSMOVE — Make Your Move.",
-    description: "Doomed to Drip.",
+    description: "Worn With Intent.",
     type: "website",
     locale: "en_IN",
     siteName: "GODSMOVE",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "GODSMOVE",
-    description: "Doomed to Drip.",
+    description: "Worn With Intent.",
   },
 };
 
