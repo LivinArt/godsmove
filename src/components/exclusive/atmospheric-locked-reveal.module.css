@@ -1,5 +1,5 @@
 /* ── Shared: controlled atmospheric emergence (vault + listing cards) ──
-   Pointer sets --rx/--ry/--mx/--my on ancestor via useAtmosphericRevealPointer */
+   Pointer sets --rx/--ry/--mx/--my on .gm-atmospheric-reveal-host via hook */
 
 .stage {
   position: absolute;
@@ -8,177 +8,205 @@
   overflow: hidden;
   border-radius: inherit;
   isolation: isolate;
-  contain: strict;
+  /* layout + paint only — strict was overly aggressive for perceived motion depth */
+  contain: layout paint;
   pointer-events: none;
-  background: #050505;
+  background: #0a0a0a;
   --rx: 50%;
   --ry: 46%;
   --mx: 0;
   --my: 0;
-  --parallax-amt: 2.4;
-  --glow-nudge: 3;
+  --parallax-amt: 4;
+  --glow-nudge: 3.5;
 }
 
-/* 1 — Base silhouette (dominant; never lifts to full readability) */
+/* 1 — Silhouette: strongest drift (form reads immediately; still restricted) */
 .layerSilhouette {
   position: absolute;
   inset: -5%;
   z-index: 0;
   background-size: cover;
-  background-position: center;
+  background-position: calc(50% + var(--mx, 0) * 2.8%) calc(48% + var(--my, 0) * 2.8%);
   background-repeat: no-repeat;
-  filter: brightness(0.16) saturate(0.78) contrast(1.06);
-  transform: scale3d(1.07, 1.07, 1);
+  filter: brightness(0.3) saturate(0.84) contrast(1.05);
+  transform: translate3d(
+      calc(var(--mx, 0) * 1px * var(--parallax-amt, 4) * 1.42),
+      calc(var(--my, 0) * 1px * var(--parallax-amt, 4) * 1.42),
+      0
+    )
+    scale3d(1.07, 1.07, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background-position 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.35s ease;
+  will-change: transform;
 }
 
-/* 2 — Partial emergence (weighted, incomplete; never full product) */
+/* 2 — Emergence: partial structure / contour lift (not full product photography) */
 .layerEmergence {
   position: absolute;
   inset: -6%;
   z-index: 1;
   background-size: cover;
-  background-position: center;
+  background-position: calc(50% + var(--mx, 0) * 1.4%) calc(48% + var(--my, 0) * 1.4%);
   background-repeat: no-repeat;
-  opacity: 0.72;
-  filter: brightness(0.44) saturate(0.9) contrast(0.96);
+  opacity: 0.86;
+  filter: brightness(0.54) saturate(0.92) contrast(0.98);
   transform: translate3d(
-      calc(var(--mx, 0) * 1px * var(--parallax-amt, 2.4)),
-      calc(var(--my, 0) * 1px * var(--parallax-amt, 2.4)),
+      calc(var(--mx, 0) * 1px * var(--parallax-amt, 4)),
+      calc(var(--my, 0) * 1px * var(--parallax-amt, 4)),
       0
     )
     scale3d(1.06, 1.06, 1);
-  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background-position 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.35s ease;
   will-change: transform;
   -webkit-mask-image: radial-gradient(
-    ellipse 26% 22% at var(--rx, 50%) var(--ry, 46%),
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.06) 42%,
-    transparent 72%
+    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.04) 58%,
+    transparent 78%
   );
   mask-image: radial-gradient(
-    ellipse 26% 22% at var(--rx, 50%) var(--ry, 46%),
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.06) 42%,
-    transparent 72%
+    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.04) 58%,
+    transparent 78%
   );
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
 
-/* 3 — Blur diffusion (single blur pass; soft veil) */
+/* 3 — Diffusion: single blur; lags silhouette/emergence for depth */
 .layerDiffusion {
   position: absolute;
   inset: -7%;
   z-index: 2;
   background-size: cover;
-  background-position: center;
+  background-position: calc(50% + var(--mx, 0) * 0.9%) calc(48% + var(--my, 0) * 0.9%);
   background-repeat: no-repeat;
-  filter: blur(9px) saturate(0.88) brightness(0.52);
+  filter: blur(7px) saturate(0.9) brightness(0.6);
   transform: translate3d(
-      calc(var(--mx, 0) * 1px * var(--parallax-amt, 2.4) * 0.45),
-      calc(var(--my, 0) * 1px * var(--parallax-amt, 2.4) * 0.45),
+      calc(var(--mx, 0) * 1px * var(--parallax-amt, 4) * 0.62),
+      calc(var(--my, 0) * 1px * var(--parallax-amt, 4) * 0.62),
       0
     )
     scale3d(1.05, 1.05, 1);
-  transition: filter 0.38s cubic-bezier(0.22, 1, 0.36, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    filter 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    background-position 0.34s cubic-bezier(0.22, 1, 0.36, 1);
   -webkit-mask-image: radial-gradient(
-    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    ellipse 38% 32% at var(--rx, 50%) var(--ry, 46%),
     transparent 0%,
-    rgba(0, 0, 0, 0.14) 26%,
-    rgba(0, 0, 0, 0.82) 52%,
-    rgba(0, 0, 0, 0.96) 72%,
+    rgba(0, 0, 0, 0.1) 24%,
+    rgba(0, 0, 0, 0.68) 50%,
+    rgba(0, 0, 0, 0.9) 70%,
     #000 100%
   );
   mask-image: radial-gradient(
-    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    ellipse 38% 32% at var(--rx, 50%) var(--ry, 46%),
     transparent 0%,
-    rgba(0, 0, 0, 0.14) 26%,
-    rgba(0, 0, 0, 0.82) 52%,
-    rgba(0, 0, 0, 0.96) 72%,
+    rgba(0, 0, 0, 0.1) 24%,
+    rgba(0, 0, 0, 0.68) 50%,
+    rgba(0, 0, 0, 0.9) 70%,
     #000 100%
   );
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
 
-/* 4 — Monochrome grain (SVG turbulence; low contrast) */
+/* 4 — Grain: counter-drift, barely perceptible */
 .layerGrain {
   position: absolute;
   inset: 0;
   z-index: 3;
-  opacity: 0.028;
+  opacity: 0.034;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   transform: translate3d(
-      calc(var(--mx, 0) * 1px * var(--glow-nudge, 3) * -0.35),
-      calc(var(--my, 0) * 1px * var(--glow-nudge, 3) * -0.35),
+      calc(var(--mx, 0) * 1px * var(--glow-nudge, 3.5) * -0.55),
+      calc(var(--my, 0) * 1px * var(--glow-nudge, 3.5) * -0.55),
       0
     );
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   animation: atmGrainDrift 14s ease-in-out infinite;
 }
 
 @keyframes atmGrainDrift {
   0%,
   100% {
-    opacity: 0.026;
+    opacity: 0.03;
   }
   50% {
-    opacity: 0.034;
+    opacity: 0.038;
   }
 }
 
-/* 5 — Ambient: wide, slow luminance (not a tight spotlight) */
+/* 5 — Ambient: separated from subject; shifts with pointer (wide, not a spotlight) */
 .layerAmbient {
   position: absolute;
   inset: 0;
   z-index: 4;
-  opacity: 0.88;
+  opacity: 0.92;
   background: radial-gradient(
-      ellipse 88% 72% at calc(48% + var(--mx, 0) * 3%) calc(40% + var(--my, 0) * 2.5%),
-      rgba(200, 164, 106, 0.07) 0%,
-      rgba(200, 164, 106, 0.025) 38%,
-      transparent 62%
+      ellipse 92% 78% at calc(46% + var(--mx, 0) * 5.5%) calc(38% + var(--my, 0) * 4.5%),
+      rgba(200, 164, 106, 0.09) 0%,
+      rgba(200, 164, 106, 0.034) 36%,
+      transparent 64%
     ),
     linear-gradient(
       122deg,
-      transparent 18%,
-      rgba(235, 228, 214, 0.03) 48%,
-      transparent 78%
+      transparent 16%,
+      rgba(235, 228, 214, 0.045) 46%,
+      transparent 80%
     );
-  background-size: 100% 100%, 180% 180%;
+  background-size: 100% 100%, 200% 200%;
   background-position:
     center,
-    calc(52% + var(--mx, 0) * 4%) calc(44% + var(--my, 0) * 3%);
+    calc(50% + var(--mx, 0) * 8%) calc(42% + var(--my, 0) * 6%);
   mix-blend-mode: screen;
-  transition: opacity 0.45s ease, background-position 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.4s ease, background-position 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 6 — Vignette (depth; static) */
+/* 6 — Vignette: depth without swallowing the artifact */
 .layerVignette {
   position: absolute;
   inset: 0;
   z-index: 5;
   background: radial-gradient(
-    ellipse 72% 64% at 50% 48%,
-    transparent 22%,
-    rgba(0, 0, 0, 0.38) 100%
+    ellipse 74% 66% at 50% 48%,
+    transparent 26%,
+    rgba(0, 0, 0, 0.24) 100%
   );
   pointer-events: none;
 }
 
-/* 7 — Reserved: metadata / chrome lives outside this stage in parents */
+/* Touch: breathing + slow drift (no pointer) */
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerSilhouette {
+  animation: atmSilhouetteBreath 9.5s ease-in-out infinite;
+}
 
-/* Touch: no pointer tracking — mask + diffusion breathe */
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerEmergence {
+  animation: atmEmergenceBreath 8.5s ease-in-out infinite;
+}
+
 :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerDiffusion {
   animation: atmBreathDiffusion 8s ease-in-out infinite;
 }
 
-:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerEmergence {
-  transform: translate3d(0, 0, 0) scale3d(1.05, 1.05, 1);
-}
-
 :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerAmbient {
   animation: atmAmbientBreath 9s ease-in-out infinite;
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerSilhouette {
+  transform: translate3d(0, 0, 0) scale3d(1.06, 1.06, 1);
+  background-position: 50% 48%;
+  transition: none;
 }
 
 :global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerEmergence,
@@ -192,35 +220,66 @@
 }
 
 :global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerAmbient {
-  opacity: 0.62;
+  opacity: 0.72;
   transition: none;
+}
+
+@keyframes atmSilhouetteBreath {
+  0%,
+  100% {
+    filter: brightness(0.3) saturate(0.84) contrast(1.05);
+    background-position: 48% 46%;
+  }
+  50% {
+    filter: brightness(0.34) saturate(0.86) contrast(1.06);
+    background-position: 52% 50%;
+  }
+}
+
+@keyframes atmEmergenceBreath {
+  0%,
+  100% {
+    opacity: 0.82;
+    filter: brightness(0.52) saturate(0.92) contrast(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    filter: brightness(0.58) saturate(0.94) contrast(1);
+  }
 }
 
 @keyframes atmBreathDiffusion {
   0%,
   100% {
-    filter: blur(9px) saturate(0.88) brightness(0.52);
+    filter: blur(7px) saturate(0.9) brightness(0.6);
     -webkit-mask-size: 100% 100%;
     mask-size: 100% 100%;
   }
   50% {
-    filter: blur(8px) saturate(0.9) brightness(0.56);
-    -webkit-mask-size: 106% 106%;
-    mask-size: 106% 106%;
+    filter: blur(6px) saturate(0.92) brightness(0.64);
+    -webkit-mask-size: 104% 104%;
+    mask-size: 104% 104%;
   }
 }
 
 @keyframes atmAmbientBreath {
   0%,
   100% {
-    opacity: 0.78;
+    opacity: 0.86;
   }
   50% {
-    opacity: 0.9;
+    opacity: 0.95;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .layerSilhouette {
+    transform: translate3d(0, 0, 0) scale3d(1.06, 1.06, 1) !important;
+    background-position: 50% 48% !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
   .layerEmergence,
   .layerDiffusion {
     transform: translate3d(0, 0, 0) scale3d(1.05, 1.05, 1) !important;
@@ -234,14 +293,13 @@
 
   .layerAmbient {
     animation: none !important;
-    opacity: 0.65 !important;
+    opacity: 0.72 !important;
     transition: none !important;
   }
 
-  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerDiffusion {
-    animation: none !important;
-  }
-
+  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerSilhouette,
+  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerEmergence,
+  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerDiffusion,
   :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerAmbient {
     animation: none !important;
   }

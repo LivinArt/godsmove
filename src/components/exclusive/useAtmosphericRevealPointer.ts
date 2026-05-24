@@ -40,9 +40,11 @@ export function useAtmosphericRevealPointer(
     }
 
     const tablet = window.matchMedia('(max-width: 1023px)').matches;
-    const fine = mode === 'vault' ? (tablet ? 2.2 : 3.2) : tablet ? 1.6 : 2.4;
+    /* Listing cards: slightly softer than vault, but always perceptibly alive on fine pointer */
+    const fine =
+      mode === 'vault' ? (tablet ? 3.4 : 5.2) : tablet ? 2.6 : 4.1;
     wrap.style.setProperty('--parallax-amt', String(fine));
-    wrap.style.setProperty('--glow-nudge', tablet ? '2' : '3');
+    wrap.style.setProperty('--glow-nudge', tablet ? '2.5' : '4');
     wrap.setAttribute('data-reveal-interaction', 'pointer');
 
     const setVars = (clientX: number, clientY: number) => {
