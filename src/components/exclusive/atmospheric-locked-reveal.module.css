@@ -1,0 +1,248 @@
+/* ── Shared: controlled atmospheric emergence (vault + listing cards) ──
+   Pointer sets --rx/--ry/--mx/--my on ancestor via useAtmosphericRevealPointer */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  isolation: isolate;
+  contain: strict;
+  pointer-events: none;
+  background: #050505;
+  --rx: 50%;
+  --ry: 46%;
+  --mx: 0;
+  --my: 0;
+  --parallax-amt: 2.4;
+  --glow-nudge: 3;
+}
+
+/* 1 — Base silhouette (dominant; never lifts to full readability) */
+.layerSilhouette {
+  position: absolute;
+  inset: -5%;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.16) saturate(0.78) contrast(1.06);
+  transform: scale3d(1.07, 1.07, 1);
+}
+
+/* 2 — Partial emergence (weighted, incomplete; never full product) */
+.layerEmergence {
+  position: absolute;
+  inset: -6%;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.72;
+  filter: brightness(0.44) saturate(0.9) contrast(0.96);
+  transform: translate3d(
+      calc(var(--mx, 0) * 1px * var(--parallax-amt, 2.4)),
+      calc(var(--my, 0) * 1px * var(--parallax-amt, 2.4)),
+      0
+    )
+    scale3d(1.06, 1.06, 1);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  -webkit-mask-image: radial-gradient(
+    ellipse 26% 22% at var(--rx, 50%) var(--ry, 46%),
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.06) 42%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    ellipse 26% 22% at var(--rx, 50%) var(--ry, 46%),
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.06) 42%,
+    transparent 72%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* 3 — Blur diffusion (single blur pass; soft veil) */
+.layerDiffusion {
+  position: absolute;
+  inset: -7%;
+  z-index: 2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(9px) saturate(0.88) brightness(0.52);
+  transform: translate3d(
+      calc(var(--mx, 0) * 1px * var(--parallax-amt, 2.4) * 0.45),
+      calc(var(--my, 0) * 1px * var(--parallax-amt, 2.4) * 0.45),
+      0
+    )
+    scale3d(1.05, 1.05, 1);
+  transition: filter 0.38s cubic-bezier(0.22, 1, 0.36, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-mask-image: radial-gradient(
+    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    transparent 0%,
+    rgba(0, 0, 0, 0.14) 26%,
+    rgba(0, 0, 0, 0.82) 52%,
+    rgba(0, 0, 0, 0.96) 72%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 34% 28% at var(--rx, 50%) var(--ry, 46%),
+    transparent 0%,
+    rgba(0, 0, 0, 0.14) 26%,
+    rgba(0, 0, 0, 0.82) 52%,
+    rgba(0, 0, 0, 0.96) 72%,
+    #000 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* 4 — Monochrome grain (SVG turbulence; low contrast) */
+.layerGrain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0.028;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  transform: translate3d(
+      calc(var(--mx, 0) * 1px * var(--glow-nudge, 3) * -0.35),
+      calc(var(--my, 0) * 1px * var(--glow-nudge, 3) * -0.35),
+      0
+    );
+  animation: atmGrainDrift 14s ease-in-out infinite;
+}
+
+@keyframes atmGrainDrift {
+  0%,
+  100% {
+    opacity: 0.026;
+  }
+  50% {
+    opacity: 0.034;
+  }
+}
+
+/* 5 — Ambient: wide, slow luminance (not a tight spotlight) */
+.layerAmbient {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0.88;
+  background: radial-gradient(
+      ellipse 88% 72% at calc(48% + var(--mx, 0) * 3%) calc(40% + var(--my, 0) * 2.5%),
+      rgba(200, 164, 106, 0.07) 0%,
+      rgba(200, 164, 106, 0.025) 38%,
+      transparent 62%
+    ),
+    linear-gradient(
+      122deg,
+      transparent 18%,
+      rgba(235, 228, 214, 0.03) 48%,
+      transparent 78%
+    );
+  background-size: 100% 100%, 180% 180%;
+  background-position:
+    center,
+    calc(52% + var(--mx, 0) * 4%) calc(44% + var(--my, 0) * 3%);
+  mix-blend-mode: screen;
+  transition: opacity 0.45s ease, background-position 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 6 — Vignette (depth; static) */
+.layerVignette {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: radial-gradient(
+    ellipse 72% 64% at 50% 48%,
+    transparent 22%,
+    rgba(0, 0, 0, 0.38) 100%
+  );
+  pointer-events: none;
+}
+
+/* 7 — Reserved: metadata / chrome lives outside this stage in parents */
+
+/* Touch: no pointer tracking — mask + diffusion breathe */
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerDiffusion {
+  animation: atmBreathDiffusion 8s ease-in-out infinite;
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerEmergence {
+  transform: translate3d(0, 0, 0) scale3d(1.05, 1.05, 1);
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerAmbient {
+  animation: atmAmbientBreath 9s ease-in-out infinite;
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerEmergence,
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerDiffusion {
+  transform: translate3d(0, 0, 0) scale3d(1.05, 1.05, 1);
+  transition: none;
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerGrain {
+  animation: none;
+}
+
+:global(.gm-atmospheric-reveal-host[data-reveal-interaction='reduced']) .layerAmbient {
+  opacity: 0.62;
+  transition: none;
+}
+
+@keyframes atmBreathDiffusion {
+  0%,
+  100% {
+    filter: blur(9px) saturate(0.88) brightness(0.52);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+  50% {
+    filter: blur(8px) saturate(0.9) brightness(0.56);
+    -webkit-mask-size: 106% 106%;
+    mask-size: 106% 106%;
+  }
+}
+
+@keyframes atmAmbientBreath {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layerEmergence,
+  .layerDiffusion {
+    transform: translate3d(0, 0, 0) scale3d(1.05, 1.05, 1) !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .layerGrain {
+    animation: none !important;
+  }
+
+  .layerAmbient {
+    animation: none !important;
+    opacity: 0.65 !important;
+    transition: none !important;
+  }
+
+  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerDiffusion {
+    animation: none !important;
+  }
+
+  :global(.gm-atmospheric-reveal-host[data-reveal-interaction='touch']) .layerAmbient {
+    animation: none !important;
+  }
+}

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { AtmosphericLockedRevealLayers } from '@/components/exclusive/AtmosphericLockedRevealLayers';
+import { useAtmosphericRevealPointer } from '@/components/exclusive/useAtmosphericRevealPointer';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
@@ -26,6 +28,9 @@ export default function ProductCard({
   const wishlisted = isInWishlist(product.id);
   const [isFlipped, setIsFlipped] = useState(false);
   const isDark = theme === 'dark';
+  const revealHostRef = useRef<HTMLDivElement>(null);
+
+  const isExclusiveUnlockListing = product.channel === 'EXCLUSIVE_UNLOCK';
 
   const { enableImageToggle, frontImageUrl, backImageUrl, defaultImageSide } = product;
 
@@ -40,6 +45,11 @@ export default function ProductCard({
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
   const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
   const colorName = baseVariant?.color || 'Standard';
+
+  useAtmosphericRevealPointer(revealHostRef, {
+    enabled: isExclusiveUnlockListing && !!currentImageUrl,
+    mode: 'card',
+  });
 
   const hasDiscount = comparePrice != null && comparePrice > price && price > 0;
   const discountPercent = hasDiscount
@@ -57,14 +67,42 @@ export default function ProductCard({
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <Link href={`/product/${product.slug}`} className={styles.imageWrap}>
-        <Image
-          src={currentImageUrl}
-          alt={product.name}
-          width={600}
-          height={750}
-          className={`${styles.image} ${isFlipped ? styles.flipped : ''}`}
-          priority={index < 4}
-        />
+        {isExclusiveUnlockListing ? (
+          <div
+            ref={revealHostRef}
+            className={`gm-atmospheric-reveal-host ${styles.unlockRevealMount}`}
+            style={
+              {
+                ['--rx' as string]: '50%',
+                ['--ry' as string]: '46%',
+                ['--mx' as string]: '0',
+                ['--my' as string]: '0',
+              } as CSSProperties
+            }
+          >
+            <Image
+              src={currentImageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 767px) 50vw, 28vw"
+              className={`${styles.unlockLcpImg} ${isFlipped ? styles.flipped : ''}`}
+              priority={index < 4}
+            />
+            <AtmosphericLockedRevealLayers
+              key={currentImageUrl}
+              imageUrl={currentImageUrl}
+            />
+          </div>
+        ) : (
+          <Image
+            src={currentImageUrl}
+            alt={product.name}
+            width={600}
+            height={750}
+            className={`${styles.image} ${isFlipped ? styles.flipped : ''}`}
+            priority={index < 4}
+          />
+        )}
         {enableImageToggle && frontImageUrl && backImageUrl && (
           <button
             className={styles.imageToggleBtn}

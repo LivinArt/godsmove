@@ -24,6 +24,28 @@
   isolation: isolate;
 }
 
+/* EXCLUSIVE_UNLOCK listing: optimized LCP image under atmospheric stack */
+.unlockRevealMount {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.unlockRevealMount > span {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0;
+  z-index: 0;
+}
+
+.unlockLcpImg {
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Next.js Image wrapper — fill frame at full brightness (never dim on dark sections) */
 .imageWrap > span {
   display: block !important;
