@@ -30,6 +30,8 @@
   inset: 0;
   z-index: 0;
   background-color: #0a0a0a;
+  /* Own stacking context so z-index vs Next Image wrapper is deterministic */
+  isolation: isolate;
 }
 
 .unlockRevealMount > span {
@@ -38,13 +40,16 @@
   height: 100% !important;
   position: absolute !important;
   inset: 0;
+  /* LCP helper sits UNDER the atmospheric stage */
   z-index: 0;
 }
 
 .unlockLcpImg {
   object-fit: cover;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  /* Must stay visually absent — .imageWrap img rule below used to force opacity:1 and broke the stack */
+  visibility: hidden;
 }
 
 /* Next.js Image wrapper — fill frame at full brightness (never dim on dark sections) */
@@ -56,7 +61,8 @@
   inset: 0;
 }
 
-.imageWrap img,
+/* Never target unlock LCP img — opacity:1 !important was winning over .unlockLcpImg and flattened the composite */
+.imageWrap img:not(.unlockLcpImg),
 .image {
   width: 100% !important;
   height: 100% !important;

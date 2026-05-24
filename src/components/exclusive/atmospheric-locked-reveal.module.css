@@ -8,8 +8,8 @@
   overflow: hidden;
   border-radius: inherit;
   isolation: isolate;
-  /* layout + paint only — strict was overly aggressive for perceived motion depth */
-  contain: layout paint;
+  /* layout only — paint containment can clip / flatten filtered + masked descendants in some compositors */
+  contain: layout;
   pointer-events: none;
   background: #0a0a0a;
   --rx: 50%;

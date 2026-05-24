@@ -82,11 +82,12 @@ export default function ProductCard({
           >
             <Image
               src={currentImageUrl}
-              alt={product.name}
+              alt=""
               fill
               sizes="(max-width: 767px) 50vw, 28vw"
               className={`${styles.unlockLcpImg} ${isFlipped ? styles.flipped : ''}`}
               priority={index < 4}
+              aria-hidden
             />
             <AtmosphericLockedRevealLayers
               key={currentImageUrl}

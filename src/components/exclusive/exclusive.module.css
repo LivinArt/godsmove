@@ -49,6 +49,27 @@
     rgba(5, 5, 5, 0.58) 46%,
     rgba(5, 5, 5, 0.82) 100%
   );
+  /*
+   * Compositing: a uniform opaque-ish veil was visually swallowing all pointer-driven motion
+   * in the atmospheric stack beneath. Mask weakens the veil in the upper field (artifact zone)
+   * while keeping strength lower on the canvas for vault copy contrast.
+   */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) 18%,
+    rgba(0, 0, 0, 0.55) 38%,
+    #fff 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) 18%,
+    rgba(0, 0, 0, 0.55) 38%,
+    #fff 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
 .lockedGlow {
