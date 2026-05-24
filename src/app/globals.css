@@ -377,6 +377,25 @@ h1, h2, h3, h4, h5, h6 {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
+/* ── Cinematic loader → homepage hero (opacity only; no layout shift) ─ */
+html[data-gm-veil='on'] #hero {
+  opacity: 0.94;
+  transition: opacity 0.52s ease;
+}
+
+html[data-gm-veil='exiting'] #hero {
+  opacity: 1;
+  transition: opacity 1.02s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-gm-veil='on'] #hero,
+  html[data-gm-veil='exiting'] #hero {
+    opacity: 1;
+    transition: none;
+  }
+}
+
 /* ── Mobile storefront (320px–767px) — desktop rules above unchanged ── */
 @media (max-width: 767px) {
   :root {

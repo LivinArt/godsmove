@@ -1,12 +1,12 @@
 /**
- * GODSMOVE — global cinematic boot veil
- * GPU-first: opacity, transform; no heavy filters on full viewport.
+ * GODSMOVE — cinematic archive veil (refined)
+ * GPU-first: opacity, transform; layered depth; restrained motion.
  */
 
 .root {
   --gm-ivory: #ebe6dc;
   --gm-gold: #c4a574;
-  --gm-gold-dim: rgba(196, 165, 116, 0.35);
+  --gm-gold-dim: rgba(196, 165, 116, 0.28);
   --gm-dwell: 1.6s;
   position: fixed;
   inset: 0;
@@ -21,17 +21,17 @@
   pointer-events: none;
 }
 
-/* ── Backdrop layers ───────────────────────────────────────────── */
+/* ── Layer 1: black veil ───────────────────────────────────────── */
 .backdrop {
   position: absolute;
   inset: 0;
-  background: #050506;
+  background: #030304;
   opacity: 0;
   transform: translateZ(0);
 }
 
 .root[data-state='enter'] .backdrop {
-  animation: gmFadeIn 0.45s cubic-bezier(0.33, 1, 0.32, 1) forwards;
+  animation: gmFadeIn 0.52s cubic-bezier(0.33, 1, 0.32, 1) forwards;
 }
 
 .root[data-state='reveal'] .backdrop,
@@ -41,34 +41,95 @@
 
 .root[data-state='exit'] .backdrop {
   opacity: 1;
-  animation: gmFadeOut 0.75s cubic-bezier(0.33, 1, 0.32, 1) forwards;
+  animation: gmFadeOutSlow 1.08s cubic-bezier(0.22, 0.94, 0.38, 1) 0.16s forwards;
 }
 
+/* ── Layer 2: ambient glow (slow drift) ───────────────────────── */
+.ambientGlow {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 48% at 48% 38%, rgba(196, 165, 116, 0.065) 0%, transparent 58%),
+    radial-gradient(ellipse 40% 35% at 72% 62%, rgba(235, 230, 220, 0.04) 0%, transparent 55%);
+  opacity: 0.72;
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ambientDrift {
+    animation: gmAmbientDrift 14s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes gmAmbientDrift {
+  0% {
+    transform: translate3d(-0.4%, 0.2%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(0.35%, -0.25%, 0) scale(1.02);
+  }
+}
+
+/* ── Layer 3: vignette ─────────────────────────────────────────── */
 .vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 85% 70% at 50% 45%,
-    rgba(196, 165, 116, 0.09) 0%,
-    transparent 52%
+    ellipse 88% 74% at 50% 46%,
+    rgba(196, 165, 116, 0.06) 0%,
+    transparent 54%
   );
-  opacity: 0.85;
+  opacity: 0.68;
 }
 
-.grain {
+@media (prefers-reduced-motion: no-preference) {
+  .pulse {
+    animation: gmPulse 4.2s ease-in-out infinite;
+  }
+}
+
+@keyframes gmPulse {
+  0%,
+  100% {
+    opacity: 0.66;
+  }
+  50% {
+    opacity: 0.76;
+  }
+}
+
+/* ── Layer 4–5: dual grain (monochrome turbulence, reduced tiling) ─ */
+.grain,
+.grain2 {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.055;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
+  transform: translateZ(0);
+}
+
+/* feColorMatrix desaturates; two scales break repetition */
+.grain {
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cfilter id='g1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g1)'/%3E%3C/svg%3E");
+  background-size: 340px 340px;
+}
+
+.grain2 {
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cfilter id='g2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g2)'/%3E%3C/svg%3E");
+  background-size: 520px 520px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .grainMotion {
-    animation: gmGrainShift 2.8s linear infinite;
+    animation: gmGrainShift 3.4s linear infinite;
+  }
+
+  .grainMotion2 {
+    animation: gmGrainShift2 4.6s linear infinite reverse;
   }
 }
 
@@ -77,129 +138,274 @@
     transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translate3d(-36px, -24px, 0);
+    transform: translate3d(-28px, -20px, 0);
   }
 }
 
-/* Subtle “terminal” luminance pulse — very low amplitude */
-@media (prefers-reduced-motion: no-preference) {
-  .pulse {
-    animation: gmPulse 3.2s ease-in-out infinite;
+@keyframes gmGrainShift2 {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
-}
-
-@keyframes gmPulse {
-  0%,
   100% {
-    opacity: 0.92;
-  }
-  50% {
-    opacity: 1;
+    transform: translate3d(22px, 16px, 0) rotate(0.02deg);
   }
 }
 
-/* ── Content stack ─────────────────────────────────────────────── */
+/* ── Layer 7: foreground haze ───────────────────────────────────── */
+.foregroundHaze {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    185deg,
+    transparent 0%,
+    transparent 42%,
+    rgba(3, 3, 5, 0.22) 88%,
+    rgba(3, 3, 5, 0.38) 100%
+  );
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hazeDrift {
+    animation: gmHazeDrift 11s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes gmHazeDrift {
+  0% {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0.58;
+    transform: translate3d(0, -0.35%, 0);
+  }
+}
+
+/* ── Content stack (above grain, below haze) ─────────────────── */
 .inner {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(18px, 4vh, 28px);
-  max-width: min(92vw, 420px);
-  padding: 32px 24px;
+  gap: clamp(14px, 3.2vh, 22px);
+  max-width: min(92vw, 440px);
+  padding: 28px 22px;
   text-align: center;
 }
 
-.wordmark {
-  font-family: var(--font-plus-jakarta, system-ui, sans-serif);
-  font-weight: 600;
-  font-size: clamp(11px, 2.8vw, 13px);
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: var(--gm-ivory);
+.root[data-state='exit'] .inner {
   opacity: 0;
-  text-shadow:
-    0 0 24px rgba(235, 230, 220, 0.12),
-    0 0 60px rgba(196, 165, 116, 0.08);
-  transform: translate3d(0, 6px, 0);
+  transform: translate3d(0, -2px, 0);
+  transition:
+    opacity 0.36s cubic-bezier(0.33, 1, 0.32, 1),
+    transform 0.48s cubic-bezier(0.33, 1, 0.32, 1);
 }
 
-.root[data-state='reveal'] .wordmark,
-.root[data-state='hold'] .wordmark {
+.wordmark {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.11em;
+  margin: 0;
+  font-family: var(--font-plus-jakarta, system-ui, sans-serif);
+  font-weight: 500;
+  font-size: clamp(10px, 2.5vw, 12px);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gm-ivory);
+  text-shadow:
+    0 0 18px rgba(235, 230, 220, 0.08),
+    0 0 44px rgba(196, 165, 116, 0.05);
+}
+
+.wordmarkChar {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, 4px, 0);
+  will-change: opacity, transform;
+}
+
+.root[data-state='reveal'] .wordmarkChar,
+.root[data-state='hold'] .wordmarkChar {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition:
-    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.05s cubic-bezier(0.2, 1, 0.32, 1);
+}
+
+/* Subconscious projection drift (wordmark as a single plane) */
+@media (prefers-reduced-motion: no-preference) {
+  .root[data-state='hold'] .wordmark {
+    animation: gmWordmarkHush 6.4s ease-in-out 0.9s infinite;
+  }
+}
+
+@keyframes gmWordmarkHush {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  35% {
+    opacity: 0.97;
+    transform: translate3d(0.2px, -0.15px, 0);
+  }
+  68% {
+    opacity: 0.99;
+    transform: translate3d(-0.12px, 0.1px, 0);
+  }
 }
 
 .root[data-state='exit'] .wordmark {
+  animation: none;
+}
+
+.root[data-state='exit'] .wordmarkChar {
   opacity: 0;
-  transform: translate3d(0, -8px, 0);
+  transform: translate3d(0, -5px, 0);
   transition:
-    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.68s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .micro {
+  margin: 0;
   font-family: var(--font-plus-jakarta, system-ui, sans-serif);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: rgba(235, 230, 220, 0.42);
+  color: rgba(235, 230, 220, 0.34);
   opacity: 0;
-  transform: translate3d(0, 4px, 0);
+  transform: translate3d(0, 3px, 0);
 }
 
 .root[data-state='hold'] .micro {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition:
-    opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.35s,
-    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.35s;
+    opacity 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.32s,
+    transform 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.32s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .root[data-state='hold'] .micro {
+    animation: gmMicroDrift 7s ease-in-out 0.8s infinite;
+  }
+}
+
+@keyframes gmMicroDrift {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.93;
+  }
 }
 
 .root[data-state='exit'] .micro {
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.38s ease;
+}
+
+/* Progress: editorial line, soft bloom, slight overshoot */
+.progressShell {
+  position: relative;
+  width: min(200px, 54vw);
+  padding: 0 2px;
+}
+
+.progressShell::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 50%,
+    rgba(196, 165, 116, 0.09) 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+  opacity: 0.85;
 }
 
 .progressTrack {
-  width: min(220px, 58vw);
+  position: relative;
+  z-index: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
   border-radius: 1px;
-  overflow: hidden;
+  overflow: visible;
   opacity: 0;
-  transform: scale3d(0.96, 1, 1);
+  transform: scale3d(0.97, 1, 1);
+  box-shadow: 0 0 10px rgba(196, 165, 116, 0.04);
 }
 
 .root[data-state='hold'] .progressTrack {
   opacity: 1;
   transform: scale3d(1, 1, 1);
   transition:
-    opacity 0.7s ease 0.2s,
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+    opacity 0.58s ease 0.18s,
+    transform 0.82s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
 }
 
 .progressFill {
   height: 100%;
   width: 100%;
-  transform-origin: left center;
+  transform-origin: 2% center;
   transform: scale3d(0, 1, 1);
-  background: linear-gradient(90deg, rgba(196, 165, 116, 0.15), var(--gm-gold-dim), rgba(235, 230, 220, 0.35));
+  background: linear-gradient(
+    90deg,
+    rgba(196, 165, 116, 0.08),
+    rgba(196, 165, 116, 0.22),
+    rgba(235, 230, 220, 0.26),
+    rgba(196, 165, 116, 0.12)
+  );
+  box-shadow: 0 0 12px rgba(235, 230, 220, 0.06);
 }
 
 .root[data-state='hold'] .progressFill {
   transform: scale3d(1, 1, 1);
-  transition: transform var(--gm-dwell) cubic-bezier(0.33, 1, 0.32, 1) 0.15s;
+  transition: transform var(--gm-dwell) cubic-bezier(0.34, 1.06, 0.58, 1) 0.14s;
+}
+
+.root[data-state='exit'] .progressTrack {
+  opacity: 0;
+  transition: opacity 0.32s ease;
 }
 
 .root[data-state='exit'] .progressFill {
   opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.root[data-state='exit'] .foregroundHaze {
+  opacity: 0;
+  transition: opacity 0.42s ease 0.08s;
+}
+
+.root[data-state='exit'] .ambientGlow {
+  opacity: 0;
   transition: opacity 0.5s ease;
+}
+
+.root[data-state='exit'] .vignette {
+  opacity: 0;
+  transition: opacity 0.48s ease 0.04s;
+}
+
+.root[data-state='exit'] .grain,
+.root[data-state='exit'] .grain2 {
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 
 @keyframes gmFadeIn {
@@ -211,7 +417,10 @@
   }
 }
 
-@keyframes gmFadeOut {
+@keyframes gmFadeOutSlow {
+  from {
+    opacity: 1;
+  }
   to {
     opacity: 0;
   }
@@ -219,16 +428,24 @@
 
 /* Reduced motion */
 .reduce .grainMotion,
-.reduce .pulse {
+.reduce .grainMotion2,
+.reduce .ambientDrift,
+.reduce .pulse,
+.reduce .hazeDrift {
   animation: none !important;
 }
 
-.reduce .wordmark,
+.reduce .wordmarkChar,
 .reduce .micro,
 .reduce .progressTrack {
   opacity: 1 !important;
   transform: none !important;
   transition: none !important;
+  animation: none !important;
+}
+
+.reduce .wordmark {
+  animation: none !important;
 }
 
 .reduce .progressFill {
@@ -237,39 +454,45 @@
 }
 
 .reduce[data-state='exit'] .backdrop {
-  animation: gmFadeOut 0.12s ease forwards;
+  animation: gmFadeOutSlow 0.14s ease forwards;
 }
 
-/* ── Route transition pulse (no full blackout) ─────────────────── */
+/* ── Route: top-edge sweep (150–250ms class) ───────────────────── */
 .routeLine {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 1px;
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
   transform: scaleX(0);
   transform-origin: left center;
-  background: linear-gradient(90deg, transparent, rgba(196, 165, 116, 0.55), rgba(235, 230, 220, 0.35), transparent);
+  background: linear-gradient(
+    90deg,
+    rgba(196, 165, 116, 0) 0%,
+    rgba(196, 165, 116, 0.42) 38%,
+    rgba(235, 230, 220, 0.28) 62%,
+    rgba(196, 165, 116, 0) 100%
+  );
 }
 
 .routeLine[data-active='true'] {
   opacity: 1;
-  animation: gmRouteLine 0.55s cubic-bezier(0.33, 1, 0.32, 1) forwards;
+  animation: gmRouteSweep 0.2s cubic-bezier(0.28, 0.88, 0.32, 1) forwards;
 }
 
-@keyframes gmRouteLine {
+@keyframes gmRouteSweep {
   0% {
-    transform: scaleX(0);
-    opacity: 0.9;
+    transform: scale3d(0, 1, 1) translate3d(-1%, 0, 0);
+    opacity: 0.75;
   }
-  40% {
+  55% {
     opacity: 1;
   }
   100% {
-    transform: scaleX(1);
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
     opacity: 0;
   }
 }

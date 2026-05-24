@@ -10,11 +10,20 @@ import {
 } from 'react';
 import styles from './CinematicSiteLoader.module.css';
 
+/** Editorial / system microcopy — no “loading” register */
 const MICRO = [
-  'PREPARING DROP',
-  'ACCESSING ARCHIVE',
-  'AUTHORIZED ENTRY',
+  'SS26 — ACCESS LEVEL GRANTED',
+  'CURATED ACCESS',
+  'ENTERING ARCHIVE',
+  'INTERNAL RELEASE',
+  'GODSMOVE SYSTEMS',
+  'EDITORIAL SEQUENCE',
+  'PRIVATE DROP INDEX',
+  'ACCESS PROTOCOL VERIFIED',
+  'ARCHIVE INITIALIZED',
 ] as const;
+
+const WORDMARK = 'GODSMOVE' as const;
 
 type BootState = 'gone' | 'boot' | 'reveal' | 'dwell' | 'leave';
 
@@ -35,6 +44,7 @@ export function CinematicSiteLoader() {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const prevPath = useRef<string | null>(null);
   const bootStarted = useRef(false);
+  const bootPathRef = useRef<string | null>(null);
   const line = useMemo(
     () => MICRO[Math.floor(Math.random() * MICRO.length)],
     []
@@ -53,6 +63,7 @@ export function CinematicSiteLoader() {
   useLayoutEffect(() => {
     if (bootStarted.current) return;
     bootStarted.current = true;
+    bootPathRef.current = pathname;
 
     if (shouldSkipBoot(pathname)) {
       setBoot('gone');
@@ -93,11 +104,34 @@ export function CinematicSiteLoader() {
     schedule(() => {
       setBoot('gone');
       clearAll();
-    }, 420 + dwell * 1000 + 780);
+    }, 420 + dwell * 1000 + 980);
 
     return clearAll;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- boot runs once per session mount
   }, []);
+
+  /* ── Homepage hero handoff (opacity only; #hero absent on other routes) ─ */
+  useEffect(() => {
+    const path = bootPathRef.current;
+    if (!path || shouldSkipBoot(path)) return;
+
+    if (boot === 'gone') {
+      const t = window.setTimeout(() => {
+        document.documentElement.removeAttribute('data-gm-veil');
+      }, 60);
+      return () => clearTimeout(t);
+    }
+
+    if (boot === 'leave') {
+      document.documentElement.setAttribute(
+        'data-gm-veil',
+        path === '/' ? 'exiting' : 'off'
+      );
+      return;
+    }
+
+    document.documentElement.setAttribute('data-gm-veil', 'on');
+  }, [boot]);
 
   /* ── Body scroll lock during boot ─────────────────────────────── */
   useEffect(() => {
@@ -129,7 +163,7 @@ export function CinematicSiteLoader() {
     if (from.startsWith('/admin') || pathname.startsWith('/admin')) return;
 
     setRouteFlash(true);
-    const t = setTimeout(() => setRouteFlash(false), 650);
+    const t = setTimeout(() => setRouteFlash(false), 280);
     return () => clearTimeout(t);
   }, [pathname]);
 
@@ -162,20 +196,41 @@ export function CinematicSiteLoader() {
           style={dwellStyle}
           aria-busy={boot === 'dwell' || boot === 'reveal'}
           aria-live="polite"
-          aria-label="Loading"
+          aria-label="Archive access"
         >
           <div className={styles.backdrop} />
-          <div className={`${styles.vignette} ${reduceMotion ? '' : styles.pulse}`} />
           <div
-            className={`${styles.grain} ${reduceMotion ? '' : `${styles.grainMotion}`}`}
+            className={`${styles.ambientGlow} ${reduceMotion ? '' : styles.ambientDrift}`}
+            aria-hidden
+          />
+          <div
+            className={`${styles.vignette} ${reduceMotion ? '' : styles.pulse}`}
+            aria-hidden
+          />
+          <div
+            className={`${styles.grain} ${reduceMotion ? '' : styles.grainMotion}`}
+            aria-hidden
+          />
+          <div
+            className={`${styles.grain2} ${reduceMotion ? '' : styles.grainMotion2}`}
             aria-hidden
           />
 
+          <div className={`${styles.foregroundHaze} ${reduceMotion ? '' : styles.hazeDrift}`} aria-hidden />
+
           <div className={styles.inner}>
-            <p className={styles.wordmark}>GODSMOVE</p>
+            <p className={styles.wordmark}>
+              {WORDMARK.split('').map((ch, i) => (
+                <span key={i} className={styles.wordmarkChar} style={{ animationDelay: `${i * 0.028}s` }}>
+                  {ch}
+                </span>
+              ))}
+            </p>
             <p className={styles.micro}>{line}</p>
-            <div className={styles.progressTrack} aria-hidden>
-              <div className={styles.progressFill} />
+            <div className={styles.progressShell} aria-hidden>
+              <div className={styles.progressTrack}>
+                <div className={styles.progressFill} />
+              </div>
             </div>
           </div>
         </div>
