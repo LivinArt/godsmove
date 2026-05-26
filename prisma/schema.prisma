@@ -1,6 +1,6 @@
 // GODSMOVE — Production Schema
 // Phase 2 Backend Infrastructure
-// Last updated: 2026-05-09
+// Last updated: 2026-05-26 (Phase 1 domain / tier / unlock tokens)
 
 generator client {
   provider = "prisma-client-js"
@@ -24,6 +24,7 @@ model Profile {
   lastName  String?
   phone     String?
   role      UserRole @default(CUSTOMER)
+  tier      UserTier @default(STANDARD)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,6 +36,7 @@ model Profile {
   productUnlocks         ProductUnlock[]
   exclusiveReservations  ExclusiveReservation[]
   exclusiveDrawWins      ExclusiveDrawWinner[]
+  unlockAccessTokens     UnlockAccessToken[] @relation("UnlockTokenClaimedBy")
 
   @@map("profiles")
 }
@@ -112,6 +114,12 @@ model Product {
 
   // Flags
   channel           ProductChannel @default(DROP)
+  domain            ProductDomain @default(PREMIUM_WEAR)
+  requiresTierAccess Boolean @default(false)
+  minimumTier       UserTier?
+  requiresUnlockToken Boolean @default(false)
+  unlockStartsAt    DateTime?
+  unlockEndsAt      DateTime?
   enableImageToggle Boolean @default(false)
   frontImageUrl     String?
   backImageUrl      String?
@@ -137,11 +145,14 @@ model Product {
   discounts        Discount[]
   productUnlocks   ProductUnlock[]
   exclusiveDraws   ExclusiveDraw[]
+  unlockAccessTokens UnlockAccessToken[]
 
   @@index([status])
   @@index([dropId])
   @@index([categoryId])
   @@index([channel])
+  @@index([domain])
+  @@index([domain, status])
   @@map("products")
 }
 
@@ -215,6 +226,18 @@ enum ProductChannel {
   DROP
   EXCLUSIVE_UNLOCK
   EXCLUSIVE_RACK
+}
+
+enum ProductDomain {
+  PREMIUM_WEAR
+  EXCLUSIVE_RACK
+  EXCLUSIVE_UNLOCK
+}
+
+enum UserTier {
+  STANDARD
+  VIP
+  INNER_CIRCLE
 }
 
 enum ProductImageSide {
@@ -748,6 +771,46 @@ enum CampaignType {
 // ─────────────────────────────────────────────
 // DOMAIN 10: EXCLUSIVE UNLOCK SYSTEM
 // ─────────────────────────────────────────────
+
+enum UnlockTokenStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+  DISABLED
+}
+
+enum UnlockTokenType {
+  STANDARD
+  INVITE
+  ADMIN
+  RESERVATION
+  CAMPAIGN
+}
+
+/// Hashed bearer credentials only — raw tokens must never be persisted.
+model UnlockAccessToken {
+  id         String            @id @default(uuid()) @db.Uuid
+  tokenHash  String            @unique
+  type       UnlockTokenType   @default(STANDARD)
+  status     UnlockTokenStatus @default(ACTIVE)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  claimedByProfileId String?
+  claimedByProfile   Profile? @relation("UnlockTokenClaimedBy", fields: [claimedByProfileId], references: [id], onDelete: SetNull)
+
+  claimedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([productId, status])
+  @@index([claimedByProfileId])
+  @@index([expiresAt, status])
+  @@map("unlock_access_tokens")
+}
 
 model ProductUnlock {
   id        String   @id @default(cuid())

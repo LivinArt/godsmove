@@ -9,6 +9,7 @@ dotenv.config({ path: '.env.local' }); // must be before PrismaClient import
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { domainFromChannel } from '../src/lib/product-domain-sync';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter } as any);
@@ -221,12 +222,15 @@ async function main() {
 
   for (const p of productData) {
     const { variants, images, tags, ...productFields } = p;
+    const channel = (productFields as { channel?: 'DROP' | 'EXCLUSIVE_UNLOCK' | 'EXCLUSIVE_RACK' }).channel ?? 'DROP';
+    const domain = domainFromChannel(channel);
 
     const product = await prisma.product.upsert({
       where: { slug: productFields.slug },
-      update: {},
+      update: { domain },
       create: {
         ...productFields,
+        domain,
         publishedAt: productFields.status === 'ACTIVE' ? new Date() : null,
       },
     });

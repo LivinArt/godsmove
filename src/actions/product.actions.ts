@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { hasAdminBypass } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { domainFromChannel } from '@/lib/product-domain-sync';
 import {
   CreateProductSchema,
   UpdateProductSchema,
@@ -120,6 +121,7 @@ export async function createProduct(input: CreateProductInput) {
   const product = await prisma.product.create({
     data: {
       ...data,
+      domain: domainFromChannel(data.channel),
       publishedAt: data.status === 'ACTIVE' ? new Date() : null,
     },
   });
@@ -133,14 +135,23 @@ export async function updateProduct(input: UpdateProductInput) {
   await requireAdmin();
   const { id, ...data } = UpdateProductSchema.parse(input);
 
-  const existing = await prisma.product.findUnique({ where: { id } });
+  const existing = await prisma.product.findUnique({
+    where: { id },
+    select: { status: true },
+  });
   const becomingActive =
     existing?.status !== 'ACTIVE' && data.status === 'ACTIVE';
+
+  const channelChanged =
+    'channel' in data && data.channel !== undefined && data.channel !== null;
 
   const product = await prisma.product.update({
     where: { id },
     data: {
       ...data,
+      ...(channelChanged && data.channel != null
+        ? { domain: domainFromChannel(data.channel) }
+        : {}),
       ...(becomingActive && { publishedAt: new Date() }),
     },
   });
@@ -251,16 +262,21 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
   const becomingActive = existing?.status !== 'ACTIVE' && productData.status === 'ACTIVE';
 
+  const productWrite = {
+    ...productData,
+    domain: domainFromChannel(productData.channel),
+  };
+
   const product = await prisma.$transaction(async (tx) => {
     // 1. Upsert Product
     const p = await tx.product.upsert({
       where: { id: id || 'new_record' },
       update: {
-        ...productData,
+        ...productWrite,
         ...(becomingActive && { publishedAt: new Date() }),
       },
       create: {
-        ...productData,
+        ...productWrite,
         publishedAt: productData.status === 'ACTIVE' ? new Date() : null,
       },
     });
