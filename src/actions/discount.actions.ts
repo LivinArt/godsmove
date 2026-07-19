@@ -236,3 +236,39 @@ export async function deleteDiscount(id: string) {
 
   revalidateDiscountPaths();
 }
+
+// ── CUSTOMER PORTAL WRAPPERS ──────────────────────────────────────────────────
+
+export async function validateCouponAction(code: string, subtotal: number, profileId?: string) {
+  const { CouponService } = await import('@/lib/coupon-service');
+  const res = await CouponService.validate(code, subtotal, profileId);
+  
+  if (res.coupon) {
+    return {
+      ...res,
+      coupon: {
+        ...res.coupon,
+        endsAt: res.coupon.endsAt ? res.coupon.endsAt.toISOString() : null,
+      }
+    };
+  }
+  return res;
+}
+
+export async function getBestCouponAction(subtotal: number, profileId?: string) {
+  const { CouponService } = await import('@/lib/coupon-service');
+  const best = await CouponService.getBestCoupon(subtotal, profileId);
+  if (best) {
+    return {
+      id: best.id,
+      code: best.code,
+      type: best.type,
+      value: Number(best.value),
+      discountAmount: Number(best.discountAmount),
+      minimumOrderValue: best.minimumOrderValue ? Number(best.minimumOrderValue) : null,
+      maximumDiscount: best.maximumDiscount ? Number(best.maximumDiscount) : null,
+      endsAt: best.endsAt ? best.endsAt.toISOString() : null,
+    };
+  }
+  return null;
+}

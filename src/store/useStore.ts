@@ -64,6 +64,12 @@ interface StoreState {
   setMobileMenuOpen: (open: boolean) => void;
   isNewsletterOpen: boolean;
   setNewsletterOpen: (open: boolean) => void;
+
+  // Compare System
+  compare: any[];
+  toggleCompare: (product: any) => void;
+  isInCompare: (productId: string) => boolean;
+  clearCompare: () => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -242,6 +248,26 @@ export const useStore = create<StoreState>()(
       setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
       isNewsletterOpen: false,
       setNewsletterOpen: (open) => set({ isNewsletterOpen: open }),
+
+      // Compare System
+      compare: [],
+      toggleCompare: (product) => {
+        const { compare } = get();
+        const exists = compare.some((p) => p.id === product.id);
+        if (exists) {
+          set({ compare: compare.filter((p) => p.id !== product.id) });
+        } else {
+          if (compare.length >= 3) {
+            get().showToast('Comparison Limit', 'You can compare up to 3 products at a time.');
+            return;
+          }
+          set({ compare: [...compare, product] });
+        }
+      },
+      isInCompare: (productId) => {
+        return get().compare.some((p) => p.id === productId);
+      },
+      clearCompare: () => set({ compare: [] }),
     }),
     {
       name: 'godsmove-store',
@@ -264,6 +290,7 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         cart: state.cart,
         wishlist: state.wishlist,
+        compare: state.compare,
       }),
     }
   )

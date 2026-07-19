@@ -7,6 +7,7 @@ interface RazorpayOptions {
   currency?: string;
   name?: string;
   description?: string;
+  orderId?: string;
   onSuccess?: (response: RazorpayResponse) => void;
   onError?: (error: unknown) => void;
 }
@@ -45,6 +46,7 @@ export function useRazorpay() {
     currency = 'INR',
     name = 'GODSMOVE',
     description = 'Fashion Purchase',
+    orderId,
     onSuccess,
     onError,
   }: RazorpayOptions) => {
@@ -59,7 +61,7 @@ export function useRazorpay() {
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, orderId }),
       });
       const order = await res.json();
 
@@ -75,6 +77,7 @@ export function useRazorpay() {
         name,
         description,
         order_id: order.id,
+        notes: { orderId },
         handler: async (response: RazorpayResponse) => {
           // Verify payment on server
           const verifyRes = await fetch('/api/verify-payment', {

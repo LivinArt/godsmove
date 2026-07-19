@@ -4,6 +4,8 @@ import type { ProductChannel } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { serializePrisma } from '@/lib/serialize-prisma';
 
+import { hasAdminBypass } from '@/lib/admin-auth';
+
 /**
  * Storefront Actions: Public read-only queries for the storefront.
  * These queries enforce status: 'ACTIVE' to ensure drafts/hidden products are never leaked.
@@ -24,11 +26,13 @@ export async function getStorefrontProducts(params?: {
   ids?: string[];
   take?: number;
   skip?: number;
+  isExclusiveRack?: boolean;
+  showOnHomepage?: boolean;
+  showOnExclusivePage?: boolean;
 }) {
-  const featuredFilter = params?.featured ?? params?.isFeatured;
   const channel = params?.channel;
-  const applyFeaturedFilter =
-    featuredFilter !== undefined && (!channel || channel === 'DROP');
+  const applyFeaturedFilter = params?.featured !== undefined || params?.isFeatured !== undefined;
+  const featuredFilter = params?.featured ?? params?.isFeatured ?? false;
 
   const data = await prisma.product.findMany({
     where: {
@@ -38,6 +42,9 @@ export async function getStorefrontProducts(params?: {
       ...(channel && { channel }),
       ...(applyFeaturedFilter && { isFeatured: featuredFilter }),
       ...(params?.ids && params.ids.length > 0 && { id: { in: params.ids } }),
+      ...(params?.isExclusiveRack !== undefined && { isExclusiveRack: params.isExclusiveRack }),
+      ...(params?.showOnHomepage !== undefined && { showOnHomepage: params.showOnHomepage }),
+      ...(params?.showOnExclusivePage !== undefined && { showOnExclusivePage: params.showOnExclusivePage }),
     },
     include: {
       category: true,
@@ -49,7 +56,10 @@ export async function getStorefrontProducts(params?: {
         orderBy: { position: 'asc' },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { featuredPriority: 'desc' },
+      { createdAt: 'desc' }
+    ],
     take: params?.take ?? 50,
     skip: params?.skip ?? 0,
   });
@@ -58,10 +68,11 @@ export async function getStorefrontProducts(params?: {
 }
 
 export async function getStorefrontProductBySlug(slug: string) {
+  const isAdmin = await hasAdminBypass();
   const data = await prisma.product.findFirst({
     where: {
       slug,
-      status: 'ACTIVE',
+      ...(!isAdmin && { status: 'ACTIVE' }),
     },
     include: {
       category: true,

@@ -21,7 +21,16 @@ export default async function AdminLayout({
   const { data: { user } } = await supabase.auth.getUser();
   const bypass = await hasAdminBypass();
 
-  if (!user && !bypass) redirect('/login?redirectTo=/admin');
+  console.log('[Admin Layout Check] Initial Session Check:', {
+    userId: user?.id,
+    userEmail: user?.email,
+    bypassActive: bypass
+  });
+
+  if (!user && !bypass) {
+    console.log('[Admin Layout Check] REDIRECT REASON: No session and no admin bypass cookie.');
+    redirect('/login?redirectTo=/admin');
+  }
 
   let profile = null;
   if (user) {
@@ -29,10 +38,15 @@ export default async function AdminLayout({
       where: { id: user.id },
       select: { role: true, firstName: true, lastName: true, email: true },
     });
+    console.log('[Admin Layout Check] Database Profile Lookup:', profile);
   }
 
   const adminRoles = ['ADMIN', 'CONTENT_EDITOR', 'OPERATIONS', 'SUPPORT', 'MARKETING'];
   if (!bypass && (!profile || !adminRoles.includes(profile.role))) {
+    console.log('[Admin Layout Check] REDIRECT REASON: Profile is missing or lacks authorization role.', {
+      role: profile?.role,
+      expectedRoles: adminRoles
+    });
     redirect('/');
   }
 

@@ -5,6 +5,7 @@ import { hasAdminBypass } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { domainFromChannel } from '@/lib/product-domain-sync';
+import { serializePrisma } from '@/lib/serialize-prisma';
 import {
   CreateProductSchema,
   UpdateProductSchema,
@@ -51,7 +52,7 @@ export async function getProducts(params?: {
   take?: number;
   skip?: number;
 }) {
-  return prisma.product.findMany({
+  const data = await prisma.product.findMany({
     where: {
       ...(params?.search && {
         OR: [
@@ -79,10 +80,11 @@ export async function getProducts(params?: {
     take: params?.take ?? 50,
     skip: params?.skip ?? 0,
   });
+  return serializePrisma(data);
 }
 
 export async function getProductBySlug(slug: string) {
-  return prisma.product.findUnique({
+  const data = await prisma.product.findUnique({
     where: { slug },
     include: {
       category: true,
@@ -95,10 +97,11 @@ export async function getProductBySlug(slug: string) {
       tags: true,
     },
   });
+  return data ? serializePrisma(data) : null;
 }
 
 export async function getProductById(id: string) {
-  return prisma.product.findUnique({
+  const data = await prisma.product.findUnique({
     where: { id },
     include: {
       category: true,
@@ -111,6 +114,7 @@ export async function getProductById(id: string) {
       tags: true,
     },
   });
+  return data ? serializePrisma(data) : null;
 }
 
 
@@ -180,11 +184,7 @@ export async function deleteProduct(id: string) {
   // 2. Attempt to delete files from Supabase Storage (best-effort — never blocks DB delete)
   if (product.images.length > 0) {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
+      const supabase = await createClient();
 
       // Extract the storage path from the public URL
       // URL format: https://<project>.supabase.co/storage/v1/object/public/product-images/<path>
@@ -202,7 +202,7 @@ export async function deleteProduct(id: string) {
         .filter(Boolean) as string[];
 
       if (filePaths.length > 0) {
-        const { error } = await supabaseAdmin.storage
+        const { error } = await supabase.storage
           .from('product-images')
           .remove(filePaths);
         if (error) {
@@ -252,11 +252,29 @@ export async function deleteProduct(id: string) {
 
 export async function upsertProductRecord(input: UpsertProductInput) {
   await requireAdmin();
-  const { id, variants, images, ...productData } = UpsertProductSchema.parse(input);
+  const parsedInput = UpsertProductSchema.parse(input);
+  const { id, variants, images, ...productData } = parsedInput;
 
-  // Feature on homepage applies only to DROP channel
-  if (productData.channel !== 'DROP') {
+  // Sync visibility flags and channels
+  if (productData.channel === 'DROP') {
+    productData.isFeatured = productData.showOnHomepage;
+    productData.isExclusiveRack = false;
+    productData.showOnExclusivePage = false;
+  } else if (productData.channel === 'EXCLUSIVE_RACK') {
+    productData.isExclusiveRack = true;
+    productData.showOnExclusivePage = true;
     productData.isFeatured = false;
+  } else if (productData.channel === 'EXCLUSIVE_UNLOCK') {
+    productData.isFeatured = false;
+    productData.isExclusiveRack = false;
+    productData.showOnExclusivePage = false;
+    productData.showOnHomepage = false;
+  }
+
+  // Media Reuse Banner/Hero
+  if (productData.useCoverImage && productData.frontImageUrl) {
+    productData.collectionBanner = productData.frontImageUrl;
+    productData.collectionHeroImage = productData.frontImageUrl;
   }
 
   const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
@@ -268,18 +286,24 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   };
 
   const product = await prisma.$transaction(async (tx) => {
-    // 1. Upsert Product
-    const p = await tx.product.upsert({
-      where: { id: id || 'new_record' },
-      update: {
-        ...productWrite,
-        ...(becomingActive && { publishedAt: new Date() }),
-      },
-      create: {
-        ...productWrite,
-        publishedAt: productData.status === 'ACTIVE' ? new Date() : null,
-      },
-    });
+    // 1. Resolve Product record update or creation
+    let p;
+    if (id) {
+      p = await tx.product.update({
+        where: { id },
+        data: {
+          ...productWrite,
+          ...(becomingActive && { publishedAt: new Date() }),
+        },
+      });
+    } else {
+      p = await tx.product.create({
+        data: {
+          ...productWrite,
+          publishedAt: productData.status === 'ACTIVE' ? new Date() : null,
+        },
+      });
+    }
 
     // 2. Manage Images (Delete removed, Upsert active)
     if (images) {
@@ -362,7 +386,6 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   revalidatePath('/admin/products');
   if (product.slug) revalidatePath(`/product/${product.slug}`);
   revalidatePath('/drops');
-  revalidatePath('/exclusive-unlock');
   revalidatePath('/exclusive-rack');
   revalidatePath('/admin/exclusive-draws');
   revalidatePath('/');
@@ -455,4 +478,14 @@ export async function createCategory(name: string, slug: string) {
   const category = await prisma.category.create({ data: { name, slug } });
   revalidatePath('/admin/products');
   return category;
+}
+
+export async function isSlugAvailable(slug: string, excludeProductId?: string) {
+  const existing = await prisma.product.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!existing) return true;
+  if (excludeProductId && existing.id === excludeProductId) return true;
+  return false;
 }

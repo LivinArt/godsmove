@@ -21,7 +21,7 @@ export function getProductBreadcrumb(product: { channel?: string }): {
 } {
   switch (product.channel) {
     case 'EXCLUSIVE_UNLOCK':
-      return { href: '/exclusive-unlock', label: 'Access' };
+      return { href: '/drops', label: 'Shop' };
     case 'EXCLUSIVE_RACK':
       return { href: '/exclusive-rack', label: 'Exclusive Rack' };
     default:

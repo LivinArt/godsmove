@@ -79,8 +79,12 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
         {images.map((img, i) => (
           <div key={img.url} style={{ position: 'relative', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1/1' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img.url} alt={img.alt || `Product image ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {img.url.split('.').pop()?.toLowerCase()?.match(/mp4|webm|ogg|mov/) || img.url.includes('video') ? (
+              <video src={img.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay muted loop playsInline />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={img.url} alt={img.alt || `Product image ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            )}
             
             {/* Overlay actions */}
             <div 
@@ -144,7 +148,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
             <Upload className="w-6 h-6 text-muted mb-4" />
           )}
           <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--admin-muted)' }}>
-            {isUploading ? 'Uploading...' : 'Upload Image'}
+            {isUploading ? 'Uploading...' : 'Upload Media'}
           </span>
         </button>
       </div>
@@ -152,7 +156,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/png, image/jpeg, image/webp"
+        accept="image/png, image/jpeg, image/webp, image/gif, video/mp4, video/webm, video/ogg, video/quicktime"
         multiple
         style={{ display: 'none' }}
       />

@@ -66,8 +66,11 @@ export default function AdminSidebar({ role }: Props) {
   return (
     <nav className="admin-sidebar">
       <div className="sidebar-logo">
-        <span className="sidebar-logo-dot" />
-        GODSMOVE
+        <img
+          src="/images/logo/logo-horizontal-white.png"
+          alt="GODSMOVE"
+          style={{ height: '16px', width: 'auto', display: 'block' }}
+        />
       </div>
 
       {navGroups.map((group) => (

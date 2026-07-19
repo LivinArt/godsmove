@@ -14,6 +14,11 @@ import {
   AddTrackingSchema,
   type CreateOrderInput,
 } from '@/lib/validations/order';
+import { InvoiceService } from '@/lib/invoice';
+import { NotificationService } from '@/lib/notification';
+import { calculateETA } from '@/lib/logistics';
+import { PricingEngine } from '@/lib/pricing-engine';
+import { WalletService } from '@/lib/wallet-service';
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -102,26 +107,21 @@ export async function createOrder(input: CreateOrderInput) {
       }
     }
 
-    // 3. Calculate order totals
-    let subtotal = 0;
-    const itemSnapshots = data.items.map((item) => {
-      const variant = variants.find((v) => v.id === item.variantId)!;
-      const lineTotal = Number(variant.price) * item.quantity;
-      subtotal += lineTotal;
+    const orderNumber = generateOrderNumber();
+
+    // 3. Build items array for the pricing engine
+    const pricingItems = variants.map((v) => {
+      const item = data.items.find((it) => it.variantId === v.id)!;
       return {
-        variantId: variant.id,
-        productName: variant.product.name,
-        variantSku: variant.sku,
-        size: variant.size,
-        color: variant.color ?? undefined,
-        price: variant.price,
+        price: Number(v.price),
+        comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
         quantity: item.quantity,
-        total: lineTotal,
+        productName: v.product.name,
       };
     });
 
     // 4. Validate and apply discount
-    let discountAmount = 0;
+    let couponDiscountVal = 0;
     let discountId: string | null = null;
 
     if (data.couponCode) {
@@ -136,7 +136,9 @@ export async function createOrder(input: CreateOrderInput) {
         throw new Error('Discount is not yet active');
       if (discount.usageLimit && discount.usageCount >= discount.usageLimit)
         throw new Error('Discount usage limit reached');
-      if (discount.minimumOrderValue && subtotal < Number(discount.minimumOrderValue))
+      
+      const subtotalTemp = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
+      if (discount.minimumOrderValue && subtotalTemp < Number(discount.minimumOrderValue))
         throw new Error(
           `Minimum order amount for this discount is ₹${discount.minimumOrderValue}`
         );
@@ -151,47 +153,59 @@ export async function createOrder(input: CreateOrderInput) {
       }
 
       if (discount.type === 'PERCENTAGE') {
-        let calc = (subtotal * Number(discount.value)) / 100;
+        let calc = (subtotalTemp * Number(discount.value)) / 100;
         if (discount.maximumDiscount) {
           calc = Math.min(calc, Number(discount.maximumDiscount));
         }
-        discountAmount = calc;
+        couponDiscountVal = calc;
       } else if (discount.type === 'FIXED_AMOUNT') {
-        discountAmount = Math.min(Number(discount.value), subtotal);
-      } else if (discount.type === 'FREE_SHIPPING') {
-        // Free shipping is handled in shipping cost calculation
+        couponDiscountVal = Math.min(Number(discount.value), subtotalTemp);
       }
 
       discountId = discount.id;
     }
 
-    // 5. Apply wallet credit
-    let walletCredit = 0;
-    if (data.walletAmountToUse > 0 && user) {
-      const wallet = await tx.wallet.findUnique({ where: { profileId: user.id } });
-      const available = Number(wallet?.balance ?? 0);
-      walletCredit = Math.min(data.walletAmountToUse, available, subtotal - discountAmount);
-    }
+    // 5. Apply PricingEngine calculations
+    const shippingState = data.shippingAddress.state || 'Haryana';
+    const pricing = PricingEngine.calculate({
+      items: pricingItems,
+      couponCode: data.couponCode || null,
+      couponDiscount: couponDiscountVal,
+      walletAmountToUse: data.walletAmountToUse,
+      shippingState,
+    });
 
-    // 6. Calculate shipping
-    const afterDiscount = subtotal - discountAmount;
-    const shippingCost = afterDiscount >= 1999 ? 0 : 149;
-    const total = afterDiscount - walletCredit + shippingCost;
+    const itemSnapshots = data.items.map((item) => {
+      const variant = variants.find((v) => v.id === item.variantId)!;
+      const breakdown = pricing.items.find(i => i.productName === variant.product.name)!;
+      return {
+        variantId: variant.id,
+        productName: variant.product.name,
+        variantSku: variant.sku,
+        size: variant.size,
+        color: variant.color ?? undefined,
+        price: variant.price,
+        quantity: item.quantity,
+        total: breakdown.total,
+      };
+    });
 
-    // 7. Create order
+    // 6. Create order
     const order = await tx.order.create({
       data: {
-        orderNumber: generateOrderNumber(),
+        orderNumber,
         profileId: user?.id ?? null,
         email: data.shippingAddress.email,
         status: 'PENDING',
         paymentStatus: 'UNPAID',
         paymentMethod: data.paymentMethod as any,
-        subtotal: subtotal,
-        shippingCost: shippingCost,
-        discountAmount: discountAmount,
-        walletCredit: walletCredit,
-        total: total,
+        subtotal: pricing.subtotal,
+        shippingCost: pricing.shippingCost,
+        discountAmount: pricing.couponDiscount,
+        walletCredit: pricing.walletCredit,
+        taxableAmount: pricing.taxableAmount,
+        gstAmount: pricing.gstAmount,
+        total: pricing.finalPayable,
         discountId,
         shippingAddress: data.shippingAddress,
         items: {
@@ -199,6 +213,24 @@ export async function createOrder(input: CreateOrderInput) {
         },
       },
     });
+
+    // 7. Debit wallet credits immediately upon checkout if used
+    if (pricing.walletCredit > 0 && user) {
+      const wallet = await tx.wallet.findUnique({ where: { profileId: user.id } });
+      const available = Number(wallet?.balance ?? 0);
+      if (available < pricing.walletCredit) {
+        throw new Error('Insufficient wallet balance');
+      }
+
+      await WalletService.adjustBalance(tx, {
+        profileId: user.id,
+        amount: -pricing.walletCredit,
+        type: 'DEBIT_ORDER',
+        description: `Applied credits to Order #${orderNumber}`,
+        createdBy: user.email || 'SYSTEM',
+        orderId: order.id,
+      });
+    }
 
     // 8. Reserve inventory (soft reserve during checkout)
     for (const item of data.items) {
@@ -237,7 +269,7 @@ export async function confirmOrder(
   razorpayPaymentId: string,
   razorpayOrderId: string
 ) {
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { items: true },
@@ -246,7 +278,7 @@ export async function confirmOrder(
     if (order.paymentStatus === 'PAID') return order; // idempotent
 
     // Update order to confirmed
-    const updated = await tx.order.update({
+    const updatedOrder = await tx.order.update({
       where: { id: orderId },
       data: {
         status: 'CONFIRMED',
@@ -280,31 +312,81 @@ export async function confirmOrder(
       });
     }
 
-    // Debit wallet credit if applied
-    if (Number(order.walletCredit) > 0 && order.profileId) {
-      const wallet = await tx.wallet.findUnique({
-        where: { profileId: order.profileId },
-      });
-      if (wallet) {
-        await tx.wallet.update({
-          where: { id: wallet.id },
-          data: { balance: { decrement: order.walletCredit } },
-        });
-        await tx.walletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            amount: -Number(order.walletCredit),
-            type: 'DEBIT_ORDER',
-            orderId: order.id,
-            description: `Applied to order ${order.orderNumber}`,
-          },
-        });
-      }
-    }
+    // Wallet credit is now debited immediately during checkout (createOrder). No duplicate debit here.
 
-    revalidatePath('/admin/orders');
-    return updated;
+    return updatedOrder;
   });
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, profile: true },
+    });
+    if (order) {
+      const addr = typeof order.shippingAddress === 'string'
+        ? JSON.parse(order.shippingAddress)
+        : (order.shippingAddress as any);
+
+      const invoiceData = {
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        email: order.email,
+        customerName: addr ? `${addr.firstName} ${addr.lastName}` : (order.profile ? `${order.profile.firstName || ''} ${order.profile.lastName || ''}`.trim() || 'Customer' : 'Customer'),
+        shippingAddress: {
+          firstName: addr?.firstName || '',
+          lastName: addr?.lastName || '',
+          line1: addr?.line1 || '',
+          line2: addr?.line2 || '',
+          landmark: addr?.landmark || '',
+          city: addr?.city || '',
+          state: addr?.state || '',
+          pincode: addr?.pincode || '',
+          phone: addr?.phone || '',
+        },
+        items: order.items.map((i) => ({
+          productName: i.productName,
+          size: i.size,
+          quantity: i.quantity,
+          price: Number(i.price),
+          total: Number(i.total),
+        })),
+        subtotal: Number(order.subtotal),
+        discountAmount: Number(order.discountAmount),
+        walletCredit: Number(order.walletCredit),
+        shippingCost: Number(order.shippingCost),
+        total: Number(order.total),
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+      };
+
+      // 1. Generate & Save invoice
+      await InvoiceService.saveInvoiceFile(invoiceData);
+
+      // 2. Dispatch Order Confirmation Notification
+      const itemsListHtml = order.items
+        .map(
+          (i) => `
+        <tr>
+          <td>${i.productName} (Size: ${i.size}) &times; ${i.quantity}</td>
+          <td style="text-align: right;">₹${Number(i.total).toLocaleString('en-IN')}</td>
+        </tr>
+      `
+        )
+        .join('');
+      await NotificationService.sendOrderConfirmation(
+        order.email,
+        order.orderNumber,
+        itemsListHtml,
+        `₹${Number(order.total).toLocaleString('en-IN')}`
+      );
+    }
+  } catch (err) {
+    console.error('Invoice or notification generation failed:', err);
+  }
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/profile');
+  return updated;
 }
 
 // ── CANCEL ORDER ─────────────────────────────────────────────────────────────
@@ -343,6 +425,18 @@ export async function cancelOrder(orderId: string, reason?: string) {
       await tx.inventory.update({
         where: { variantId: item.variantId },
         data: { [field]: { decrement: item.quantity } },
+      });
+    }
+
+    // Refund wallet credit if applied
+    if (Number(order.walletCredit) > 0 && order.profileId) {
+      await WalletService.adjustBalance(tx, {
+        profileId: order.profileId,
+        amount: Number(order.walletCredit),
+        type: 'CREDIT_ADJUSTMENT',
+        description: `Refunded from cancelled Order #${order.orderNumber}`,
+        createdBy: user?.email || 'SYSTEM_REFUND',
+        orderId: order.id,
       });
     }
 
@@ -439,8 +533,29 @@ export async function addShipmentTracking(input: {
   await requireAdmin();
   const data = AddTrackingSchema.parse(input);
 
+  const order = await prisma.order.findUnique({
+    where: { id: data.orderId },
+    select: { shippingAddress: true, orderNumber: true },
+  });
+  if (!order) throw new Error('Order not found');
+
+  const addr = typeof order.shippingAddress === 'string'
+    ? JSON.parse(order.shippingAddress)
+    : (order.shippingAddress as any);
+
+  const destPincode = addr?.pincode || '';
+  const estimatedDelivery = calculateETA('110001', destPincode, data.carrier);
+
   const [shipment] = await prisma.$transaction([
-    prisma.shipment.create({ data }),
+    prisma.shipment.create({
+      data: {
+        orderId: data.orderId,
+        carrier: data.carrier,
+        trackingNumber: data.trackingNumber,
+        trackingUrl: data.trackingUrl,
+        estimatedDelivery,
+      },
+    }),
     prisma.order.update({
       where: { id: data.orderId },
       data: {
@@ -452,6 +567,9 @@ export async function addShipmentTracking(input: {
   ]);
 
   revalidatePath('/admin/orders');
+  revalidatePath(`/admin/orders/${data.orderId}`);
+  revalidatePath('/profile');
+  revalidatePath(`/orders/${order.orderNumber}`);
   return shipment;
 }
 
@@ -461,12 +579,84 @@ export async function getMyOrders() {
   const user = await getCurrentUser();
   if (!user) throw new Error('UNAUTHORIZED');
 
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: { profileId: user.id },
     include: {
-      items: true,
-      shipments: { orderBy: { createdAt: 'desc' }, take: 1 },
+      items: {
+        include: {
+          // Per-item return context: item.returnItems[0]?.returnReq gives the full return
+          // request for that specific product without UI-level cross-joins.
+          returnItems: {
+            include: {
+              returnReq: {
+                select: {
+                  id: true,
+                  status: true,
+                  type: true,
+                  creditAmount: true,
+                  reason: true,
+                  adminNotes: true,
+                  createdAt: true,
+                  resolvedAt: true,
+                  events: { orderBy: { timestamp: 'asc' } },
+                  reverseShipment: true,
+                  walletRefund: true,
+                },
+              },
+            },
+          },
+          shipment: {
+            include: {
+              events: {
+                orderBy: { timestamp: 'asc' },
+              },
+            },
+          },
+        },
+      },
+      shipments: { orderBy: { createdAt: 'desc' } },
+      returnRequests: {
+        include: {
+          items: true,
+          events: {
+            orderBy: { timestamp: 'asc' },
+          },
+          reverseShipment: true,
+          walletRefund: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  // Serialize Prisma Decimal fields to plain JS numbers for Client Components
+  return JSON.parse(JSON.stringify(orders));
 }
+
+export async function emailInvoice(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+  if (!order) throw new Error('Order not found');
+
+  const itemsListHtml = order.items
+    .map(
+      (i) => `
+    <tr>
+      <td>${i.productName} (Size: ${i.size}) &times; ${i.quantity}</td>
+      <td style="text-align: right;">₹${Number(i.total).toLocaleString('en-IN')}</td>
+    </tr>
+  `
+    )
+    .join('');
+  
+  await NotificationService.sendOrderConfirmation(
+    order.email,
+    order.orderNumber,
+    itemsListHtml,
+    `₹${Number(order.total).toLocaleString('en-IN')}`
+  );
+  return { success: true };
+}
+

@@ -11,6 +11,7 @@ import {
   type ProcessReturnInput,
 } from '@/lib/validations/return';
 import { issueWalletCredit } from './wallet.actions';
+import { NotificationService } from '@/lib/notification';
 
 async function getCurrentUser() {
   const supabase = await createClient();
@@ -49,49 +50,95 @@ export async function createReturnRequest(input: CreateReturnInput) {
 
   if (!order) throw new Error('Order not found');
   if (order.profileId !== user.id) throw new Error('FORBIDDEN');
-  if (order.status !== 'DELIVERED') {
-    throw new Error('Returns can only be requested for delivered orders');
-  }
 
-  // Check no pending return already exists
-  const existingReturn = await prisma.returnRequest.findFirst({
+  // Validate item-level return limits:
+  const requestedItemIds = data.items.map((i) => i.orderItemId);
+  const existingReturnItems = await prisma.returnItem.findFirst({
     where: {
-      orderId: data.orderId,
-      status: { in: ['PENDING', 'APPROVED', 'RECEIVED'] },
-    },
-  });
-  if (existingReturn) {
-    throw new Error('A return request for this order is already in progress');
-  }
-
-  const returnReq = await prisma.returnRequest.create({
-    data: {
-      orderId: data.orderId,
-      profileId: user.id,
-      type: data.type,
-      reason: data.reason,
-      evidenceUrls: data.evidenceUrls,
-      items: {
-        create: data.items.map((item) => ({
-          orderItemId: item.orderItemId,
-          quantity: item.quantity,
-          reason: item.reason,
-        })),
+      orderItemId: { in: requestedItemIds },
+      returnReq: {
+        status: { notIn: ['REJECTED'] },
       },
     },
-    include: { items: true },
+  });
+  if (existingReturnItems) {
+    throw new Error('One or more selected items already have an active return request.');
+  }
+
+  const returnReq = await prisma.$transaction(async (tx) => {
+    const req = await tx.returnRequest.create({
+      data: {
+        orderId: data.orderId,
+        profileId: user.id,
+        type: data.type,
+        reason: data.reason,
+        evidenceUrls: data.evidenceUrls,
+        items: {
+          create: data.items.map((item) => ({
+            orderItemId: item.orderItemId,
+            quantity: item.quantity,
+            reason: item.reason,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    // Create a ReturnEvent for PENDING status
+    await tx.returnEvent.create({
+      data: {
+        returnReqId: req.id,
+        status: 'PENDING',
+        description: 'Return request submitted by customer.',
+      },
+    });
+
+    // Update returnStatus for order_items
+    for (const itemId of requestedItemIds) {
+      await tx.orderItem.update({
+        where: { id: itemId },
+        data: {
+          returnStatus: 'PENDING',
+        },
+      });
+    }
+
+    // Item-level architecture: Only update Order.status if ALL items in the order
+    // are being returned in this request. Partial returns must NOT change Order.status
+    // so the remaining unreturned items stay eligible for future returns.
+    const allOrderItems = await tx.orderItem.findMany({
+      where: { orderId: data.orderId },
+      select: { id: true },
+    });
+    const allItemsBeingReturned = allOrderItems.every((oi) =>
+      requestedItemIds.includes(oi.id)
+    );
+    if (allItemsBeingReturned) {
+      await tx.order.update({
+        where: { id: data.orderId },
+        data: {
+          status: data.type === 'EXCHANGE' ? 'EXCHANGE_REQUESTED' : 'RETURN_REQUESTED',
+        },
+      });
+    }
+    // Partial return: Order.status stays COMPLETED — return state lives on OrderItem only.
+
+    return req;
   });
 
-  // Update order status
-  await prisma.order.update({
-    where: { id: data.orderId },
-    data: {
-      status:
-        data.type === 'EXCHANGE' ? 'EXCHANGE_REQUESTED' : 'RETURN_REQUESTED',
-    },
-  });
+  // Dispatch luxury email notification
+  try {
+    await NotificationService.sendReturnRequested(
+      order.email,
+      returnReq.id,
+      order.orderNumber
+    );
+  } catch (err) {
+    console.error('Failed to send return request email notification:', err);
+  }
 
   revalidatePath('/account/orders');
+  revalidatePath('/profile');
   return returnReq;
 }
 
@@ -153,6 +200,16 @@ export async function processReturn(input: ProcessReturnInput) {
       },
     });
 
+    // Update order items return status to keep the denormalized mirror field in sync
+    for (const item of returnReq.items) {
+      await tx.orderItem.update({
+        where: { id: item.orderItemId },
+        data: {
+          returnStatus: data.status as any,
+        },
+      });
+    }
+
     // Issue store credit on completion
     if (
       data.status === 'COMPLETED' &&
@@ -205,4 +262,89 @@ export async function processReturn(input: ProcessReturnInput) {
     revalidatePath('/admin/returns');
     return updated;
   });
+}
+
+// ── CUSTOMER: GET OWN RETURNS ────────────────────────────────────────────────
+
+export async function getMyReturns() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('UNAUTHORIZED');
+
+  const returns = await prisma.returnRequest.findMany({
+    where: { profileId: user.id },
+    include: {
+      items: {
+        include: {
+          orderItem: {
+            select: { productName: true, size: true, color: true, imageUrl: true, price: true },
+          },
+        },
+      },
+      order: {
+        select: { orderNumber: true },
+      },
+      events: {
+        orderBy: { timestamp: 'asc' },
+      },
+      reverseShipment: true,
+      walletRefund: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return JSON.parse(JSON.stringify(returns));
+}
+
+export async function customerUpdateReturnRequest(payload: {
+  returnId: string;
+  reasonUpdate: string;
+  evidenceUrls: string[];
+}) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('UNAUTHORIZED');
+
+  const returnReq = await prisma.returnRequest.findUnique({
+    where: { id: payload.returnId },
+    include: { items: true },
+  });
+
+  if (!returnReq) throw new Error('Return request not found');
+  if (returnReq.profileId !== user.id) throw new Error('FORBIDDEN');
+  if (returnReq.status !== 'REQUESTED') {
+    throw new Error('You can only update return requests that are in the "Information Requested" status.');
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const req = await tx.returnRequest.update({
+      where: { id: payload.returnId },
+      data: {
+        reason: payload.reasonUpdate,
+        evidenceUrls: payload.evidenceUrls,
+        status: 'PENDING',
+      },
+    });
+
+    await tx.returnEvent.create({
+      data: {
+        returnReqId: payload.returnId,
+        status: 'PENDING',
+        description: 'Customer updated return request details with requested information.',
+      },
+    });
+
+    // Update returnStatus for order_items in this return request
+    for (const item of returnReq.items) {
+      await tx.orderItem.update({
+        where: { id: item.orderItemId },
+        data: {
+          returnStatus: 'PENDING',
+        },
+      });
+    }
+
+    return req;
+  });
+
+  revalidatePath('/profile');
+  return updated;
 }

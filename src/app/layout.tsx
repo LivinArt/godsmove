@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import GlobalToast from "@/components/GlobalToast";
+import CompareBar from "@/components/CompareBar";
 import { CinematicSiteLoader } from "@/components/CinematicSiteLoader";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -38,9 +40,12 @@ export default function RootLayout({
     <html lang="en" className={plusJakartaSans.variable}>
       <body>
         <div className="grain-overlay" aria-hidden="true" />
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <CinematicSiteLoader />
         <GlobalToast />
+        <CompareBar />
       </body>
     </html>
   );

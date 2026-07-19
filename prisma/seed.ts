@@ -10,6 +10,7 @@ dotenv.config({ path: '.env.local' }); // must be before PrismaClient import
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { domainFromChannel } from '../src/lib/product-domain-sync';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter } as any);
@@ -371,6 +372,66 @@ async function main() {
       },
     });
     console.log('✅ Homepage hero slides seeded');
+  }
+
+  // ── SEED ADMINISTRATOR ────────────────────────────────────────────────────────
+  console.log('👤 Seeding Administrator account...');
+  try {
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const adminEmail = 'admin@godsmove.com';
+    const adminPassword = 'adminpassword123';
+    let userId = '00000000-0000-0000-0000-000000000000'; // Fallback mock ID for dev
+
+    try {
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) throw listError;
+
+      const existingUser = users?.find(u => u.email === adminEmail);
+      if (!existingUser) {
+        const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: adminEmail,
+          password: adminPassword,
+          email_confirm: true,
+        });
+        if (createError) throw createError;
+        userId = user!.id;
+        console.log('✅ Admin user created in Supabase Auth');
+      } else {
+        userId = existingUser.id;
+        console.log('✓ Admin user already exists in Supabase Auth');
+      }
+    } catch (authErr) {
+      console.warn('⚠️ Supabase Auth seeding skipped (possible invalid credentials/keys). Seeding local profile table instead.', authErr instanceof Error ? authErr.message : authErr);
+    }
+
+    await prisma.profile.upsert({
+      where: { id: userId },
+      update: { role: 'ADMIN', email: adminEmail },
+      create: {
+        id: userId,
+        email: adminEmail,
+        firstName: 'Atelier',
+        lastName: 'Administrator',
+        role: 'ADMIN',
+        tier: 'STANDARD',
+      },
+    });
+
+    await prisma.wallet.upsert({
+      where: { profileId: userId },
+      update: {},
+      create: {
+        profileId: userId,
+        balance: 100000,
+      },
+    });
+
+    console.log(`✅ Admin profile seeded in database (ID: ${userId})`);
+  } catch (err) {
+    console.error('❌ Failed to seed database admin profile:', err);
   }
 
   console.log('\n🎉 Database seed complete. GODSMOVE is ready.');

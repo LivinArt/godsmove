@@ -1,0 +1,911 @@
+// GODSMOVE — Production Schema
+// Phase 2 Backend Infrastructure
+// Last updated: 2026-05-26 (Phase 1 domain / tier / unlock tokens)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URLs configured in prisma.config.ts (Prisma 7 spec)
+  // DATABASE_URL      = Transaction Pooler (queries)
+  // DIRECT_DATABASE_URL = Direct connection (migrations only)
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 1: IDENTITY & AUTH
+// ─────────────────────────────────────────────
+
+model Profile {
+  id        String   @id // mirrors supabase auth.users.id (UUID)
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  tier      UserTier @default(STANDARD)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses              Address[]
+  orders                 Order[]
+  wallet                 Wallet?
+  wishlistItems          WishlistItem[]
+  returnReqs             ReturnRequest[]
+  productUnlocks         ProductUnlock[]
+  exclusiveReservations  ExclusiveReservation[]
+  exclusiveDrawWins      ExclusiveDrawWinner[]
+  unlockAccessTokens     UnlockAccessToken[] @relation("UnlockTokenClaimedBy")
+
+  @@map("profiles")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  CONTENT_EDITOR  // future: can manage editorial, archive
+  OPERATIONS      // future: can manage orders, inventory
+  SUPPORT         // future: can manage returns, customers
+  MARKETING       // future: can manage coupons, drops
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  firstName String
+  lastName  String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  phone     String
+  isDefault Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 2: CATALOGUE — PRODUCTS & VARIANTS
+// ─────────────────────────────────────────────
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique // "Tees", "Hoodies", "Accessories"
+  slug     String    @unique
+  position Int       @default(0)
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  tagline     String? // "First contact." — editorial one-liner
+  shortDesc   String? // one-liner for product cards
+  description String // full editorial description
+  symbolism   String? // cultural/symbolic meaning of the piece
+  status      ProductStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+
+  // Relations
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  dropId     String?
+  drop       Drop?    @relation(fields: [dropId], references: [id])
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Flags
+  channel           ProductChannel @default(DROP)
+  domain            ProductDomain @default(PREMIUM_WEAR)
+  requiresTierAccess Boolean @default(false)
+  minimumTier       UserTier?
+  requiresUnlockToken Boolean @default(false)
+  unlockStartsAt    DateTime?
+  unlockEndsAt      DateTime?
+  enableImageToggle Boolean @default(false)
+  frontImageUrl     String?
+  backImageUrl      String?
+  defaultImageSide  ProductImageSide @default(front)
+
+  // Exclusive Unlock System
+  unlockTeaser              String?
+  exclusiveStory            String?
+  countdownDurationDays     Int      @default(10)
+  winnerCount               Int      @default(3)
+  reservationPrice          Decimal? @db.Decimal(10, 2)
+  refundNonWinnersToWallet  Boolean  @default(true)
+  refundWinnersToWallet     Boolean  @default(true)
+  exclusiveBadgeText        String?
+  unlockButtonText          String?
+  reserveButtonText         String?
+
+  // Children
+  variants         ProductVariant[]
+  images           ProductImage[]
+  tags             ProductTag[]
+  wishlistItems    WishlistItem[]
+  discounts        Discount[]
+  productUnlocks   ProductUnlock[]
+  exclusiveDraws   ExclusiveDraw[]
+  unlockAccessTokens UnlockAccessToken[]
+
+  @@index([status])
+  @@index([dropId])
+  @@index([categoryId])
+  @@index([channel])
+  @@index([domain])
+  @@index([domain, status])
+  @@map("products")
+}
+
+model ProductVariant {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku          String   @unique
+  size         String // "S", "M", "L", "XL", "XXL"
+  color        String?
+  colorHex     String?
+  price        Decimal  @db.Decimal(10, 2)
+  comparePrice Decimal? @db.Decimal(10, 2)
+  position     Int      @default(0) // sort order within product
+  isActive     Boolean  @default(true)
+
+  inventory             Inventory?
+  orderItems              OrderItem[]
+  exclusiveReservations   ExclusiveReservation[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url      String // Supabase Storage public URL
+  alt      String?
+  position Int     @default(0)
+  isCover  Boolean @default(false)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductTag {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       String
+
+  @@unique([productId, tag])
+  @@index([tag])
+  @@map("product_tags")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([profileId, productId])
+  @@map("wishlist_items")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+  SOLD_OUT
+}
+
+enum ProductChannel {
+  DROP
+  EXCLUSIVE_UNLOCK
+  EXCLUSIVE_RACK
+}
+
+enum ProductDomain {
+  PREMIUM_WEAR
+  EXCLUSIVE_RACK
+  EXCLUSIVE_UNLOCK
+}
+
+enum UserTier {
+  STANDARD
+  VIP
+  INNER_CIRCLE
+}
+
+enum ProductImageSide {
+  front
+  back
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 3: DROPS — LIMITED RELEASE SYSTEM
+// ─────────────────────────────────────────────
+
+model Drop {
+  id          String     @id @default(cuid())
+  name        String // e.g. "PRIMAL ARCHETYPES // DROP 001"
+  slug        String     @unique
+  tagline     String? // editorial one-liner
+  description String? // full editorial description
+  manifesto   String? // brand philosophy / launch story
+  heroImageUrl String?
+
+  // Scheduling
+  launchAt DateTime? // scheduled release timestamp (null = draft/manual)
+  endAt    DateTime? // optional end-of-drop window
+
+  // Status
+  status      DropStatus @default(DRAFT)
+
+  // Visibility
+  isFeatured    Boolean @default(false) // feature on homepage
+  showCountdown Boolean @default(true)  // show countdown timer when SCHEDULED
+
+  // Scarcity
+  maxUnits Int? // null = unlimited
+
+  // Relations
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([isFeatured])
+  @@map("drops")
+}
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  ENDED
+  ARCHIVED
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 4: PROMOTIONS — DISCOUNTS & OFFERS
+// ─────────────────────────────────────────────
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum DiscountStatus {
+  DRAFT
+  ACTIVE
+  SCHEDULED
+  EXPIRED
+  ARCHIVED
+}
+
+model Discount {
+  id                String           @id @default(cuid())
+  name              String
+  code              String           @unique
+  description       String?
+  type              DiscountType
+  value             Decimal          @db.Decimal(10, 2)
+
+  status            DiscountStatus   @default(DRAFT)
+  isActive          Boolean          @default(true)
+
+  startsAt          DateTime?
+  endsAt            DateTime?
+
+  minimumOrderValue Decimal?         @db.Decimal(10, 2)
+  maximumDiscount   Decimal?         @db.Decimal(10, 2)
+
+  usageLimit        Int?
+  usageCount        Int              @default(0)
+  perCustomerLimit  Int              @default(1)
+
+  appliesToAll      Boolean          @default(true)
+  products          Product[]
+  orders            Order[]
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status])
+  @@index([isActive])
+  @@index([code])
+  @@map("promotions_discounts")
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 4: INVENTORY
+// ─────────────────────────────────────────────
+
+model Inventory {
+  id        String         @id @default(cuid())
+  variantId String         @unique
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  type          InventoryType @default(PERMANENT)
+  totalStock    Int           @default(0)
+  reservedStock Int           @default(0) // in active checkouts, not yet paid
+  soldStock     Int           @default(0)
+  lowStockAt    Int           @default(5) // below this triggers low-stock state
+
+  updatedAt DateTime @updatedAt
+
+  movements InventoryMovement[]
+
+  // Computed: availableStock = totalStock - reservedStock - soldStock
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id          String        @id @default(cuid())
+  inventoryId String
+  inventory   Inventory     @relation(fields: [inventoryId], references: [id])
+  delta       Int // + = stock added, - = stock removed
+  type        MovementType
+  reason      String?
+  orderId     String? // reference for purchase/cancel/return movements
+  createdAt   DateTime      @default(now())
+
+  @@index([inventoryId])
+  @@map("inventory_movements")
+}
+
+enum InventoryType {
+  PERMANENT // always restockable
+  LIMITED   // finite drop quantity — no planned restock
+}
+
+enum MovementType {
+  PURCHASE    // order confirmed and paid
+  RESERVE     // checkout started — stock soft-reserved
+  UNRESERVE   // checkout abandoned / expired
+  CANCEL      // order cancelled before dispatch
+  RETURN      // item returned, back in stock
+  RESTOCK     // admin manual restock
+  ADJUSTMENT  // admin manual correction
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 5: ORDERS
+// ─────────────────────────────────────────────
+
+model Order {
+  id          String        @id @default(cuid())
+  orderNumber String        @unique // "SS-2026-001" — human readable
+  profileId   String? // null = guest order
+  profile     Profile?      @relation(fields: [profileId], references: [id])
+  email       String // always present, even for guests
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentMethod PaymentMethod @default(RAZORPAY)
+
+  // Financials (stored in paise-equivalent Decimal for accuracy)
+  subtotal       Decimal @db.Decimal(10, 2)
+  shippingCost   Decimal @db.Decimal(10, 2) @default(0)
+  discountAmount Decimal @db.Decimal(10, 2) @default(0)
+  walletCredit   Decimal @db.Decimal(10, 2) @default(0) // wallet applied at checkout
+  total          Decimal @db.Decimal(10, 2)
+
+  // Discount applied
+  discountId String?   @map("discount_id")
+  discount   Discount? @relation(fields: [discountId], references: [id])
+
+  // Shipping snapshot (JSON so historical orders are never corrupted by address edits)
+  shippingAddress Json
+
+  // Fulfillment
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  // 3PL hook — modular: when integrated, populate these fields
+  fulfillmentProvider String? // "shiprocket", "delhivery", "manual"
+  fulfillmentRef      String? // 3PL order/shipment reference ID
+
+  // Payment gateway refs
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+
+  // Admin
+  notes     String?
+  adminNotes String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paidAt      DateTime?
+  fulfilledAt DateTime?
+
+  // Relations
+  items          OrderItem[]
+  shipments      Shipment[]
+  returnRequests ReturnRequest[]
+  walletTxns     WalletTransaction[]
+
+  @@index([profileId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  // Snapshots — never lose order data if product changes
+  productName  String
+  variantSku   String
+  size         String
+  color        String?
+  imageUrl     String?
+  price        Decimal @db.Decimal(10, 2)
+  quantity     Int
+  total        Decimal @db.Decimal(10, 2)
+
+  returnItems ReturnItem[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Shipment {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  carrier        String?
+  trackingNumber String?
+  trackingUrl    String?
+
+  // 3PL modular fields — populate when integrated
+  provider       String? // "shiprocket", "delhivery", "manual"
+  providerRef    String? // external shipment ID
+  providerStatus String? // raw status string from 3PL
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([orderId])
+  @@map("shipments")
+}
+
+enum OrderStatus {
+  PENDING       // created, awaiting payment
+  CONFIRMED     // payment received
+  PROCESSING    // being packed
+  SHIPPED       // dispatched
+  DELIVERED     // confirmed delivered
+  CANCELLED     // cancelled before dispatch
+  EXCHANGE_REQUESTED // exchange in progress
+  RETURN_REQUESTED   // return in progress
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  COD
+  WALLET      // 100% wallet
+  MIXED       // wallet + razorpay combined
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  RETURNED
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 6: WALLET & CREDITS (LEDGER-BASED)
+// ─────────────────────────────────────────────
+
+model Wallet {
+  id        String  @id @default(cuid())
+  profileId String  @unique
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Cached balance — source of truth is wallet_transactions table
+  balance  Decimal @db.Decimal(10, 2) @default(0)
+  currency String  @default("INR")
+
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id       String @id @default(cuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+
+  // Positive = credit, negative = debit
+  amount      Decimal         @db.Decimal(10, 2)
+  type        WalletTxnType
+  description String?
+
+  // Reference links — at most one will be populated
+  orderId  String?
+  order    Order?         @relation(fields: [orderId], references: [id])
+  returnId String?
+  returnReq ReturnRequest? @relation(fields: [returnId], references: [id])
+  exclusiveReservationId String?
+  exclusiveReservation   ExclusiveReservation? @relation(fields: [exclusiveReservationId], references: [id])
+
+  // For expiring promotional credits
+  expiresAt DateTime?
+  isExpired Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([walletId])
+  @@index([orderId])
+  @@map("wallet_transactions")
+}
+
+enum WalletTxnType {
+  CREDIT_RETURN       // issued from approved exchange/return
+  CREDIT_PROMOTIONAL  // manually issued by admin (launch, campaigns)
+  CREDIT_REFERRAL     // future: referral program
+  CREDIT_ADJUSTMENT   // admin correction
+  CREDIT_EXCLUSIVE_DRAW // wallet credit from exclusive draw resolution
+  DEBIT_ORDER         // applied during checkout
+  DEBIT_EXPIRED       // promotional credit expired
+}
+
+
+
+// ─────────────────────────────────────────────
+// DOMAIN 8: EXCHANGE & RETURN MANAGEMENT
+// ─────────────────────────────────────────────
+
+model ReturnRequest {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id])
+
+  type       ReturnType
+  status     ReturnStatus     @default(PENDING)
+  resolution ReturnResolution?
+
+  reason      String
+  adminNotes  String?
+
+  // Customer evidence uploads (Supabase Storage URLs)
+  evidenceUrls String[] @default([])
+
+  // Credit issued on resolution
+  creditAmount Decimal? @db.Decimal(10, 2)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  items      ReturnItem[]
+  walletTxns WalletTransaction[]
+
+  @@index([orderId])
+  @@index([status])
+  @@map("return_requests")
+}
+
+model ReturnItem {
+  id          String        @id @default(cuid())
+  returnReqId String
+  returnReq   ReturnRequest @relation(fields: [returnReqId], references: [id], onDelete: Cascade)
+  orderItemId String
+  orderItem   OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  quantity Int
+  reason   String?
+
+  @@index([returnReqId])
+  @@map("return_items")
+}
+
+enum ReturnType {
+  EXCHANGE           // customer wants a different size/product
+  RETURN_FOR_CREDIT  // customer wants store credit
+}
+
+enum ReturnStatus {
+  PENDING   // submitted, awaiting admin review
+  APPROVED  // admin approved, awaiting item receipt
+  REJECTED  // admin rejected with reason
+  RECEIVED  // returned item received by GODSMOVE
+  COMPLETED // credit issued / exchange dispatched
+}
+
+enum ReturnResolution {
+  STORE_CREDIT     // issued to wallet
+  EXCHANGE_SAME    // same product, different size
+  EXCHANGE_DIFF    // different product entirely
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 9: EDITORIAL & CMS
+// ─────────────────────────────────────────────
+
+model ArchivePost {
+  id     String          @id @default(cuid())
+  title  String
+  slug   String          @unique
+  type   ArchivePostType
+  status ContentStatus   @default(DRAFT)
+
+  excerpt    String
+  body       String? // Markdown / rich text
+  coverImage String? // Supabase Storage URL
+
+  tags String[] @default([])
+
+  authorId String? // references Profile.id — optional
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@map("archive_posts")
+}
+
+// Editable homepage content blocks — key/value CMS
+model HomepageContent {
+  id    String @id @default(cuid())
+  key   String @unique
+  // Examples: "hero_tagline", "hero_cta_text", "editorial_quote", "drop_banner"
+  value String
+
+  updatedAt DateTime @updatedAt
+  updatedBy String? // Profile.id of last editor
+
+  @@map("homepage_content")
+}
+
+/// Cinematic homepage hero slides — admin-managed campaign/editorial frames
+model HeroSlide {
+  id             String   @id @default(cuid())
+  image          String // desktop hero image URL (Supabase public or site path)
+  mobileImage    String?
+  eyebrow        String
+  headline       String
+  narrative      String
+  ctaLabel       String
+  ctaHref        String
+  alignment      String   @default("left") // left | center | right
+  overlayOpacity Float    @default(0.45)
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("hero_slides")
+}
+
+// Campaign & editorial media assets
+model CampaignAsset {
+  id   String       @id @default(cuid())
+  name String
+  type CampaignType
+
+  url      String // Supabase Storage URL
+  alt      String?
+  dropId   String?
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([dropId])
+  @@index([type])
+  @@map("campaign_assets")
+}
+
+enum ArchivePostType {
+  EDITORIAL
+  MOODBOARD
+  OBSERVATION
+  ARTIFACT
+  CAMPAIGN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CampaignType {
+  HERO
+  EDITORIAL
+  PRODUCT
+  LOOKBOOK
+}
+
+// ─────────────────────────────────────────────
+// DOMAIN 10: EXCLUSIVE UNLOCK SYSTEM
+// ─────────────────────────────────────────────
+
+enum UnlockTokenStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+  DISABLED
+}
+
+enum UnlockTokenType {
+  STANDARD
+  INVITE
+  ADMIN
+  RESERVATION
+  CAMPAIGN
+}
+
+/// Hashed bearer credentials only — raw tokens must never be persisted.
+model UnlockAccessToken {
+  id         String            @id @default(uuid()) @db.Uuid
+  tokenHash  String            @unique
+  type       UnlockTokenType   @default(STANDARD)
+  status     UnlockTokenStatus @default(ACTIVE)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  claimedByProfileId String?
+  claimedByProfile   Profile? @relation("UnlockTokenClaimedBy", fields: [claimedByProfileId], references: [id], onDelete: SetNull)
+
+  claimedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([productId, status])
+  @@index([claimedByProfileId])
+  @@index([expiresAt, status])
+  @@map("unlock_access_tokens")
+}
+
+model ProductUnlock {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unlockedAt DateTime @default(now())
+
+  @@unique([profileId, productId])
+  @@index([productId])
+  @@index([profileId])
+  @@map("product_unlocks")
+}
+
+model ExclusiveDraw {
+  id        String              @id @default(cuid())
+  productId String
+  product   Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  status    ExclusiveDrawStatus @default(OPEN)
+  startsAt  DateTime            @default(now())
+  endsAt    DateTime
+  winnerCount Int
+
+  drawnAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations ExclusiveReservation[]
+  winners      ExclusiveDrawWinner[]
+
+  @@index([productId])
+  @@index([status])
+  @@index([endsAt])
+  @@map("exclusive_draws")
+}
+
+model ExclusiveReservation {
+  id        String                    @id @default(cuid())
+  drawId    String
+  draw      ExclusiveDraw             @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  profileId String
+  profile   Profile                   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant            @relation(fields: [variantId], references: [id])
+
+  amount    Decimal                   @db.Decimal(10, 2)
+  status    ExclusiveReservationStatus @default(PENDING)
+
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  winnerRecord ExclusiveDrawWinner?
+  walletTxns   WalletTransaction[]
+
+  @@unique([drawId, profileId])
+  @@index([drawId])
+  @@index([profileId])
+  @@index([status])
+  @@map("exclusive_reservations")
+}
+
+model ExclusiveDrawWinner {
+  id            String               @id @default(cuid())
+  drawId        String
+  draw          ExclusiveDraw        @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  reservationId String               @unique
+  reservation   ExclusiveReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  profileId     String
+  profile       Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  selectedAt DateTime @default(now())
+  walletCredited Boolean @default(false)
+
+  @@index([drawId])
+  @@index([profileId])
+  @@map("exclusive_draw_winners")
+}
+
+enum ExclusiveDrawStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+enum ExclusiveReservationStatus {
+  PENDING
+  PAID
+  WINNER
+  NON_WINNER
+  REFUNDED
+  CANCELLED
+}

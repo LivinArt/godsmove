@@ -1,31 +1,122 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { Plus, RefreshCw, Archive, ArchiveRestore } from 'lucide-react';
 import type { FormVariantInput } from '@/lib/validations/product';
+import { calculatePricing } from '@/lib/PricingEngine';
 
 interface VariantManagerProps {
   variants: FormVariantInput[];
   onChange: (variants: FormVariantInput[]) => void;
   productSlug: string;
-  seasonPrefix?: string; // e.g., 'SS26'
-  dropPrefix?: string; // e.g., 'DROP001'
+  globalCostPrice: number;
+  globalGstPercentage: number;
 }
 
-export function VariantManager({ variants, onChange, productSlug, seasonPrefix, dropPrefix }: VariantManagerProps) {
-  const addVariant = () => {
-    onChange([
-      ...variants,
-      {
-        sku: '',
-        size: 'M',
-        price: 0,
-        comparePrice: null,
-        position: variants.length,
-        isActive: true,
-        initialStock: 0,
-      },
-    ]);
+export function VariantManager({
+  variants,
+  onChange,
+  productSlug,
+  globalCostPrice,
+  globalGstPercentage
+}: VariantManagerProps) {
+  // Option matrix setup state
+  const hasInitialColors = variants.some((v) => v.color) ?? false;
+  const hasInitialSizes = variants.some((v) => v.size && v.size !== 'ONE_SIZE') ?? false;
+
+  const [hasColorVariants, setHasColorVariants] = useState(hasInitialColors);
+  const [hasSizeVariants, setHasSizeVariants] = useState(hasInitialSizes || variants.length === 0);
+
+  // Wizard list colors
+  const [wizardColors, setWizardColors] = useState<{ name: string; hex: string }[]>(() => {
+    const existing = variants.map((v) => ({ name: v.color || '', hex: v.colorHex || '#000000' })).filter((c) => c.name);
+    const unique: { name: string; hex: string }[] = [];
+    existing.forEach((item) => {
+      if (!unique.some((x) => x.name.toLowerCase() === item.name.toLowerCase())) {
+        unique.push(item);
+      }
+    });
+    return unique.length > 0 ? unique : [{ name: 'Black', hex: '#000000' }];
+  });
+
+  // Wizard list sizes
+  const [wizardSizes, setWizardSizes] = useState<string[]>(() => {
+    const existing = variants.map((v) => v.size).filter((s) => s && s !== 'ONE_SIZE');
+    return existing.length > 0 ? Array.from(new Set(existing)) : ['S', 'M', 'L', 'XL'];
+  });
+
+  const [customSizeInput, setCustomSizeInput] = useState('');
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#000000');
+
+  const addCustomSize = () => {
+    if (!customSizeInput) return;
+    const clean = customSizeInput.trim().toUpperCase();
+    if (!wizardSizes.includes(clean)) {
+      setWizardSizes([...wizardSizes, clean]);
+    }
+    setCustomSizeInput('');
   };
+
+  const addCustomColor = () => {
+    if (!newColorName.trim()) return;
+    const cleanName = newColorName.trim();
+    if (!wizardColors.some((c) => c.name.toLowerCase() === cleanName.toLowerCase())) {
+      setWizardColors([...wizardColors, { name: cleanName, hex: newColorHex }]);
+    }
+    setNewColorName('');
+  };
+
+  const removeWizardColor = (index: number) => {
+    setWizardColors(wizardColors.filter((_, i) => i !== index));
+  };
+
+  const removeWizardSize = (size: string) => {
+    setWizardSizes(wizardSizes.filter((s) => s !== size));
+  };
+
+  // Compile wizard matrix combinations
+  const compileWizardMatrix = () => {
+    const activeColors = hasColorVariants ? wizardColors : [{ name: '', hex: '' }];
+    const activeSizes = hasSizeVariants ? wizardSizes : ['ONE_SIZE'];
+
+    const newMatrix: FormVariantInput[] = [];
+    let pos = 0;
+
+    activeColors.forEach((color) => {
+      activeSizes.forEach((size) => {
+        const colorName = color.name || null;
+        const colorHex = color.hex || null;
+
+        const matched = variants.find(
+          (v) => v.size === size && (v.color?.toLowerCase() === colorName?.toLowerCase() || (!v.color && !colorName))
+        );
+
+        const baseSku = productSlug ? productSlug.toUpperCase().substring(0, 5) : 'PRD';
+        const colorSuffix = colorName ? colorName.toUpperCase().substring(0, 3) : '';
+        const generatedSku = [baseSku, colorSuffix, size].filter(Boolean).join('-');
+
+        newMatrix.push({
+          sku: matched?.sku || generatedSku,
+          size: size as any,
+          color: colorName,
+          colorHex,
+          price: matched?.price || 0,
+          comparePrice: matched?.comparePrice || null,
+          position: pos++,
+          isActive: matched ? matched.isActive : true,
+          initialStock: matched?.initialStock || 0,
+        });
+      });
+    });
+
+    onChange(newMatrix);
+  };
+
+  // Compile matrix when structure or wizard choices change
+  useEffect(() => {
+    compileWizardMatrix();
+  }, [hasColorVariants, hasSizeVariants, wizardColors, wizardSizes]);
 
   const updateVariant = (index: number, field: keyof FormVariantInput, value: any) => {
     const newVariants = [...variants];
@@ -33,142 +124,440 @@ export function VariantManager({ variants, onChange, productSlug, seasonPrefix, 
     onChange(newVariants);
   };
 
-  const removeVariant = (index: number) => {
+  const toggleVariantStatus = (index: number) => {
     const newVariants = [...variants];
-    const v = newVariants[index];
-    v.isActive = !v.isActive;
+    newVariants[index].isActive = !newVariants[index].isActive;
     onChange(newVariants);
   };
 
-  const generateSku = (index: number) => {
+  const generateSingleSku = (index: number) => {
     const v = variants[index];
-    const prefix = [seasonPrefix, dropPrefix].filter(Boolean).join('-');
-    const baseSlug = productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4); // basic 4-char code
+    const baseSlug = productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5);
     const colorCode = v.color ? v.color.toUpperCase().substring(0, 3) : '';
-    
-    const skuParts = [prefix, baseSlug, colorCode, v.size].filter(Boolean);
+    const skuParts = [baseSlug, colorCode, v.size].filter(Boolean);
     updateVariant(index, 'sku', skuParts.join('-'));
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div className="admin-table-wrap" style={{ overflowX: 'auto', paddingBottom: '16px' }}>
-        <table className="admin-table" style={{ minWidth: '800px' }}>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>SKU</th>
-              <th>Size</th>
-              <th>Color</th>
-              <th>Price (₹)</th>
-              <th>Compare (₹)</th>
-              <th>Stock</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {variants.map((variant, index) => (
-              <tr key={index} style={{ opacity: variant.isActive ? 1 : 0.5, filter: variant.isActive ? 'none' : 'grayscale(100%)' }}>
-                <td>
-                  <span className={`badge ${variant.isActive ? 'badge-green' : 'badge-red'}`}>
-                    {variant.isActive ? 'Active' : 'Archived'}
-                  </span>
-                </td>
-                <td>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={variant.sku}
-                      onChange={(e) => updateVariant(index, 'sku', e.target.value)}
-                      placeholder="SKU"
-                      className="admin-input"
-                      style={{ width: '120px', padding: '6px 10px' }}
-                    />
-                    <button type="button" onClick={() => generateSku(index)} className="btn-secondary" style={{ padding: '6px', minWidth: '0' }} title="Auto-generate SKU">
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </td>
-                <td>
-                  <select
-                    value={variant.size}
-                    onChange={(e) => updateVariant(index, 'size', e.target.value)}
-                    className="admin-input admin-select"
-                    style={{ width: '80px', padding: '6px 24px 6px 10px' }}
-                  >
-                    {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'ONE_SIZE'].map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={variant.color || ''}
-                    onChange={(e) => updateVariant(index, 'color', e.target.value)}
-                    placeholder="Color"
-                    className="admin-input"
-                    style={{ width: '100px', padding: '6px 10px' }}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={variant.price || ''}
-                    onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value))}
-                    min="0"
-                    placeholder="0.00"
-                    className="admin-input"
-                    style={{ width: '100px', padding: '6px 10px' }}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={variant.comparePrice || ''}
-                    onChange={(e) => updateVariant(index, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
-                    min="0"
-                    placeholder="MRP"
-                    className="admin-input"
-                    style={{ width: '100px', padding: '6px 10px' }}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={variant.initialStock === undefined ? '' : variant.initialStock}
-                    onChange={(e) => updateVariant(index, 'initialStock', parseInt(e.target.value, 10))}
-                    min="0"
-                    className="admin-input"
-                    style={{ width: '80px', padding: '6px 10px' }}
-                  />
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <button
-                    type="button"
-                    onClick={() => removeVariant(index)}
-                    className="btn-secondary"
-                    style={{ padding: '6px', minWidth: '0', background: 'transparent', border: 'none' }}
-                    title={variant.isActive ? "Archive Variant" : "Restore Variant"}
-                  >
-                    {variant.isActive ? <Archive className="w-4 h-4" /> : <ArchiveRestore className="w-4 h-4" />}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
+      <style>{`
+        .choice-btn {
+          padding: 10px 20px;
+          border-radius: 2px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          border: 1px solid var(--admin-border);
+          background: transparent;
+          color: var(--admin-muted);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .choice-btn.active {
+          background: #fff;
+          color: #000;
+          border-color: #fff;
+        }
+        .tag-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--admin-surface-2);
+          border: 1px solid var(--admin-border);
+          padding: 4px 10px;
+          border-radius: 2px;
+          font-size: 11px;
+          color: #fff;
+        }
+        .tag-pill button {
+          background: transparent;
+          border: none;
+          color: var(--admin-muted);
+          cursor: pointer;
+          font-size: 13px;
+        }
+        .tag-pill button:hover {
+          color: #ef4444;
+        }
+
+        /* Responsive layout variables */
+        .v-table-container {
+          display: block;
+          width: 100%;
+          overflow-x: hidden;
+        }
+        .v-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .v-table th, .v-table td {
+          padding: 12px;
+          border-bottom: 1px solid var(--admin-border);
+          text-align: left;
+          vertical-align: middle;
+        }
+        .v-mobile-cards {
+          display: none;
+        }
+
+        @media (max-width: 1024px) {
+          .v-table-container {
+            display: none;
+          }
+          .v-mobile-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .v-mobile-cards {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      {/* STEP 3A: Structure Definition Toggles */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+        <div style={{ padding: '20px', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: '2px' }}>
+          <label className="form-label" style={{ marginBottom: '12px' }}>Does this product have Colours?</label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className={`choice-btn ${hasColorVariants ? 'active' : ''}`}
+              onClick={() => setHasColorVariants(true)}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              className={`choice-btn ${!hasColorVariants ? 'active' : ''}`}
+              onClick={() => setHasColorVariants(false)}
+            >
+              No
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '20px', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: '2px' }}>
+          <label className="form-label" style={{ marginBottom: '12px' }}>Does this product have Sizes?</label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className={`choice-btn ${hasSizeVariants ? 'active' : ''}`}
+              onClick={() => setHasSizeVariants(true)}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              className={`choice-btn ${!hasSizeVariants ? 'active' : ''}`}
+              onClick={() => setHasSizeVariants(false)}
+            >
+              No
+            </button>
+          </div>
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={addVariant}
-        className="btn-secondary"
-        style={{ width: 'fit-content' }}
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Add Variant
-      </button>
+      {/* STEP 3B: Wizard Lists */}
+      {hasColorVariants && (
+        <div style={{ padding: '24px', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: '2px' }}>
+          <label className="form-label" style={{ marginBottom: '8px' }}>Colours List</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            {wizardColors.map((color, idx) => (
+              <span key={idx} className="tag-pill">
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', background: color.hex, borderRadius: '50%' }} />
+                <span>{color.name}</span>
+                <button type="button" onClick={() => removeWizardColor(idx)}>×</button>
+              </span>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '10px', maxWidth: '400px' }}>
+            <input
+              type="text"
+              value={newColorName}
+              onChange={(e) => setNewColorName(e.target.value)}
+              placeholder="Colour name, e.g. Ivory"
+              className="admin-input"
+              style={{ flex: 2 }}
+            />
+            <input
+              type="color"
+              value={newColorHex}
+              onChange={(e) => setNewColorHex(e.target.value)}
+              style={{ width: '42px', height: '42px', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+            />
+            <button type="button" onClick={addCustomColor} className="btn-secondary" style={{ flex: 1 }}>
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hasSizeVariants && (
+        <div style={{ padding: '24px', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: '2px' }}>
+          <label className="form-label" style={{ marginBottom: '8px' }}>Sizes List</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            {wizardSizes.map((size) => (
+              <span key={size} className="tag-pill">
+                <span>{size}</span>
+                <button type="button" onClick={() => removeWizardSize(size)}>×</button>
+              </span>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '10px', maxWidth: '300px' }}>
+            <input
+              type="text"
+              value={customSizeInput}
+              onChange={(e) => setCustomSizeInput(e.target.value)}
+              placeholder="Size, e.g. XXL"
+              className="admin-input"
+              style={{ flex: 2 }}
+            />
+            <button type="button" onClick={addCustomSize} className="btn-secondary" style={{ flex: 1 }}>
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3C: Responsive Matrix list */}
+      <div>
+        <span style={{ fontSize: '11px', color: 'var(--admin-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', display: 'block' }}>
+          Variant SKU Matrix ({variants.length} combinations generated)
+        </span>
+
+        {/* Desktop Table View */}
+        <div className="v-table-container">
+          <table className="v-table">
+            <thead>
+              <tr style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--admin-muted)' }}>
+                <th style={{ width: '80px' }}>Status</th>
+                <th>SKU Code</th>
+                <th style={{ width: '90px' }}>Size</th>
+                <th style={{ width: '100px' }}>Colour</th>
+                <th style={{ width: '120px' }}>Selling Price</th>
+                <th style={{ width: '120px' }}>Compare Price</th>
+                <th style={{ width: '90px' }}>Stock</th>
+                <th style={{ width: '180px' }}>Taxes & Margins</th>
+                <th style={{ width: '50px', textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {variants.map((v, idx) => {
+                const splits = calculatePricing(v.price, globalCostPrice, globalGstPercentage);
+                return (
+                  <tr key={idx} style={{ opacity: v.isActive ? 1 : 0.4 }}>
+                    <td>
+                      <span className={`badge ${v.isActive ? 'badge-green' : 'badge-red'}`}>
+                        {v.isActive ? 'Active' : 'Archived'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={v.sku}
+                          onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
+                          className="admin-input"
+                          style={{ fontSize: '12px', padding: '6px 8px', maxWidth: '140px', textOverflow: 'ellipsis' }}
+                          placeholder="SKU"
+                        />
+                        <button type="button" onClick={() => generateSingleSku(idx)} className="btn-secondary" style={{ padding: '6px', minWidth: '0' }}>
+                          <RefreshCw size={12} />
+                        </button>
+                      </div>
+                    </td>
+                    <td><span style={{ fontSize: '12px', fontWeight: 600 }}>{v.size}</span></td>
+                    <td>
+                      <span style={{ fontSize: '12px', color: '#fff' }}>
+                        {v.color || 'None'}
+                      </span>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={v.price || ''}
+                        onChange={(e) => updateVariant(idx, 'price', parseFloat(e.target.value) || 0)}
+                        className="admin-input"
+                        style={{ padding: '6px 8px', fontSize: '12px' }}
+                        placeholder="₹ Price"
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={v.comparePrice || ''}
+                        onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
+                        className="admin-input"
+                        style={{ padding: '6px 8px', fontSize: '12px' }}
+                        placeholder="₹ MRP"
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={v.initialStock === undefined ? '' : v.initialStock}
+                        onChange={(e) => updateVariant(idx, 'initialStock', parseInt(e.target.value, 10) || 0)}
+                        className="admin-input"
+                        style={{ padding: '6px 8px', fontSize: '12px' }}
+                        placeholder="Qty"
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '9px', color: 'var(--admin-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span>GST: ₹{splits.gstAmount} | Rev: ₹{splits.netRevenue}</span>
+                        <span style={{ color: splits.profit >= 0 ? '#22c55e' : '#ef4444' }}>
+                          Profit: ₹{splits.profit} ({splits.margin}%)
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleVariantStatus(idx)}
+                        className="btn-secondary"
+                        style={{ padding: '6px', minWidth: '0', border: 'none', background: 'transparent' }}
+                      >
+                        {v.isActive ? <Archive size={14} /> : <ArchiveRestore size={14} />}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile / Tablet Cards View */}
+        <div className="v-mobile-cards">
+          {variants.map((v, idx) => {
+            const splits = calculatePricing(v.price, globalCostPrice, globalGstPercentage);
+            return (
+              <div
+                key={idx}
+                style={{
+                  background: 'var(--admin-surface-2)',
+                  border: '1px solid var(--admin-border)',
+                  padding: '16px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  opacity: v.isActive ? 1 : 0.5
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className={`badge ${v.isActive ? 'badge-green' : 'badge-red'}`}>
+                    {v.isActive ? 'Active' : 'Archived'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleVariantStatus(idx)}
+                    className="btn-secondary"
+                    style={{ padding: '4px 8px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    {v.isActive ? <Archive size={12} /> : <ArchiveRestore size={12} />}
+                    <span>{v.isActive ? 'Archive' : 'Restore'}</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>SKU Code</label>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        value={v.sku}
+                        onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
+                        className="admin-input"
+                        style={{ fontSize: '12px', padding: '6px 8px', flex: 1 }}
+                      />
+                      <button type="button" onClick={() => generateSingleSku(idx)} className="btn-secondary" style={{ padding: '6px', minWidth: '0' }}>
+                        <RefreshCw size={12} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Size</label>
+                    <div style={{ background: 'var(--admin-border)', border: '1px solid var(--admin-border)', padding: '8px 12px', fontSize: '12px', fontWeight: 600, color: '#fff', borderRadius: '2px', textAlign: 'center' }}>
+                      {v.size}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Colour</label>
+                    <div style={{ background: 'var(--admin-border)', border: '1px solid var(--admin-border)', padding: '8px 12px', fontSize: '12px', color: '#fff', borderRadius: '2px', textAlign: 'center' }}>
+                      {v.color || 'None'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Selling Price</label>
+                    <input
+                      type="number"
+                      value={v.price || ''}
+                      onChange={(e) => updateVariant(idx, 'price', parseFloat(e.target.value) || 0)}
+                      className="admin-input"
+                      style={{ padding: '6px 8px', fontSize: '12px' }}
+                      placeholder="₹ Price"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Compare Price</label>
+                    <input
+                      type="number"
+                      value={v.comparePrice || ''}
+                      onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="admin-input"
+                      style={{ padding: '6px 8px', fontSize: '12px' }}
+                      placeholder="₹ MRP"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Initial Stock</label>
+                    <input
+                      type="number"
+                      value={v.initialStock === undefined ? '' : v.initialStock}
+                      onChange={(e) => updateVariant(idx, 'initialStock', parseInt(e.target.value, 10) || 0)}
+                      className="admin-input"
+                      style={{ padding: '6px 8px', fontSize: '12px' }}
+                      placeholder="Stock Qty"
+                    />
+                  </div>
+
+                  <div style={{ gridColumn: 'span 2', padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--admin-border)', borderRadius: '2px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--admin-muted)' }}>
+                      <span>GST amount ({splits.gstRate}%):</span>
+                      <span style={{ color: '#fff' }}>₹{splits.gstAmount}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--admin-muted)' }}>
+                      <span>Net taxable revenue:</span>
+                      <span style={{ color: '#fff' }}>₹{splits.netRevenue}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 600 }}>
+                      <span>Profit Margin:</span>
+                      <span style={{ color: splits.profit >= 0 ? '#22c55e' : '#ef4444' }}>
+                        ₹{splits.profit} ({splits.margin}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

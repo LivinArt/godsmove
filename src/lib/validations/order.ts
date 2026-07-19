@@ -9,11 +9,13 @@ export const ShippingAddressSchema = z.object({
     .regex(/^[6-9]\d{9}$/, 'Invalid Indian phone number (10 digits, starts with 6-9)'),
   line1: z.string().min(1, 'Address is required').max(200),
   line2: z.string().max(200).optional(),
+  landmark: z.string().max(200).optional(),
   city: z.string().min(1, 'City is required').max(80),
   state: z.string().min(1, 'State is required').max(80),
   pincode: z
     .string()
     .regex(/^[1-9][0-9]{5}$/, 'Invalid Indian pincode'),
+  label: z.string().max(20).optional(),
 });
 
 export const CreateOrderSchema = z.object({

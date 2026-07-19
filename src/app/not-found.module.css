@@ -1,0 +1,62 @@
+.page {
+  min-height: 100vh;
+  background-color: #0A0A0A;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--cream, #EBE6DC);
+  font-family: var(--font-plus-jakarta, system-ui, sans-serif);
+}
+
+.logoWrap {
+  margin-bottom: var(--space-3xl);
+  opacity: 0.95;
+}
+
+.logo {
+  height: 140px;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: var(--font-heading, inherit);
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 var(--space-md) 0;
+  color: #FFF;
+}
+
+.text {
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  max-width: 320px;
+  line-height: 1.6;
+  margin: 0 0 var(--space-2xl) 0;
+}
+
+.homeBtn {
+  background: var(--cream, #EBE6DC);
+  color: #000;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 14px 28px;
+  border-radius: 2px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.homeBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

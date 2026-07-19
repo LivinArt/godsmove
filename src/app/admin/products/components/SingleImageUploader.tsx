@@ -75,8 +75,12 @@ export function SingleImageUploader({
       {value ? (
         /* ── Preview State ── */
         <div className={styles.previewCard}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt={label} className={styles.previewImage} />
+          {value.split('.').pop()?.toLowerCase()?.match(/mp4|webm|ogg|mov/) || value.includes('video') ? (
+            <video src={value} className={styles.previewImage} autoPlay muted loop playsInline style={{ objectFit: 'cover' }} />
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={value} alt={label} className={styles.previewImage} />
+          )}
           <div className={styles.previewOverlay}>
             <button
               type="button"
@@ -135,7 +139,7 @@ export function SingleImageUploader({
                 <span className={styles.dropTitle}>
                   {isDragging ? 'Drop to upload' : 'Click or drag & drop'}
                 </span>
-                <span className={styles.dropHint}>PNG, JPEG, WebP · Max 5MB</span>
+                <span className={styles.dropHint}>PNG, JPEG, WebP, GIF, MP4 · Max 50MB</span>
               </>
             )}
           </div>
@@ -149,7 +153,7 @@ export function SingleImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png, image/jpeg, image/webp"
+        accept="image/png, image/jpeg, image/webp, image/gif, video/mp4, video/webm, video/ogg, video/quicktime"
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />

@@ -23,6 +23,7 @@ export default async function ReturnsAdminPage({
           orderItem: { select: { productName: true, size: true, quantity: true } },
         },
       },
+      reverseShipment: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -56,11 +57,11 @@ export default async function ReturnsAdminPage({
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
-            <tr><th>Order</th><th>Customer</th><th>Type</th><th>Items</th><th>Status</th><th>Date</th><th></th></tr>
+            <tr><th>Order</th><th>Customer</th><th>Type</th><th>Items</th><th>Status</th><th>Reverse Logistics</th><th>Date</th><th></th></tr>
           </thead>
           <tbody>
             {returns.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>No returns found</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>No returns found</td></tr>
             )}
             {returns.map((ret) => (
               <tr key={ret.id}>
@@ -74,6 +75,16 @@ export default async function ReturnsAdminPage({
                   {ret.items.map(i => `${i.orderItem.productName} (${i.orderItem.size}) ×${i.quantity}`).join(', ').slice(0, 60)}
                 </td>
                 <td><span className={STATUS_CLASS[ret.status] ?? 'badge badge-grey'}>{ret.status}</span></td>
+                <td style={{ fontSize: 12 }}>
+                  {ret.reverseShipment ? (
+                    <div>
+                      <span className="mono" style={{ fontWeight: 600 }}>{ret.reverseShipment.carrier}</span>
+                      <div style={{ fontSize: 10, color: 'var(--admin-muted)' }}>Status: {ret.reverseShipment.status.replace('_', ' ')}</div>
+                    </div>
+                  ) : (
+                    <span style={{ color: 'var(--admin-muted)', fontStyle: 'italic' }}>None</span>
+                  )}
+                </td>
                 <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>
                   {new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short' }).format(ret.createdAt)}
                 </td>

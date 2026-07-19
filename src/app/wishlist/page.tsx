@@ -1,5 +1,8 @@
 import { Metadata } from 'next';
 import WishlistClient from './WishlistClient';
+import Navbar from '@/components/Navbar';
+import CartDrawer from '@/components/CartDrawer';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Wishlist — GODSMOVE',
@@ -8,8 +11,13 @@ export const metadata: Metadata = {
 
 export default function WishlistPage() {
   return (
-    <main style={{ minHeight: '100vh', paddingTop: 'var(--nav-height, 80px)' }}>
-      <WishlistClient />
-    </main>
+    <>
+      <Navbar />
+      <CartDrawer />
+      <main style={{ minHeight: '100vh', paddingTop: 'var(--nav-height, 80px)' }}>
+        <WishlistClient />
+      </main>
+      <Footer />
+    </>
   );
 }

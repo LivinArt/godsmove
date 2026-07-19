@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     staticGenerationMinPagesPerWorker: 50,
   },
   images: {
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {

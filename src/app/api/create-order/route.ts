@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { amount, items } = await req.json();
+    const { amount, items, orderId } = await req.json();
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
@@ -55,9 +55,10 @@ export async function POST(req: Request) {
     // });
     //
     // const order = await razorpay.orders.create({
-    //   amount: amount * 100, // Convert to paise
+    //   amount: Math.round(amount * 100), // Convert to paise
     //   currency: 'INR',
     //   receipt: `receipt_${Date.now()}`,
+    //   notes: { orderId },
     // });
     //
     // return NextResponse.json(order);
@@ -66,10 +67,11 @@ export async function POST(req: Request) {
     const mockOrder = {
       id: `order_${Date.now()}`,
       entity: 'order',
-      amount: amount * 100,
+      amount: Math.round(amount * 100),
       currency: 'INR',
       receipt: `receipt_${Date.now()}`,
       status: 'created',
+      notes: { orderId },
     };
 
     return NextResponse.json(mockOrder);

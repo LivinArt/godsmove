@@ -18,15 +18,20 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model Profile {
-  id        String   @id // mirrors supabase auth.users.id (UUID)
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  phone     String?
-  role      UserRole @default(CUSTOMER)
-  tier      UserTier @default(STANDARD)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id // mirrors supabase auth.users.id (UUID)
+  email      String   @unique
+  godsmoveId String?  @unique
+  firstName  String?
+  lastName   String?
+  phone      String?
+  role              UserRole @default(CUSTOMER)
+  tier              UserTier @default(STANDARD)
+  marketingEmails   Boolean  @default(true)
+  orderUpdateEmails Boolean  @default(true)
+  adminNotes        String?
+  dob               DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   addresses              Address[]
   orders                 Order[]
@@ -59,11 +64,13 @@ model Address {
   lastName  String
   line1     String
   line2     String?
+  landmark  String?
   city      String
   state     String
   pincode   String
   phone     String
   isDefault Boolean  @default(false)
+  label     String?  @default("Home")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -136,6 +143,82 @@ model Product {
   exclusiveBadgeText        String?
   unlockButtonText          String?
   reserveButtonText         String?
+
+  // Merchandising flags (Phase 1)
+  isExclusiveRack          Boolean          @default(false)
+  showOnHomepage           Boolean          @default(false)
+  showOnExclusivePage      Boolean          @default(false)
+  featuredPriority         Int              @default(0)
+  featuredBadge            String?          // e.g., "Editor's Pick", "Signature Piece"
+  featuredHeadline         String?          // short editorial subtitle
+  featuredDescription      String?          // why it deserves to be featured
+  editorStory              String?          @db.Text // long-form collection story
+  
+  // Curated Collection details
+  collectionName           String?          // e.g., "Signature Collection"
+  collectionBanner         String?          // background image URL
+  collectionHeroImage      String?          // header cover image URL
+  collectionHeroVideo      String?          // ambient video URL
+  featuredFrom             DateTime?
+  featuredUntil            DateTime?
+  theme                    String?          @default("Black") // "Ivory" | "Stone" | "Black" | "Monochrome"
+
+  // Editorial Content (Phase 2)
+  whyWeMadeThis            String?          @db.Text
+
+  // Craftsmanship Stories
+  fabricName               String?          
+  fabricWhy                String?          @db.Text
+  constructionName         String?          
+  constructionWhy          String?          @db.Text
+  printName                String?          
+  printWhy                 String?          @db.Text
+
+  // Technical Details
+  material                 String?          
+  fit                      String?          
+  origin                   String?          
+  washCare                 String?          
+  country                  String?          
+  manufacturer             String?
+  mrp                      Decimal?         @db.Decimal(10, 2)
+  hsn                      String?
+  netQuantity              Int              @default(1)
+
+  // Additional PIM attributes
+  barcode           String?
+  costPrice         Decimal?         @db.Decimal(10, 2)
+  gstPercentage     Float?           @default(12.0)
+  weight            Float?
+  weightWithPackaging Float?
+  dimensions        String?
+  shippingClass     String?
+  returnEligible    Boolean          @default(true)
+  returnWindowDays  Int              @default(7)
+  
+  // PIM V3.0 Guided creation attributes
+  brand             String?          @default("GODSMOVE")
+  warehouse         String?          @default("Main Warehouse")
+  lowStockThreshold Int?             @default(5)
+  currency          String?          @default("INR")
+  lifestyleImages   String[]         @default([])
+  editorialImages   String[]         @default([])
+  videos            String[]         @default([])
+  packaging         String?
+  warranty          String?
+  ownershipInfo     String?
+  editorialNotes    String?
+  garmentLifeCycle  String?
+  useCoverImage     Boolean          @default(true)
+  seoCanonicalUrl   String?
+  seoOgImage        String?
+  seoTwitterTitle   String?
+  seoTwitterDesc    String?
+  
+  metadata          Json?            @default("{}")
+
+  // Style curation & association
+  styleWithIds             String[]         @default([]) // Curated matching product IDs
 
   // Children
   variants         ProductVariant[]
@@ -358,6 +441,15 @@ model Inventory {
   soldStock     Int           @default(0)
   lowStockAt    Int           @default(5) // below this triggers low-stock state
 
+  // Warehouse operational parameters
+  warehouse      String?   @default("Main Warehouse")
+  damagedStock   Int       @default(0)
+  incomingStock  Int       @default(0)
+  minThreshold   Int       @default(5)
+  supplier       String?   @default("GODSMOVE Manufacturing")
+  restockEta     DateTime?
+  isDiscontinued Boolean   @default(false)
+
   updatedAt DateTime @updatedAt
 
   movements InventoryMovement[]
@@ -415,6 +507,8 @@ model Order {
   shippingCost   Decimal @db.Decimal(10, 2) @default(0)
   discountAmount Decimal @db.Decimal(10, 2) @default(0)
   walletCredit   Decimal @db.Decimal(10, 2) @default(0) // wallet applied at checkout
+  taxableAmount  Decimal @db.Decimal(10, 2) @default(0)
+  gstAmount      Decimal @db.Decimal(10, 2) @default(0)
   total          Decimal @db.Decimal(10, 2)
 
   // Discount applied
@@ -474,20 +568,28 @@ model OrderItem {
   quantity     Int
   total        Decimal @db.Decimal(10, 2)
 
+  shipmentId   String?
+  shipment     Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  returnStatus ReturnStatus?
+
   returnItems ReturnItem[]
 
   @@index([orderId])
+  @@index([shipmentId])
   @@map("order_items")
 }
 
 model Shipment {
   id      String @id @default(cuid())
   orderId String
-  order   Order  @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  carrier        String?
-  trackingNumber String?
+  carrier        String
+  trackingNumber String  @unique
   trackingUrl    String?
+  awb            String?
+  status         ShipmentStatus @default(CREATED)
+  estimatedDelivery DateTime?
 
   // 3PL modular fields — populate when integrated
   provider       String? // "shiprocket", "delhivery", "manual"
@@ -499,6 +601,9 @@ model Shipment {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  items        OrderItem[]
+  events       ShipmentEvent[]
+
   @@index([orderId])
   @@map("shipments")
 }
@@ -506,10 +611,17 @@ model Shipment {
 enum OrderStatus {
   PENDING       // created, awaiting payment
   CONFIRMED     // payment received
-  PROCESSING    // being packed
-  SHIPPED       // dispatched
+  PACKED        // items boxed
+  READY_FOR_PICKUP // awaiting carrier pickup
+  PICKED_UP     // picked up by carrier
+  PROCESSING    // being packed (legacy fallback)
+  IN_TRANSIT    // tracking generated, transport active
+  SHIPPED       // dispatched (legacy fallback)
   DELIVERED     // confirmed delivered
+  COMPLETED     // successfully completed
   CANCELLED     // cancelled before dispatch
+  RETURNED      // item returned
+  REFUNDED      // fully refunded to credits
   EXCHANGE_REQUESTED // exchange in progress
   RETURN_REQUESTED   // return in progress
 }
@@ -578,6 +690,9 @@ model WalletTransaction {
   expiresAt DateTime?
   isExpired Boolean   @default(false)
 
+  source    String?
+  createdBy String?
+
   createdAt DateTime @default(now())
 
   @@index([walletId])
@@ -628,6 +743,10 @@ model ReturnRequest {
   items      ReturnItem[]
   walletTxns WalletTransaction[]
 
+  reverseShipment ReverseShipment?
+  walletRefund    WalletRefund?
+  events          ReturnEvent[]
+
   @@index([orderId])
   @@index([status])
   @@map("return_requests")
@@ -653,11 +772,17 @@ enum ReturnType {
 }
 
 enum ReturnStatus {
-  PENDING   // submitted, awaiting admin review
-  APPROVED  // admin approved, awaiting item receipt
-  REJECTED  // admin rejected with reason
-  RECEIVED  // returned item received by GODSMOVE
-  COMPLETED // credit issued / exchange dispatched
+  PENDING             // submitted, awaiting admin review
+  REQUESTED           // alias for pending
+  APPROVED            // admin approved, awaiting pickup
+  PICKUP_SCHEDULED    // 3PL pickup booked
+  COLLECTED           // item collected from customer
+  RECEIVED            // returned item received at warehouse
+  INSPECTION          // QC quality check active
+  REFUND_PROCESSED    // refund amount computed
+  WALLET_CREDITED     // credits dispatched
+  COMPLETED           // case closed successfully
+  REJECTED            // admin rejected with reason
 }
 
 enum ReturnResolution {
@@ -909,3 +1034,77 @@ enum ExclusiveReservationStatus {
   REFUNDED
   CANCELLED
 }
+
+enum ShipmentStatus {
+  CREATED
+  PACKED
+  PICKUP_SCHEDULED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum ReverseShipmentStatus {
+  PICKUP_PENDING
+  PICKUP_SCHEDULED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED_TO_WAREHOUSE
+  CANCELLED
+}
+
+model ShipmentEvent {
+  id          String   @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  status      ShipmentStatus
+  description String?
+  location    String?
+  timestamp   DateTime @default(now())
+
+  @@index([shipmentId])
+  @@map("shipment_events")
+}
+
+model ReturnEvent {
+  id            String        @id @default(cuid())
+  returnReqId   String
+  returnReq     ReturnRequest @relation(fields: [returnReqId], references: [id], onDelete: Cascade)
+  status        ReturnStatus
+  description   String?
+  timestamp     DateTime      @default(now())
+
+  @@index([returnReqId])
+  @@map("return_events")
+}
+
+model ReverseShipment {
+  id              String         @id @default(cuid())
+  returnReqId     String         @unique
+  returnReq       ReturnRequest  @relation(fields: [returnReqId], references: [id], onDelete: Cascade)
+  carrier         String
+  trackingNumber  String         @unique
+  awb             String?
+  status          ReverseShipmentStatus @default(PICKUP_PENDING)
+  pickupDate      DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("reverse_shipments")
+}
+
+model WalletRefund {
+  id                String        @id @default(cuid())
+  returnReqId       String        @unique
+  returnReq         ReturnRequest @relation(fields: [returnReqId], references: [id], onDelete: Cascade)
+  subtotal          Decimal       @db.Decimal(10, 2)
+  logisticsDeduction Decimal       @db.Decimal(10, 2)
+  finalRefund       Decimal       @db.Decimal(10, 2)
+  createdAt         DateTime      @default(now())
+
+  @@map("wallet_refunds")
+}
+
