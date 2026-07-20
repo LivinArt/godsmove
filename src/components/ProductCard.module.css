@@ -2,6 +2,54 @@
   position: relative;
   opacity: 0;
   animation: fadeInUp 0.6s var(--ease-cinematic) forwards;
+  transition: transform var(--duration-base) var(--ease-smooth);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.collection {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.featuredBadge {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background-color: var(--black);
+  color: #c8a46a;
+  padding: 4px 10px;
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  z-index: 10;
+}
+
+/* Dual badge — product in both Exclusive Rack + Drops */
+.vaultDropBadge {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background-color: transparent;
+  color: #c8a46a;
+  padding: 4px 10px;
+  border: 1px solid #c8a46a;
+  z-index: 10;
 }
 
 @keyframes fadeInUp {
@@ -74,8 +122,8 @@
   transition: transform var(--duration-slow) var(--ease-cinematic);
 }
 
-.imageWrap:hover .image {
-  transform: scale(1.04);
+.imageWrapContainer:hover .image {
+  transform: translateY(-6px) scale(1.02);
 }
 
 .imageToggleBtn {
@@ -153,6 +201,45 @@
 
 .wishBtn:hover {
   color: var(--accent-red);
+}
+
+.compareBtn {
+  position: absolute;
+  top: calc(var(--space-md) + 44px);
+  right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity var(--duration-base) var(--ease-smooth),
+              color var(--duration-fast) var(--ease-smooth),
+              background-color var(--duration-fast) var(--ease-smooth),
+              transform var(--duration-fast) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover .compareBtn {
+  opacity: 1;
+}
+
+.compareBtn.inCompare {
+  opacity: 1;
+  color: #c8a46a;
+  background-color: var(--black);
+}
+
+.compareBtn:hover {
+  color: #c8a46a;
+  transform: scale(1.05);
 }
 
 .info {
@@ -296,8 +383,170 @@
     justify-content: center;
   }
 
-  .wishBtn {
-    min-width: 44px;
-    min-height: 44px;
+  .cardActions {
+    opacity: 1;
   }
+}
+
+.imageWrapContainer {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  aspect-ratio: 4 / 5;
+  background-color: var(--grey-deep);
+  transition: box-shadow var(--duration-base) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08); /* slightly richer shadow on hover */
+}
+
+.cardActions {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  gap: 6px;
+  z-index: 12;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover .cardActions {
+  opacity: 1;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background-color: rgba(246, 243, 237, 0.85); /* soft warm ivory glass #F6F3ED */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  border: 1px solid rgba(200, 164, 106, 0.15); /* thin warm border */
+  border-radius: 2px;
+  cursor: pointer;
+  opacity: 0.8; /* reduced opacity initially */
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.actionBtn:hover {
+  background-color: var(--black);
+  color: #F6F3ED;
+  border-color: var(--black);
+  opacity: 1;
+}
+
+.actionBtn.wishlisted {
+  color: var(--accent-red);
+  opacity: 1;
+}
+
+.actionBtn.inCompare {
+  color: #c8a46a; /* premium gold */
+  opacity: 1;
+}
+
+.quickAddPanel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  background: linear-gradient(to bottom, #F6F3ED 0%, #ECE6DA 100%); /* Warm Ivory mixed with Soft Sand */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(200, 164, 106, 0.15);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.imageWrapContainer:hover .quickAddPanel {
+  transform: translateY(0);
+}
+
+.quickAddTitle {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em; /* wide letter spacing */
+  color: #8c857b; /* warm grey */
+}
+
+.quickAddSizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  width: 100%;
+}
+
+.sizeBtn {
+  background: #F6F3ED;
+  border: 1px solid rgba(200, 164, 106, 0.2); /* thin warm grey border */
+  color: #2a2a2a; /* dark charcoal typography */
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  cursor: pointer;
+  transition: all 200ms ease; /* 200ms transition */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  text-transform: uppercase;
+}
+
+.sizeBtn:hover {
+  background: #c8a46a; /* Muted Gold */
+  color: #111111; /* dark text */
+  border-color: #c8a46a;
+}
+
+.sizeDisabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  border-color: transparent;
+}
+
+.sizeDisabled:hover {
+  background: transparent;
+  color: #2a2a2a;
+  border-color: transparent;
+}
+
+.exclusiveBadge {
+  border: 1px solid #c8a46a !important; /* muted gold */
+  color: #faf8f5 !important; /* warm ivory */
+  background-color: #1a1a1a !important; /* deep charcoal */
+}
+
+.cardDominant .collection {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+}
+
+.cardDominant h3 {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.cardDominant .price {
+  font-size: 18px;
+  margin-top: 6px;
 }

@@ -22,7 +22,7 @@
   z-index: 1200;
   width: 100%;
   max-width: 440px;
-  background-color: var(--cream);
+  background-color: #faf8f5; /* Warm ivory — not harsh white */
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -33,6 +33,29 @@
   transform: translateX(0);
 }
 
+/* ── Reservation message (top of drawer) ── */
+.reservationBanner {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  background-color: #1a1a1a;
+  color: #c8a46a;
+  text-align: center;
+  padding: 0 var(--space-lg);
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
+}
+
+.reservationBanner.reservationVisible {
+  max-height: 44px;
+  opacity: 1;
+  padding: 13px var(--space-lg);
+}
+
+/* ── Header ── */
 .header {
   display: flex;
   align-items: center;
@@ -44,13 +67,14 @@
 .title {
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #111111;
 }
 
 .count {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
@@ -70,6 +94,7 @@
   opacity: 0.5;
 }
 
+/* ── Body ── */
 .body {
   flex: 1;
   overflow-y: auto;
@@ -98,6 +123,7 @@
   gap: var(--space-lg);
 }
 
+/* ── Item ── */
 .item {
   display: flex;
   gap: var(--space-md);
@@ -110,7 +136,7 @@
   height: 100px;
   flex-shrink: 0;
   overflow: hidden;
-  background-color: var(--ivory);
+  background-color: #F6F3ED; /* warm ivory placeholder */
 }
 
 .itemImage img {
@@ -135,8 +161,9 @@
 .itemName {
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   letter-spacing: 0.02em;
+  color: #111111;
 }
 
 .removeBtn {
@@ -154,9 +181,10 @@
 }
 
 .itemMeta {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
   letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .itemBottom {
@@ -166,49 +194,55 @@
   margin-top: auto;
 }
 
+/* Refined quantity control inside drawer */
 .quantity {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  border: 1px solid var(--border-medium);
-  padding: 4px 8px;
+  border: 1px solid rgba(200, 164, 106, 0.15); /* thin warm gold border */
+  padding: 5px 10px;
+  background-color: #ffffff;
 }
 
 .quantity button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: var(--text-secondary);
+  width: 20px;
+  height: 20px;
+  color: #555555;
   transition: color var(--duration-fast) var(--ease-smooth);
 }
 
 .quantity button:hover {
-  color: var(--text-primary);
+  color: #c8a46a;
 }
 
 .quantity span {
   font-family: var(--font-heading);
-  font-size: 13px;
-  font-weight: 500;
-  min-width: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
   text-align: center;
+  color: #111111;
 }
 
 .itemPrice {
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   letter-spacing: 0.02em;
+  color: #111111;
 }
 
+/* ── Footer ── */
 .footer {
   padding: var(--space-lg);
-  border-top: 1px solid var(--border-medium);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  background-color: #faf8f5;
 }
 
 .subtotal {
@@ -217,13 +251,14 @@
   align-items: center;
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: #111111;
 }
 
 .shipping {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   letter-spacing: 0.02em;
 }

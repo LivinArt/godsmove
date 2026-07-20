@@ -75,16 +75,63 @@
   transform: scale(1.02);
 }
 
-.logoImage {
+.logoContainer {
+  position: relative;
+  width: 280px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.img {
-  height: 42px;
+@media (max-width: 767px) {
+  .logoContainer {
+    width: 180px;
+    height: 50px;
+  }
+}
+
+.logoSingle {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.95);
+  filter: blur(2px);
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logoSingle.visible {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+  pointer-events: auto;
+}
+
+.verticalLogoImg {
+  max-height: 80px;
   width: auto;
   object-fit: contain;
+}
+
+.horizontalLogoImg {
+  max-height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 767px) {
+  .verticalLogoImg {
+    max-height: 48px;
+  }
+  .horizontalLogoImg {
+    max-height: 22px;
+  }
 }
 
 @media (max-width: 767px) {
@@ -115,12 +162,31 @@
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  padding: 4px 0;
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link:hover::after,
+.link:focus-visible::after,
+.linkActive::after {
+  transform: scaleX(1);
 }
 
 .link:hover, .link:focus-visible {
   color: #ffffff;
   outline: none;
-  transform: translateY(-1px);
 }
 
 .nav.scrolled .link {
@@ -130,6 +196,17 @@
 
 .nav.scrolled .link:hover, .nav.scrolled .link:focus-visible {
   color: #000000;
+}
+
+.verticalLogo {
+  height: 56px !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 767px) {
+  .verticalLogo {
+    height: 42px !important;
+  }
 }
 
 .actions {

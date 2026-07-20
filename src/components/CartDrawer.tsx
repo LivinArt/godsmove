@@ -1,16 +1,28 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Minus, Plus, X, ArrowRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import styles from './CartDrawer.module.css';
 
+const RESERVATION_MESSAGES = [
+  "We've reserved this piece for you.",
+  "Your selected piece has been secured.",
+  "Reserved in your collection.",
+  "This piece is now held for you.",
+];
+
 export default function CartDrawer() {
   const { cart, isCartOpen, setCartOpen, updateQuantity, removeFromCart, getCartTotal, setInstantCheckout } = useStore();
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [reservationMsg, setReservationMsg] = useState('');
+  const [showReservation, setShowReservation] = useState(false);
+  const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reservationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Lock body scroll when open
   useEffect(() => {
     if (isCartOpen) {
       document.body.style.overflow = 'hidden';
@@ -20,6 +32,7 @@ export default function CartDrawer() {
     return () => { document.body.style.overflow = ''; };
   }, [isCartOpen]);
 
+  // Keyboard close
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setCartOpen(false);
@@ -27,6 +40,43 @@ export default function CartDrawer() {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [setCartOpen]);
+
+  // Show reservation message + auto-close after 2.2 seconds when drawer opens
+  useEffect(() => {
+    if (isCartOpen && cart.length > 0) {
+      const msg = RESERVATION_MESSAGES[Math.floor(Math.random() * RESERVATION_MESSAGES.length)];
+      setReservationMsg(msg);
+      setShowReservation(true);
+
+      // Hide message after 1.8s
+      reservationTimer.current = setTimeout(() => {
+        setShowReservation(false);
+      }, 1800);
+
+      // Auto-close drawer after 2.2s
+      autoCloseTimer.current = setTimeout(() => {
+        setCartOpen(false);
+      }, 2200);
+    }
+
+    return () => {
+      if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+      if (reservationTimer.current) clearTimeout(reservationTimer.current);
+    };
+  }, [isCartOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // If user interacts (hovers), cancel auto-close
+  const cancelAutoClose = () => {
+    if (autoCloseTimer.current) {
+      clearTimeout(autoCloseTimer.current);
+      autoCloseTimer.current = null;
+    }
+    if (reservationTimer.current) {
+      clearTimeout(reservationTimer.current);
+      reservationTimer.current = null;
+    }
+    setShowReservation(false);
+  };
 
   const total = getCartTotal();
 
@@ -43,10 +93,17 @@ export default function CartDrawer() {
         role="dialog"
         aria-label="Shopping cart"
         id="cart-drawer"
+        onMouseEnter={cancelAutoClose}
+        onTouchStart={cancelAutoClose}
       >
+        {/* Personalized Reservation Message */}
+        <div className={`${styles.reservationBanner} ${showReservation ? styles.reservationVisible : ''}`}>
+          <span>{reservationMsg}</span>
+        </div>
+
         <div className={styles.header}>
-          <h2 className={styles.title}>Cart</h2>
-          <span className={styles.count}>{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
+          <h2 className={styles.title}>Your Collection</h2>
+          <span className={styles.count}>{cart.length} {cart.length === 1 ? 'piece' : 'pieces'}</span>
           <button
             className={styles.closeBtn}
             onClick={() => setCartOpen(false)}
@@ -139,7 +196,7 @@ export default function CartDrawer() {
               href="/checkout"
               className={`btn btn-primary ${styles.checkoutBtn}`}
               onClick={() => {
-                setInstantCheckout(null); // Ensure cart checkout doesn't bypass
+                setInstantCheckout(null);
                 setCartOpen(false);
               }}
             >

@@ -237,3 +237,21 @@
     gap: var(--space-md);
   }
 }
+
+.emotionalStatementSection {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 80px var(--container-padding) 100px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.emotionalStatement {
+  font-family: var(--font-heading);
+  font-size: clamp(20px, 3.5vw, 28px);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--smoke);
+  line-height: 1.5;
+  margin: 0;
+}

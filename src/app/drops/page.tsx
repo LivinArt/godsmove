@@ -14,7 +14,7 @@ export const metadata = {
 
 export default async function ShopPage() {
   const [products, drops, categories] = await Promise.all([
-    getStorefrontProducts({ channel: 'DROP' }),
+    getStorefrontProducts(),
     getStorefrontDrops(),
     getStorefrontCategories(),
   ]);

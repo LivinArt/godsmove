@@ -17,6 +17,11 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
 export default function Footer() {
   return (
     <footer className={styles.footer}>
+      <div className={styles.emotionalStatementSection}>
+        <p className={styles.emotionalStatement}>
+          Designed to be owned. Not simply purchased.
+        </p>
+      </div>
       <div className={styles.inner}>
         <div className={styles.top}>
           <div className={styles.brand}>

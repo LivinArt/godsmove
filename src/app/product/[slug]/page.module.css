@@ -1,12 +1,23 @@
+/* ==========================================================================
+   GODSMOVE EDITORIAL LUXURY PRODUCT DETAIL PAGE (Antigravity Refined PDP CSS)
+   ========================================================================== */
+
+/* ProductClient root wrapper */
+.pdpContainer {
+  width: 100%;
+}
+
 .page {
-  padding-top: calc(var(--nav-height) + var(--space-xl));
-  padding-bottom: var(--space-4xl);
+  padding-top: calc(var(--nav-height) + 40px);
+  padding-bottom: 120px;
   min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .notFound {
-  padding-top: calc(var(--nav-height) + var(--space-4xl));
-  padding-bottom: var(--space-4xl);
+  padding-top: calc(var(--nav-height) + 120px);
+  padding-bottom: 120px;
   min-height: 60vh;
   display: flex;
   flex-direction: column;
@@ -19,11 +30,12 @@
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xl);
-  font-size: 12px;
+  gap: 8px;
+  margin-bottom: 40px;
+  font-size: 11px;
   color: var(--text-muted);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .breadcrumb a {
@@ -34,373 +46,994 @@
   color: var(--text-primary);
 }
 
-.layout {
+/* ==========================================================================
+   SECTION 1: PRODUCT HERO LAYOUT (60/40 Split)
+   ========================================================================== */
+
+.heroLayout {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xl);
+  gap: 40px;
+  margin-bottom: 140px;
 }
 
-@media (min-width: 768px) {
-  .layout {
+@media (min-width: 1024px) {
+  .heroLayout {
     flex-direction: row;
-    gap: var(--space-3xl);
+    gap: 80px;
   }
 }
 
-.gallery {
-  flex: 1.2;
+.galleryCol {
+  flex: 1.5;
+  width: 100%;
 }
 
-.info {
+.buyBoxCol {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
+  width: 100%;
 }
 
-@media (min-width: 768px) {
-  .info {
+@media (min-width: 1024px) {
+  .stickyBuyBox {
     position: sticky;
-    top: calc(var(--nav-height) + var(--space-xl));
+    top: calc(var(--nav-height) + 40px);
     align-self: flex-start;
-    max-width: 480px;
   }
 }
 
-.infoTop {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.channelLabelExclusive {
-  color: #c8a46a;
-  letter-spacing: 0.2em;
+/* Info Elements */
+.heroCollection {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 10px;
   font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
 }
 
-.name {
+.heroName {
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: clamp(28px, 4vw, 40px);
-  letter-spacing: -0.02em;
+  font-weight: 300;
+  font-size: clamp(32px, 3.5vw, 48px);
+  letter-spacing: -0.025em;
   line-height: 1.1;
+  color: var(--text-primary);
+  margin: 0 0 16px;
 }
 
-.priceRow {
+.heroBadges {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin-top: var(--space-xs);
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
 }
 
-.price {
+.exclusiveBadge,
+.featuredBadge,
+.unlockBadge {
+  display: inline-block;
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 24px;
-  letter-spacing: 0.02em;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 1px;
+}
+
+.exclusiveBadge {
+  border: 1px solid #c8a46a;
+  color: #faf8f5;
+  background-color: #1a1a1a;
+}
+
+.featuredBadge {
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+
+.unlockBadge {
+  border: 1px solid #9c4033;
+  color: #ffb8b0;
+  background-color: #3b120d;
+}
+
+/* Price Block */
+.heroPriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.heroPrice {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 28px;
   color: var(--text-primary);
 }
 
-.comparePrice {
+.heroComparePrice {
   font-family: var(--font-heading);
-  font-weight: 400;
+  font-weight: 300;
   font-size: 18px;
   color: var(--text-muted);
   text-decoration: line-through;
-  opacity: 0.7;
 }
 
-.discountBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  background: linear-gradient(135deg, #0F1115 0%, #050608 100%);
-  padding: 6px 14px;
-  border-radius: 30px;
-  width: fit-content;
-  margin-top: var(--space-xs);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.percentOff {
+.heroDiscountBadge {
   font-family: var(--font-heading);
+  font-size: 11px;
   font-weight: 600;
-  font-size: 12px;
-  color: #C8A46A;
+  color: #c8a46a;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.savings {
-  font-size: 12px;
-  color: #9CA3AF;
-  letter-spacing: 0.02em;
+.heroDivider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  width: 100%;
+  margin: 24px 0;
 }
 
-.color {
-  font-size: 13px;
-  color: var(--text-muted);
-  letter-spacing: 0.03em;
-  margin-top: var(--space-xs);
-}
-
-.sizeWrap {
+/* Stock Availability */
+.heroAvailability {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.availabilityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #c8a46a;
+  display: inline-block;
+}
+
+.availabilityText {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.heroShortDesc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+/* Selection Labels */
+.sectionLabel {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.heroSizesWrap {
+  margin-bottom: 28px;
 }
 
 .sizeError {
-  font-size: 12px;
   color: var(--accent-red);
-  letter-spacing: 0.03em;
+  font-size: 11px;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
 }
 
-.actions {
+.heroQuantityWrap {
+  margin-bottom: 32px;
+}
+
+/* Buy Box CTAs Stack */
+.heroActions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-.actionRow {
-  display: flex;
-  gap: var(--space-md);
+.buyNowBtn,
+.addToBagBtn {
+  width: 100%;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 250ms ease;
+  border-radius: 1px;
 }
 
 .buyNowBtn {
-  width: 100%;
-  background-color: #000000;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-weight: 700;
-  font-size: 15px;
-  height: 54px;
-  border-radius: 8px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: all var(--duration-fast) var(--ease-smooth);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border: 1px solid var(--text-primary);
 }
 
-.buyNowBtn:hover {
-  background-color: #111111;
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 255, 255, 0.05);
-}
-
-.addBtn {
-  flex: 1;
+.buyNowBtn:hover:not(:disabled) {
   background-color: transparent;
-  color: var(--white);
+  color: var(--text-primary);
+}
+
+.buyNowBtn:disabled,
+.addToBagBtn:disabled {
+  background-color: var(--border-medium);
+  border-color: var(--border-medium);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.addToBagBtn {
+  background-color: transparent;
+  color: var(--text-primary);
   border: 1px solid var(--border-medium);
-  font-weight: 600;
-  font-size: 14px;
-  height: 52px;
 }
 
-.addBtn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--white);
+.addToBagBtn:hover:not(:disabled) {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
 }
 
-.wishBtn {
+/* Three Equal Square Actions */
+.utilitySquareActions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.squareActionBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border: 1px solid var(--border-medium);
+  height: 48px; /* matching selector height */
+  background-color: rgba(246, 243, 237, 0.85); /* soft warm ivory glass #F6F3ED */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text-secondary);
-  transition: all var(--duration-fast) var(--ease-smooth);
-  flex-shrink: 0;
+  border: 1px solid rgba(200, 164, 106, 0.15); /* thin warm gold border */
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 200ms ease;
 }
 
-.wishBtn:hover {
-  border-color: var(--accent-red);
+.squareActionBtn:hover {
+  background-color: var(--black);
+  color: #F6F3ED;
+  border-color: var(--black);
+}
+
+.squareActionBtn.wishlisted {
   color: var(--accent-red);
 }
 
-.wishBtn.wishlisted {
-  color: var(--accent-red);
-  border-color: var(--accent-red);
+.squareActionBtn.inCompare {
+  color: #c8a46a;
 }
 
-.trustSignals {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+/* GM Passport Quick-Preview badge */
+.passportPreviewBlock {
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 20px;
+}
+
+.passportPreviewLabel {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #c8a46a;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.passportPreviewId {
   font-size: 11px;
   color: var(--text-muted);
+  margin: 0;
+}
+
+/* ==========================================================
+   GLOBAL SECTION CONFIGS (Narrative blocks, sheets)
+   ========================================================== */
+
+.sectionHeader {
+  margin-bottom: 40px;
+  max-width: 650px;
+}
+
+.sectionEyebrow {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.sectionHeadline {
+  font-family: var(--font-heading);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 2: PRODUCT STORY
+   ========================================================== */
+
+.storySection {
+  padding: 140px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.storyBodyText {
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  max-width: 650px;
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 4: CRAFTSMANSHIP
+   ========================================================== */
+
+.craftSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.craftGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .craftGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.craftCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 28px;
+  transition: border-color 200ms ease;
+}
+
+.craftCard:hover {
+  border-color: var(--text-muted);
+}
+
+.craftCardTitle {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+.craftCardText {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 5 & 6: FABRIC & FIT TWO-COLUMN SHEETS
+   ========================================================== */
+
+.fabricSection,
+.fitSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.twoColSpecs {
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 48px;
+}
+
+@media (min-width: 768px) {
+  .twoColSpecs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.specColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.specRowItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 20px;
+}
+
+.specRowLabel {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 130px;
+}
+
+.specRowValue {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   SECTION 7: SPECIFICATIONS (COMPACT CARD)
+   ========================================================== */
+
+.technicalSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.compactSpecsCard {
+  max-width: 900px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+}
+
+.compactSpecsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 600px) {
+  .compactSpecsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .compactSpecsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.compactSpecItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compactSpecLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.compactSpecValue {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ==========================================================
+   SECTION 8: CARE INSTRUCTIONS
+   ========================================================== */
+
+.careSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.careGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .careGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.careCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+}
+
+.careCardTitle {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text-primary);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-top: var(--space-xs);
 }
 
-.trustDivider {
-  color: var(--border-medium);
-}
-
-.description {
-  font-size: 14px;
+.careCardDesc {
+  font-size: 12px;
+  line-height: 1.6;
   color: var(--text-secondary);
-  line-height: 1.65;
-  letter-spacing: 0.01em;
-  margin-top: var(--space-md);
+  margin: 0;
 }
 
+/* ==========================================================
+   SECTION 9: PACKAGING CURATION
+   ========================================================== */
 
-.details {
+.packagingSection {
+  padding: 100px 0 100px;
   border-top: 1px solid var(--border-subtle);
-  padding-top: var(--space-lg);
 }
 
-.detailsToggle {
+.packagingGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .packagingGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.packagingCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.packagingIcon {
+  color: #c8a46a;
+}
+
+.packagingTitle {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.packagingDesc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 10: OWNERSHIP INFORMATION (REGISTRY)
+   ========================================================== */
+
+.ownershipSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.registryBox {
+  max-width: 900px;
+  background: #0d0d0d; /* deep black */
+  color: #ffffff;
+  border: 1px solid rgba(200, 164, 106, 0.2);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.registryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.registryTitle {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #c8a46a;
+}
+
+.registryId {
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.registryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px 40px;
+}
+
+@media (min-width: 768px) {
+  .registryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.registryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.registryLabel {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.registryValue {
+  font-size: 13px;
+  color: #faf8f5;
+}
+
+/* ==========================================================
+   SECTION 11: EDITORIAL NOTES
+   ========================================================== */
+
+.editorialNotesSection {
+  padding: 100px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.editorialNotesText {
+  font-family: var(--font-heading);
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  max-width: 650px;
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 12: GARMENT LIFE CYCLE (HORIZONTAL TIMELINE)
+   ========================================================== */
+
+.lifecycleSection {
+  padding: 140px 0 100px;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-secondary);
+}
+
+.lifecycleHeader {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 64px;
+}
+
+.lifecycleSub {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
+.timelineWrapper {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.timelineLine {
+  position: absolute;
+  top: 59px;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background-color: rgba(200, 164, 106, 0.25);
+  z-index: 1;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .timelineLine {
+    display: block;
+  }
+}
+
+.timelineHorizontalGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .timelineHorizontalGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .timelineHorizontalGrid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+}
+
+.timelineHorizontalItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 0 10px;
+}
+
+.timelineIconDot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--bg-primary);
+  border: 1px solid rgba(200, 164, 106, 0.4);
+  color: #c8a46a;
+  transition: all 250ms ease;
+}
+
+.timelineHorizontalItem:hover .timelineIconDot {
+  background-color: #c8a46a;
+  color: var(--bg-primary);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(200, 164, 106, 0.3);
+}
+
+.timelineStageNum {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: #c8a46a;
+  text-transform: uppercase;
+}
+
+.timelineStageTitle {
+  font-family: var(--font-heading);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.timelineStageDesc {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 13: DIGITAL PASSPORT CARD
+   ========================================================== */
+
+.passportSection {
+  padding: 140px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.passportHeader {
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto 56px;
+}
+
+.passportSub {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 8px 0 0;
+}
+
+.passportCard {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px;
+  background: #0d0d0d; /* Rich deep charcoal black */
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.passportCardTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 20px;
+}
+
+.passportTitle {
   font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  padding: var(--space-sm) 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #c8a46a;
 }
 
-.detailsIcon {
-  transition: transform var(--duration-base) var(--ease-smooth);
+.passportId {
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.detailsIcon.detailsIconOpen {
-  transform: rotate(180deg);
+.passportSpecs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
-.detailsList {
+.passportSpec {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding-top: var(--space-md);
+  gap: 6px;
+}
+
+.passportLabel {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.passportValue {
   font-size: 13px;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-  line-height: 1.6;
+  color: #faf8f5;
+  font-weight: 400;
 }
 
-.detailsList li {
-  padding-left: var(--space-md);
-  position: relative;
+.passportCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 20px;
+  font-size: 9px;
+  font-family: var(--font-heading);
+  letter-spacing: 0.15em;
+  font-weight: 600;
 }
 
-.detailsList li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 9px;
-  width: 4px;
-  height: 4px;
-  background-color: var(--ash);
-  border-radius: 50%;
+.passportSeal {
+  color: rgba(255, 255, 255, 0.3);
 }
 
-/* Related */
+.passportGrade {
+  color: #c8a46a;
+}
+
+/* ==========================================================
+   RECOMMENDATIONS SECTION
+   ========================================================== */
+
 .related {
-  margin-top: var(--space-4xl);
-  padding-top: var(--space-3xl);
+  margin-top: 140px;
   border-top: 1px solid var(--border-subtle);
+  padding-top: 80px;
 }
 
 .relatedTitle {
   font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: -0.01em;
-  margin-bottom: var(--space-xl);
+  font-weight: 300;
+  font-size: 24px;
+  letter-spacing: -0.015em;
+  margin-bottom: 40px;
 }
 
-.relatedGrid {
+/* Standard Symmetrical Grid override (symmetrical catalog) */
+.grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: var(--space-md);
 }
 
 @media (min-width: 768px) {
-  .relatedGrid {
-    grid-template-columns: repeat(4, 1fr);
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-lg);
   }
 }
 
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Tablet / Mobile Spacing Adjustments */
 @media (max-width: 767px) {
   .page {
-    padding-top: calc(var(--nav-height) + var(--space-lg));
-    padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
+    padding-top: calc(var(--nav-height) + 20px);
+    padding-bottom: 80px;
   }
 
-  .breadcrumb {
-    flex-wrap: wrap;
-    margin-bottom: var(--space-lg);
+  .heroLayout {
+    margin-bottom: 80px;
   }
 
-  .layout {
-    gap: var(--space-xl);
-  }
-
-  .info {
-    gap: var(--space-lg);
-  }
-
-  .name {
-    font-size: clamp(24px, 7vw, 32px);
-  }
-
-  .trustSignals {
-    flex-wrap: wrap;
-    line-height: 1.5;
-  }
-
-  .actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 20;
-    margin-left: calc(-1 * var(--container-padding));
-    margin-right: calc(-1 * var(--container-padding));
-    padding: var(--space-md) var(--container-padding);
-    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(
-      to top,
-      var(--cream) 85%,
-      rgba(250, 248, 245, 0.98) 100%
-    );
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .actionRow {
-    width: 100%;
-  }
-
-  .addBtn {
-    min-height: 48px;
-  }
-
-  .wishBtn {
-    min-width: 48px;
-    min-height: 48px;
-  }
-
-  .buyNowBtn {
-    min-height: 52px;
+  .storySection,
+  .craftSection,
+  .fabricSection,
+  .fitSection,
+  .technicalSection,
+  .careSection,
+  .packagingSection,
+  .editorialNotesSection,
+  .lifecycleSection,
+  .ownershipSection,
+  .passportSection,
+  .related {
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 
   .related {
-    margin-top: var(--space-2xl);
-    padding-top: var(--space-2xl);
-  }
-
-  .relatedGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-sm);
+    margin-top: 80px;
   }
 }

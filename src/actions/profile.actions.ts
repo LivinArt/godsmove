@@ -32,3 +32,12 @@ export async function updateMyProfile(data: {
   revalidatePath('/profile');
   return updated;
 }
+
+export async function getMyProfile() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('UNAUTHORIZED');
+
+  return prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+}
