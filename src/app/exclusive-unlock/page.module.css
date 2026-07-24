@@ -1,0 +1,116 @@
+.page {
+  padding-top: calc(var(--nav-height) + var(--space-3xl));
+  padding-bottom: var(--space-4xl);
+  min-height: 100vh;
+  background-color: var(--black);
+  color: var(--cream);
+}
+
+.hero {
+  margin-bottom: var(--space-3xl);
+  max-width: 720px;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: var(--space-md);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 var(--space-md);
+}
+
+.lead {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #d1d5db;
+  margin: 0;
+  max-width: 560px;
+}
+
+.accessNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: var(--space-xl);
+}
+
+.accessNavActive,
+.accessNavLink {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.accessNavActive {
+  color: #c8a46a;
+}
+
+.accessNavLink {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.accessNavLink:hover {
+  color: #ffffff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl) var(--space-lg);
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xl) var(--space-xl);
+  }
+}
+
+.empty {
+  padding: var(--space-3xl) 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + var(--space-xl));
+    padding-bottom: var(--space-3xl);
+  }
+
+  .hero {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .title {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+
+  .accessNav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+}

@@ -1,0 +1,706 @@
+.card {
+  position: relative;
+  opacity: 0;
+  animation: fadeInUp 0.6s var(--ease-cinematic) forwards;
+  transition: transform var(--duration-base) var(--ease-smooth);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.collection {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.tagContainer {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.tagContainer > * {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.featuredBadge {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background-color: var(--black);
+  color: #c8a46a;
+  padding: 4px 10px;
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  z-index: 10;
+}
+
+/* Dual badge — product in both Exclusive Rack + Drops */
+.vaultDropBadge {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background-color: transparent;
+  color: #c8a46a;
+  padding: 4px 10px;
+  border: 1px solid #c8a46a;
+  z-index: 10;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.imageWrapContainer {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+}
+
+.imageWrap {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background-color: var(--ivory);
+  isolation: isolate;
+}
+
+/* EXCLUSIVE_UNLOCK listing: optimized LCP image under atmospheric stack */
+.unlockRevealMount {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #0a0a0a;
+  /* Own stacking context so z-index vs Next Image wrapper is deterministic */
+  isolation: isolate;
+}
+
+.unlockRevealMount > span {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0;
+  /* LCP helper sits UNDER the atmospheric stage */
+  z-index: 0;
+}
+
+.unlockLcpImg {
+  object-fit: cover;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  /* Must stay visually absent — .imageWrap img rule below used to force opacity:1 and broke the stack */
+  visibility: hidden;
+}
+
+/* Next.js Image wrapper — fill frame at full brightness (never dim on dark sections) */
+.imageWrap > span:not(.tag) {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0;
+}
+
+/* Never target unlock LCP img — opacity:1 !important was winning over .unlockLcpImg and flattened the composite */
+.imageWrap img:not(.unlockLcpImg),
+.image {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  object-fit: cover;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  transition: transform var(--duration-slow) var(--ease-cinematic);
+}
+
+.imageWrapContainer:hover .image {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.imageToggleBtn {
+  position: absolute;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(8px);
+  color: #F5F1E8;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s var(--ease-smooth);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.imageWrap:hover .imageToggleBtn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.imageToggleBtn:hover {
+  background-color: rgba(10, 10, 10, 0.85);
+  border-color: rgba(200, 164, 106, 0.4);
+  color: #C8A46A;
+}
+
+.tag {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: var(--black);
+  color: var(--cream);
+  padding: 4px 10px;
+}
+
+.wishBtn {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-smooth),
+              color var(--duration-fast) var(--ease-smooth);
+}
+
+.imageWrap:hover .wishBtn {
+  opacity: 1;
+}
+
+.wishBtn.wishlisted {
+  opacity: 1;
+  color: var(--accent-red);
+}
+
+.wishBtn:hover {
+  color: var(--accent-red);
+}
+
+.compareBtn {
+  position: absolute;
+  top: calc(var(--space-md) + 44px);
+  right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity var(--duration-base) var(--ease-smooth),
+              color var(--duration-fast) var(--ease-smooth),
+              background-color var(--duration-fast) var(--ease-smooth),
+              transform var(--duration-fast) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover .compareBtn {
+  opacity: 1;
+}
+
+.compareBtn.inCompare {
+  opacity: 1;
+  color: #c8a46a;
+  background-color: var(--black);
+}
+
+.compareBtn:hover {
+  color: #c8a46a;
+  transform: scale(1.05);
+}
+
+.info {
+  padding: var(--space-md) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  transition: opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.name:hover {
+  opacity: 0.6;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.color {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.comparePrice {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.price {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+/* Dark typography only — scoped to .info, never the media area */
+.infoDark .name {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.infoDark .name:hover {
+  opacity: 0.85;
+}
+
+.discountBadge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8a46a; /* premium gold */
+  margin-top: 2px;
+}
+
+.infoDark .priceBlock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-top: var(--space-xs);
+}
+
+.infoDark .comparePrice {
+  color: #9ca3af;
+  text-decoration: line-through;
+  opacity: 1;
+  font-size: 13px;
+}
+
+.infoDark .price {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.infoDark .savings {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #d1d5db;
+  width: 100%;
+}
+
+.infoDark .color {
+  color: #d1d5db;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.infoDark .cardCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-sm);
+  padding: 10px 18px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background-color: #0a0a0a;
+  border: 1px solid #c8a46a;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.infoDark .cardCta:hover {
+  background-color: #c8a46a;
+  color: #0a0a0a;
+}
+
+@media (max-width: 767px) {
+  .infoDark .cardCta {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .cardActions {
+    opacity: 1;
+  }
+}
+
+.imageWrapContainer {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  aspect-ratio: 4 / 5;
+  background-color: var(--grey-deep);
+  transition: box-shadow var(--duration-base) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08); /* slightly richer shadow on hover */
+}
+
+.cardActions {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  gap: 6px;
+  z-index: 12;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-smooth);
+}
+
+.imageWrapContainer:hover .cardActions {
+  opacity: 1;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background-color: rgba(246, 243, 237, 0.85); /* soft warm ivory glass #F6F3ED */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  border: 1px solid rgba(200, 164, 106, 0.15); /* thin warm border */
+  border-radius: 2px;
+  cursor: pointer;
+  opacity: 0.8; /* reduced opacity initially */
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.actionBtn:hover {
+  background-color: var(--black);
+  color: #F6F3ED;
+  border-color: var(--black);
+  opacity: 1;
+}
+
+.actionBtn.wishlisted {
+  color: var(--accent-red);
+  opacity: 1;
+}
+
+.actionBtn.inCompare {
+  color: #c8a46a; /* premium gold */
+  opacity: 1;
+}
+
+.quickAddPanel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  background: linear-gradient(to bottom, #F6F3ED 0%, #ECE6DA 100%); /* Warm Ivory mixed with Soft Sand */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(200, 164, 106, 0.15);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.imageWrapContainer:hover .quickAddPanel {
+  transform: translateY(0);
+}
+
+.quickAddTitle {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em; /* wide letter spacing */
+  color: #8c857b; /* warm grey */
+}
+
+.quickAddSizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  width: 100%;
+}
+
+.sizeBtn {
+  background: #F6F3ED;
+  border: 1px solid rgba(200, 164, 106, 0.2); /* thin warm grey border */
+  color: #2a2a2a; /* dark charcoal typography */
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  cursor: pointer;
+  transition: all 200ms ease; /* 200ms transition */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  text-transform: uppercase;
+}
+
+.sizeBtn:hover {
+  background: #c8a46a; /* Muted Gold */
+  color: #111111; /* dark text */
+  border-color: #c8a46a;
+}
+
+.sizeDisabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  border-color: transparent;
+}
+
+.sizeDisabled:hover {
+  background: transparent;
+  color: #2a2a2a;
+  border-color: transparent;
+}
+
+.exclusiveBadge {
+  border: 1px solid #c8a46a !important; /* muted gold */
+  color: #faf8f5 !important; /* warm ivory */
+  background-color: #1a1a1a !important; /* deep charcoal */
+}
+
+.cardDominant .collection {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+}
+
+.cardDominant h3 {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.cardDominant .price {
+  font-size: 18px;
+  margin-top: 6px;
+}
+
+/* Size Button Adding state */
+.sizeAdding {
+  background: #222222 !important; /* Deep Charcoal */
+  color: #F6F3ED !important; /* Warm Ivory text */
+  border-color: #c8a46a !important; /* Muted Gold border */
+  position: relative;
+  cursor: wait;
+}
+
+/* Elegant micro loading spinner for button */
+.loadingSpinner {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(246, 243, 237, 0.3);
+  border-radius: 50%;
+  border-top-color: #F6F3ED;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Mobile Quick Add Trigger Badge ── */
+.mobileQuickAddTrigger {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  /* Hide the hover quick add panel on mobile — bottom sheet takes over */
+  .quickAddPanel {
+    display: none !important;
+  }
+
+  /* Prevent top-left tag badge and top-right action buttons from overlapping */
+  .tagContainer {
+    top: 8px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 75px);
+    pointer-events: none;
+    z-index: 14;
+  }
+
+  .tag,
+  .featuredBadge,
+  .vaultDropBadge {
+    position: static;
+    font-size: 8px;
+    padding: 3px 6px;
+    border-radius: 2px;
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cardActions {
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 1;
+    z-index: 14;
+  }
+
+  .actionBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(10, 10, 10, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #FAF8F5 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .actionBtn svg {
+    opacity: 0.95 !important;
+    color: #FAF8F5 !important;
+    stroke-width: 2.2px !important;
+  }
+
+  /* Show the + trigger badge — SVG vector centered */
+  .mobileQuickAddTrigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 15;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(10, 10, 10, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(200, 164, 106, 0.4);
+    color: #c8a46a;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .mobileQuickAddTrigger:active {
+    transform: scale(0.92);
+    background: rgba(200, 164, 106, 0.25);
+    border-color: #c8a46a;
+  }
+}
+
+
+

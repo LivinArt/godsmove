@@ -1,0 +1,27 @@
+/* Hero slide new/edit pages — light rhythm with global admin header classes */
+
+.page {
+  position: relative;
+}
+
+.page :global(.page-header) {
+  margin-bottom: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.page :global(.page-title) {
+  letter-spacing: -0.03em;
+}
+
+.page :global(.page-sub) {
+  max-width: 48ch;
+  line-height: 1.45;
+  color: rgba(122, 123, 138, 0.95);
+}
+
+.page :global(.page-sub.mono) {
+  font-size: 11px !important;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}

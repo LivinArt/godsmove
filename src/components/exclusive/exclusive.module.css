@@ -1,0 +1,397 @@
+/* ── Vault gate (locked EXCLUSIVE_UNLOCK) ── */
+.lockedWrap {
+  position: relative;
+  width: 100%;
+  min-height: min(72vh, 720px);
+  aspect-ratio: 4 / 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #050505;
+  animation: vaultFadeIn 0.9s ease forwards;
+}
+
+@media (min-width: 768px) {
+  .lockedWrap {
+    min-height: min(80vh, 800px);
+  }
+}
+
+@keyframes vaultFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lockedVeil {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 5, 0.55) 0%,
+    rgba(5, 5, 5, 0.92) 45%,
+    rgba(5, 5, 5, 0.98) 100%
+  );
+  pointer-events: none;
+}
+
+.gm-atmospheric-reveal-host .lockedVeil {
+  /* Lighter than prior pass — preserve artifact legibility + pointer-driven depth */
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 5, 0.22) 0%,
+    rgba(5, 5, 5, 0.58) 46%,
+    rgba(5, 5, 5, 0.82) 100%
+  );
+  /*
+   * Compositing: a uniform opaque-ish veil was visually swallowing all pointer-driven motion
+   * in the atmospheric stack beneath. Mask weakens the veil in the upper field (artifact zone)
+   * while keeping strength lower on the canvas for vault copy contrast.
+   */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) 18%,
+    rgba(0, 0, 0, 0.55) 38%,
+    #fff 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0) 18%,
+    rgba(0, 0, 0, 0.55) 38%,
+    #fff 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.lockedGlow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse 70% 50% at 50% 40%,
+    rgba(200, 164, 106, 0.1) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.lockedContent {
+  position: relative;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 28px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.vaultIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 20px;
+}
+
+.vaultStatus {
+  margin: 0 0 28px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.vaultCountdownHeading {
+  margin: 0 0 20px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.lockedCountdown {
+  margin-bottom: 28px;
+  width: 100%;
+}
+
+.countdownVault {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(12px, 3vw, 28px);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownUnit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.countdownDigit {
+  font-family: var(--font-heading);
+  font-size: clamp(36px, 6.5vw, 68px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.countdownLabel {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.countdownClosed {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+/* Compact countdown (post-unlock panel) */
+.countdownCompact {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownDigitCompact {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.countdownLabelCompact {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 6px;
+}
+
+.countdownClosedCompact {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.08em;
+}
+
+.vaultSupport {
+  margin: 0 0 24px;
+  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.vaultTeaser {
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 380px;
+}
+
+.vaultCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(100%, 280px);
+  height: 54px;
+  padding: 0 36px;
+  margin-top: 8px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid #c8a46a;
+  cursor: pointer;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.vaultCta:hover:not(:disabled) {
+  background-color: #c8a46a;
+  color: #050505;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(200, 164, 106, 0.35);
+}
+
+.vaultCta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vaultTrust {
+  margin: 20px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.42);
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* ── Post-unlock experience ── */
+.revealBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  color: #c8a46a;
+  margin-bottom: 16px;
+}
+
+.exclusiveStory {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.exclusiveStory h3 {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.exclusiveStory p {
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: pre-wrap;
+}
+
+.revealEnter {
+  animation: revealFade 0.8s ease forwards;
+}
+
+.drawWindow {
+  margin-top: 28px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawWindowHeading {
+  margin: 0 0 16px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@keyframes revealFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardLocked {
+  position: relative;
+}
+
+.cardLocked img {
+  filter: blur(12px) brightness(0.5);
+}
+
+.cardLockedOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 16px;
+  text-align: center;
+}
+
+.cardLockedLabel {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+@media (max-width: 767px) {
+  .lockedWrap {
+    min-height: min(65vh, 560px);
+    aspect-ratio: auto;
+  }
+
+  .lockedContent {
+    padding: 32px 20px;
+    max-width: 100%;
+  }
+
+  .lockedCountdown {
+    margin-bottom: 20px;
+  }
+
+  .countdownVault {
+    gap: clamp(8px, 2.5vw, 16px);
+  }
+
+  .countdownDigit {
+    font-size: clamp(28px, 8vw, 44px);
+    letter-spacing: 0.04em;
+  }
+
+  .vaultSupport {
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .vaultCta {
+    width: 100%;
+    max-width: 320px;
+    min-height: 52px;
+  }
+}

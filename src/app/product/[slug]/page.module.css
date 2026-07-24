@@ -1,0 +1,1622 @@
+/* ==========================================================================
+   GODSMOVE EDITORIAL LUXURY PRODUCT DETAIL PAGE (Antigravity Refined PDP CSS)
+   ========================================================================== */
+
+/* ProductClient root wrapper */
+.pdpContainer {
+  width: 100%;
+}
+
+.page {
+  padding-top: calc(var(--nav-height) + 40px);
+  padding-bottom: 120px;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.notFound {
+  padding-top: calc(var(--nav-height) + 120px);
+  padding-bottom: 120px;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+  text-align: center;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+  padding-top: 32px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.breadcrumb a {
+  transition: color var(--duration-fast) var(--ease-smooth);
+}
+
+.breadcrumb a:hover {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   SECTION 1: PRODUCT HERO LAYOUT (60/40 Split)
+   ========================================================================== */
+
+.heroLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 140px;
+}
+
+@media (min-width: 1024px) {
+  .heroLayout {
+    flex-direction: row;
+    gap: 80px;
+  }
+}
+
+.galleryCol {
+  flex: 1.5;
+  width: 100%;
+}
+
+.buyBoxCol {
+  flex: 1;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .stickyBuyBox {
+    position: sticky;
+    top: calc(var(--nav-height) + 40px);
+    align-self: flex-start;
+  }
+}
+
+/* Info Elements */
+.heroCollection {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.heroName {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: clamp(32px, 3.5vw, 48px);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.heroBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.exclusiveBadge,
+.featuredBadge,
+.unlockBadge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 1px;
+}
+
+.exclusiveBadge {
+  border: 1px solid #c8a46a;
+  color: #faf8f5;
+  background-color: #1a1a1a;
+}
+
+.featuredBadge {
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+
+.unlockBadge {
+  border: 1px solid #9c4033;
+  color: #ffb8b0;
+  background-color: #3b120d;
+}
+
+/* Price Block */
+.heroPriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.heroPrice {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 28px;
+  color: var(--text-primary);
+}
+
+.heroComparePrice {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: 18px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.heroDiscountBadge {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  color: #c8a46a;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.heroDivider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  width: 100%;
+  margin: 24px 0;
+}
+
+/* Stock Availability */
+.heroAvailability {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.availabilityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #c8a46a;
+  display: inline-block;
+}
+
+.availabilityText {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.heroShortDesc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+/* Selection Labels */
+.sectionLabel {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.heroSizesWrap {
+  margin-bottom: 28px;
+}
+
+.sizeError {
+  color: var(--accent-red);
+  font-size: 11px;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.heroQuantityWrap {
+  margin-bottom: 32px;
+}
+
+/* Buy Box CTAs Stack */
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.buyNowBtn,
+.addToBagBtn {
+  width: 100%;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 250ms ease;
+  border-radius: 1px;
+}
+
+.buyNowBtn {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border: 1px solid var(--text-primary);
+}
+
+.buyNowBtn:hover:not(:disabled) {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.buyNowBtn:disabled,
+.addToBagBtn:disabled {
+  background-color: var(--border-medium);
+  border-color: var(--border-medium);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.addToBagBtn {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+}
+
+.addToBagBtn:hover:not(:disabled) {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+/* Three Equal Square Actions */
+.utilitySquareActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.squareActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(246, 243, 237, 0.85); /* soft warm ivory glass #F6F3ED */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  border: 1px solid rgba(200, 164, 106, 0.15); /* thin warm gold border */
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  flex-shrink: 0;
+}
+
+.squareActionBtn:hover {
+  background-color: var(--black);
+  color: #F6F3ED;
+  border-color: var(--black);
+}
+
+.squareActionBtn.wishlisted {
+  color: var(--accent-red);
+}
+
+.squareActionBtn.inCompare {
+  color: #c8a46a;
+}
+
+/* GM Passport Quick-Preview badge */
+.passportPreviewBlock {
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 20px;
+}
+
+.passportPreviewLabel {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #c8a46a;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.passportPreviewId {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ==========================================================
+   GLOBAL SECTION CONFIGS (Narrative blocks, sheets)
+   ========================================================== */
+
+.sectionHeader {
+  margin-bottom: 40px;
+  text-align: center;
+  width: 100%;
+}
+
+.storySection,
+.craftSection,
+.fabricSection,
+.fitSection,
+.technicalSection,
+.careSection,
+.packagingSection,
+.ownershipSection,
+.editorialNotesSection,
+.lifecycleSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center align blocks horizontally */
+  text-align: center;
+  padding: 80px 0;
+  border-top: none;
+  border-bottom: 1px solid var(--border-subtle); /* Divider line between sections */
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.storyBodyText,
+.editorialNotesText {
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+  max-width: 680px; /* Locked reading width */
+  margin: 0 auto;
+  text-align: center; /* Center paragraph reading flow */
+}
+
+.craftGrid,
+.twoColSpecs,
+.compactSpecsCard,
+.careGrid,
+.packagingGrid,
+.registryBox,
+.timelineWrapper {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: left; /* Keep left alignment for text inside cards and grids */
+}
+
+@media (min-width: 1024px) {
+  .storySection,
+  .craftSection,
+  .fabricSection,
+  .fitSection,
+  .technicalSection,
+  .careSection,
+  .packagingSection,
+  .ownershipSection,
+  .editorialNotesSection,
+  .lifecycleSection {
+    padding: 120px 0;
+  }
+}
+
+.sectionEyebrow {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.sectionHeadline {
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.mobilePDPActionRow {
+  display: none; /* hidden desktop */
+}
+
+@media (max-width: 767px) {
+  .mobilePDPActionRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobilePDPActionBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .mobilePDPActionBtn:hover,
+  .mobilePDPActionBtn.inCompare {
+    color: #c8a46a;
+  }
+
+  .mobilePDPActionDivider {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 10px;
+  }
+
+  /* Requirement 5: Remove excess vertical padding above Craftsmanship section on mobile */
+  .editorialMagazineSection {
+    padding-top: 24px !important;
+    padding-bottom: 36px !important;
+    margin-top: 0 !important;
+  }
+
+  .heroQuantityWrap {
+    margin-bottom: 8px !important;
+  }
+}
+
+/* ==========================================================
+   SECTION 2: PRODUCT STORY
+   ========================================================== */
+
+.storySection {}
+
+.storyBodyText {
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  max-width: 650px;
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 4: CRAFTSMANSHIP
+   ========================================================== */
+
+.craftSection {}
+
+.craftGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .craftGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.craftCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 28px;
+  transition: border-color 200ms ease;
+}
+
+.craftCard:hover {
+  border-color: var(--text-muted);
+}
+
+.craftCardTitle {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+.craftCardText {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 5 & 6: FABRIC & FIT TWO-COLUMN SHEETS
+   ========================================================== */
+
+.fabricSection,
+.fitSection {}
+
+.twoColSpecs {
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 48px;
+}
+
+@media (min-width: 768px) {
+  .twoColSpecs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.specColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.specRowItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 20px;
+}
+
+.specRowLabel {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 130px;
+}
+
+.specRowValue {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   SECTION 7: SPECIFICATIONS (COMPACT CARD)
+   ========================================================== */
+
+.technicalSection {}
+
+.compactSpecsCard {
+  max-width: 900px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+}
+
+.compactSpecsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 600px) {
+  .compactSpecsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .compactSpecsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.compactSpecItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compactSpecLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.compactSpecValue {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ==========================================================
+   SECTION 8: CARE INSTRUCTIONS
+   ========================================================== */
+
+.careSection {}
+
+.careGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .careGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.careCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+}
+
+.careCardTitle {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.careCardDesc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 9: PACKAGING CURATION
+   ========================================================== */
+
+.packagingSection {}
+
+.packagingGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 900px;
+}
+
+@media (min-width: 768px) {
+  .packagingGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.packagingCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.packagingIcon {
+  color: #c8a46a;
+}
+
+.packagingTitle {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.packagingDesc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 10: OWNERSHIP INFORMATION (REGISTRY)
+   ========================================================== */
+
+.ownershipSection {}
+
+.registryBox {
+  max-width: 900px;
+  background: radial-gradient(circle at top left, #1e1e1e 0%, #111111 100%);
+  color: #faf8f5;
+  border: 1.5px solid rgba(200, 164, 106, 0.35); /* thin warm gold metallic border */
+  padding: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  position: relative;
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    inset 0 0 50px rgba(0, 0, 0, 0.9); /* deep embossed slot shadow */
+}
+
+.registryBox::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(200, 164, 106, 0.15); /* nested inner card frame */
+  pointer-events: none;
+}
+
+.registryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.registryTitle {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #c8a46a;
+}
+
+.registryId {
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.registryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px 40px;
+}
+
+@media (min-width: 768px) {
+  .registryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.registryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.registryLabel {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.registryValue {
+  font-size: 13px;
+  color: #faf8f5;
+}
+
+/* ==========================================================
+   SECTION 11: EDITORIAL NOTES
+   ========================================================== */
+
+.editorialNotesSection {}
+
+.editorialNotesText {
+  font-family: var(--font-heading);
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  max-width: 650px;
+  margin: 0;
+}
+
+/* ==========================================================
+   SECTION 12: GARMENT LIFE CYCLE (HORIZONTAL TIMELINE)
+   ========================================================== */
+
+/* ==========================================================
+   CRAFTSMANSHIP HERO SECTION (Moved directly above Why We Made This)
+   ========================================================== */
+.craftsmanshipHeroSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.craftsmanshipHeroGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  width: 100%;
+  margin-top: 48px;
+}
+
+@media (min-width: 768px) {
+  .craftsmanshipHeroGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.craftsmanshipHeroCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 40px 32px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.craftsmanshipHeroCard:hover {
+  border-color: #c8a46a;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(200, 164, 106, 0.05);
+}
+
+.craftHeroNum {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 300;
+  color: rgba(200, 164, 106, 0.2);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.craftHeroLabel {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 8px;
+}
+
+.craftHeroTitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.craftHeroCaption {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  line-height: 1.4;
+  border-left: 2px solid #c8a46a;
+  padding-left: 12px;
+}
+
+.craftHeroDesc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ==========================================================
+   REDESIGNED GARMENT LIFE CYCLE (Genesis Timeline milestone cards)
+   ========================================================== */
+.lifecycleSection {
+  background-color: var(--bg-secondary);
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+}
+
+.lifecycleHeader {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 56px;
+}
+
+.lifecycleSub {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
+.milestoneGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+  margin-top: 56px;
+}
+
+@media (min-width: 640px) {
+  .milestoneGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .milestoneGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.milestoneCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 36px 36px 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 28px;
+  text-align: left;
+  min-height: 160px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 639px) {
+  .milestoneCard {
+    flex-direction: column;
+    min-height: auto;
+  }
+}
+
+.milestoneCard:hover {
+  border-color: var(--text-muted);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.02);
+}
+
+.milestoneCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.milestoneNum {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 500;
+  color: #c8a46a;
+}
+
+.milestoneIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(200, 164, 106, 0.08);
+  color: #c8a46a;
+}
+
+.milestoneTitle {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.milestoneCaption {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.milestoneDesc {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ==========================================================
+   PREMIUM PRODUCT INFORMATION (Merged Specifications Registry)
+   ========================================================== */
+.premiumProductInfoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.premiumInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px 32px;
+  width: 100%;
+  margin-top: 56px;
+}
+
+@media (min-width: 768px) {
+  .premiumInfoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .premiumInfoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.infoCol {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  text-align: left;
+}
+
+.infoSubHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.infoIcon {
+  color: #c8a46a;
+}
+
+.infoSubTitle {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.infoEditorial {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.infoDataBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dataRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dataRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.dataRow span:first-child {
+  color: var(--text-muted);
+}
+
+.dataRow span:last-child {
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* ==========================================================
+   RECOMMENDATIONS SECTION
+   ========================================================== */
+
+.related {
+  margin-top: 60px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 60px;
+}
+
+.relatedTitle {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: 24px;
+  letter-spacing: -0.015em;
+  margin-bottom: 40px;
+}
+
+/* Standard Symmetrical Grid override (symmetrical catalog) */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Tablet / Mobile Spacing Adjustments */
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + 20px);
+    padding-bottom: 80px;
+  }
+
+  .heroLayout {
+    margin-bottom: 80px;
+  }
+
+  .storySection,
+  .craftSection,
+  .fabricSection,
+  .fitSection,
+  .technicalSection,
+  .careSection,
+  .packagingSection,
+  .editorialNotesSection,
+  .lifecycleSection,
+  .ownershipSection,
+  .passportSection,
+  .related {
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+
+  .related {
+    margin-top: 80px;
+  }
+}
+
+/* ==========================================================
+   CRAFTSMANSHIP (60/40 FASHION CAMPAIGN MAGAZINE SPREAD)
+   ========================================================== */
+.editorialMagazineSection {
+  padding: 120px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+  margin: 0 auto 100px;
+}
+
+.magazineSpreadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  max-width: 1360px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .magazineSpreadContainer {
+    flex-direction: row;
+    gap: 72px;
+  }
+}
+
+/* LEFT SIDE (~60%): Large Tall Campaign Photograph */
+.magazinePhotoCol {
+  flex: 1.4; /* ~60% width ratio */
+  width: 100%;
+}
+
+.magazinePhotoFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  min-height: 560px;
+  background-color: var(--surface-subtle, #121212);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.magazinePhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.slowFade {
+  animation: slowFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slowFadeIn {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.magazinePhotoControls {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.magazineDashIndicators {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.magazineDash {
+  width: 24px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.magazineDashActive {
+  background-color: #c8a46a;
+  width: 36px;
+}
+
+/* RIGHT SIDE (~40%): Single Unified Editorial Panel */
+.magazineArticleCol {
+  flex: 1; /* ~40% width ratio */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.magazineHeaderBlock {
+  margin-bottom: 48px;
+}
+
+.magazineEyebrow {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.magazineMainTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+  line-height: 1.1;
+}
+
+.magazineEditorialNote {
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #c8a46a;
+  margin: 0;
+  max-width: 480px;
+}
+
+/* 4 Whitespace-Separated Content Blocks */
+.magazineSpecList {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.magazineSpecBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.magazineSpecBlock:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.specHeaderTag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.specSentence {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 520px;
+}
+
+/* ==========================================================================
+   MOBILE BOTTOM PURCHASE BAR
+   Fixed sticky bar at bottom — mobile only
+   ========================================================================== */
+
+.mobileBottomBar {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  /* Show the floating bottom purchase bar */
+  .mobileBottomBar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 16px));
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(200, 164, 106, 0.15);
+    animation: mobileBarSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes mobileBarSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Wishlist icon button */
+  .mobileBarWishlist {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(200, 164, 106, 0.25);
+    border-radius: 4px;
+    color: rgba(245, 241, 232, 0.7);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarWishlist.wishlisted {
+    color: #e05c4a;
+    border-color: rgba(224, 92, 74, 0.4);
+    background: rgba(224, 92, 74, 0.08);
+  }
+
+  .mobileBarWishlist:active {
+    transform: scale(0.94);
+  }
+
+  /* Buy Now — outline gold */
+  .mobileBarBuyNow {
+    flex: 1;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #c8a46a;
+    border: 1px solid #c8a46a;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarBuyNow:hover:not(:disabled),
+  .mobileBarBuyNow:active:not(:disabled) {
+    background: rgba(200, 164, 106, 0.12);
+  }
+
+  .mobileBarBuyNow:disabled {
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+  }
+
+  /* Add to Bag — filled primary */
+  .mobileBarAddToBag {
+    flex: 1.4;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: #f5f1e8;
+    color: #0a0a0a;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarAddToBag:hover:not(:disabled),
+  .mobileBarAddToBag:active:not(:disabled) {
+    background: #ffffff;
+  }
+
+  .mobileBarAddToBag:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+  }
+
+  /* Hide the desktop buy box CTA stack on mobile — shown in bottom bar instead */
+  .heroActions {
+    display: none;
+  }
+
+  /* Add bottom padding to the page so content isn't hidden behind the bar */
+  .pdpContainer {
+    padding-bottom: 100px;
+  }
+
+  /* Related products: 2 per row on mobile */
+  .relatedProductsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Related section mobile spacing refinement (Task 3) */
+  .related {
+    margin-top: 32px !important;
+    padding-top: 24px !important;
+  }
+  
+  .relatedTitle {
+    font-size: 16px !important;
+    margin-bottom: 16px !important;
+    text-align: center !important;
+  }
+
+  /* Craftsmanship mobile redesign (Task 4): Centered Heading + 2x2 Centered Grid */
+  .editorialMagazineSection {
+    padding: 32px 16px !important;
+  }
+
+  .editorialMagazineSection > div {
+    padding: 0 !important;
+  }
+
+  .editorialMagazineSection > div > div:first-child {
+    text-align: center !important;
+    margin-bottom: 24px !important;
+  }
+
+  .editorialMagazineSection h2 {
+    font-size: 26px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .editorialMagazineSection p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 14px !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div span {
+    font-size: 9.5px !important;
+    margin-bottom: 6px !important;
+    letter-spacing: 0.15em !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+}
+

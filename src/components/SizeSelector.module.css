@@ -1,0 +1,82 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.selected {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.sizes {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.size {
+  min-width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(200, 164, 106, 0.2); /* thin warm grey border */
+  background: #F6F3ED; /* Warm Ivory default */
+  color: #2a2a2a; /* dark charcoal typography */
+  transition: all 200ms ease;
+  padding: 0 var(--space-md);
+  cursor: pointer;
+}
+
+.size:hover:not(.unavailable) {
+  background-color: #c8a46a; /* Muted Gold hover */
+  border-color: #c8a46a;
+  color: #111111;
+}
+
+.size.active {
+  background-color: #222222 !important; /* Rich Charcoal selected */
+  color: #F6F3ED !important; /* Warm Ivory text */
+  border-color: #c8a46a !important; /* Warm Gold border */
+}
+
+.size.unavailable {
+  color: var(--smoke);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+  position: relative;
+}
+
+.size.unavailable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background-color: var(--smoke);
+  transform: rotate(-12deg);
+}

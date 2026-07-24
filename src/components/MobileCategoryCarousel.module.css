@@ -1,0 +1,117 @@
+/* MobileCategoryCarousel — mobile only, hidden on desktop */
+.carouselOuter {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  .carouselOuter {
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    /* fade edges */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+  }
+
+  .carouselTrack {
+    display: flex;
+    gap: 12px;
+    width: max-content;
+    animation: carouselScroll 30s linear infinite;
+    will-change: transform;
+  }
+
+  .carouselTrack.paused {
+    animation-play-state: paused;
+  }
+
+  @keyframes carouselScroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      /* Move exactly half — the duplicated portion — for seamless loop */
+      transform: translateX(-50%);
+    }
+  }
+
+  .carouselCard {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    text-decoration: none;
+    background-color: #121212;
+    cursor: pointer;
+  }
+
+  .cardImageWrap {
+    position: absolute;
+    inset: 0;
+  }
+
+  .cardImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .carouselCard:active .cardImage {
+    transform: scale(1.04);
+  }
+
+  .cardOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 10, 10, 0) 30%,
+      rgba(10, 10, 10, 0.75) 100%
+    );
+  }
+
+  .cardInfo {
+    position: relative;
+    z-index: 2;
+    margin-top: auto;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .cardName {
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .cardCta {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 600;
+    color: #c8a46a;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+}
