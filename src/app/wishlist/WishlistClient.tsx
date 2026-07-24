@@ -6,25 +6,32 @@ import { Heart } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { getStorefrontProducts } from '@/actions/storefront.actions';
 import WishlistCard from '@/components/WishlistCard';
+import ProductCard from '@/components/ProductCard';
+import QuickViewModal from '@/components/QuickViewModal';
+import ScrollReveal from '@/components/ScrollReveal';
 import styles from './WishlistClient.module.css';
 
 export default function WishlistClient() {
   const { wishlist, setWishlist } = useStore();
   const [liveProducts, setLiveProducts] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   useEffect(() => {
-    // Avoid fetching if wishlist is empty
-    if (wishlist.length === 0) {
-      setIsLoading(false);
-      setLiveProducts([]);
-      return;
-    }
-
     let isMounted = true;
 
-    async function fetchLiveProducts() {
+    async function fetchData() {
       try {
+        // Fetch recommendations (Latest drops or Editor selection)
+        const recData = await getStorefrontProducts({ take: 6 });
+        if (isMounted) setRecommendations(recData);
+
+        if (wishlist.length === 0) {
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+
         const productIds = wishlist.map((item) => item.productId);
         const data = await getStorefrontProducts({ ids: productIds });
         
@@ -46,27 +53,47 @@ export default function WishlistClient() {
       }
     }
 
-    fetchLiveProducts();
+    fetchData();
 
     return () => {
       isMounted = false;
     };
-  }, [wishlist, setWishlist]); // Note: depending on wishlist might cause re-fetches if not careful, but setWishlist stabilizes it
+  }, [wishlist, setWishlist]);
 
-  // Determine items to show: while loading, show snapshot. Once loaded, show valid items.
   const displayItems = wishlist;
 
   if (!isLoading && displayItems.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <div className={styles.emptyIcon}>
-          <Heart size={48} strokeWidth={1} />
+      <div className={styles.emptyContainer}>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>
+            <Heart size={44} strokeWidth={1.5} />
+          </div>
+          <h1 className={styles.emptyTitle}>Private Archive</h1>
+          <p className={styles.emptyText}>Your private collection is waiting to be curated.</p>
+          <Link href="/drops" className={styles.exploreBtn}>
+            Explore Drops
+          </Link>
         </div>
-        <h1 className={styles.emptyTitle}>Your wishlist is empty.</h1>
-        <p className={styles.emptyText}>Drip doesn't lie.</p>
-        <Link href="/drops" className={styles.exploreBtn}>
-          Explore the Drop
-        </Link>
+
+        {/* Symmetrical horizontal recommendation strip below empty state */}
+        {recommendations.length > 0 && (
+          <div className={styles.recSection}>
+            <div className={styles.recHeader}>
+              <span className={styles.recEyebrow}>Discovery</span>
+              <h2 className={styles.recTitle}>Formulated Archive Selection</h2>
+            </div>
+            <div className={styles.recScrollContainer}>
+              <div className={styles.recRow}>
+                {recommendations.map((prod) => (
+                  <div key={prod.id} className={styles.recCardWrap}>
+                    <ProductCard product={prod} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -74,11 +101,14 @@ export default function WishlistClient() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Your Wishlist</h1>
-        <p className={styles.subtitle}>Pieces worth claiming.</p>
-        <span className={styles.count}>
-          {displayItems.length} {displayItems.length === 1 ? 'item' : 'items'}
-        </span>
+        <ScrollReveal>
+          <span className={styles.eyebrow}>Curated Registry</span>
+          <h1 className={styles.title}>Private Archive</h1>
+          <p className={styles.subtitle} style={{ color: '#c8a46a' }}>Pieces worth returning to.</p>
+          <span className={styles.count}>
+            {displayItems.length} {displayItems.length === 1 ? 'curated piece' : 'curated pieces'}
+          </span>
+        </ScrollReveal>
       </header>
 
       <div className={styles.grid}>
@@ -89,10 +119,17 @@ export default function WishlistClient() {
               key={item.productId} 
               item={item} 
               liveProduct={live} 
+              onQuickView={(prod) => setSelectedProduct(prod)}
             />
           );
         })}
       </div>
+
+      <QuickViewModal
+        product={selectedProduct}
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   );
 }

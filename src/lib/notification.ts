@@ -303,4 +303,76 @@ export const NotificationService = {
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
   },
+
+  // 9. Care Request Submitted
+  async sendCareRequestSubmitted(to: string, requestId: string, productName: string, category: string) {
+    const customerName = await getCustomerFirstName(to);
+    const title = `Care Request Logged - #${requestId.substring(0,8).toUpperCase()}`;
+    const bodyHtml = `
+      <p>Hello ${customerName},</p>
+      <p>Your GODSMOVE Care request for the article <strong>${productName}</strong> (Category: ${category}) has been logged in our digital registry.</p>
+      <p>Our craftsmanship team will inspect your diagnostic summary and provide service estimates shortly.</p>
+      <a href="http://localhost:3000/profile?tab=care" class="btn">Track Care Progress</a>
+    `;
+    const html = buildLuxuryEmailTemplate(title, bodyHtml);
+    saveSimulatedEmail(to, title, html);
+  },
+
+  // 10. Care Request Approved (Payment Required)
+  async sendCareRequestApproved(to: string, requestId: string, totalCharge: string) {
+    const customerName = await getCustomerFirstName(to);
+    const title = `Atelier Service Approved - #${requestId.substring(0,8).toUpperCase()}`;
+    const bodyHtml = `
+      <p>Hello ${customerName},</p>
+      <p>Your GODSMOVE Care request has been approved by our tailors.</p>
+      <p>Estimate Service Fee: <strong>${totalCharge}</strong></p>
+      <p>Please log in to your profile to settle the service invoice and schedule doorstep pickup.</p>
+      <a href="http://localhost:3000/profile?tab=care" class="btn">View Invoice & Settle</a>
+    `;
+    const html = buildLuxuryEmailTemplate(title, bodyHtml);
+    saveSimulatedEmail(to, title, html);
+  },
+
+  // 11. Care Request Rejected
+  async sendCareRequestRejected(to: string, requestId: string, reason: string) {
+    const customerName = await getCustomerFirstName(to);
+    const title = `Care Request Advisory - #${requestId.substring(0,8).toUpperCase()}`;
+    const bodyHtml = `
+      <p>Hello ${customerName},</p>
+      <p>Our craftsmanship specialists have completed review of your request for ticket #${requestId.substring(0,8).toUpperCase()}.</p>
+      <p>Unfortunately, we are unable to process restoration for this article at this time.</p>
+      <p><strong>Advisory Note:</strong> ${reason}</p>
+      <p>Your garment remains registered in your digital wardrobe vault.</p>
+    `;
+    const html = buildLuxuryEmailTemplate(title, bodyHtml);
+    saveSimulatedEmail(to, title, html);
+  },
+
+  // 12. Care Payment Received
+  async sendCarePaymentReceived(to: string, requestId: string, amount: string) {
+    const customerName = await getCustomerFirstName(to);
+    const title = `Atelier Payment Acknowledged - #${requestId.substring(0,8).toUpperCase()}`;
+    const bodyHtml = `
+      <p>Hello ${customerName},</p>
+      <p>We have acknowledged payment of <strong>₹${amount}</strong> for your Care request.</p>
+      <p>We are coordinating the logistics partner pickup. Please keep the garment ready for dispatch.</p>
+      <a href="http://localhost:3000/profile?tab=care" class="btn">View Request</a>
+    `;
+    const html = buildLuxuryEmailTemplate(title, bodyHtml);
+    saveSimulatedEmail(to, title, html);
+  },
+
+  // 13. Care Status Updates
+  async sendCareStatusUpdate(to: string, requestId: string, status: string, description: string) {
+    const customerName = await getCustomerFirstName(to);
+    const title = `Garment Lifecycle Event: ${status}`;
+    const bodyHtml = `
+      <p>Hello ${customerName},</p>
+      <p>Your garment restoration status has been updated: <strong>${status}</strong></p>
+      <p>Details: <strong>${description}</strong></p>
+      <a href="http://localhost:3000/profile?tab=care" class="btn">View Timeline</a>
+    `;
+    const html = buildLuxuryEmailTemplate(title, bodyHtml);
+    saveSimulatedEmail(to, title, html);
+  },
 };

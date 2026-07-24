@@ -27,7 +27,7 @@ export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
     return (
       <div className={styles.wrapper}>
         <Image
-          src="/placeholder.png"
+          src="/images/placeholder.svg"
           alt={alt}
           fill
           className={styles.image}

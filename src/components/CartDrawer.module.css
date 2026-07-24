@@ -33,6 +33,18 @@
   transform: translateX(0);
 }
 
+/* ── Mobile: 85vw partial-width sheet ── */
+@media (max-width: 767px) {
+  .drawer {
+    max-width: 85vw;
+  }
+
+  .overlay {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
 /* ── Reservation message (top of drawer) ── */
 .reservationBanner {
   overflow: hidden;

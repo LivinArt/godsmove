@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
+import { resolveProductImages } from '@/lib/image-resolver';
 import styles from './ExclusiveRackImage.module.css';
 
 interface ExclusiveRackImageProps {
@@ -16,23 +17,18 @@ interface ExclusiveRackImageProps {
 }
 
 export default function ExclusiveRackImage({ product }: ExclusiveRackImageProps) {
-  const { enableImageToggle, frontImageUrl, backImageUrl, defaultImageSide, images, name } = product;
+  const { enableImageToggle, defaultImageSide, name } = product;
+  const { frontImage, backImage } = resolveProductImages(product);
 
   const defaultSide: 'front' | 'back' = defaultImageSide === 'back' ? 'back' : 'front';
   const [currentSide, setCurrentSide] = useState<'front' | 'back'>(defaultSide);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const canToggle = !!(enableImageToggle && frontImageUrl && backImageUrl);
+  const canToggle = !!(enableImageToggle && frontImage !== '/images/placeholder.svg' && backImage !== '/images/placeholder.svg' && frontImage !== backImage);
 
-  // Resolve the active image URL using the priority chain
-  const activeImage = canToggle
-    ? (currentSide === 'back'
-        ? (backImageUrl || frontImageUrl)
-        : (frontImageUrl || backImageUrl))
-    : (Array.isArray(images)
-        ? (typeof images[0] === 'string' ? images[0] : (images[0] as { url: string })?.url)
-        : undefined)
-    || '/images/placeholder.png';
+  let activeImage = canToggle
+    ? (currentSide === 'back' ? backImage : frontImage)
+    : frontImage;
 
   const toggle = useCallback(() => {
     if (!canToggle || isTransitioning) return;

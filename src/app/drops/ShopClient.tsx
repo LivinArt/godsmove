@@ -3,8 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
+import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
 
 type SortOption = 'newest' | 'price-low' | 'price-high';
@@ -13,45 +15,57 @@ interface ShopClientProps {
   initialProducts: any[];
   drops: any[];
   categories: any[];
+  lockedCategoryId?: string;
+  categoryDetails?: {
+    name: string;
+    description: string;
+    story: string;
+  };
 }
 
 export default function ShopClient({
   initialProducts,
   drops,
   categories,
+  lockedCategoryId,
+  categoryDetails,
 }: ShopClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(lockedCategoryId || null);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('newest');
 
   // Initialize filters from search parameters
   useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    const dropParam = searchParams.get('drop');
-
-    if (categoryParam) {
-      const match = categories.find(
-        (c) => c.slug === categoryParam || c.id === categoryParam
-      );
-      if (match) setSelectedCategoryId(match.id);
+    if (lockedCategoryId) {
+      setSelectedCategoryId(lockedCategoryId);
     } else {
-      setSelectedCategoryId(null);
+      const categoryParam = searchParams.get('category');
+      if (categoryParam) {
+        const match = categories.find(
+          (c) => c.slug === categoryParam || c.id === categoryParam
+        );
+        if (match) setSelectedCategoryId(match.id);
+      } else {
+        setSelectedCategoryId(null);
+      }
     }
 
+    const dropParam = searchParams.get('drop');
     if (dropParam) {
       const match = drops.find((d) => d.slug === dropParam || d.id === dropParam);
       if (match) setSelectedDropId(match.id);
     } else {
       setSelectedDropId(null);
     }
-  }, [searchParams, categories, drops]);
+  }, [searchParams, categories, drops, lockedCategoryId]);
 
   const handleCategoryToggle = (categoryId: string) => {
+    if (lockedCategoryId) return;
     const nextCat = selectedCategoryId === categoryId ? null : categoryId;
     setSelectedCategoryId(nextCat);
     updateUrlParams(nextCat, selectedDropId);
@@ -65,7 +79,7 @@ export default function ShopClient({
 
   const updateUrlParams = (catId: string | null, dropId: string | null) => {
     const params = new URLSearchParams();
-    if (catId) {
+    if (catId && !lockedCategoryId) {
       const catObj = categories.find((c) => c.id === catId);
       params.set('category', catObj ? catObj.slug : catId);
     }
@@ -129,69 +143,88 @@ export default function ShopClient({
 
   return (
     <div className={styles.shopContent}>
-      {/* 1. Top Section */}
-      <ScrollReveal>
-        <div className={styles.topSection}>
-          <span className="caption">Discovery</span>
-          <h1 className={styles.pageTitle}>The Archive</h1>
-          <p className={styles.pageSubtitle}>
-            Browse our curated collections. Limited pieces formulated with heavy structural integrity.
-          </p>
-        </div>
-      </ScrollReveal>
-
-      {/* 2. Category Filters (Editorial Cover Cards) */}
-      {categories.length > 0 && (
-        <div className={styles.categorySection}>
-          <p className={styles.filterTitleLabel}>Select Space</p>
-          <div className={styles.categoryGrid}>
-            {categories.map((cat) => {
-              const isActive = selectedCategoryId === cat.id;
-              let img = '/images/campaign/editorial-01.png';
-              let desc = 'Minimalist garments designed for posture.';
-              if (cat.slug === 'tees') {
-                img = '/images/products/tee-black.png';
-                desc = 'Heavyweight combed cotton essentials.';
-              } else if (cat.slug === 'hoodies') {
-                img = '/images/products/tee-charcoal.png';
-                desc = 'Tailored structures formulated for stability.';
-              } else if (cat.slug === 'accessories') {
-                img = '/images/products/tee-ivory.png';
-                desc = 'Deliberate details completing the signature look.';
-              }
-
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  className={`${styles.categoryCard} ${
-                    isActive ? styles.categoryCardActive : ''
-                  }`}
-                  onClick={() => handleCategoryToggle(cat.id)}
-                  aria-pressed={isActive}
-                >
-                  <div className={styles.categoryCardImgWrap}>
-                    <Image
-                      src={img}
-                      alt={cat.name}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      className={styles.categoryCardImg}
-                    />
-                    <div className={styles.categoryCardOverlay} />
-                  </div>
-                  <div className={styles.categoryCardInfo}>
-                    <h3>{cat.name}</h3>
-                    <p>{desc}</p>
-                    <span className={styles.categoryCardCta}>
-                      {isActive ? 'Selected Collection' : 'View Collection'}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+      {/* 1. Header/Hero Section */}
+      {categoryDetails ? (
+        <ScrollReveal>
+          <div className={styles.categoryHeroSection}>
+            <div className={styles.categoryHeroContent}>
+              <span className="caption">Silhouettes</span>
+              <h1 className={styles.categoryHeroTitle}>{categoryDetails.name}</h1>
+              <p className={styles.categoryHeroDesc}>{categoryDetails.description}</p>
+              <div className={styles.categoryHeroStory}>
+                <span className={styles.storyLabel}>Design Narrative</span>
+                <p>{categoryDetails.story}</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
+      ) : (
+        <>
+          <ScrollReveal>
+            <div className={styles.topSection}>
+              <span className="caption">Discovery</span>
+              <h1 className={styles.pageTitle}>The Archive</h1>
+              <p className={styles.pageSubtitle}>
+                Browse our curated collections. Limited pieces formulated with heavy structural integrity.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* 2. Category Filters (Editorial Cover Cards) */}
+          {categories.length > 0 && (
+            <div className={styles.categorySection}>
+              <p className={styles.filterTitleLabel}>Select Space</p>
+
+              {/* Mobile: horizontal auto-scrolling carousel */}
+              <MobileCategoryCarousel categories={categories.map(c => ({ id: c.id, name: c.name, slug: c.slug, imageUrl: c.imageUrl }))} />
+
+              {/* Desktop: editorial grid cards (hidden on mobile via CSS) */}
+              <div className={styles.categoryGrid}>
+                {categories.map((cat) => {
+                  const isActive = selectedCategoryId === cat.id;
+                  const fallbackImg = cat.slug === 'tees' ? '/images/products/tee-black.png' :
+                                      cat.slug === 'hoodies' ? '/images/products/tee-charcoal.png' :
+                                      cat.slug === 'accessories' ? '/images/products/tee-ivory.png' : '/images/campaign/editorial-01.png';
+                  const img = cat.imageUrl || fallbackImg;
+                  let desc = 'Minimalist garments designed for posture.';
+                  if (cat.slug === 'tees') {
+                    desc = 'Heavyweight combed cotton essentials.';
+                  } else if (cat.slug === 'hoodies') {
+                    desc = 'Tailored structures formulated for stability.';
+                  } else if (cat.slug === 'accessories') {
+                    desc = 'Deliberate details completing the signature look.';
+                  }
+
+                  return (
+                    <Link
+                      key={cat.id}
+                      href={`/category/${cat.slug}`}
+                      className={styles.categoryCard}
+                    >
+                      <div className={styles.categoryCardImgWrap}>
+                        <Image
+                          src={img}
+                          alt={cat.name}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          className={styles.categoryCardImg}
+                        />
+                        <div className={styles.categoryCardOverlay} />
+                      </div>
+                      <div className={styles.categoryCardInfo}>
+                        <h3>{cat.name}</h3>
+                        <p>{desc}</p>
+                        <span className={styles.categoryCardCta}>
+                          Enter the Room
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* 3. Drop Filters & Curation Controls */}

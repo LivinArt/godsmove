@@ -139,7 +139,7 @@ export async function createReturnRequest(input: CreateReturnInput) {
 
   revalidatePath('/account/orders');
   revalidatePath('/profile');
-  return returnReq;
+  return JSON.parse(JSON.stringify(returnReq));
 }
 
 // ── ADMIN: GET RETURN REQUESTS ────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export async function getReturnRequests(params?: {
 }) {
   await requireAdmin();
 
-  return prisma.returnRequest.findMany({
+  const requests = await prisma.returnRequest.findMany({
     where: {
       ...(params?.status && { status: params.status as any }),
     },
@@ -170,6 +170,8 @@ export async function getReturnRequests(params?: {
     take: params?.take ?? 50,
     skip: params?.skip ?? 0,
   });
+
+  return JSON.parse(JSON.stringify(requests));
 }
 
 // ── ADMIN: PROCESS RETURN ─────────────────────────────────────────────────────
@@ -260,7 +262,7 @@ export async function processReturn(input: ProcessReturnInput) {
     }
 
     revalidatePath('/admin/returns');
-    return updated;
+    return JSON.parse(JSON.stringify(updated));
   });
 }
 
@@ -346,5 +348,5 @@ export async function customerUpdateReturnRequest(payload: {
   });
 
   revalidatePath('/profile');
-  return updated;
+  return JSON.parse(JSON.stringify(updated));
 }

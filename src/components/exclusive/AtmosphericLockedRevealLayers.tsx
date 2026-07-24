@@ -13,7 +13,7 @@ type Props = {
  * so touch / reduced-motion rules apply.
  */
 export function AtmosphericLockedRevealLayers({ imageUrl }: Props) {
-  const bg = { backgroundImage: `url(${imageUrl})` } as CSSProperties;
+  const bg = { backgroundImage: `url("${imageUrl}")` } as CSSProperties;
 
   return (
     <div className={styles.stage} aria-hidden>

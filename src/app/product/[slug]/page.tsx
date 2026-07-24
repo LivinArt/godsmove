@@ -11,6 +11,7 @@ import { getMyProfile } from '@/actions/profile.actions';
 import { createClient } from '@/lib/supabase/server';
 import ProductClient from './ProductClient';
 import { getProductBreadcrumb } from '@/lib/product-channel-label';
+import { resolveProductImages } from '@/lib/image-resolver';
 import styles from './page.module.css';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -112,7 +113,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     draw = await getActiveDraw(product.id);
   }
 
-  const coverImage = product.images?.[0]?.url ?? product.frontImageUrl ?? null;
+  const { frontImage } = resolveProductImages(product);
+  const coverImage = frontImage;
   const breadcrumb = getProductBreadcrumb(product);
 
   let profile: any = null;

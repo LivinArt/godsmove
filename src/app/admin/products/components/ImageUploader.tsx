@@ -8,9 +8,16 @@ import type { ProductImageInput } from '@/lib/validations/product';
 interface ImageUploaderProps {
   images: ProductImageInput[];
   onChange: (images: ProductImageInput[]) => void;
+  guidance?: {
+    orientation?: string;
+    recommendedDimensions?: string;
+    aspectRatio?: string;
+    maxFileSize?: string;
+    acceptedFormats?: string;
+  };
 }
 
-export function ImageUploader({ images, onChange }: ImageUploaderProps) {
+export function ImageUploader({ images, onChange, guidance }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,6 +159,28 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
           </span>
         </button>
       </div>
+
+      {/* Image Upload Guidelines (Entire Admin Task 3) */}
+      <div style={{
+        marginTop: '12px',
+        padding: '10px 14px',
+        background: 'rgba(200, 164, 106, 0.05)',
+        border: '1px solid rgba(200, 164, 106, 0.2)',
+        borderRadius: '4px',
+        fontSize: '11px',
+        color: '#c8a46a',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '8px 16px',
+        lineHeight: 1.5
+      }}>
+        <span><strong style={{ color: 'var(--text-primary, #f5f1e8)' }}>Orientation:</strong> {guidance?.orientation || 'Portrait'}</span>
+        <span><strong style={{ color: 'var(--text-primary, #f5f1e8)' }}>Dimensions:</strong> {guidance?.recommendedDimensions || '1600 × 2000 px'}</span>
+        <span><strong style={{ color: 'var(--text-primary, #f5f1e8)' }}>Ratio:</strong> {guidance?.aspectRatio || '4:5'}</span>
+        <span><strong style={{ color: 'var(--text-primary, #f5f1e8)' }}>Max Size:</strong> {guidance?.maxFileSize || '10 MB'}</span>
+        <span><strong style={{ color: 'var(--text-primary, #f5f1e8)' }}>Formats:</strong> {guidance?.acceptedFormats || 'JPG, PNG, WEBP'}</span>
+      </div>
+
       <input
         type="file"
         ref={fileInputRef}

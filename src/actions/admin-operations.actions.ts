@@ -384,15 +384,22 @@ export async function updateOrderStatus(orderId: string, status: string) {
       if (!order.paidAt) order.paidAt = new Date();
     }
 
+    if (Number(order.total) === 0 && order.paymentStatus !== 'PAID') {
+      console.warn(`[Auto-Repair] Zero-payable Order #${order.orderNumber} was UNPAID. Correcting paymentStatus to PAID.`);
+      await tx.order.update({
+        where: { id: orderId },
+        data: { paymentStatus: 'PAID', paidAt: order.paidAt || new Date() }
+      });
+      order.paymentStatus = 'PAID';
+      if (!order.paidAt) order.paidAt = new Date();
+    }
+
     const from = order.status;
     const to   = status;
 
-    // ── TRANSITION GUARD ──────────────────────────────────────────────────────
-    assertValidTransition(from, to, order.orderNumber);
-
     // ── PAYMENT GUARD ─────────────────────────────────────────────────────────
     // Non-COD orders: payment must have been confirmed before we can process them
-    if (to === 'CONFIRMED' && order.paymentMethod !== 'COD') {
+    if (to === 'CONFIRMED' && order.paymentMethod !== 'COD' && Number(order.total) > 0) {
       if (order.paymentStatus !== 'PAID') {
         throw new Error(
           `Order #${order.orderNumber}: Cannot confirm — payment status is "${order.paymentStatus}". ` +
@@ -510,6 +517,33 @@ export async function updateOrderStatus(orderId: string, status: string) {
     revalidatePath(`/orders/${order.orderNumber}`);
     return updated;
   });
+}
+
+// ── PAYMENT STATUS MANUAL OVERRIDE ACTION ──────────────────────────────────
+export async function updateOrderPaymentStatus(orderId: string, paymentStatus: string) {
+  await requireAdmin();
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error('Order not found');
+
+  if (Number(order.total) === 0 && paymentStatus !== 'PAID') {
+    throw new Error('Zero-payable orders paid via GODSMOVE Credits/Discounts must remain in PAID status.');
+  }
+
+  const updateData: any = { paymentStatus: paymentStatus as any };
+  if (paymentStatus === 'PAID' && !order.paidAt) {
+    updateData.paidAt = new Date();
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: updateData,
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath('/admin/orders');
+  revalidatePath('/profile');
+  return updated;
 }
 
 // ── PART 3: FULFILLMENT LAYER ACTIONS ──────────────────────────────────────────

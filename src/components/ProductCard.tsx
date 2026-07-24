@@ -1,13 +1,15 @@
 'use client';
 
-import { useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState, useEffect, type CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ArrowLeftRight } from 'lucide-react';
+import { Heart, ArrowLeftRight, Plus } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { AtmosphericLockedRevealLayers } from '@/components/exclusive/AtmosphericLockedRevealLayers';
 import { useAtmosphericRevealPointer } from '@/components/exclusive/useAtmosphericRevealPointer';
+import { resolveProductImages } from '@/lib/image-resolver';
 import QuickViewModal from './QuickViewModal';
+import MobileQuickAddSheet from './MobileQuickAddSheet';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
@@ -27,24 +29,32 @@ export default function ProductCard({
   showCta = false,
   isDominant = false,
 }: ProductCardProps) {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { toggleWishlist, isInWishlist, addToCart, toggleCompare, isInCompare } = useStore();
-  const wishlisted = isInWishlist(product.id);
-  const inCompare = isInCompare(product.id);
+  const wishlisted = mounted ? isInWishlist(product.id) : false;
+  const inCompare = mounted ? isInCompare(product.id) : false;
   const [isFlipped, setIsFlipped] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [mobileQuickAddOpen, setMobileQuickAddOpen] = useState(false);
+  const [addingSize, setAddingSize] = useState<string | null>(null);
   const isDark = theme === 'dark';
   const revealHostRef = useRef<HTMLDivElement>(null);
 
   const isExclusiveUnlockListing = product.channel === 'EXCLUSIVE_UNLOCK';
 
-  const { enableImageToggle, frontImageUrl, backImageUrl, defaultImageSide } = product;
+  const { enableImageToggle, defaultImageSide } = product;
+  const { frontImage, backImage } = resolveProductImages(product);
 
-  let currentImageUrl = product.images?.[0]?.url || product.frontImageUrl || '/placeholder.png';
-  if (enableImageToggle && frontImageUrl && backImageUrl) {
-    const defaultIsFront = defaultImageSide === 'front';
-    const showFront = defaultIsFront ? !isFlipped : isFlipped;
-    currentImageUrl = showFront ? frontImageUrl : backImageUrl;
-  }
+  const defaultIsFront = defaultImageSide === 'front';
+  const showFront = defaultIsFront ? !isFlipped : isFlipped;
+  const currentImageUrl = enableImageToggle && frontImage !== '/images/placeholder.svg' && backImage !== '/images/placeholder.svg'
+    ? (showFront ? frontImage : backImage)
+    : frontImage;
 
   const baseVariant = product.variants?.[0];
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
@@ -82,9 +92,14 @@ export default function ProductCard({
   }).filter(Boolean) as { size: string; available: boolean }[];
 
   const handleQuickAdd = (size: string) => {
-    // addToCart already calls setCartOpen(true) — the drawer opening IS the confirmation.
-    // No toast needed; the reserved message is shown in the drawer.
-    addToCart(product, size, 1);
+    if (addingSize) return;
+    setAddingSize(size);
+    setTimeout(() => {
+      // addToCart already calls setCartOpen(true) — the drawer opening IS the confirmation.
+      // No toast needed; the reserved message is shown in the drawer.
+      addToCart(product, size, 1);
+      setAddingSize(null);
+    }, 600); // 600ms elegant loading check
   };
 
   return (
@@ -131,7 +146,7 @@ export default function ProductCard({
               priority={index < 4}
             />
           )}
-          {enableImageToggle && frontImageUrl && backImageUrl && (
+          {enableImageToggle && frontImage && backImage && (
             <button
               className={styles.imageToggleBtn}
               onClick={(e) => {
@@ -149,21 +164,23 @@ export default function ProductCard({
                   : 'Tap to See Front'}
             </button>
           )}
-          {isNew && <span className={styles.tag}>New</span>}
         </Link>
 
-        {product.isExclusiveRack ? (
-          <span className={`${styles.featuredBadge} ${styles.exclusiveBadge}`}>
-            {product.featuredBadge || 'Vault Edition'}
-          </span>
-        ) : product.featuredBadge ? (
-          <span className={`${styles.featuredBadge} ${product.isExclusiveRack && product.drop ? styles.vaultDropBadge : ''}`}>
-            {product.featuredBadge}
-          </span>
-        ) : product.isExclusiveRack && product.drop ? (
-          // Product belongs to BOTH Exclusive Rack and Drops — show distinct vault marker
-          <span className={styles.vaultDropBadge}>Vault</span>
-        ) : null}
+        {/* Horizontal Non-Overlapping Tag & Badge System */}
+        <div className={styles.tagContainer}>
+          {isNew && <span className={styles.tag}>New</span>}
+          {product.isExclusiveRack ? (
+            <span className={`${styles.featuredBadge} ${styles.exclusiveBadge}`}>
+              {product.featuredBadge || 'Vault Edition'}
+            </span>
+          ) : product.featuredBadge ? (
+            <span className={`${styles.featuredBadge} ${product.isExclusiveRack && product.drop ? styles.vaultDropBadge : ''}`}>
+              {product.featuredBadge}
+            </span>
+          ) : product.isExclusiveRack && product.drop ? (
+            <span className={styles.vaultDropBadge}>Vault</span>
+          ) : null}
+        </div>
 
         {/* Elegant Square Action Buttons (Top-Right overlay) */}
         <div className={styles.cardActions}>
@@ -191,25 +208,48 @@ export default function ProductCard({
           </button>
         </div>
 
-        {/* Quick Add Slide-up Panel (Bottom of image overlay) */}
+        {/* Mobile Quick Add Trigger Badge (+ Button) */}
+        {cardSizes.length > 0 && (
+          <button
+            type="button"
+            className={styles.mobileQuickAddTrigger}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMobileQuickAddOpen(true);
+            }}
+            aria-label={`Quick add ${product.name}`}
+          >
+            <Plus size={16} strokeWidth={2.2} />
+          </button>
+        )}
+
+        {/* Quick Add Slide-up Panel (Desktop hover) */}
         {cardSizes.length > 0 && (
           <div className={styles.quickAddPanel}>
             <span className={styles.quickAddTitle}>Quick Add</span>
             <div className={styles.quickAddSizes}>
-              {cardSizes.map(item => (
-                <button
-                  key={item.size}
-                  disabled={!item.available}
-                  className={`${styles.sizeBtn} ${!item.available ? styles.sizeDisabled : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleQuickAdd(item.size);
-                  }}
-                >
-                  {item.size}
-                </button>
-              ))}
+              {cardSizes.map(item => {
+                const isAddingThis = addingSize === item.size;
+                return (
+                  <button
+                    key={item.size}
+                    disabled={!item.available || addingSize !== null}
+                    className={`${styles.sizeBtn} ${!item.available ? styles.sizeDisabled : ''} ${isAddingThis ? styles.sizeAdding : ''}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleQuickAdd(item.size);
+                    }}
+                  >
+                    {isAddingThis ? (
+                      <span className={styles.loadingSpinner} />
+                    ) : (
+                      item.size
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -223,7 +263,7 @@ export default function ProductCard({
           {product.name}
         </Link>
 
-        {isDark && hasDiscount && discountPercent > 0 && (
+        {hasDiscount && discountPercent > 0 && (
           <span className={styles.discountBadge}>{discountPercent}% OFF</span>
         )}
 
@@ -269,6 +309,16 @@ export default function ProductCard({
         product={product}
         isOpen={quickViewOpen}
         onClose={() => setQuickViewOpen(false)}
+      />
+
+      {/* Render Mobile Quick Add Sheet */}
+      <MobileQuickAddSheet
+        isOpen={mobileQuickAddOpen}
+        onClose={() => setMobileQuickAddOpen(false)}
+        productName={product.name}
+        sizes={cardSizes}
+        addingSize={addingSize}
+        onAddSize={(size) => handleQuickAdd(size)}
       />
     </div>
   );

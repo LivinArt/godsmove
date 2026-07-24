@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { X, ArrowLeftRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { resolveProductImages } from '@/lib/image-resolver';
 import styles from './CompareBar.module.css';
 
 export default function CompareBar() {
@@ -30,12 +31,12 @@ export default function CompareBar() {
             {compare.map((product) => {
               const baseVariant = product.variants?.[0];
               const price = baseVariant?.price ? Number(baseVariant.price) : 0;
-              const imgUrl = product.images?.[0]?.url || product.frontImageUrl || '/placeholder.png';
+              const { frontImage } = resolveProductImages(product);
 
               return (
                 <div key={product.id} className={styles.itemCard}>
                   <div className={styles.thumbWrap}>
-                    <img src={imgUrl} alt={product.name} className={styles.thumb} />
+                    <img src={frontImage} alt={product.name} className={styles.thumb} />
                     <button
                       type="button"
                       className={styles.removeBtn}
@@ -85,12 +86,12 @@ export default function CompareBar() {
                   <tr>
                     <th>Attributes</th>
                     {compare.map((product) => {
-                      const imgUrl = product.images?.[0]?.url || product.frontImageUrl || '/placeholder.png';
+                      const { frontImage } = resolveProductImages(product);
                       return (
                         <th key={product.id} className={styles.productTh}>
                           <div className={styles.thContent}>
                             <div className={styles.modalImageWrap}>
-                              <img src={imgUrl} alt={product.name} className={styles.modalImage} />
+                              <img src={frontImage} alt={product.name} className={styles.modalImage} />
                             </div>
                             <Link href={`/product/${product.slug}`} className={styles.modalProductName} onClick={() => setIsOpen(false)}>
                               {product.name}

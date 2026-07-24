@@ -1,207 +1,466 @@
-.main {
-  background-color: var(--bg-primary);
+/* ==========================================================================
+   GODSMOVE — OUR STORY (COFFEE-TABLE FASHION BOOK DESIGN SYSTEM)
+   ========================================================================== */
+
+.coffeeTableBookPage {
+  background-color: #0a0a0a !important;
+  color: #f5f1e8 !important;
   min-height: 100vh;
 }
 
-/* ── HERO ── */
-.hero {
+/* ── COVER SPREAD HERO ── */
+.coverHero {
   position: relative;
-  height: 80vh;
-  min-height: 500px;
+  height: 90vh;
+  min-height: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background-color: #0a0a0a;
 }
 
-.heroImageWrap {
+.coverImageWrap {
   position: absolute;
   inset: 0;
 }
 
-.heroImage {
+.coverImage {
   object-fit: cover;
   width: 100%;
   height: 100%;
+  filter: brightness(0.85);
 }
 
-.heroOverlay {
+.coverGradientOverlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(10, 10, 10, 0.6);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0.4) 0%,
+    rgba(10, 10, 10, 0.75) 70%,
+    rgba(10, 10, 10, 1) 100%
+  );
 }
 
-.heroContent {
+.coverHeroContent {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 0 var(--container-padding);
-  max-width: 800px;
+  padding: 0 var(--container-padding, 24px);
+  max-width: 900px;
+  margin-top: 40px;
 }
 
-.heroTitle {
+.volumeBadge {
+  display: inline-block;
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: clamp(48px, 10vw, 120px);
-  line-height: 0.9;
-  letter-spacing: -0.03em;
-  color: var(--cream);
-  margin-bottom: var(--space-md);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 20px;
 }
 
-.heroSubtitle {
-  font-family: var(--font-body);
-  font-size: clamp(16px, 2vw, 20px);
-  color: var(--fog);
+.coverTitle {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: clamp(48px, 9vw, 110px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: #f5f1e8 !important;
+  margin: 0 0 24px;
+}
+
+.coverSubtitle {
+  font-family: var(--font-heading);
+  font-size: clamp(16px, 2.2vw, 22px);
+  font-style: italic;
+  color: #c8a46a !important;
   letter-spacing: 0.02em;
+  margin: 0 0 36px;
 }
 
-/* ── SECTIONS ── */
-.section {
-  padding: var(--space-4xl) 0;
+.goldLineDivider {
+  width: 60px;
+  height: 1px;
+  background: #c8a46a;
+  margin: 0 auto;
+  opacity: 0.6;
 }
 
-.sectionDark {
-  background-color: var(--black);
-  color: var(--cream);
+/* ── CHAPTER SECTIONS & SPREADS ── */
+.chapterSection {
+  padding: 120px 0;
+  background-color: #0a0a0a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* ── GRID LAYOUT ── */
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2xl);
+.chapterContainer {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 var(--container-padding, 24px);
+}
+
+.editorialSpreadRow {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
   align-items: center;
 }
 
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-4xl);
+@media (min-width: 992px) {
+  .editorialSpreadRow {
+    flex-direction: row;
+    gap: 90px;
+  }
+
+  .rowReverse {
+    flex-direction: row-reverse;
   }
 }
 
-.gridReverse {
-  /* For reversing layout on desktop if needed */
-}
-
-@media (min-width: 768px) {
-  .gridReverse .textBlock {
-    order: 2;
-  }
-  .gridReverse .imageBlock {
-    order: 1;
-  }
-}
-
-.textBlock {
+.editorialTextCol {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 24px;
 }
 
-.bodyText {
-  font-size: 16px;
-  line-height: 1.7;
-  color: var(--text-secondary);
-  max-width: 500px;
+.chapterHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.imageBlock {
+.chapterTag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a !important;
+}
+
+.editorialHeading {
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 4.5vw, 56px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: #f5f1e8 !important;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.leadParagraph {
+  font-size: clamp(16px, 1.8vw, 20px);
+  line-height: 1.6;
+  color: #f5f1e8 !important;
+  margin: 0;
+  font-weight: 400;
+}
+
+.editorialBodyText {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #d4d0c8 !important;
+  margin: 0;
+}
+
+.quoteCardInline {
+  margin-top: 16px;
+  padding: 20px 24px;
+  border-left: 2px solid #c8a46a;
+  background: rgba(200, 164, 106, 0.08);
+}
+
+.quoteTextInline {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 15px;
+  color: #c8a46a !important;
+  margin: 0;
+}
+
+/* Editorial Media Col */
+.editorialMediaCol {
+  flex: 1;
   width: 100%;
 }
 
-.gridImg {
+.editorialPhotoFrame {
+  position: relative;
+  width: 100%;
+  background: #121212;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.magazinePhoto {
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
+  display: block;
 }
 
-.gridImgSq {
+.magazinePhotoSquare {
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  display: block;
 }
 
-/* ── CENTERED QUOTE BLOCK ── */
-.centeredBlock {
+.photoCaptionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(18, 18, 18, 0.95);
+  font-size: 10px;
+  font-family: var(--font-heading);
+  letter-spacing: 0.15em;
+  color: #c8a46a !important;
+  border-top: 1px solid rgba(200, 164, 106, 0.2);
+}
+
+/* Spec Triple Grid */
+.specTripleGrid {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.miniSpecBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.specNum {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 300;
+  color: #c8a46a !important;
+}
+
+.specName {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: #b8b2a6 !important;
+}
+
+.specTripleGridDivider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── PHILOSOPHY DARK BANNER ── */
+.philosophyDarkBanner {
+  padding: 140px 0;
+  background-color: #050505;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.bannerContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 var(--container-padding, 24px);
+}
+
+.philosophyCenterContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.philosophyTag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.philosophyMainTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 5.5vw, 68px);
+  font-weight: 300;
+  font-style: italic;
+  color: #f5f1e8;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.philosophyDesc {
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--text-secondary, #aaa);
+  margin: 0;
+  max-width: 680px;
+}
+
+/* ── MANIFESTO DARK SECTION ── */
+.manifestoDarkSection {
+  padding: 120px 0;
+  background-color: #0b0b0b;
+}
+
+.manifestoCard {
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-lg);
+  gap: 24px;
 }
 
-.quoteTitle {
+.manifestoEyebrow {
   font-family: var(--font-heading);
-  font-weight: 300;
-  font-size: clamp(32px, 5vw, 64px);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  color: var(--cream);
-  font-style: italic;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #c8a46a;
 }
 
-.centeredText {
+.manifestoHeading {
+  font-family: var(--font-heading);
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: #f5f1e8;
+  margin: 0;
+}
+
+.manifestoParagraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   font-size: 18px;
   line-height: 1.7;
-  color: var(--fog);
-  max-width: 600px;
+  color: var(--text-secondary, #bbb);
+  max-width: 640px;
 }
 
-/* ── MANIFESTO ── */
-.manifestoSection {
-  background-color: var(--bg-secondary);
-  text-align: center;
-  padding: var(--space-5xl) 0;
-}
-
-.manifesto {
-  max-width: 800px;
-  margin: 0 auto;
+.manifestoSignatureBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xl);
-}
-
-.manifestoContent {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
   align-items: center;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.manifestoText {
-  font-size: 20px;
-  line-height: 1.6;
-  color: var(--text-primary);
-  max-width: 600px;
+.goldLineShort {
+  width: 40px;
+  height: 1px;
+  background: #c8a46a;
 }
 
-.manifestoSignature {
-  margin-top: var(--space-xl);
+.manifestoSignatureText {
   font-family: var(--font-heading);
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.2em;
-  font-size: 14px;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin: 0;
 }
 
-@media (max-width: 767px) {
-  .hero {
-    height: 70vh;
-    min-height: 400px;
-  }
+/* ── EXPLORE ALL DROPS (1 x 6 PRODUCT GRID) ── */
+.exploreDropsSection {
+  padding: 120px 0 140px;
+  background: #000000;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-  .heroTitle {
-    font-size: clamp(36px, 10vw, 56px);
-  }
+.exploreHeader {
+  text-align: center;
+  margin-bottom: 60px;
+}
 
-  .manifestoText {
-    font-size: 17px;
+.exploreEyebrow {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.exploreTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f5f1e8;
+  margin: 0 0 16px;
+}
+
+.exploreSubtitle {
+  font-size: 14px;
+  color: var(--text-muted, #888);
+  margin: 0;
+}
+
+/* 1 x 6 Product Grid */
+.exploreGrid6 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .exploreGrid6 {
+    grid-template-columns: repeat(3, 1fr);
   }
+}
+
+@media (min-width: 1200px) {
+  .exploreGrid6 {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+}
+
+.exploreCtaRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 56px;
+}
+
+.exploreAllBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 16px 40px;
+  background: transparent;
+  border: 1px solid #c8a46a;
+  color: #c8a46a;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exploreAllBtn:hover {
+  background: #c8a46a;
+  color: #0a0a0a;
 }

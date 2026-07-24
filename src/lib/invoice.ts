@@ -18,6 +18,7 @@ export interface InvoiceData {
     phone: string;
   };
   items: {
+    productCode?: string;
     productName: string;
     size: string;
     quantity: number;
@@ -54,7 +55,10 @@ export const InvoiceService = {
       .map(
         (i) => `
       <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 12px 0; text-align: left;">${i.productName}</td>
+        <td style="padding: 12px 0; text-align: left;">
+          <strong>${i.productName}</strong><br/>
+          <span style="font-size: 10px; color: #555; font-family: monospace;">Serial: ${i.productCode || 'GM-ART-SERIAL'}</span>
+        </td>
         <td style="text-align: center; padding: 12px 0;">${i.size}</td>
         <td style="text-align: center; padding: 12px 0;">${i.quantity}</td>
         <td style="text-align: right; padding: 12px 0;">${formatINR(i.price)}</td>

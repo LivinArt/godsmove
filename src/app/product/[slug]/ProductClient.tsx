@@ -6,10 +6,6 @@ import { useRouter } from 'next/navigation';
 import { 
   Heart, 
   ShoppingBag, 
-  Compass, 
-  Layers, 
-  Scissors, 
-  Cpu, 
   ShieldCheck, 
   Package, 
   ArrowLeftRight, 
@@ -18,12 +14,14 @@ import {
   CheckCircle2,
   Lock,
   Minus,
-  Plus
+  Plus,
+  User
 } from 'lucide-react';
 import SizeSelector from '@/components/SizeSelector';
 import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
+import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
 import { useStore } from '@/store/useStore';
 import styles from './page.module.css';
 
@@ -43,6 +41,8 @@ export default function ProductClient({
   const [sizeError, setSizeError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
 
   useEffect(() => {
     try {
@@ -60,11 +60,47 @@ export default function ProductClient({
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
-  const selectedVariantData = product.variants?.find((v: any) => v.size === selectedSize);
-  const baseVariant = product.variants?.[0];
+  // ── COLOR VARIANTS PIPELINE ──
+  const rawColors = (product.variants || [])
+    .map((v: any) => ({ name: v.color?.trim() || '', hex: v.colorHex?.trim() || '' }))
+    .filter((c: any) => c.name !== '');
+
+  const uniqueColorsMap = new Map<string, string>();
+  for (const c of rawColors) {
+    if (!uniqueColorsMap.has(c.name)) {
+      uniqueColorsMap.set(c.name, c.hex);
+    }
+  }
+  const availableColors = Array.from(uniqueColorsMap.entries()).map(([name, hex]) => ({ name, hex }));
+
+  const [selectedColor, setSelectedColor] = useState<string | null>(
+    availableColors.length > 0 ? availableColors[0].name : null
+  );
+
+  const selectedVariantData = product.variants?.find((v: any) => {
+    const matchSize = selectedSize ? v.size === selectedSize : true;
+    const matchColor = selectedColor ? (v.color?.trim() === selectedColor) : true;
+    return matchSize && matchColor;
+  }) || product.variants?.find((v: any) => v.size === selectedSize) || product.variants?.[0];
+
+  const baseVariant = selectedVariantData || product.variants?.[0];
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
   const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
-  const colorName = baseVariant?.color || 'Standard';
+  const colorName = selectedColor || baseVariant?.color || 'Standard';
+  const activeSku = baseVariant?.sku || '';
+
+  // Filter sizes available for current selected color
+  const filteredSizes = availableSizes.map(s => {
+    const matchingVariant = product.variants?.find((v: any) => 
+      v.size === s.label && (selectedColor ? v.color?.trim() === selectedColor : true)
+    );
+    const inv = matchingVariant?.inventory;
+    const inStock = inv ? (inv.totalStock - inv.reservedStock - inv.soldStock) > 0 : s.available;
+    return {
+      label: s.label,
+      available: inStock && Boolean(matchingVariant)
+    };
+  });
 
   const hasDiscount = comparePrice != null && comparePrice > price && price > 0;
   const discountPercent = hasDiscount ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
@@ -75,16 +111,25 @@ export default function ProductClient({
 
   const handleAddToCart = () => {
     if (!selectedSize) {
+      if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+        setMobileSheetAction('add');
+        setMobileSheetOpen(true);
+        return;
+      }
       setSizeError(true);
       return;
     }
     setSizeError(false);
     addToCart(product, selectedSize, quantity);
-    // Note: The global store handleAddToCart will handle loading and sliding in the cart drawer. No toast confirmation will be shown as the drawer confirms the add.
   };
 
   const handleBuyNow = () => {
     if (!selectedSize) {
+      if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+        setMobileSheetAction('buy');
+        setMobileSheetOpen(true);
+        return;
+      }
       setSizeError(true);
       return;
     }
@@ -110,6 +155,19 @@ export default function ProductClient({
     return fallback;
   };
 
+  // Filter gallery images for selected color
+  const colorFilteredImages = selectedColor
+    ? product.images?.filter((img: any) => img.alt && img.alt.toLowerCase().includes(selectedColor.toLowerCase()))
+    : [];
+
+  const activeGalleryUrls = (colorFilteredImages && colorFilteredImages.length > 0)
+    ? colorFilteredImages.map((i: any) => i.url)
+    : (product.images?.map((i: any) => i.url) || ['/images/placeholder.svg']);
+
+  const activeCoverImage = (colorFilteredImages && colorFilteredImages.length > 0)
+    ? colorFilteredImages[0].url
+    : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
+
   return (
     <div className={styles.pdpContainer}>
       
@@ -120,10 +178,10 @@ export default function ProductClient({
         {/* Left (60%): Large Product Gallery */}
         <div className={styles.galleryCol}>
           <ImageGallery
-            images={product.images?.map((i: any) => i.url) || ['/placeholder.png']}
+            images={activeGalleryUrls}
             alt={product.name}
             enableToggle={product.enableImageToggle}
-            frontImage={product.frontImageUrl}
+            frontImage={activeCoverImage}
             backImage={product.backImageUrl}
             defaultSide={product.defaultImageSide}
           />
@@ -140,6 +198,11 @@ export default function ProductClient({
 
             {/* Product Name */}
             <h1 className={styles.heroName}>{product.name}</h1>
+
+            {/* Editorial personalization banner */}
+            <div style={{ color: '#c8a46a', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 500 }}>
+              Selected for your archive.
+            </div>
 
             {/* Badges Stack */}
             <div className={styles.heroBadges}>
@@ -179,16 +242,79 @@ export default function ProductClient({
               </span>
             </div>
 
+            {/* SKU Badge */}
+            {activeSku && (
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: '0.05em', marginBottom: '16px' }}>
+                SKU: {activeSku}
+              </div>
+            )}
+
             {/* Short Description */}
             <p className={styles.heroShortDesc}>
               {product.shortDesc || 'Timeless silhouette engineered to preserve structure and hold confidence.'}
             </p>
 
+            {/* Color Variant Selector */}
+            {availableColors.length > 0 && (
+              <div className={styles.heroSizesWrap} style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span className={styles.sectionLabel}>Color</span>
+                  <span style={{ fontSize: '11px', color: '#c8a46a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {selectedColor}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {availableColors.map((c) => {
+                    const isSelected = selectedColor === c.name;
+                    return (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedColor(c.name);
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          border: isSelected ? '1.5px solid #c8a46a' : '1px solid var(--border-medium)',
+                          background: isSelected ? 'rgba(200, 164, 106, 0.08)' : 'transparent',
+                          color: isSelected ? '#c8a46a' : 'var(--text-secondary)',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease',
+                          fontFamily: 'var(--font-heading)',
+                        }}
+                      >
+                        {c.hex && (
+                          <span
+                            style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              backgroundColor: c.hex,
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              display: 'inline-block',
+                            }}
+                          />
+                        )}
+                        <span>{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Size Selector */}
             <div className={styles.heroSizesWrap}>
               <span className={styles.sectionLabel}>Select Size</span>
               <SizeSelector
-                sizes={availableSizes}
+                sizes={filteredSizes}
                 selected={selectedSize}
                 onSelect={(size) => {
                   setSelectedSize(size);
@@ -208,6 +334,27 @@ export default function ProductClient({
                 onChange={setQuantity}
                 max={availableStock}
               />
+
+              {/* Requirement 8: Mobile PDP Minimal Action Links: Compare • Share */}
+              <div className={styles.mobilePDPActionRow}>
+                <button
+                  type="button"
+                  className={`${styles.mobilePDPActionBtn} ${inCompare ? styles.inCompare : ''}`}
+                  onClick={() => toggleCompare(product)}
+                >
+                  <ArrowLeftRight size={13} />
+                  <span>{inCompare ? 'In Comparison' : 'Compare'}</span>
+                </button>
+                <span className={styles.mobilePDPActionDivider}>•</span>
+                <button
+                  type="button"
+                  className={styles.mobilePDPActionBtn}
+                  onClick={handleShare}
+                >
+                  <Share2 size={13} />
+                  <span>{copiedShare ? 'Copied' : 'Share'}</span>
+                </button>
+              </div>
             </div>
 
             {/* CTA Stack */}
@@ -261,414 +408,128 @@ export default function ProductClient({
               </div>
             </div>
 
-            {/* GM Passport Preview */}
-            <div className={styles.passportPreviewBlock}>
-              <span className={styles.passportPreviewLabel}>AUTHENTICITY ASSURED</span>
-              <p className={styles.passportPreviewId}>Registered Passport: <strong>GMP-{product.id.substring(0, 8).toUpperCase()}</strong></p>
-            </div>
-
           </div>
         </div>
       </div>
 
       {/* ==================================================
-          SECTION 2: WHY WE MADE THIS
+          SECTION: CRAFTSMANSHIP (EDITORIAL SPECIFICATION)
           ================================================== */}
-      {product.whyWeMadeThis && (
-        <section className={styles.storySection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionEyebrow}>Narrative</span>
-            <h2 className={styles.sectionHeadline}>Why We Made This</h2>
-          </div>
-          <p className={styles.storyBodyText}>
-            {product.whyWeMadeThis}
-          </p>
-        </section>
-      )}
-
-      {/* ==================================================
-          SECTION 3: BACKSTORY NARRATIVE
-          ================================================== */}
-      {product.description && (
-        <section className={styles.storySection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionEyebrow}>Backstory</span>
-            <h2 className={styles.sectionHeadline}>Backstory Narrative</h2>
-          </div>
-          <p className={styles.storyBodyText}>
-            {product.description}
-          </p>
-        </section>
-      )}
-
-      {/* ==================================================
-          SECTION 4: CRAFTSMANSHIP
-          ================================================== */}
-      {(product.fabricWhy || product.constructionWhy || product.printWhy) && (
-        <section className={styles.craftSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionEyebrow}>Sourcing</span>
-            <h2 className={styles.sectionHeadline}>Craftsmanship</h2>
-          </div>
-          <div className={styles.craftGrid}>
-            {product.fabricWhy && (
-              <div className={styles.craftCard}>
-                <h3 className={styles.craftCardTitle}>{product.fabricName || 'Textiles Sourcing'}</h3>
-                <p className={styles.craftCardText}>{product.fabricWhy}</p>
-              </div>
+      <section className={styles.editorialMagazineSection}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 var(--space-xl)' }}>
+          {/* Section header */}
+          <div style={{ textAlign: 'center', marginBottom: 'var(--space-3xl)' }}>
+            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(200, 164, 106, 0.7)', display: 'block', marginBottom: '20px' }}>
+              ARCHIVE CAMPAIGN
+            </span>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 200, letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: '0 0 20px' }}>
+              {product.editorialHeading || 'CRAFTSMANSHIP'}
+            </h2>
+            {product.editorialNotes && (
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontStyle: 'italic', color: 'var(--text-secondary)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.8, letterSpacing: '0.02em' }}>
+                &ldquo;{product.editorialNotes}&rdquo;
+              </p>
             )}
-            {product.constructionWhy && (
-              <div className={styles.craftCard}>
-                <h3 className={styles.craftCardTitle}>{product.constructionName || 'Tailored Construction'}</h3>
-                <p className={styles.craftCardText}>{product.constructionWhy}</p>
-              </div>
-            )}
-            {product.printWhy && (
-              <div className={styles.craftCard}>
-                <h3 className={styles.craftCardTitle}>{product.printName || 'Artwork / Details'}</h3>
-                <p className={styles.craftCardText}>{product.printWhy}</p>
-              </div>
-            )}
+            <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '28px auto 0', opacity: 0.6 }} />
           </div>
-        </section>
-      )}
 
-      {/* ==================================================
-          SECTION 5: FABRIC & MATERIAL
-          ================================================== */}
-      <section className={styles.fabricSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Textile Profile</span>
-          <h2 className={styles.sectionHeadline}>Fabric & Material</h2>
-        </div>
-        <div className={styles.twoColSpecs}>
-          <div className={styles.specColumn}>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Material Blend</span>
-              <span className={styles.specRowValue}>{product.material || '100% Long-staple Combed Cotton'}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Weight / GSM</span>
-              <span className={styles.specRowValue}>{getMetadataVal('gsm', '450 GSM Heavy French Terry')}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Texture Blend</span>
-              <span className={styles.specRowValue}>{getMetadataVal('texture', 'Diagonal Fleece Loopback')}</span>
-            </div>
-          </div>
-          <div className={styles.specColumn}>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Stretch Index</span>
-              <span className={styles.specRowValue}>{getMetadataVal('stretch', 'Low (Form-retaining rib trim)')}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Transparency</span>
-              <span className={styles.specRowValue}>{getMetadataVal('transparency', '100% Opaque')}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Sourcing Origin</span>
-              <span className={styles.specRowValue}>{product.origin || 'Studio Sourced'}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================
-          SECTION 6: SILHOUETTE & FIT
-          ================================================== */}
-      <section className={styles.fitSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Drape & Posture</span>
-          <h2 className={styles.sectionHeadline}>Silhouette & Fit</h2>
-        </div>
-        <div className={styles.twoColSpecs}>
-          <div className={styles.specColumn}>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Silhouette Style</span>
-              <span className={styles.specRowValue}>{product.fit || 'Engineered Relaxed Silhouette'}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Model Height</span>
-              <span className={styles.specRowValue}>{getMetadataVal('modelHeight', "Model is 189cm (6'2\")")}</span>
-            </div>
-          </div>
-          <div className={styles.specColumn}>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Model Wearing</span>
-              <span className={styles.specRowValue}>{getMetadataVal('modelWearing', 'Size Large (L)')}</span>
-            </div>
-            <div className={styles.specRowItem}>
-              <span className={styles.specRowLabel}>Fit Guidelines</span>
-              <span className={styles.specRowValue}>
-                {getMetadataVal('fitNotes', 'Designed with dropped shoulder lines and high collar retention to maintain structured posture.')}
+          {/* Spec blocks grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-xl)' }}>
+            <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
+                {product.fabricLabel || 'FABRIC'}
               </span>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
+                {product.fabricWhy || product.material || 'Engineered from 100% heavyweight organic cotton for structural permanence and soft skin contact.'}
+              </p>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
+                {product.fitLabel || 'FIT'}
+              </span>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
+                {product.fit || 'Archival relaxed silhouette proportioned for balance and uncompromised wearing comfort.'}
+              </p>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
+                {product.constructionLabel || 'CONSTRUCTION'}
+              </span>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
+                {product.constructionWhy || 'Reinforced double-needle seam engineering constructed for high density and longevity.'}
+              </p>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
+                {product.printLabel || 'FINISH'}
+              </span>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
+                {product.printWhy || 'Signature archival finish treated to age gracefully through years of ownership.'}
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ==================================================
-          SECTION 7: SPECIFICATIONS
-          ================================================== */}
-      <section className={styles.technicalSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Registry</span>
-          <h2 className={styles.sectionHeadline}>Specifications</h2>
-        </div>
-        <div className={styles.compactSpecsCard}>
-          <div className={styles.compactSpecsGrid}>
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>SKU Identification</span>
-              <span className={styles.compactSpecValue}>{selectedVariantData?.sku || baseVariant?.sku || 'GMP-SKU-099'}</span>
-            </div>
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>Category Space</span>
-              <span className={styles.compactSpecValue}>{product.category?.name || 'Unassigned Catalog'}</span>
-            </div>
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>Collection Group</span>
-              <span className={styles.compactSpecValue}>{product.collectionName || 'Archival Series'}</span>
-            </div>
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>Drop Release</span>
-              <span className={styles.compactSpecValue}>{product.drop?.name || 'Drop 001'}</span>
-            </div>
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>Color Hex Blend</span>
-              <span className={styles.compactSpecValue}>{colorName}</span>
-            </div>
-            {product.weight && (
-              <div className={styles.compactSpecItem}>
-                <span className={styles.compactSpecLabel}>Garment Weight</span>
-                <span className={styles.compactSpecValue}>{product.weight}g</span>
-              </div>
-            )}
-            <div className={styles.compactSpecItem}>
-              <span className={styles.compactSpecLabel}>Country of Origin</span>
-              <span className={styles.compactSpecValue}>{product.country || product.origin || 'India'}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================
-          SECTION 8: CARE INSTRUCTIONS
-          ================================================== */}
-      <section className={styles.careSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Maintenance</span>
-          <h2 className={styles.sectionHeadline}>Care Instructions</h2>
-        </div>
-        <div className={styles.careGrid}>
-          <div className={styles.careCard}>
-            <h4 className={styles.careCardTitle}>Laundry</h4>
-            <p className={styles.careCardDesc}>Machine wash cold inside out, delicate cycle.</p>
-          </div>
-          <div className={styles.careCard}>
-            <h4 className={styles.careCardTitle}>Ironing</h4>
-            <p className={styles.careCardDesc}>Iron low warmth if necessary. Avoid prints.</p>
-          </div>
-          <div className={styles.careCard}>
-            <h4 className={styles.careCardTitle}>Drying</h4>
-            <p className={styles.careCardDesc}>Dry flat. Do not tumble dry to preserve shape.</p>
-          </div>
-          <div className={styles.careCard}>
-            <h4 className={styles.careCardTitle}>Storage</h4>
-            <p className={styles.careCardDesc}>Store folded. Hanging heavy garments is not advised.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================
-          SECTION 9: PACKAGING (OPTIONAL)
-          ================================================== */}
-      {product.packaging && (
-        <section className={styles.packagingSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionEyebrow}>Curation</span>
-            <h2 className={styles.sectionHeadline}>Packaging</h2>
-          </div>
-          <div className={styles.packagingGrid}>
-            <div className={styles.packagingCard}>
-              <Package size={20} className={styles.packagingIcon} />
-              <h3 className={styles.packagingTitle}>Matte Linen Archival Box</h3>
-              <p className={styles.packagingDesc}>{product.packaging}</p>
-            </div>
-            <div className={styles.packagingCard}>
-              <Layers size={20} className={styles.packagingIcon} />
-              <h3 className={styles.packagingTitle}>Linen Dust Sleeve</h3>
-              <p className={styles.packagingDesc}>Includes a breathable raw linen storage wrap to maintain fiber freshness.</p>
-            </div>
-            <div className={styles.packagingCard}>
-              <ShieldCheck size={20} className={styles.packagingIcon} />
-              <h3 className={styles.packagingTitle}>Physical Passport Ledger</h3>
-              <p className={styles.packagingDesc}>Comes with a heavy cotton printed passport containing serial verification codes.</p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ==================================================
-          SECTION 10: OWNERSHIP INFORMATION
-          ================================================== */}
-      <section className={styles.ownershipSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Registry</span>
-          <h2 className={styles.sectionHeadline}>Ownership Information</h2>
-        </div>
-        <div className={styles.registryBox}>
-          <div className={styles.registryHeader}>
-            <span className={styles.registryTitle}>GODSMOVE CUSTODY REGISTRY</span>
-            <span className={styles.registryId}>GMP-REG-{product.id.substring(0,8).toUpperCase()}</span>
-          </div>
-          <div className={styles.registryGrid}>
-            <div className={styles.registryItem}>
-              <span className={styles.registryLabel}>Catalog Edition</span>
-              <span className={styles.registryValue}>{getMetadataVal('edition', 'Limited 1 of 150 Archive Units')}</span>
-            </div>
-            <div className={styles.registryItem}>
-              <span className={styles.registryLabel}>Production Batch</span>
-              <span className={styles.registryValue}>{getMetadataVal('batch', 'Batch A-09 (India Studio)')}</span>
-            </div>
-            <div className={styles.registryItem}>
-              <span className={styles.registryLabel}>Quality Audit Check</span>
-              <span className={styles.registryValue}>Grade A Certified (Visual and seam inspection complete)</span>
-            </div>
-            <div className={styles.registryItem}>
-              <span className={styles.registryLabel}>Warranty Stability</span>
-              <span className={styles.registryValue}>Shape and seam stability 180-wash guarantee</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================
-          SECTION 11: EDITORIAL NOTES (OPTIONAL)
-          ================================================== */}
-      {product.editorialNotes && (
-        <section className={styles.editorialNotesSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionEyebrow}>Footnotes</span>
-            <h2 className={styles.sectionHeadline}>Editorial Notes</h2>
-          </div>
-          <p className={styles.editorialNotesText}>
-            <em>"{product.editorialNotes}"</em>
-          </p>
-        </section>
-      )}
-
-      {/* ==================================================
-          SECTION 12: GARMENT LIFE CYCLE
-          ================================================== */}
-      <section className={styles.lifecycleSection}>
-        <div className={styles.lifecycleHeader}>
-          <span className={styles.sectionEyebrow}>GENESIS TIMELINE</span>
-          <h2 className={styles.sectionHeadline}>Garment Life Cycle</h2>
-          <p className={styles.lifecycleSub}>Tracing the six developmental milestones defining the creation of this piece.</p>
-        </div>
-        
-        <div className={styles.timelineWrapper}>
-          <div className={styles.timelineLine} />
-          <div className={styles.timelineHorizontalGrid}>
-            {(() => {
-              const defaultStages = [
-                { title: 'Concept Curation', desc: 'Narrative sketching and silhouette grading.', icon: 'Compass' },
-                { title: 'Material Sourcing', desc: 'Acquiring premium organic cotton fibers.', icon: 'Layers' },
-                { title: 'Pattern Sculpting', desc: 'Precision templates for drape structure.', icon: 'Scissors' },
-                { title: 'Technical Construction', desc: 'High-density stitchwork and custom seams.', icon: 'Cpu' },
-                { title: 'Quality Auditing', desc: 'Tensile test and dimensional validation.', icon: 'ShieldCheck' },
-                { title: 'Archival Packaging', desc: 'Sealed in custom matte storage sleeves.', icon: 'Package' },
-              ];
-
-              let lifecycleStages = defaultStages;
-              if (product.garmentLifeCycle) {
-                try {
-                  const parsed = JSON.parse(product.garmentLifeCycle);
-                  if (Array.isArray(parsed) && parsed.length > 0) {
-                    lifecycleStages = parsed;
-                  }
-                } catch (e) {}
-              }
-
-              const IconMap: { [key: string]: any } = {
-                Compass,
-                Layers,
-                Scissors,
-                Cpu,
-                ShieldCheck,
-                Package,
-              };
-
-              return lifecycleStages.slice(0, 6).map((stage, idx) => {
-                const IconComponent = IconMap[stage.icon] || Package;
-                return (
-                  <div key={idx} className={styles.timelineHorizontalItem}>
-                    <div className={styles.timelineIconDot}>
-                      <IconComponent size={14} />
-                    </div>
-                    <span className={styles.timelineStageNum}>Stage 0{idx + 1}</span>
-                    <h3 className={styles.timelineStageTitle}>{stage.title}</h3>
-                    <p className={styles.timelineStageDesc}>{stage.desc}</p>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================
-          SECTION 13: DIGITAL PASSPORT CARD
-          ================================================== */}
-      <section className={styles.passportSection}>
-        <div className={styles.passportHeader}>
-          <span className={styles.sectionEyebrow}>Digital Authenticity</span>
-          <h2 className={styles.sectionHeadline}>GODSMOVE Passport</h2>
-          <p className={styles.passportSub}>Every piece in our catalog is registered inside the GODSMOVE authenticity ledger.</p>
-        </div>
-        
-        <div className={styles.passportCard}>
-          <div className={styles.passportCardTop}>
-            <span className={styles.passportTitle}>GODSMOVE PASSPORT</span>
-            <span className={styles.passportId}>ID: GMP-{product.id.substring(0, 8).toUpperCase()}</span>
-          </div>
-          <div className={styles.passportSpecs}>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Product Catalog</span>
-              <span className={styles.passportValue}>{product.name}</span>
-            </div>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Collection Group</span>
-              <span className={styles.passportValue}>{product.collectionName || 'Archival Curation'}</span>
-            </div>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Drop Release</span>
-              <span className={styles.passportValue}>{product.drop?.name || 'Drop 001'}</span>
-            </div>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Origin Sourced</span>
-              <span className={styles.passportValue}>{product.origin || 'Studio Checked'}</span>
-            </div>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Custody Status</span>
-              <span className={styles.passportValue}>Untampered (Original Custody)</span>
-            </div>
-            <div className={styles.passportSpec}>
-              <span className={styles.passportLabel}>Ledger Seal</span>
-              <span className={styles.passportValue}>Grade A Verified</span>
-            </div>
-          </div>
-          <div className={styles.passportCardFooter}>
-            <span className={styles.passportSeal}>OFFICIAL ARCHIVE REGISTER</span>
-            <span className={styles.passportGrade}>LEDGER VALIDATED</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Renders dynamic products in symmetrical grid - handled in page.tsx */}
-      
       {/* Browsing history list */}
       {profile && <RecentlyViewed />}
+
+      {/* ==================================================
+          MOBILE FIXED BOTTOM PURCHASE BAR
+          Visible only on mobile (hidden desktop via CSS)
+          ================================================== */}
+      <div className={styles.mobileBottomBar}>
+        {/* Wishlist */}
+        <button
+          className={`${styles.mobileBarWishlist} ${wishlisted ? styles.wishlisted : ''}`}
+          onClick={() => toggleWishlist(product)}
+          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          id="mobile-pdp-wishlist"
+        >
+          <Heart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
+        </button>
+
+        {/* Buy Now */}
+        <button
+          className={styles.mobileBarBuyNow}
+          onClick={handleBuyNow}
+          id="mobile-pdp-buy-now"
+          disabled={availableStock === 0}
+        >
+          Buy Now
+        </button>
+
+        {/* Add to Bag */}
+        <button
+          className={styles.mobileBarAddToBag}
+          onClick={handleAddToCart}
+          id="mobile-pdp-add-to-bag"
+          disabled={availableStock === 0}
+        >
+          <ShoppingBag size={14} />
+          Add to Bag
+        </button>
+      </div>
+
+      {/* Requirement 9: Mobile Variant Selection Bottom Sheet */}
+      <MobileQuickAddSheet
+        isOpen={mobileSheetOpen}
+        onClose={() => setMobileSheetOpen(false)}
+        productName={product.name}
+        sizes={availableSizes.map(s => ({ size: s.label, available: s.available }))}
+        addingSize={null}
+        onAddSize={(size) => {
+          setSelectedSize(size);
+          setSizeError(false);
+          if (mobileSheetAction === 'buy') {
+            setInstantCheckout({ product, size, quantity });
+            router.push('/checkout');
+          } else {
+            addToCart(product, size, quantity);
+          }
+        }}
+      />
     </div>
   );
 }
+

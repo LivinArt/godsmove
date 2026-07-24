@@ -59,7 +59,8 @@ interface StoreState {
 
   // UI State
   isCartOpen: boolean;
-  setCartOpen: (open: boolean) => void;
+  cartOpenSource: 'quickAdd' | 'manual';
+  setCartOpen: (open: boolean, source?: 'quickAdd' | 'manual') => void;
   isMobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   isNewsletterOpen: boolean;
@@ -117,7 +118,7 @@ export const useStore = create<StoreState>()(
           set({ cart: [...cart, { product, size, quantity }] });
         }
 
-        set({ isCartOpen: true });
+        set({ isCartOpen: true, cartOpenSource: 'quickAdd' });
       },
 
       removeFromCart: (productId, size) => {
@@ -243,7 +244,8 @@ export const useStore = create<StoreState>()(
 
       // UI
       isCartOpen: false,
-      setCartOpen: (open) => set({ isCartOpen: open }),
+      cartOpenSource: 'manual',
+      setCartOpen: (open, source = 'manual') => set({ isCartOpen: open, cartOpenSource: source }),
       isMobileMenuOpen: false,
       setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
       isNewsletterOpen: false,

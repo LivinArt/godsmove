@@ -5,8 +5,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ProductCard from '@/components/ProductCard';
+import ScrollReveal from '@/components/ScrollReveal';
 import CinematicHero, { type CinematicHeroSlide } from '@/components/CinematicHero';
 import RecentlyViewed from '@/components/RecentlyViewed';
+import { resolveImageUrl } from '@/lib/image-resolver';
 import { 
   getHomeHeroSlides, 
   getStorefrontProducts, 
@@ -15,6 +17,11 @@ import {
 } from '@/actions/storefront.actions';
 import { getMyProfile } from '@/actions/profile.actions';
 import { getMyOrders } from '@/actions/order.actions';
+import { getMyWallet } from '@/actions/wallet.actions';
+import { getMyReturns } from '@/actions/return.actions';
+import { getCustomerCareRequests } from '@/actions/care.actions';
+import HomepageGreeting from '@/components/HomepageGreeting';
+import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -47,7 +54,7 @@ export default async function Home() {
   ] = await Promise.all([
     getStorefrontProducts({ take: 4 }),
     getStorefrontProducts({ featured: true, take: 4 }),
-    getStorefrontProducts({ channel: 'EXCLUSIVE_RACK', take: 3 }),
+    getStorefrontProducts({ isExclusiveRack: true, showOnHomepage: true, take: 3 }),
     getStorefrontCategories(),
     getActiveDrop(),
     getHomeHeroSlides(),
@@ -68,11 +75,54 @@ export default async function Home() {
   // 2. Retrieve User Credentials for Personalized Curation
   let profile: any = null;
   let orderedProductIds: string[] = [];
+  let walletBalance = 0;
+  let hasRecentlyDelivered = false;
+  let hasApprovedReturn = false;
+  let hasActiveCare = false;
+
   try {
     profile = await getMyProfile();
-    const orders = await getMyOrders();
-    if (orders && orders.length > 0) {
-      orderedProductIds = (orders as any[]).flatMap((o: any) => (o.items as any[]).map((i: any) => i.productId));
+    if (profile) {
+      const [orders, wallet, returnsList, cares] = await Promise.all([
+        getMyOrders(),
+        getMyWallet(),
+        getMyReturns(),
+        getCustomerCareRequests()
+      ]);
+
+      if (orders && orders.length > 0) {
+        orderedProductIds = (orders as any[]).flatMap((o: any) => (o.items as any[]).map((i: any) => i.productId));
+        const recentDelivery = (orders as any[]).find(o => 
+          ['DELIVERED', 'COMPLETED'].includes(o.status) &&
+          (Date.now() - new Date(o.updatedAt).getTime() < 7 * 24 * 60 * 60 * 1000)
+        );
+        if (recentDelivery) {
+          hasRecentlyDelivered = true;
+        }
+      }
+
+      if (wallet && Number(wallet.balance) > 0) {
+        walletBalance = Number(wallet.balance);
+      }
+
+      if (returnsList && returnsList.length > 0) {
+        const approved = (returnsList as any[]).find(r => 
+          ['APPROVED', 'WALLET_CREDITED', 'COMPLETED'].includes(r.status) &&
+          (Date.now() - new Date(r.updatedAt).getTime() < 3 * 24 * 60 * 60 * 1000)
+        );
+        if (approved) {
+          hasApprovedReturn = true;
+        }
+      }
+
+      if (cares && cares.length > 0) {
+        const activeCare = (cares as any[]).find(c => 
+          !['COMPLETED', 'REJECTED'].includes(c.status)
+        );
+        if (activeCare) {
+          hasActiveCare = true;
+        }
+      }
     }
   } catch (error) {
     // Guest session
@@ -89,17 +139,16 @@ export default async function Home() {
       <CartDrawer />
 
       <main className={styles.flagshipMain}>
-        {/* Subtle editorial greeting — only for logged-in users, above the hero */}
-        {profile && (
-          <div className={styles.greetingBar}>
-            <span className={styles.greetingText}>
-              Welcome back, {profile.firstName}.
-            </span>
-          </div>
-        )}
-
         {/* 1. Full Cinematic Campaign Hero */}
         <CinematicHero slides={heroSlides} />
+
+        <HomepageGreeting 
+          profile={profile}
+          walletBalance={walletBalance}
+          hasRecentlyDelivered={hasRecentlyDelivered}
+          hasApprovedReturn={hasApprovedReturn}
+          hasActiveCare={hasActiveCare}
+        />
 
         {/* 2. New Arrivals (Magazine Composition) */}
         {newArrivals.length > 0 && (
@@ -131,22 +180,27 @@ export default async function Home() {
                   <h2 className={styles.sectionTitle}>Shop by Category</h2>
                 </div>
               </ScrollReveal>
+
+              {/* Mobile: horizontal auto-scrolling carousel */}
+              <MobileCategoryCarousel categories={categories.map((cat: any) => ({ id: cat.id, name: cat.name, slug: cat.slug, imageUrl: cat.imageUrl }))} />
+
+              {/* Desktop: editorial grid (hidden on mobile via CSS) */}
               <div className={styles.categoryGrid}>
                 {categories.map((cat: any) => {
-                  let image = '/images/campaign/editorial-01.png';
+                  const fallbackImage = cat.slug === 'tees' ? '/images/products/tee-black.png' :
+                                       cat.slug === 'hoodies' ? '/images/products/tee-charcoal.png' :
+                                       cat.slug === 'accessories' ? '/images/products/tee-ivory.png' : '/images/campaign/editorial-01.png';
+                  const image = cat.imageUrl || fallbackImage;
                   let desc = 'Minimalist silhouettes designed for posture.';
                   if (cat.slug === 'tees') {
-                    image = '/images/products/tee-black.png';
                     desc = 'Heavyweight combed cotton essentials holding shape through wear.';
                   } else if (cat.slug === 'hoodies') {
-                    image = '/images/products/tee-charcoal.png';
                     desc = 'Tailored weights formulated for density, depth, and comfort.';
                   } else if (cat.slug === 'accessories') {
-                    image = '/images/products/tee-ivory.png';
                     desc = 'Deliberate design details completing the signature look.';
                   }
                   return (
-                    <Link href={`/drops?category=${cat.id}`} key={cat.id} className={styles.categoryCard}>
+                    <Link href={`/category/${cat.slug}`} key={cat.id} className={styles.categoryCard}>
                       <div className={styles.categoryImageWrap}>
                         <Image 
                           src={image} 
@@ -170,25 +224,28 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 4. Featured Drop (Cinematic Banner) */}
-        <section className={styles.section} id="featured-collection">
+        {/* 4. Featured Showcase (Exclusive Rack Card) */}
+        <section className={styles.section} id="featured-showcase">
           <div className="container">
             <ScrollReveal>
-              <div className={styles.featuredBox}>
+              <div className={styles.featuredBoxBlack}>
                 <div className={styles.featuredImage}>
                   <Image 
-                    src={currentDrop.heroImageUrl || '/images/campaign/editorial-01.png'} 
-                    alt={currentDrop.name} 
+                    src="/images/campaign/editorial-02.png" 
+                    alt="Exclusive Vault" 
                     fill 
                     style={{ objectFit: 'cover' }} 
+                    className={styles.featuredShowcaseImg}
                   />
                 </div>
-                <div className={styles.featuredText}>
-                  <span className="caption">Curation</span>
-                  <h2>{currentDrop.name}</h2>
-                  <p>{currentDrop.description || currentDrop.tagline || 'Curated releases mapped with strict limits.'}</p>
-                  <Link href="/drops" className="btn btn-secondary">
-                    View Collection
+                <div className={styles.featuredTextBlack}>
+                  <span className={styles.showcaseGoldEyebrow}>Private Collection</span>
+                  <h2 className={styles.showcaseTitle}>The Exclusive Rack</h2>
+                  <p className={styles.showcaseDesc}>
+                    Allocated reserve garments and limited editions curated for signature rank. Enter the private room to request allocation.
+                  </p>
+                  <Link href="/exclusive-rack" className={styles.showcaseGoldCta}>
+                    Explore Exclusive Rack
                   </Link>
                 </div>
               </div>
@@ -219,7 +276,7 @@ export default async function Home() {
                         <div className={styles.exclusiveImgPanel}>
                           <div className={styles.exclusiveImageContainer}>
                             <Image 
-                              src={p.images?.[0]?.url || '/placeholder.png'} 
+                              src={p.images?.[0]?.url || '/images/placeholder.svg'} 
                               alt={p.name} 
                               fill 
                               style={{ objectFit: 'cover' }} 

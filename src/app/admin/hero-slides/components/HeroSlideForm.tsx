@@ -120,6 +120,13 @@ export default function HeroSlideForm({ initialData }: Props) {
                         description="Full-bleed landscape — dominant frame."
                         value={image || null}
                         onChange={(url) => setImage(url ?? '')}
+                        guidance={{
+                          orientation: 'Cinematic Widescreen (16:9)',
+                          recommendedDimensions: '2560 × 1440 px',
+                          aspectRatio: '16:9',
+                          maxFileSize: '15 MB',
+                          acceptedFormats: 'JPG, WEBP, MP4',
+                        }}
                       />
                     </div>
                   </div>
@@ -130,6 +137,13 @@ export default function HeroSlideForm({ initialData }: Props) {
                         description="Vertical crop. Falls back to desktop if empty."
                         value={mobileImage}
                         onChange={setMobileImage}
+                        guidance={{
+                          orientation: 'Mobile Portrait (9:16)',
+                          recommendedDimensions: '1080 × 1920 px',
+                          aspectRatio: '9:16',
+                          maxFileSize: '10 MB',
+                          acceptedFormats: 'JPG, WEBP, MP4',
+                        }}
                       />
                     </div>
                   </div>

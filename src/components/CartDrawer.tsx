@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Minus, Plus, X, ArrowRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { resolveProductImages } from '@/lib/image-resolver';
 import styles from './CartDrawer.module.css';
 
 const RESERVATION_MESSAGES = [
@@ -15,7 +16,7 @@ const RESERVATION_MESSAGES = [
 ];
 
 export default function CartDrawer() {
-  const { cart, isCartOpen, setCartOpen, updateQuantity, removeFromCart, getCartTotal, setInstantCheckout } = useStore();
+  const { cart, isCartOpen, cartOpenSource, setCartOpen, updateQuantity, removeFromCart, getCartTotal, setInstantCheckout } = useStore();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [reservationMsg, setReservationMsg] = useState('');
   const [showReservation, setShowReservation] = useState(false);
@@ -41,9 +42,9 @@ export default function CartDrawer() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [setCartOpen]);
 
-  // Show reservation message + auto-close after 2.2 seconds when drawer opens
+  // Show reservation message + auto-close ONLY when opened via Quick Add
   useEffect(() => {
-    if (isCartOpen && cart.length > 0) {
+    if (isCartOpen && cart.length > 0 && cartOpenSource === 'quickAdd') {
       const msg = RESERVATION_MESSAGES[Math.floor(Math.random() * RESERVATION_MESSAGES.length)];
       setReservationMsg(msg);
       setShowReservation(true);
@@ -132,11 +133,13 @@ export default function CartDrawer() {
                 const price = variant?.price ? Number(variant.price) : 0;
                 const color = variant?.color || 'Standard';
 
+                const { frontImage } = resolveProductImages(item.product);
+
                 return (
                   <div key={`${item.product.id}-${item.size}`} className={styles.item}>
                     <div className={styles.itemImage}>
                       <Image
-                        src={item.product.images?.[0]?.url || '/placeholder.png'}
+                        src={frontImage}
                         alt={item.product.name}
                         width={80}
                         height={100}

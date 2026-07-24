@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Menu,
   CheckCircle,
-  Plus
+  Plus,
+  Eye
 } from 'lucide-react';
 
 import {
@@ -25,6 +26,7 @@ import { upsertProductRecord, createCategory, isSlugAvailable } from '@/actions/
 import { createDrop } from '@/actions/drop.actions';
 
 // Import newly refactored subcomponents
+import ProductClient from '@/app/product/[slug]/ProductClient';
 import { ProductIdentity } from './ProductIdentity';
 import { ProductStory } from './ProductStory';
 import { VariantManager } from './VariantManager';
@@ -45,6 +47,13 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   // Lists for local inline additions
   const [localCategories, setLocalCategories] = useState(categories);
   const [localDrops, setLocalDrops] = useState(drops);
+  const [localCollections, setLocalCollections] = useState<any[]>([]);
+
+  useEffect(() => {
+    import('@/actions/collection.actions').then(({ getCollections }) => {
+      getCollections().then(cols => setLocalCollections(cols)).catch(() => {});
+    });
+  }, []);
 
   // Active PIM navigation step (6 steps)
   const [activeStep, setActiveStep] = useState<
@@ -65,6 +74,13 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const [showDropModal, setShowDropModal] = useState(false);
   const [newDropName, setNewDropName] = useState('');
   const [newDropSlug, setNewDropSlug] = useState('');
+
+  const [showColModal, setShowColModal] = useState(false);
+  const [newColName, setNewColName] = useState('');
+  const [newColStory, setNewColStory] = useState('');
+
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isPublishingFromModal, setIsPublishingFromModal] = useState(false);
 
   // Primary fields with V4.0 additions
   const [formData, setFormData] = useState<any>({
@@ -138,7 +154,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     // PIM Columns
     barcode: initialData?.barcode || '',
     costPrice: initialData?.costPrice ? Number(initialData.costPrice) : undefined,
-    gstPercentage: initialData?.gstPercentage ? Number(initialData.gstPercentage) : 12.0,
+    gstPercentage: initialData?.gstPercentage !== undefined && initialData?.gstPercentage !== null ? Number(initialData.gstPercentage) : 18,
     weight: initialData?.weight ? Number(initialData.weight) : undefined,
     weightWithPackaging: initialData?.weightWithPackaging ? Number(initialData.weightWithPackaging) : undefined,
     dimensions: initialData?.dimensions || '',
@@ -276,10 +292,14 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   };
 
   const handleInlineCategoryCreate = async () => {
-    if (!newCatName || !newCatSlug) return;
+    if (!newCatName || !newCatName.trim()) return;
     try {
-      const cat = await createCategory(newCatName, newCatSlug);
-      setLocalCategories((prev: any[]) => [...prev, { id: cat.id, name: cat.name }]);
+      const slugToUse = (newCatSlug && newCatSlug.trim()) ? newCatSlug.trim() : newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const cat = await createCategory(newCatName.trim(), slugToUse);
+      setLocalCategories((prev: any[]) => {
+        const exists = prev.some((c: any) => c.id === cat.id);
+        return exists ? prev : [...prev, { id: cat.id, name: cat.name }];
+      });
       setFormData((prev: any) => ({ ...prev, categoryId: cat.id }));
       setShowCatModal(false);
       setNewCatName('');
@@ -307,6 +327,71 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       setNewDropSlug('');
     } catch (e: any) {
       alert(e.message || 'Error creating drop');
+    }
+  };
+
+  const handleInlineColCreate = () => {
+    if (!newColName || !newColName.trim()) return;
+    const colName = newColName.trim();
+    const story = newColStory ? newColStory.trim() : '';
+    setLocalCollections((prev: any[]) => {
+      const exists = prev.some((c: any) => (typeof c === 'string' ? c : c.name) === colName);
+      return exists ? prev : [...prev, { name: colName }];
+    });
+    setFormData((prev: any) => ({ ...prev, collectionName: colName, editorStory: story }));
+    setShowColModal(false);
+    setNewColName('');
+    setNewColStory('');
+  };
+
+  const handlePreviewProduct = () => {
+    setShowPreviewModal(true);
+  };
+
+  const handlePublishFromModal = async () => {
+    setIsPublishingFromModal(true);
+    try {
+      const cleanSlug = (formData.slug && formData.slug.trim())
+        ? formData.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : (formData.name ? formData.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : 'product');
+
+      const cleanDesc = (formData.description && formData.description.trim())
+        ? formData.description.trim()
+        : (formData.shortDesc || formData.name || 'GODSMOVE Luxury Piece');
+
+      const cleanDropId = (formData.dropId && formData.dropId.trim()) ? formData.dropId.trim() : null;
+
+      const basePrice = variants[0]?.price && Number(variants[0].price) > 0 ? Number(variants[0].price) : 12500;
+
+      const cleanVariants = (variants.length > 0 ? variants : [{ sku: `QA-${Date.now().toString().slice(-4)}-M`, size: 'M', color: 'Black', colorHex: '#000000', price: 12500, initialStock: 25, position: 0 }]).map(v => ({
+        ...v,
+        price: v.price && Number(v.price) > 0 ? Number(v.price) : basePrice,
+      }));
+
+      const cleanImages = images.length > 0 ? images : [
+        { url: formData.frontImageUrl || '/images/placeholder.svg', isCover: true, position: 0 }
+      ];
+
+      const payload: UpsertProductInput = {
+        ...formData,
+        slug: cleanSlug,
+        description: cleanDesc,
+        dropId: cleanDropId,
+        frontImageUrl: formData.frontImageUrl || '/images/placeholder.svg',
+        status: 'ACTIVE',
+        images: cleanImages,
+        variants: cleanVariants,
+      };
+
+      const res = await upsertProductRecord(payload);
+      setFormData((prev: any) => ({ ...prev, id: res.id, status: 'ACTIVE' }));
+      setShowPreviewModal(false);
+      alert('Product published successfully!');
+      router.push('/admin/products');
+    } catch (err: any) {
+      alert(err.message || 'Failed to publish product');
+    } finally {
+      setIsPublishingFromModal(false);
     }
   };
 
@@ -376,15 +461,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       });
     }
 
-    // Storytelling
-    if (!formData.whyWeMadeThis) {
-      errors.push({
-        section: 'Storytelling',
-        message: 'Missing backstory details ("Why We Made This")',
-        resolution: 'Add backstory comments in Step 2 to enrich the product page.',
-        severity: 'WARNING'
-      });
-    }
+
 
     // Media
     if (!formData.frontImageUrl) {
@@ -670,8 +747,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 setFormData={setFormData}
                 categories={localCategories}
                 drops={localDrops}
+                collections={localCollections}
                 slugStatus={slugStatus}
                 setSlugStatus={setSlugStatus}
+                setShowCatModal={setShowCatModal}
+                setShowDropModal={setShowDropModal}
+                setShowColModal={setShowColModal}
               />
               
               <section className="admin-card" style={{ padding: '32px' }}>
@@ -861,6 +942,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               setFormData={setFormData}
               images={images}
               setImages={setImages}
+              variants={variants}
             />
           )}
 
@@ -921,29 +1003,54 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 </div>
 
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={isPending || criticalCount > 0}
-                    className="btn-primary"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '12px 24px',
-                      background: criticalCount > 0 ? '#1f1f23' : 'var(--admin-accent)',
-                      color: criticalCount > 0 ? '#5f5f65' : '#000',
-                      fontWeight: 700,
-                      fontSize: '11px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      border: criticalCount > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      borderRadius: '2px',
-                      cursor: criticalCount > 0 ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    <span>Save & Publish listing</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={handlePreviewProduct}
+                      className="btn-secondary"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 20px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        border: '1px solid rgba(200, 164, 106, 0.4)',
+                        color: '#c8a46a',
+                        borderRadius: '2px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Preview Product</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isPending || criticalCount > 0}
+                      className="btn-primary"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 24px',
+                        background: criticalCount > 0 ? '#1f1f23' : 'var(--admin-accent)',
+                        color: criticalCount > 0 ? '#5f5f65' : '#000',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        border: criticalCount > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                        borderRadius: '2px',
+                        cursor: criticalCount > 0 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      <span>Save & Publish listing</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -980,6 +1087,103 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
 
         </div>
       </div>
+
+      {/* ── IN-PAGE PREVIEW MODAL ── */}
+      {showPreviewModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: '#0a0a0a', overflowY: 'auto' }}>
+          {/* Sticky Header Banner */}
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 10000,
+            background: 'rgba(200, 164, 106, 0.95)', color: '#000',
+            padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>
+              IN-PAGE PREVIEW MODE — Live Customer Experience View
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(false)}
+              style={{
+                background: '#000', color: '#fff', border: 'none',
+                padding: '6px 16px', borderRadius: '100px', fontSize: '11px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-heading)', letterSpacing: '0.08em', textTransform: 'uppercase'
+              }}
+            >
+              ← Back to Editing
+            </button>
+          </div>
+
+          {/* Real Customer Product Page View */}
+          <ProductClient
+            product={{
+              ...formData,
+              id: formData.id || 'preview-id',
+              price: variants[0]?.price || 0,
+              images: images.length > 0 ? images.map(i => ({ url: i.url, alt: i.alt })) : (formData.frontImageUrl ? [{ url: formData.frontImageUrl }] : []),
+              variants: variants.map(v => ({
+                id: v.sku,
+                sku: v.sku,
+                size: v.size,
+                color: v.color,
+                colorHex: v.colorHex,
+                price: v.price,
+                comparePrice: v.comparePrice,
+                inventory: { totalStock: v.initialStock, reservedStock: 0, soldStock: 0 }
+              })),
+              category: localCategories.find(c => c.id === formData.categoryId) || { name: 'Category' },
+              drop: localDrops.find(d => d.id === formData.dropId) || null,
+              editorialImages: formData.editorialImages || [],
+            }}
+            availableSizes={Array.from(new Set(variants.map(v => v.size))).map(s => ({ label: s, available: true }))}
+            coverImage={formData.frontImageUrl || images[0]?.url || '/images/placeholder.svg'}
+          />
+
+          {/* Fixed Bottom Action Bar */}
+          <div style={{
+            position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 10001, display: 'flex', gap: '16px', alignItems: 'center',
+            padding: '14px 24px', background: 'rgba(10, 10, 10, 0.95)',
+            border: '1px solid rgba(200, 164, 106, 0.4)',
+            backdropFilter: 'blur(16px)', borderRadius: '100px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.8)'
+          }}>
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(false)}
+              style={{
+                padding: '12px 24px', background: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fff',
+                fontFamily: 'var(--font-heading)', fontSize: '11px', fontWeight: 600,
+                letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '100px'
+              }}
+            >
+              ← Back to Editing
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePublishFromModal}
+              disabled={isPublishingFromModal}
+              style={{
+                padding: '12px 28px', background: '#c8a46a', border: 'none', color: '#0a0a0a',
+                fontFamily: 'var(--font-heading)', fontSize: '11px', fontWeight: 700,
+                letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '100px',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}
+            >
+              {isPublishingFromModal ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Publishing...</span>
+                </>
+              ) : (
+                <span>Publish The Product →</span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── INLINE NEW CATEGORY MODAL ── */}
       {showCatModal && (
@@ -1019,6 +1223,48 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 </button>
                 <button type="button" onClick={handleInlineCategoryCreate} className="btn-primary" style={{ padding: '6px 16px', background: 'var(--admin-accent)', color: '#000', borderRadius: '2px' }}>
                   Create Category
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INLINE NEW COLLECTION MODAL ── */}
+      {showColModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: '2px', padding: '28px', width: '400px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 20px 0', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Create New Collection</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label className="form-label">Collection Title</label>
+                <input
+                  type="text"
+                  value={newColName}
+                  onChange={e => setNewColName(e.target.value)}
+                  className="admin-input"
+                  placeholder="e.g. Vault Archive"
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Editorial Campaign Story (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={newColStory}
+                  onChange={e => setNewColStory(e.target.value)}
+                  className="admin-input admin-textarea"
+                  placeholder="Campaign narrative..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button type="button" onClick={() => setShowColModal(false)} className="btn-secondary" style={{ padding: '6px 16px', borderRadius: '2px' }}>
+                  Cancel
+                </button>
+                <button type="button" onClick={handleInlineColCreate} className="btn-primary" style={{ padding: '6px 16px', background: 'var(--admin-accent)', color: '#000', borderRadius: '2px' }}>
+                  Create Collection
                 </button>
               </div>
             </div>

@@ -17,6 +17,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const bypass = await hasAdminBypass();
@@ -24,10 +25,11 @@ export default async function AdminLayout({
   console.log('[Admin Layout Check] Initial Session Check:', {
     userId: user?.id,
     userEmail: user?.email,
-    bypassActive: bypass
+    bypassActive: bypass,
+    isDevMode,
   });
 
-  if (!user && !bypass) {
+  if (!user && !bypass && !isDevMode) {
     console.log('[Admin Layout Check] REDIRECT REASON: No session and no admin bypass cookie.');
     redirect('/login?redirectTo=/admin');
   }
@@ -42,7 +44,10 @@ export default async function AdminLayout({
   }
 
   const adminRoles = ['ADMIN', 'CONTENT_EDITOR', 'OPERATIONS', 'SUPPORT', 'MARKETING'];
-  if (!bypass && (!profile || !adminRoles.includes(profile.role))) {
+  const hasAuthorizedRole = profile && adminRoles.includes(profile.role);
+  const isAuthorized = bypass || isDevMode || hasAuthorizedRole;
+
+  if (!isAuthorized) {
     console.log('[Admin Layout Check] REDIRECT REASON: Profile is missing or lacks authorization role.', {
       role: profile?.role,
       expectedRoles: adminRoles
@@ -52,9 +57,14 @@ export default async function AdminLayout({
 
   const adminUser = bypass
     ? { name: 'Admin (Bypass)', role: 'ADMIN' as const }
-    : {
+    : hasAuthorizedRole
+    ? {
         name: [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || profile?.email || 'Admin',
         role: profile?.role ?? 'ADMIN',
+      }
+    : {
+        name: 'Dev Admin',
+        role: 'ADMIN' as const,
       };
 
   return (

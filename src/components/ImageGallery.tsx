@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, type CSSProperties } from 'react';
 import Image from 'next/image';
+import { resolveImageUrl } from '@/lib/image-resolver';
 import styles from './ImageGallery.module.css';
 
 interface ImageGalleryProps {
@@ -18,101 +19,160 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [zoomStyle, setZoomStyle] = useState<CSSProperties>({});
 
-  // If toggle is enabled, override the main image display
-  const hasToggle = enableToggle && frontImage && backImage;
-  let currentImageUrl = images[activeIndex];
-  if (hasToggle && activeIndex === 0) { // Apply toggle only to the first/main view
+  // ── Mobile swipe tracking ──
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const isSwiping = useRef<boolean>(false);
+
+  const resolvedImages = (images || []).map(img => resolveImageUrl(img));
+  const resolvedFront = resolveImageUrl(frontImage);
+  const resolvedBack = resolveImageUrl(backImage);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: 'scale(1.15)',
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setZoomStyle({});
+  };
+
+  // ── Touch handlers for mobile swipe ──
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const deltaX = Math.abs(e.touches[0].clientX - touchStartX.current);
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (deltaX > deltaY && deltaX > 10) {
+      isSwiping.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isSwiping.current) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const SWIPE_THRESHOLD = 40;
+    if (deltaX < -SWIPE_THRESHOLD) {
+      // Swipe left → next image
+      setActiveIndex(prev => (prev + 1) % resolvedImages.length);
+    } else if (deltaX > SWIPE_THRESHOLD) {
+      // Swipe right → prev image
+      setActiveIndex(prev => (prev - 1 + resolvedImages.length) % resolvedImages.length);
+    }
+    isSwiping.current = false;
+  };
+
+  const hasToggle = enableToggle && resolvedFront !== '/images/placeholder.svg' && resolvedBack !== '/images/placeholder.svg' && resolvedFront !== resolvedBack;
+  let currentImageUrl = resolvedImages[activeIndex] || '/images/placeholder.svg';
+  if (hasToggle && activeIndex === 0) {
     const defaultIsFront = defaultSide === 'front';
     const showFront = defaultIsFront ? !isFlipped : isFlipped;
-    currentImageUrl = showFront ? frontImage : backImage;
+    currentImageUrl = showFront ? resolvedFront : resolvedBack;
   }
 
   return (
-    <div className={styles.gallery}>
-      <div className={styles.thumbnails}>
-        {images.map((img, i) => (
-          <button
-            key={i}
-            className={`${styles.thumb} ${i === activeIndex ? styles.thumbActive : ''}`}
-            onClick={() => setActiveIndex(i)}
-            aria-label={`View image ${i + 1}`}
-          >
-            <Image
-              src={img}
-              alt={`${alt} thumbnail ${i + 1}`}
-              width={80}
-              height={100}
-              style={{ objectFit: 'cover' }}
-            />
-          </button>
-        ))}
-      </div>
-      <div className={styles.main}>
-        <div className={styles.imageWrap}>
+    <div className={styles.editorialGalleryWrap}>
+      {/* Primary Dominant Hero Frame */}
+      <div className={styles.dominantHeroFrame}>
+        <div 
+          className={styles.heroImageContainer}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <Image
+            key={currentImageUrl}
             src={currentImageUrl}
-            alt={`${alt} - Image ${activeIndex + 1}`}
-            width={800}
-            height={1000}
-            className={`${styles.mainImage} ${isFlipped ? styles.flipped : ''}`}
+            alt={`${alt} - Dominant View`}
+            width={1000}
+            height={1250}
+            className={`${styles.heroImage} ${styles.fadeTransition}`}
+            style={zoomStyle}
             priority
           />
           {hasToggle && activeIndex === 0 && (
             <button
+              type="button"
               className={styles.imageToggleBtn}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsFlipped(!isFlipped);
               }}
-              style={{
-                position: 'absolute',
-                bottom: '32px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'rgba(10, 10, 10, 0.6)',
-                backdropFilter: 'blur(8px)',
-                color: '#F5F1E8',
-                padding: '10px 20px',
-                borderRadius: '30px',
-                fontSize: '12px',
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                zIndex: 10,
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(10, 10, 10, 0.85)';
-                e.currentTarget.style.borderColor = 'rgba(200, 164, 106, 0.4)';
-                e.currentTarget.style.color = '#C8A46A';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(10, 10, 10, 0.6)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.color = '#F5F1E8';
-              }}
             >
               {isFlipped 
-                ? (defaultSide === 'front' ? 'Tap to See Front' : 'Tap to See Back') 
-                : (defaultSide === 'front' ? 'Tap to See Back' : 'Tap to See Front')}
+                ? (defaultSide === 'front' ? 'View Front Silhouette' : 'View Back Silhouette') 
+                : (defaultSide === 'front' ? 'View Back Silhouette' : 'View Front Silhouette')}
             </button>
           )}
+
+          {/* Mobile swipe hint — fades out after first interaction */}
+          {resolvedImages.length > 1 && (
+            <div className={styles.mobileSwipeHint} aria-hidden="true">
+              <span className={styles.swipeArrowLeft}>‹</span>
+              <span className={styles.swipeArrowRight}>›</span>
+            </div>
+          )}
         </div>
-        <div className={styles.dots}>
-          {images.map((_, i) => (
+      </div>
+
+      {/* Desktop: Asymmetrical Editorial Collage Supporting Grid */}
+      {resolvedImages.length > 1 && (
+        <div className={styles.asymmetricalCollageGrid}>
+          {resolvedImages.map((img, i) => {
+            const isHero = i === activeIndex;
+            return (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.collageTile} ${isHero ? styles.collageTileActive : ''}`}
+                onClick={() => setActiveIndex(i)}
+                aria-label={`Select lookbook angle ${i + 1}`}
+              >
+                <div className={styles.collageTileInner}>
+                  <Image
+                    src={img}
+                    alt={`${alt} angle ${i + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 25vw, 15vw"
+                    style={{ objectFit: 'cover' }}
+                    className={styles.tileImage}
+                  />
+                  <span className={styles.tileTag}>0{i + 1}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Mobile & Desktop: Dot Pagination */}
+      {resolvedImages.length > 1 && (
+        <div className={styles.mobileDotsWrap}>
+          {resolvedImages.map((_, i) => (
             <button
               key={i}
-              className={`${styles.dot} ${i === activeIndex ? styles.dotActive : ''}`}
+              type="button"
+              className={`${styles.mobileDot} ${i === activeIndex ? styles.mobileDotActive : ''}`}
               onClick={() => setActiveIndex(i)}
-              aria-label={`View image ${i + 1}`}
+              aria-label={`Go to slide ${i + 1}`}
             />
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

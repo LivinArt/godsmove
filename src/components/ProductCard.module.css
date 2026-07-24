@@ -19,10 +19,25 @@
   margin-bottom: 2px;
 }
 
-.featuredBadge {
+.tagContainer {
   position: absolute;
   top: var(--space-md);
   left: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.tagContainer > * {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.featuredBadge {
   font-family: var(--font-heading);
   font-size: 9px;
   font-weight: 700;
@@ -63,11 +78,19 @@
   }
 }
 
+.imageWrapContainer {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+}
+
 .imageWrap {
   position: relative;
   display: block;
   overflow: hidden;
-  aspect-ratio: 4 / 5;
+  width: 100%;
+  height: 100%;
   background-color: var(--ivory);
   isolation: isolate;
 }
@@ -101,7 +124,7 @@
 }
 
 /* Next.js Image wrapper — fill frame at full brightness (never dim on dark sections) */
-.imageWrap > span {
+.imageWrap > span:not(.tag) {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
@@ -112,6 +135,10 @@
 /* Never target unlock LCP img — opacity:1 !important was winning over .unlockLcpImg and flattened the composite */
 .imageWrap img:not(.unlockLcpImg),
 .image {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
   max-width: none;
@@ -308,14 +335,14 @@
   opacity: 0.85;
 }
 
-.infoDark .discountBadge {
+.discountBadge {
   display: inline-block;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c8a46a;
+  color: #c8a46a; /* premium gold */
   margin-top: 2px;
 }
 
@@ -550,3 +577,130 @@
   font-size: 18px;
   margin-top: 6px;
 }
+
+/* Size Button Adding state */
+.sizeAdding {
+  background: #222222 !important; /* Deep Charcoal */
+  color: #F6F3ED !important; /* Warm Ivory text */
+  border-color: #c8a46a !important; /* Muted Gold border */
+  position: relative;
+  cursor: wait;
+}
+
+/* Elegant micro loading spinner for button */
+.loadingSpinner {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(246, 243, 237, 0.3);
+  border-radius: 50%;
+  border-top-color: #F6F3ED;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Mobile Quick Add Trigger Badge ── */
+.mobileQuickAddTrigger {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  /* Hide the hover quick add panel on mobile — bottom sheet takes over */
+  .quickAddPanel {
+    display: none !important;
+  }
+
+  /* Prevent top-left tag badge and top-right action buttons from overlapping */
+  .tagContainer {
+    top: 8px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 75px);
+    pointer-events: none;
+    z-index: 14;
+  }
+
+  .tag,
+  .featuredBadge,
+  .vaultDropBadge {
+    position: static;
+    font-size: 8px;
+    padding: 3px 6px;
+    border-radius: 2px;
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cardActions {
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 1;
+    z-index: 14;
+  }
+
+  .actionBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(10, 10, 10, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #FAF8F5 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .actionBtn svg {
+    opacity: 0.95 !important;
+    color: #FAF8F5 !important;
+    stroke-width: 2.2px !important;
+  }
+
+  /* Show the + trigger badge — SVG vector centered */
+  .mobileQuickAddTrigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 15;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(10, 10, 10, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(200, 164, 106, 0.4);
+    color: #c8a46a;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .mobileQuickAddTrigger:active {
+    transform: scale(0.92);
+    background: rgba(200, 164, 106, 0.25);
+    border-color: #c8a46a;
+  }
+}
+
+
+

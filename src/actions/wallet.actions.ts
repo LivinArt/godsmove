@@ -37,6 +37,23 @@ export async function getMyWallet() {
   const user = await getCurrentUser();
   if (!user) throw new Error('UNAUTHORIZED');
 
+  // Ensure Profile exists in Prisma to satisfy FK constraint
+  let profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!profile) {
+    profile = await prisma.profile.create({
+      data: {
+        id: user.id,
+        email: user.email || 'user@godsmove.com',
+        firstName: user.user_metadata?.first_name || '',
+        lastName: user.user_metadata?.last_name || '',
+        role: 'CUSTOMER',
+      },
+    });
+  }
+
   let wallet = await prisma.wallet.findUnique({
     where: { profileId: user.id },
     include: {
@@ -50,18 +67,18 @@ export async function getMyWallet() {
   // Auto-create wallet if it doesn't exist
   if (!wallet) {
     wallet = await prisma.wallet.create({
-      data: { profileId: user.id },
+      data: { profileId: user.id, balance: 500 },
       include: { transactions: true },
     });
   }
 
-  return wallet;
+  return JSON.parse(JSON.stringify(wallet));
 }
 
 export async function getWalletByProfileId(profileId: string) {
   await requireAdmin();
 
-  return prisma.wallet.findUnique({
+  const wallet = await prisma.wallet.findUnique({
     where: { profileId },
     include: {
       transactions: {
@@ -69,6 +86,7 @@ export async function getWalletByProfileId(profileId: string) {
       },
     },
   });
+  return JSON.parse(JSON.stringify(wallet));
 }
 
 // ── ISSUE CREDIT ─────────────────────────────────────────────────────────────
@@ -108,7 +126,7 @@ export async function issueWalletCredit(input: IssueWalletCreditInput) {
     });
 
     revalidatePath('/admin/customers');
-    return updated;
+    return JSON.parse(JSON.stringify(updated));
   });
 }
 
@@ -217,8 +235,22 @@ export async function validateDiscount(
       id: discount.id,
       code: discount.code,
       type: discount.type,
-      value: discount.value,
+      value: Number(discount.value),
       discountAmount,
     },
   };
+}
+
+export async function getAvailableDiscounts() {
+  const discounts = await prisma.discount.findMany({
+    where: {
+      isActive: true,
+      status: 'ACTIVE',
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return JSON.parse(JSON.stringify(discounts));
 }

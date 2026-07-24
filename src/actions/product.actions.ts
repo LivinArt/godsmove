@@ -61,7 +61,7 @@ export async function getProducts(params?: {
           { variants: { some: { sku: { contains: params.search, mode: 'insensitive' } } } },
         ],
       }),
-      ...(params?.status && { status: params.status as any }),
+      ...(params?.status ? { status: params.status as any } : {}),
       ...(params?.dropId && { dropId: params.dropId }),
       ...(params?.categoryId && { categoryId: params.categoryId }),
       ...(params?.isFeatured !== undefined && { isFeatured: params.isFeatured }),
@@ -277,7 +277,12 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     productData.collectionHeroImage = productData.frontImageUrl;
   }
 
-  const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
+  let existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
+  if (!existing && productData.slug) {
+    existing = await prisma.product.findFirst({ where: { slug: productData.slug } });
+  }
+
+  const targetId = existing?.id || id;
   const becomingActive = existing?.status !== 'ACTIVE' && productData.status === 'ACTIVE';
 
   const productWrite = {
@@ -288,9 +293,9 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   const product = await prisma.$transaction(async (tx) => {
     // 1. Resolve Product record update or creation
     let p;
-    if (id) {
+    if (targetId) {
       p = await tx.product.update({
-        where: { id },
+        where: { id: targetId },
         data: {
           ...productWrite,
           ...(becomingActive && { publishedAt: new Date() }),
@@ -473,11 +478,102 @@ export async function getCategories() {
   return prisma.category.findMany({ orderBy: { position: 'asc' } });
 }
 
-export async function createCategory(name: string, slug: string) {
+export async function getCategoriesWithProductCount() {
+  return prisma.category.findMany({
+    orderBy: { position: 'asc' },
+    include: {
+      _count: {
+        select: { products: true }
+      },
+      products: {
+        select: { id: true, name: true, slug: true, status: true, isFeatured: true }
+      }
+    }
+  });
+}
+
+export async function createCategory(name: string, slug?: string, position = 0, imageUrl?: string | null) {
   await requireAdmin();
-  const category = await prisma.category.create({ data: { name, slug } });
+  if (!name || !name.trim()) throw new Error('Category name is required');
+  
+  const trimmedName = name.trim();
+
+  // If a category with this exact name already exists, reuse it!
+  const existingCategory = await prisma.category.findFirst({
+    where: { name: { equals: trimmedName, mode: 'insensitive' } }
+  });
+  if (existingCategory) {
+    return existingCategory;
+  }
+
+  let baseSlug = (slug && slug.trim()) ? slug.trim() : trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  if (!baseSlug) baseSlug = 'category';
+
+  let uniqueSlug = baseSlug;
+  let counter = 1;
+  while (await prisma.category.findUnique({ where: { slug: uniqueSlug } })) {
+    uniqueSlug = `${baseSlug}-${counter++}`;
+  }
+
+  const category = await prisma.category.create({
+    data: {
+      name: trimmedName,
+      slug: uniqueSlug,
+      position: position || 0,
+      imageUrl: imageUrl || null
+    }
+  });
   revalidatePath('/admin/products');
+  revalidatePath('/admin/categories');
   return category;
+}
+
+export async function updateCategory(id: string, name: string, slug: string, position?: number, imageUrl?: string | null) {
+  await requireAdmin();
+  const category = await prisma.category.update({
+    where: { id },
+    data: {
+      name,
+      slug,
+      ...(position !== undefined && { position }),
+      ...(imageUrl !== undefined && { imageUrl: imageUrl || null })
+    }
+  });
+  revalidatePath('/admin/products');
+  revalidatePath('/admin/categories');
+  revalidatePath('/');
+  revalidatePath('/drops');
+  revalidatePath('/category/[slug]', 'page');
+  return category;
+}
+
+export async function deleteCategory(id: string, reassignCategoryId?: string) {
+  await requireAdmin();
+  
+  await prisma.$transaction(async (tx) => {
+    if (reassignCategoryId) {
+      await tx.product.updateMany({
+        where: { categoryId: id },
+        data: { categoryId: reassignCategoryId }
+      });
+    } else {
+      // Reassign to fallback category or first available category if exists
+      const fallback = await tx.category.findFirst({
+        where: { id: { not: id } }
+      });
+      if (fallback) {
+        await tx.product.updateMany({
+          where: { categoryId: id },
+          data: { categoryId: fallback.id }
+        });
+      }
+    }
+
+    await tx.category.delete({ where: { id } });
+  });
+
+  revalidatePath('/admin/products');
+  revalidatePath('/admin/categories');
 }
 
 export async function isSlugAvailable(slug: string, excludeProductId?: string) {

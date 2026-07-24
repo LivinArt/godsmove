@@ -1,107 +1,248 @@
-.gallery {
+.editorialGalleryWrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-}
-
-@media (min-width: 768px) {
-  .gallery {
-    flex-direction: row;
-    gap: var(--space-lg);
-  }
-}
-
-@media (max-width: 767px) {
-  .imageWrap {
-    max-height: min(70vh, 520px);
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
-    padding: 8px;
-    box-sizing: content-box;
-  }
-}
-
-.thumbnails {
-  display: none;
-  flex-direction: column;
-  gap: var(--space-sm);
-  order: -1;
-}
-
-@media (min-width: 768px) {
-  .thumbnails {
-    display: flex;
-  }
-}
-
-.thumb {
-  width: 72px;
-  height: 90px;
-  overflow: hidden;
-  border: 2px solid transparent;
-  opacity: 0.5;
-  transition: opacity var(--duration-fast) var(--ease-smooth),
-              border-color var(--duration-fast) var(--ease-smooth);
-  flex-shrink: 0;
-}
-
-.thumb:hover {
-  opacity: 0.8;
-}
-
-.thumb.thumbActive {
-  opacity: 1;
-  border-color: var(--text-primary);
-}
-
-.thumb img {
+  gap: 20px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
-.main {
-  flex: 1;
+.dominantHeroFrame {
   position: relative;
-}
-
-.imageWrap {
-  aspect-ratio: 4 / 5;
+  width: 100%;
+  border-radius: 4px;
   overflow: hidden;
-  background-color: var(--ivory);
+  background-color: var(--surface-subtle, #121212);
 }
 
-.mainImage {
+.heroImageContainer {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.heroImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity var(--duration-base) var(--ease-smooth);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dots {
+.fadeTransition {
+  animation: fadeInSoft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0.7;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.imageToggleBtn {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(10, 10, 10, 0.75);
+  backdrop-filter: blur(12px);
+  color: #f5f1e8;
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  cursor: pointer;
+}
+
+.imageToggleBtn:hover {
+  background-color: rgba(10, 10, 10, 0.95);
+  border-color: rgba(200, 164, 106, 0.6);
+  color: #c8a46a;
+}
+
+/* ── Mobile Swipe Hint Arrows ── */
+.mobileSwipeHint {
+  display: none;
+}
+
+/* Asymmetrical Lookbook Collage Grid — desktop only */
+.asymmetricalCollageGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.collageTile {
+  position: relative;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 3px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.65;
+}
+
+.collageTile:hover {
+  opacity: 0.9;
+  border-color: rgba(200, 164, 106, 0.4);
+  transform: translateY(-2px);
+}
+
+.collageTileActive {
+  opacity: 1;
+  border-color: #c8a46a;
+  box-shadow: 0 0 15px rgba(200, 164, 106, 0.2);
+}
+
+.collageTileInner {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  overflow: hidden;
+}
+
+.tileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.collageTile:hover .tileImage {
+  transform: scale(1.06);
+}
+
+.tileTag {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  color: rgba(245, 241, 232, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Dot Pagination (mobile primary, hidden desktop) ── */
+.mobileDotsWrap {
   display: flex;
   justify-content: center;
-  gap: var(--space-sm);
-  padding: var(--space-md) 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
 }
 
 @media (min-width: 768px) {
-  .dots {
+  .mobileDotsWrap {
     display: none;
   }
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
+.mobileDot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--border-medium);
-  transition: background-color var(--duration-fast) var(--ease-smooth);
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease, width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dot.dotActive {
-  background-color: var(--text-primary);
+.mobileDotActive {
+  background-color: #c8a46a;
+  width: 20px;
+  border-radius: 3px;
+  transform: none;
+}
+
+/* ── MOBILE OVERRIDES ── */
+@media (max-width: 767px) {
+  .dominantHeroFrame {
+    border-radius: 16px;
+  }
+
+  .heroImageContainer {
+    /* Always stay inside viewport on mobile */
+    max-height: calc(100svh - 200px);
+    aspect-ratio: 4 / 5;
+    cursor: default;
+    /* Disable zoom effect on mobile */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Hide mouse-zoom on mobile */
+  .heroImage {
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transform: none !important;
+    transform-origin: center center !important;
+  }
+
+  /* Hide desktop collage thumbnail strip on mobile */
+  .asymmetricalCollageGrid {
+    display: none !important;
+  }
+
+  /* Show swipe hint arrows */
+  .mobileSwipeHint {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 5;
+    animation: swipeHintFade 2.5s ease forwards;
+    animation-delay: 0.8s;
+    opacity: 0;
+  }
+
+  .swipeArrowLeft,
+  .swipeArrowRight {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 300;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  @keyframes swipeHintFade {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 0.8; }
+    100% { opacity: 0; }
+  }
+
+  /* Dots visible on mobile — already handled above */
+  .mobileDotsWrap {
+    display: flex;
+    padding: 12px 0 4px;
+  }
+
+  .imageToggleBtn {
+    bottom: 16px;
+    font-size: 10px;
+    padding: 8px 16px;
+  }
+
+  .editorialGalleryWrap {
+    gap: 12px;
+  }
 }

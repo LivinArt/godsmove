@@ -1,14 +1,20 @@
 'use client';
 
 import React from 'react';
+import { Plus } from 'lucide-react';
+
 interface ProductIdentityProps {
   formData: any;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   categories: any[];
   drops: any[];
+  collections?: any[];
   slugStatus: 'idle' | 'checking' | 'available' | 'taken';
   setSlugStatus: (status: 'idle' | 'checking' | 'available' | 'taken') => void;
+  setShowCatModal?: (val: boolean) => void;
+  setShowDropModal?: (val: boolean) => void;
+  setShowColModal?: (val: boolean) => void;
 }
 
 export function ProductIdentity({
@@ -17,8 +23,12 @@ export function ProductIdentity({
   setFormData,
   categories,
   drops,
+  collections = [],
   slugStatus,
-  setSlugStatus
+  setSlugStatus,
+  setShowCatModal,
+  setShowDropModal,
+  setShowColModal
 }: ProductIdentityProps) {
   
   const generateSlug = () => {
@@ -83,8 +93,24 @@ export function ProductIdentity({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+          {/* CATEGORY SELECTOR + INLINE CREATE */}
           <div>
-            <label className="form-label">Product Category</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Product Category</label>
+              {setShowCatModal && (
+                <button
+                  type="button"
+                  onClick={() => setShowCatModal(true)}
+                  style={{
+                    background: 'none', border: 'none', color: '#c8a46a',
+                    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '4px', padding: 0
+                  }}
+                >
+                  <Plus size={12} /> Create New Category
+                </button>
+              )}
+            </div>
             <select
               name="categoryId"
               value={formData.categoryId}
@@ -99,22 +125,62 @@ export function ProductIdentity({
             </select>
           </div>
 
+          {/* COLLECTION SELECTOR + INLINE CREATE */}
           <div>
-            <label className="form-label">Collection</label>
-            <input
-              type="text"
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Select Collection</label>
+              {setShowColModal && (
+                <button
+                  type="button"
+                  onClick={() => setShowColModal(true)}
+                  style={{
+                    background: 'none', border: 'none', color: '#c8a46a',
+                    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '4px', padding: 0
+                  }}
+                >
+                  <Plus size={12} /> Add New Collection
+                </button>
+              )}
+            </div>
+            <select
               name="collectionName"
               value={formData.collectionName || ''}
               onChange={onChange}
-              className="admin-input"
-              placeholder="e.g. Essential Staples"
-            />
+              className="admin-input admin-select"
+            >
+              <option value="">No Collection (Default Catalog)</option>
+              {(collections || []).map((c: any) => {
+                const cName = typeof c === 'string' ? c : (c.name || c);
+                return (
+                  <option key={cName} value={cName}>
+                    {cName}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+          {/* DROP SELECTOR + INLINE CREATE */}
           <div>
-            <label className="form-label">Associated Release Drop (Optional)</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Associated Release Drop (Optional)</label>
+              {setShowDropModal && (
+                <button
+                  type="button"
+                  onClick={() => setShowDropModal(true)}
+                  style={{
+                    background: 'none', border: 'none', color: '#c8a46a',
+                    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '4px', padding: 0
+                  }}
+                >
+                  <Plus size={12} /> Create New Drop
+                </button>
+              )}
+            </div>
             <select
               name="dropId"
               value={formData.dropId || ''}
@@ -143,7 +209,7 @@ export function ProductIdentity({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }} className="pim-grid-col3">
           <div>
             <label className="form-label">Product Publishing Channel</label>
             <select
@@ -171,6 +237,22 @@ export function ProductIdentity({
               <option value="HIDDEN">Preview / Hidden</option>
               <option value="ARCHIVED">Archived</option>
               <option value="SOLD_OUT">Sold Out</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label">GST Tax Rate (%)</label>
+            <select
+              name="gstPercentage"
+              value={formData.gstPercentage !== undefined && formData.gstPercentage !== null ? formData.gstPercentage : 18}
+              onChange={(e) => setFormData((prev: any) => ({ ...prev, gstPercentage: Number(e.target.value) }))}
+              className="admin-input admin-select"
+            >
+              <option value={0}>0% GST (Exempt)</option>
+              <option value={5}>5% GST</option>
+              <option value={12}>12% GST</option>
+              <option value={18}>18% GST (Standard)</option>
+              <option value={28}>28% GST (Luxury)</option>
             </select>
           </div>
         </div>

@@ -66,12 +66,27 @@
 .categoryGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 32px; /* Luxury grid gap */
+  gap: 24px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .categoryGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .categoryGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+}
+
+/* ── MOBILE: Static grid hidden — MobileCategoryCarousel takes over ── */
+@media (max-width: 767px) {
+  .categoryGrid {
+    display: none;
   }
 }
 
@@ -79,7 +94,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  aspect-ratio: 16 / 6; /* 16:6 Aspect Ratio */
+  aspect-ratio: 4 / 5; /* Unified 4:5 luxury proportions */
   overflow: hidden;
   background-color: var(--bg-secondary);
   border: none;
@@ -310,8 +325,8 @@
 
 .productGrid {
   display: grid;
-  grid-template-columns: 1fr; /* 1 product per row on mobile */
-  gap: var(--space-md);
+  grid-template-columns: repeat(2, 1fr); /* 2 products per row on mobile */
+  gap: 10px;
 }
 
 @media (min-width: 768px) {
@@ -329,8 +344,79 @@
   }
 }
 
+
 .noResultsBox {
   padding: 80px 0;
   text-align: center;
   color: var(--text-muted);
+}
+
+/* Category Page Hero Section */
+.categoryHeroSection {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.categoryHeroSection::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(200, 164, 106, 0.04);
+  pointer-events: none;
+}
+
+.categoryHeroContent {
+  padding: 60px var(--container-padding);
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.categoryHeroTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.categoryHeroDesc {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0;
+}
+
+.categoryHeroStory {
+  margin-top: 24px;
+  border-top: 1px dashed var(--border-medium);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storyLabel {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.categoryHeroStory p {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  max-width: 640px;
 }

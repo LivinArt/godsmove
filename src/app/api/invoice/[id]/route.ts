@@ -68,6 +68,7 @@ export async function GET(
         phone: shippingAddress.phone || '',
       },
       items: order.items.map((i) => ({
+        productCode: `GM-ART-${i.id.toUpperCase()}`,
         productName: i.productName,
         size: i.size || 'OS',
         quantity: i.quantity,

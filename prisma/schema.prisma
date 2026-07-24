@@ -42,6 +42,7 @@ model Profile {
   exclusiveReservations  ExclusiveReservation[]
   exclusiveDrawWins      ExclusiveDrawWinner[]
   unlockAccessTokens     UnlockAccessToken[] @relation("UnlockTokenClaimedBy")
+  careRequests           CareRequest[]
 
   @@map("profiles")
 }
@@ -88,6 +89,7 @@ model Category {
   name     String    @unique // "Tees", "Hoodies", "Accessories"
   slug     String    @unique
   position Int       @default(0)
+  imageUrl String?
   products Product[]
 
   @@map("categories")
@@ -573,6 +575,7 @@ model OrderItem {
   returnStatus ReturnStatus?
 
   returnItems ReturnItem[]
+  careRequests CareRequest[]
 
   @@index([orderId])
   @@index([shipmentId])
@@ -1106,5 +1109,33 @@ model WalletRefund {
   createdAt         DateTime      @default(now())
 
   @@map("wallet_refunds")
+}
+
+model CareRequest {
+  id              String        @id @default(cuid())
+  profileId       String
+  profile         Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  orderItemId     String
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  productCode     String        // GM-ART-XXXXXX
+  category        String        // Torn, Pilling, Cracked/Peeling Prints, Shrinkage & Warping, Other
+  description     String
+  status          String        @default("SUBMITTED") // SUBMITTED, APPROVED, REJECTED, AWAITING_PAYMENT, PAID, PICKUP_SCHEDULED, COLLECTED, UNDER_CARE, QC, READY_TO_RETURN, DISPATCHED, DELIVERED, COMPLETED
+  
+  // Financial Charges
+  pickupCharge    Decimal       @db.Decimal(10, 2) @default(0)
+  repairCharge    Decimal       @db.Decimal(10, 2) @default(0)
+  returnCharge    Decimal       @db.Decimal(10, 2) @default(0)
+  totalCharge     Decimal       @db.Decimal(10, 2) @default(0)
+  
+  paymentStatus   String        @default("PENDING") // PENDING, PAID, REFUNDED
+  razorpayOrderId String?
+  rejectReason    String?
+  additionalNotes String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@map("care_requests")
 }
 

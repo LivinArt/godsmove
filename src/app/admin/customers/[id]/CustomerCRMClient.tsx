@@ -98,6 +98,23 @@ interface TimelineItem {
   date: string;
 }
 
+interface CareRequestItem {
+  id: string;
+  productCode: string;
+  productName: string;
+  category: string;
+  description: string;
+  status: string;
+  pickupCharge: number;
+  repairCharge: number;
+  returnCharge: number;
+  totalCharge: number;
+  paymentStatus: string;
+  rejectReason: string | null;
+  additionalNotes: string | null;
+  createdAt: string;
+}
+
 interface CustomerDetail {
   id: string;
   email: string;
@@ -116,6 +133,7 @@ interface CustomerDetail {
   wallet: Wallet | null;
   wishlist: Wishlist[];
   returns: ReturnReq[];
+  careRequests?: CareRequestItem[];
   timeline: TimelineItem[];
 }
 
@@ -125,7 +143,7 @@ export default function CustomerCRMClient({
   customer: CustomerDetail;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'notes' | 'addresses' | 'orders' | 'credits' | 'wishlist' | 'security'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'addresses' | 'orders' | 'credits' | 'wishlist' | 'security' | 'care'>('notes');
 
   // Notes state
   const [notes, setNotes] = useState(customer.adminNotes ?? '');
@@ -379,6 +397,7 @@ export default function CustomerCRMClient({
               { key: 'orders', label: `Order Logs (${customer.orders.length})` },
               { key: 'credits', label: `Credits Ledger (${formatINR(customer.wallet?.balance ?? 0)})` },
               { key: 'wishlist', label: `Curated Wishlist (${customer.wishlist.length})` },
+              { key: 'care', label: `GODSMOVE Care (${customer.careRequests?.length ?? 0})` },
               { key: 'security', label: 'Security & Access' },
             ] as const
           ).map((tab) => (
@@ -871,6 +890,88 @@ export default function CustomerCRMClient({
                           </span>
                         </td>
                         <td style={{ color: 'var(--admin-muted)' }}>{formatDate(r.createdAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: GODSMOVE Care */}
+        {activeTab === 'care' && (
+          <div>
+            <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: 16 }}>GODSMOVE Care Metrics</h3>
+            {(() => {
+              const activeCount = customer.careRequests?.filter(c => !['COMPLETED', 'REJECTED'].includes(c.status)).length ?? 0;
+              const completedCount = customer.careRequests?.filter(c => c.status === 'COMPLETED').length ?? 0;
+              const spend = customer.careRequests?.filter(c => c.paymentStatus === 'PAID').reduce((sum, c) => sum + Number(c.totalCharge), 0) ?? 0;
+              const uniqueProducts = Array.from(new Set(customer.careRequests?.map(c => c.productCode) ?? [])).length;
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+                  <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', padding: 16, borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Care Lifetime Spend</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--admin-accent)' }}>{formatINR(spend)}</span>
+                  </div>
+                  <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', padding: 16, borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Active Requests</span>
+                    <span style={{ fontSize: 18, fontWeight: 700 }}>{activeCount} active</span>
+                  </div>
+                  <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', padding: 16, borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Completed Requests</span>
+                    <span style={{ fontSize: 18, fontWeight: 700 }}>{completedCount} closed</span>
+                  </div>
+                  <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', padding: 16, borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Garments Serviced</span>
+                    <span style={{ fontSize: 18, fontWeight: 700 }}>{uniqueProducts} pieces</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <h3 style={{ marginBottom: 20, fontSize: 16 }}>Care Requests Ledger</h3>
+            <div className="admin-table-wrap">
+              <table className="admin-table" style={{ fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th>Request ID</th>
+                    <th>Product</th>
+                    <th>Product Code</th>
+                    <th>Category</th>
+                    <th>Issue Description</th>
+                    <th>Charges</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!customer.careRequests || customer.careRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: 24, color: 'var(--admin-muted)' }}>
+                        No care requests submitted yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    customer.careRequests.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <span className="mono" style={{ color: 'var(--admin-accent)' }}>{c.id}</span>
+                        </td>
+                        <td><strong>{c.productName}</strong></td>
+                        <td><span className="mono" style={{ color: 'var(--admin-muted)' }}>{c.productCode}</span></td>
+                        <td>{c.category}</td>
+                        <td style={{ fontSize: 12, color: 'var(--admin-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.description}>
+                          {c.description}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{formatINR(c.totalCharge)}</td>
+                        <td>
+                          <span className={`badge ${c.status === 'COMPLETED' ? 'badge-green' : c.status === 'REJECTED' ? 'badge-red' : 'badge-yellow'}`}>
+                            {c.status.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--admin-muted)' }}>{formatDate(c.createdAt)}</td>
                       </tr>
                     ))
                   )}

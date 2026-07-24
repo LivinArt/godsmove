@@ -40,4 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# scratch & temporary dev logs
+/scratch/
+.system_generated/
+.tempmediaStorage/
+*.log
+
 /src/generated/prisma

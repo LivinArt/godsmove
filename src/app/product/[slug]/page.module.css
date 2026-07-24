@@ -32,6 +32,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 40px;
+  padding-top: 32px;
   font-size: 11px;
   color: var(--text-muted);
   letter-spacing: 0.1em;
@@ -297,9 +298,8 @@
 
 /* Three Equal Square Actions */
 .utilitySquareActions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  display: flex;
+  gap: 12px;
   margin-top: 8px;
 }
 
@@ -307,7 +307,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 48px; /* matching selector height */
+  width: 48px;
+  height: 48px;
   background-color: rgba(246, 243, 237, 0.85); /* soft warm ivory glass #F6F3ED */
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -316,6 +317,7 @@
   border-radius: 1px;
   cursor: pointer;
   transition: all 200ms ease;
+  flex-shrink: 0;
 }
 
 .squareActionBtn:hover {
@@ -360,7 +362,68 @@
 
 .sectionHeader {
   margin-bottom: 40px;
-  max-width: 650px;
+  text-align: center;
+  width: 100%;
+}
+
+.storySection,
+.craftSection,
+.fabricSection,
+.fitSection,
+.technicalSection,
+.careSection,
+.packagingSection,
+.ownershipSection,
+.editorialNotesSection,
+.lifecycleSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center align blocks horizontally */
+  text-align: center;
+  padding: 80px 0;
+  border-top: none;
+  border-bottom: 1px solid var(--border-subtle); /* Divider line between sections */
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.storyBodyText,
+.editorialNotesText {
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+  max-width: 680px; /* Locked reading width */
+  margin: 0 auto;
+  text-align: center; /* Center paragraph reading flow */
+}
+
+.craftGrid,
+.twoColSpecs,
+.compactSpecsCard,
+.careGrid,
+.packagingGrid,
+.registryBox,
+.timelineWrapper {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: left; /* Keep left alignment for text inside cards and grids */
+}
+
+@media (min-width: 1024px) {
+  .storySection,
+  .craftSection,
+  .fabricSection,
+  .fitSection,
+  .technicalSection,
+  .careSection,
+  .packagingSection,
+  .ownershipSection,
+  .editorialNotesSection,
+  .lifecycleSection {
+    padding: 120px 0;
+  }
 }
 
 .sectionEyebrow {
@@ -376,20 +439,71 @@
 
 .sectionHeadline {
   font-family: var(--font-heading);
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: clamp(28px, 4vw, 38px);
   font-weight: 300;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   margin: 0;
+  color: var(--text-primary);
+}
+
+.mobilePDPActionRow {
+  display: none; /* hidden desktop */
+}
+
+@media (max-width: 767px) {
+  .mobilePDPActionRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobilePDPActionBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .mobilePDPActionBtn:hover,
+  .mobilePDPActionBtn.inCompare {
+    color: #c8a46a;
+  }
+
+  .mobilePDPActionDivider {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 10px;
+  }
+
+  /* Requirement 5: Remove excess vertical padding above Craftsmanship section on mobile */
+  .editorialMagazineSection {
+    padding-top: 24px !important;
+    padding-bottom: 36px !important;
+    margin-top: 0 !important;
+  }
+
+  .heroQuantityWrap {
+    margin-bottom: 8px !important;
+  }
 }
 
 /* ==========================================================
    SECTION 2: PRODUCT STORY
    ========================================================== */
 
-.storySection {
-  padding: 140px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.storySection {}
 
 .storyBodyText {
   font-size: 17px;
@@ -403,10 +517,7 @@
    SECTION 4: CRAFTSMANSHIP
    ========================================================== */
 
-.craftSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.craftSection {}
 
 .craftGrid {
   display: grid;
@@ -452,10 +563,7 @@
    ========================================================== */
 
 .fabricSection,
-.fitSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.fitSection {}
 
 .twoColSpecs {
   max-width: 900px;
@@ -505,10 +613,7 @@
    SECTION 7: SPECIFICATIONS (COMPACT CARD)
    ========================================================== */
 
-.technicalSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.technicalSection {}
 
 .compactSpecsCard {
   max-width: 900px;
@@ -559,10 +664,7 @@
    SECTION 8: CARE INSTRUCTIONS
    ========================================================== */
 
-.careSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.careSection {}
 
 .careGrid {
   display: grid;
@@ -604,10 +706,7 @@
    SECTION 9: PACKAGING CURATION
    ========================================================== */
 
-.packagingSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.packagingSection {}
 
 .packagingGrid {
   display: grid;
@@ -654,20 +753,30 @@
    SECTION 10: OWNERSHIP INFORMATION (REGISTRY)
    ========================================================== */
 
-.ownershipSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.ownershipSection {}
 
 .registryBox {
   max-width: 900px;
-  background: #0d0d0d; /* deep black */
-  color: #ffffff;
-  border: 1px solid rgba(200, 164, 106, 0.2);
-  padding: 32px;
+  background: radial-gradient(circle at top left, #1e1e1e 0%, #111111 100%);
+  color: #faf8f5;
+  border: 1.5px solid rgba(200, 164, 106, 0.35); /* thin warm gold metallic border */
+  padding: 56px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 36px;
+  position: relative;
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    inset 0 0 50px rgba(0, 0, 0, 0.9); /* deep embossed slot shadow */
+}
+
+.registryBox::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(200, 164, 106, 0.15); /* nested inner card frame */
+  pointer-events: none;
 }
 
 .registryHeader {
@@ -727,10 +836,7 @@
    SECTION 11: EDITORIAL NOTES
    ========================================================== */
 
-.editorialNotesSection {
-  padding: 100px 0 100px;
-  border-top: 1px solid var(--border-subtle);
-}
+.editorialNotesSection {}
 
 .editorialNotesText {
   font-family: var(--font-heading);
@@ -747,16 +853,111 @@
    SECTION 12: GARMENT LIFE CYCLE (HORIZONTAL TIMELINE)
    ========================================================== */
 
-.lifecycleSection {
-  padding: 140px 0 100px;
-  border-top: 1px solid var(--border-subtle);
+/* ==========================================================
+   CRAFTSMANSHIP HERO SECTION (Moved directly above Why We Made This)
+   ========================================================== */
+.craftsmanshipHeroSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.craftsmanshipHeroGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  width: 100%;
+  margin-top: 48px;
+}
+
+@media (min-width: 768px) {
+  .craftsmanshipHeroGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.craftsmanshipHeroCard {
   background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 40px 32px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.craftsmanshipHeroCard:hover {
+  border-color: #c8a46a;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(200, 164, 106, 0.05);
+}
+
+.craftHeroNum {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 300;
+  color: rgba(200, 164, 106, 0.2);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.craftHeroLabel {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 8px;
+}
+
+.craftHeroTitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.craftHeroCaption {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  line-height: 1.4;
+  border-left: 2px solid #c8a46a;
+  padding-left: 12px;
+}
+
+.craftHeroDesc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ==========================================================
+   REDESIGNED GARMENT LIFE CYCLE (Genesis Timeline milestone cards)
+   ========================================================== */
+.lifecycleSection {
+  background-color: var(--bg-secondary);
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
 }
 
 .lifecycleHeader {
   text-align: center;
   max-width: 600px;
-  margin: 0 auto 64px;
+  margin: 0 auto 56px;
 }
 
 .lifecycleSub {
@@ -766,205 +967,199 @@
   margin: 12px 0 0;
 }
 
-.timelineWrapper {
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 0;
+.milestoneGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+  margin-top: 56px;
 }
 
-.timelineLine {
-  position: absolute;
-  top: 59px;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  background-color: rgba(200, 164, 106, 0.25);
-  z-index: 1;
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  .timelineLine {
-    display: block;
+@media (min-width: 640px) {
+  .milestoneGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.timelineHorizontalGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 40px;
-  position: relative;
-  z-index: 2;
-}
-
-@media (min-width: 768px) {
-  .timelineHorizontalGrid {
+@media (min-width: 1024px) {
+  .milestoneGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (min-width: 1024px) {
-  .timelineHorizontalGrid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 20px;
+.milestoneCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 36px 36px 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 28px;
+  text-align: left;
+  min-height: 160px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 639px) {
+  .milestoneCard {
+    flex-direction: column;
+    min-height: auto;
   }
 }
 
-.timelineHorizontalItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
-  padding: 0 10px;
+.milestoneCard:hover {
+  border-color: var(--text-muted);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.02);
 }
 
-.timelineIconDot {
+.milestoneCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.milestoneNum {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 500;
+  color: #c8a46a;
+}
+
+.milestoneIconBox {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background-color: var(--bg-primary);
-  border: 1px solid rgba(200, 164, 106, 0.4);
+  background: rgba(200, 164, 106, 0.08);
   color: #c8a46a;
-  transition: all 250ms ease;
 }
 
-.timelineHorizontalItem:hover .timelineIconDot {
-  background-color: #c8a46a;
-  color: var(--bg-primary);
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(200, 164, 106, 0.3);
-}
-
-.timelineStageNum {
+.milestoneTitle {
   font-family: var(--font-heading);
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.15em;
-  color: #c8a46a;
-  text-transform: uppercase;
-}
-
-.timelineStageTitle {
-  font-family: var(--font-heading);
-  font-size: 13.5px;
-  font-weight: 600;
-  margin: 0;
   color: var(--text-primary);
+  margin: 0 0 10px;
 }
 
-.timelineStageDesc {
-  font-size: 11.5px;
-  line-height: 1.6;
+.milestoneCaption {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.milestoneDesc {
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--text-secondary);
   margin: 0;
 }
 
 /* ==========================================================
-   SECTION 13: DIGITAL PASSPORT CARD
+   PREMIUM PRODUCT INFORMATION (Merged Specifications Registry)
    ========================================================== */
-
-.passportSection {
-  padding: 140px 0;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.passportHeader {
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto 56px;
-}
-
-.passportSub {
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--text-secondary);
-  margin: 8px 0 0;
-}
-
-.passportCard {
-  max-width: 600px;
+.premiumProductInfoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 40px;
-  background: #0d0d0d; /* Rich deep charcoal black */
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
+  width: 100%;
 }
 
-.passportCardTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 20px;
-}
-
-.passportTitle {
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.25em;
-  color: #c8a46a;
-}
-
-.passportId {
-  font-size: 10px;
-  font-family: monospace;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.passportSpecs {
+.premiumInfoGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 40px 32px;
+  width: 100%;
+  margin-top: 56px;
 }
 
-.passportSpec {
+@media (min-width: 768px) {
+  .premiumInfoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .premiumInfoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.infoCol {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  text-align: left;
 }
 
-.passportLabel {
-  font-size: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: rgba(255, 255, 255, 0.35);
+.infoSubHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.passportValue {
+.infoIcon {
+  color: #c8a46a;
+}
+
+.infoSubTitle {
+  font-family: var(--font-heading);
   font-size: 13px;
-  color: #faf8f5;
-  font-weight: 400;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0;
 }
 
-.passportCardFooter {
+.infoEditorial {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.infoDataBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dataRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 20px;
-  font-size: 9px;
-  font-family: var(--font-heading);
-  letter-spacing: 0.15em;
-  font-weight: 600;
+  font-size: 12.5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.passportSeal {
-  color: rgba(255, 255, 255, 0.3);
+.dataRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
-.passportGrade {
-  color: #c8a46a;
+.dataRow span:first-child {
+  color: var(--text-muted);
+}
+
+.dataRow span:last-child {
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: right;
 }
 
 /* ==========================================================
@@ -972,9 +1167,9 @@
    ========================================================== */
 
 .related {
-  margin-top: 140px;
+  margin-top: 60px;
   border-top: 1px solid var(--border-subtle);
-  padding-top: 80px;
+  padding-top: 60px;
 }
 
 .relatedTitle {
@@ -1037,3 +1232,391 @@
     margin-top: 80px;
   }
 }
+
+/* ==========================================================
+   CRAFTSMANSHIP (60/40 FASHION CAMPAIGN MAGAZINE SPREAD)
+   ========================================================== */
+.editorialMagazineSection {
+  padding: 120px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+  margin: 0 auto 100px;
+}
+
+.magazineSpreadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  max-width: 1360px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .magazineSpreadContainer {
+    flex-direction: row;
+    gap: 72px;
+  }
+}
+
+/* LEFT SIDE (~60%): Large Tall Campaign Photograph */
+.magazinePhotoCol {
+  flex: 1.4; /* ~60% width ratio */
+  width: 100%;
+}
+
+.magazinePhotoFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  min-height: 560px;
+  background-color: var(--surface-subtle, #121212);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.magazinePhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.slowFade {
+  animation: slowFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slowFadeIn {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.magazinePhotoControls {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.magazineDashIndicators {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.magazineDash {
+  width: 24px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.magazineDashActive {
+  background-color: #c8a46a;
+  width: 36px;
+}
+
+/* RIGHT SIDE (~40%): Single Unified Editorial Panel */
+.magazineArticleCol {
+  flex: 1; /* ~40% width ratio */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.magazineHeaderBlock {
+  margin-bottom: 48px;
+}
+
+.magazineEyebrow {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 12px;
+}
+
+.magazineMainTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+  line-height: 1.1;
+}
+
+.magazineEditorialNote {
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #c8a46a;
+  margin: 0;
+  max-width: 480px;
+}
+
+/* 4 Whitespace-Separated Content Blocks */
+.magazineSpecList {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.magazineSpecBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.magazineSpecBlock:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.specHeaderTag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.specSentence {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 520px;
+}
+
+/* ==========================================================================
+   MOBILE BOTTOM PURCHASE BAR
+   Fixed sticky bar at bottom — mobile only
+   ========================================================================== */
+
+.mobileBottomBar {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 767px) {
+  /* Show the floating bottom purchase bar */
+  .mobileBottomBar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 16px));
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(200, 164, 106, 0.15);
+    animation: mobileBarSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes mobileBarSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Wishlist icon button */
+  .mobileBarWishlist {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(200, 164, 106, 0.25);
+    border-radius: 4px;
+    color: rgba(245, 241, 232, 0.7);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarWishlist.wishlisted {
+    color: #e05c4a;
+    border-color: rgba(224, 92, 74, 0.4);
+    background: rgba(224, 92, 74, 0.08);
+  }
+
+  .mobileBarWishlist:active {
+    transform: scale(0.94);
+  }
+
+  /* Buy Now — outline gold */
+  .mobileBarBuyNow {
+    flex: 1;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #c8a46a;
+    border: 1px solid #c8a46a;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarBuyNow:hover:not(:disabled),
+  .mobileBarBuyNow:active:not(:disabled) {
+    background: rgba(200, 164, 106, 0.12);
+  }
+
+  .mobileBarBuyNow:disabled {
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+  }
+
+  /* Add to Bag — filled primary */
+  .mobileBarAddToBag {
+    flex: 1.4;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: #f5f1e8;
+    color: #0a0a0a;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileBarAddToBag:hover:not(:disabled),
+  .mobileBarAddToBag:active:not(:disabled) {
+    background: #ffffff;
+  }
+
+  .mobileBarAddToBag:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+  }
+
+  /* Hide the desktop buy box CTA stack on mobile — shown in bottom bar instead */
+  .heroActions {
+    display: none;
+  }
+
+  /* Add bottom padding to the page so content isn't hidden behind the bar */
+  .pdpContainer {
+    padding-bottom: 100px;
+  }
+
+  /* Related products: 2 per row on mobile */
+  .relatedProductsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Related section mobile spacing refinement (Task 3) */
+  .related {
+    margin-top: 32px !important;
+    padding-top: 24px !important;
+  }
+  
+  .relatedTitle {
+    font-size: 16px !important;
+    margin-bottom: 16px !important;
+    text-align: center !important;
+  }
+
+  /* Craftsmanship mobile redesign (Task 4): Centered Heading + 2x2 Centered Grid */
+  .editorialMagazineSection {
+    padding: 32px 16px !important;
+  }
+
+  .editorialMagazineSection > div {
+    padding: 0 !important;
+  }
+
+  .editorialMagazineSection > div > div:first-child {
+    text-align: center !important;
+    margin-bottom: 24px !important;
+  }
+
+  .editorialMagazineSection h2 {
+    font-size: 26px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .editorialMagazineSection p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 14px !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div span {
+    font-size: 9.5px !important;
+    margin-bottom: 6px !important;
+    letter-spacing: 0.15em !important;
+  }
+
+  .editorialMagazineSection > div > div:last-child > div p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+}
+

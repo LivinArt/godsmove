@@ -256,7 +256,12 @@ export default function OrderCRMClient({
             <tbody>
               {order.items.map((item) => (
                 <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                  <td style={{ padding: '12px 0', fontWeight: 600 }}>{item.productName}</td>
+                  <td style={{ padding: '12px 0', fontWeight: 600 }}>
+                    {item.productName}
+                    <div className="mono" style={{ fontSize: 9, color: 'var(--admin-muted)', marginTop: 4 }}>
+                      GM-ART-{item.id.toUpperCase()}
+                    </div>
+                  </td>
                   <td style={{ textAlign: 'center', padding: '12px 0' }}>{item.size}</td>
                   <td style={{ textAlign: 'center', padding: '12px 0' }}>×{item.quantity}</td>
                   <td style={{ textAlign: 'right', padding: '12px 0' }}>{formatINR(item.price)}</td>
@@ -300,26 +305,40 @@ export default function OrderCRMClient({
         {/* Operational Controls */}
         <div className="admin-card" style={{ padding: 20 }}>
           <h3 style={{ marginTop: 0, marginBottom: 14, fontSize: 14 }}>Operational Controls</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          
+          {/* COD Informational Banner */}
+          {isCOD && (
+            <div style={{ fontSize: 12, color: '#c8a46a', padding: '10px 12px', background: 'rgba(200,164,106,0.08)', borderRadius: 6, border: '1px solid rgba(200,164,106,0.3)', marginBottom: 14 }}>
+              💵 <strong>Cash on Delivery Order</strong>
+              <div style={{ color: 'var(--admin-muted)', fontSize: 11, marginTop: 2 }}>
+                Payment of ₹{formatINR(order.total)} will be collected by courier upon delivery.
+              </div>
+            </div>
+          )}
 
+          {/* Zero-Payable Credits Banner */}
+          {order.total === 0 && (
+            <div style={{ fontSize: 12, color: '#22c55e', padding: '10px 12px', background: 'rgba(34,197,94,0.08)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.3)', marginBottom: 14 }}>
+              ✨ <strong>100% GODSMOVE Credits Order</strong>
+              <div style={{ color: 'var(--admin-muted)', fontSize: 11, marginTop: 2 }}>
+                Final payable is ₹0. Order is pre-paid and immediately ready for fulfillment.
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Quick Action Button */}
             {order.status === 'PENDING' && (
-              <>
-                <button onClick={() => handleStatusTransition('CONFIRMED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  {isCOD ? 'Approve COD Order' : 'Approve & Confirm Order'}
-                </button>
-                {!isCOD && order.paymentStatus !== 'PAID' && (
-                  <div style={{ fontSize: 11, color: '#f59e0b', padding: '6px 10px', background: 'rgba(245,158,11,0.08)', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)' }}>
-                    ⚠️ Payment not yet received. Confirm only after verifying payment.
-                  </div>
-                )}
-                <button onClick={() => handleStatusTransition('CANCELLED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)' }}>
-                  Reject / Cancel Order
-                </button>
-              </>
+              <button onClick={() => handleStatusTransition('CONFIRMED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                {isCOD ? 'Approve COD Order' : 'Approve & Confirm Order'}
+              </button>
             )}
 
             {order.status === 'CONFIRMED' && (
-              <button onClick={() => handleStatusTransition('PACKED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Mark as Packed</button>
+              <button onClick={() => handleStatusTransition('PACKED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                Mark as Packed
+              </button>
             )}
 
             {order.status === 'PACKED' && (
@@ -329,64 +348,96 @@ export default function OrderCRMClient({
                   <select value={carrier} onChange={(e) => setCarrier(e.target.value)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }}>
                     <option value="Shiprocket">Shiprocket (Auto)</option>
                     <option value="Delhivery">Delhivery</option>
+                    <option value="BlueDart">BlueDart</option>
+                    <option value="DTDC">DTDC</option>
                     <option value="Manual">Manual Dispatch</option>
                   </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--admin-muted)', marginBottom: 4 }}>Tracking Number</label>
-                  <input type="text" placeholder="AWB tracking string..." value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }} />
+                  <input type="text" placeholder="AWB tracking number..." value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} style={{ width: '100%', padding: 8, borderRadius: 6, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }} />
                 </div>
-                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Generate Tracking &amp; Dispatch</button>
+                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Assign Courier &amp; Dispatch
+                </button>
               </form>
             )}
 
             {order.status === 'READY_FOR_PICKUP' && (
-              <button onClick={() => handleStatusTransition('IN_TRANSIT')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Mark as Picked Up (In Transit)</button>
+              <button onClick={() => handleStatusTransition('IN_TRANSIT')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                Mark as Dispatched (In Transit)
+              </button>
             )}
 
             {order.status === 'IN_TRANSIT' && (
-              <button onClick={() => handleStatusTransition('DELIVERED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Mark as Delivered</button>
+              <button onClick={() => handleStatusTransition('DELIVERED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                Mark as Delivered
+              </button>
             )}
 
             {order.status === 'DELIVERED' && (
-              <>
-                {isCOD ? (
-                  <button onClick={() => setCodConfirmOpen(true)} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-                    💵 Confirm COD Collection &amp; Complete
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleStatusTransition('COMPLETED')}
-                    disabled={loading || order.paymentStatus !== 'PAID'}
-                    className="btn-primary"
-                    style={{ width: '100%', justifyContent: 'center', opacity: order.paymentStatus === 'PAID' ? 1 : 0.4, cursor: order.paymentStatus === 'PAID' ? 'pointer' : 'not-allowed' }}
-                    title={order.paymentStatus !== 'PAID' ? `Cannot complete — payment is ${order.paymentStatus}` : ''}
-                  >
-                    Complete Transaction
-                  </button>
-                )}
-                {order.paymentStatus !== 'PAID' && !isCOD && (
-                  <div style={{ fontSize: 11, color: '#ef4444', padding: '6px 10px', background: 'rgba(239,68,68,0.08)', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)' }}>
-                    ⛔ Payment must be PAID before completing this order.
-                  </div>
-                )}
-              </>
+              <button onClick={() => handleStatusTransition('COMPLETED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                Complete Transaction
+              </button>
             )}
 
-            {['PENDING','CONFIRMED','PACKED','READY_FOR_PICKUP','IN_TRANSIT'].includes(order.status) && (
-              <button onClick={() => handleStatusTransition('CANCELLED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>Cancel Order</button>
-            )}
+            {/* Manual Order Stage Override */}
+            <div style={{ borderTop: '1px solid var(--admin-border)', paddingTop: 12, marginTop: 4 }}>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--admin-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Manual Order Stage</label>
+              <select
+                value={order.status}
+                disabled={loading}
+                onChange={(e) => handleStatusTransition(e.target.value)}
+                style={{ width: '100%', padding: 8, borderRadius: 6, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }}
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="CONFIRMED">CONFIRMED</option>
+                <option value="PACKED">PACKED</option>
+                <option value="READY_FOR_PICKUP">READY_FOR_PICKUP</option>
+                <option value="IN_TRANSIT">IN_TRANSIT</option>
+                <option value="DELIVERED">DELIVERED</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="RETURNED">RETURNED</option>
+                <option value="REFUNDED">REFUNDED</option>
+              </select>
+            </div>
 
-            {order.status === 'CANCELLED' && <div style={{ textAlign: 'center', color: 'var(--admin-danger)', fontSize: 12, fontWeight: 600, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>Order Cancelled</div>}
-            {order.status === 'COMPLETED' && (
-              <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>
-                <div style={{ color: 'var(--admin-accent)' }}>✓ Order Completed</div>
-                {order.paidAt && <div style={{ color: 'var(--admin-muted)', fontSize: 10, marginTop: 4 }}>Paid: {formatDate(order.paidAt)}</div>}
-                {order.fulfilledAt && <div style={{ color: 'var(--admin-muted)', fontSize: 10, marginTop: 2 }}>Delivered: {formatDate(order.fulfilledAt)}</div>}
-              </div>
-            )}
-            {order.status === 'RETURNED' && <div style={{ textAlign: 'center', color: '#f59e0b', fontSize: 12, fontWeight: 600, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>Return Completed</div>}
-            {order.status === 'REFUNDED' && <div style={{ textAlign: 'center', color: 'var(--admin-danger)', fontSize: 12, fontWeight: 600, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>Order Fully Refunded</div>}
+            {/* Payment Status Dropdown */}
+            <div>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--admin-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Status</label>
+              {order.total === 0 ? (
+                <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 600, padding: '6px 10px', background: 'rgba(34,197,94,0.08)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)' }}>
+                  🔒 PAID (Locked — ₹0 Payable)
+                </div>
+              ) : (
+                <select
+                  value={order.paymentStatus}
+                  disabled={loading}
+                  onChange={async (e) => {
+                    setLoading(true);
+                    try {
+                      const { updateOrderPaymentStatus } = await import('@/actions/admin-operations.actions');
+                      await updateOrderPaymentStatus(order.id, e.target.value);
+                      alert(`✓ Payment status updated to ${e.target.value}`);
+                      router.refresh();
+                    } catch (err: any) {
+                      alert(`⚠ ${err.message || 'Failed to update payment status'}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }}
+                >
+                  <option value="PAID">PAID</option>
+                  <option value="UNPAID">UNPAID</option>
+                  <option value="PARTIALLY_REFUNDED">PARTIALLY_REFUNDED</option>
+                  <option value="REFUNDED">REFUNDED</option>
+                  <option value="FAILED">FAILED</option>
+                </select>
+              )}
+            </div>
+
           </div>
         </div>
 

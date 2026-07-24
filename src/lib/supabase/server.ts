@@ -9,7 +9,7 @@ async function ensureDevUsersExist() {
     const devId = '00000000-0000-0000-0000-000000000000';
     await prisma.profile.upsert({
       where: { id: devId },
-      update: {},
+      update: { role: 'ADMIN' },
       create: {
         id: devId,
         email: 'dev@godsmove.com',

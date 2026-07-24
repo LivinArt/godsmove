@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Heart, Menu, X, User } from 'lucide-react';
+import { ShoppingBag, Heart, Menu, X, User, Home, Sparkles, Star, BookOpen } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import Image from 'next/image';
 import styles from './Navbar.module.css';
@@ -15,13 +15,24 @@ const NAV_LINKS = [
   { href: '/our-story', label: 'Story' },
 ] as const;
 
+const HAMBURGER_LINKS = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/drops', label: 'Drops', icon: Sparkles },
+  { href: '/exclusive-rack', label: 'Exclusive Rack', icon: Star },
+  { href: '/our-story', label: 'Story', icon: BookOpen },
+] as const;
+
 export default function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
-  const { setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
+  const { isCartOpen, setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
   const cartCount = useStore((s) => s.cart.length > 0 ? s.getCartCount() : 0);
   const wishlistCount = useStore((s) => s.wishlist.length);
+
+  const isCartActive = isCartOpen || pathname === '/checkout';
+  const isWishlistActive = !isCartActive && pathname.startsWith('/wishlist');
+  const isProfileActive = !isCartActive && pathname.startsWith('/profile');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,7 +67,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''} ${showHeroLogo ? styles.heroActive : ''}`}>
+      <nav className={`${styles.nav} ${(scrolled || !isHome) ? styles.scrolled : ''} ${showHeroLogo ? styles.heroActive : ''}`}>
         <div className={styles.inner}>
           <div className={styles.leftZone}>
             <button
@@ -88,35 +99,24 @@ export default function Navbar() {
           <div className={styles.centerZone}>
             <Link href="/" className={styles.logoWrap} id="nav-logo" aria-label="GODSMOVE Home">
               <div className={styles.logoContainer}>
-                {/* Vertical White Logo (Hero active style) */}
-                <div className={`${styles.logoSingle} ${styles.logoVertical} ${showHeroLogo ? styles.visible : ''}`}>
+                {/* Banner Logo (Hero active style) */}
+                <div className={`${styles.logoSingle} ${showHeroLogo ? styles.visible : ''}`}>
                   <Image
-                    src="/images/logo/logo-vertical-white.png"
-                    alt="GODSMOVE"
-                    width={110}
-                    height={110}
-                    priority
-                    className={styles.verticalLogoImg}
-                  />
-                </div>
-                {/* Horizontal White Logo (Transparent/Dark page state) */}
-                <div className={`${styles.logoSingle} ${styles.logoHorizontal} ${!showHeroLogo && !scrolled ? styles.visible : ''}`}>
-                  <Image
-                    src="/images/logo/logo-horizontal-white.png"
+                    src="/images/logo/Banner.png"
                     alt="GODSMOVE"
                     width={280}
-                    height={35}
+                    height={75}
                     priority
                     className={styles.horizontalLogoImg}
                   />
                 </div>
-                {/* Horizontal Black Logo (Scrolled/Light page state) */}
-                <div className={`${styles.logoSingle} ${styles.logoHorizontal} ${!showHeroLogo && scrolled ? styles.visible : ''}`}>
+                {/* Scroll Logo (Scrolled/Light page state) */}
+                <div className={`${styles.logoSingle} ${!showHeroLogo ? styles.visible : ''}`}>
                   <Image
-                    src="/images/logo/logo-horizontal-black.png"
+                    src="/images/logo/Scroll.png"
                     alt="GODSMOVE"
                     width={280}
-                    height={35}
+                    height={75}
                     priority
                     className={styles.horizontalLogoImg}
                   />
@@ -130,7 +130,7 @@ export default function Navbar() {
               <div className={styles.actionWrapper}>
                 <Link
                   href="/wishlist"
-                  className={styles.actionBtn}
+                  className={`${styles.actionBtn} ${isWishlistActive ? styles.actionBtnActive : ''}`}
                   aria-label="Your Wishlist"
                   id="nav-wishlist"
                 >
@@ -143,7 +143,7 @@ export default function Navbar() {
               <div className={styles.actionWrapper}>
                 <Link
                   href="/profile"
-                  className={styles.actionBtn}
+                  className={`${styles.actionBtn} ${isProfileActive ? styles.actionBtnActive : ''}`}
                   aria-label="Your Profile"
                   id="nav-profile"
                 >
@@ -154,7 +154,7 @@ export default function Navbar() {
 
               <div className={styles.actionWrapper}>
                 <button
-                  className={styles.actionBtn}
+                  className={`${styles.actionBtn} ${isCartActive ? styles.actionBtnActive : ''}`}
                   onClick={() => setCartOpen(true)}
                   aria-label="Your Bag"
                   id="nav-cart"
@@ -169,52 +169,49 @@ export default function Navbar() {
         </div>
       </nav>
 
+      {/* Task 6: Mobile Half-Screen Luxury Side Drawer */}
       <div
         id="mobile-nav-menu"
         role="dialog"
         aria-modal="true"
         aria-label="Site navigation"
         className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOpen : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
       >
-        <div className={styles.mobileContent}>
-          <div className={styles.mobileLinks}>
-            {NAV_LINKS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={styles.mobileLink}
+        <div className={styles.mobileDrawer} onClick={(e) => e.stopPropagation()}>
+          <div>
+            <div className={styles.mobileDrawerHeader}>
+              <span className={styles.mobileDrawerTitle}>GODSMOVE</span>
+              <button
+                type="button"
                 onClick={() => setMobileMenuOpen(false)}
+                className={styles.mobileDrawerCloseBtn}
+                aria-label="Close menu"
               >
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              href="/profile"
-              className={styles.mobileLinkSecondary}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Profile
-            </Link>
-            <Link
-              href="/wishlist"
-              className={styles.mobileLinkSecondary}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Wishlist
-            </Link>
-            <button
-              type="button"
-              className={styles.mobileLinkSecondary}
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setCartOpen(true);
-              }}
-            >
-              Cart
-            </button>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={styles.mobileLinks}>
+              {HAMBURGER_LINKS.map((item) => {
+                const IconComp = item.icon;
+                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`${styles.mobileLink} ${isActive ? styles.mobileLinkActive : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <IconComp size={16} style={{ color: isActive ? '#c8a46a' : 'rgba(255,255,255,0.7)' }} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
+
           <div className={styles.mobileMeta}>
-            <p className="caption">SS26 Collection</p>
             <p className={styles.mobileTag}>Make your move.</p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 .page {
-  padding-top: calc(var(--nav-height) + var(--space-xl));
+  padding-top: calc(var(--nav-height) + var(--space-3xl));
   padding-bottom: var(--space-4xl);
   min-height: 100vh;
 }
@@ -8,10 +8,11 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-xl);
   transition: color var(--duration-fast) var(--ease-smooth);
 }
 
@@ -22,9 +23,10 @@
 .title {
   font-family: var(--font-heading);
   font-weight: 700;
-  font-size: clamp(28px, 4vw, 40px);
+  font-size: clamp(32px, 5vw, 48px);
   letter-spacing: -0.02em;
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-3xl);
+  text-transform: uppercase;
 }
 
 .empty {
@@ -70,6 +72,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .field {
@@ -152,8 +160,9 @@
 }
 
 .addressCardActive {
-  border-color: var(--text-primary);
-  background-color: var(--grey-deep);
+  border-color: #c8a46a;
+  background-color: rgba(200, 164, 106, 0.04);
+  box-shadow: 0 0 0 1px rgba(200, 164, 106, 0.25), 0 4px 20px rgba(200, 164, 106, 0.08);
 }
 
 .addressDefaultBadge {
@@ -199,11 +208,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background-color: var(--text-primary);
-  color: var(--white);
+  background-color: #c8a46a;
+  box-shadow: 0 0 8px rgba(200, 164, 106, 0.5);
 }
 
 .addressCardNew {
@@ -568,3 +577,544 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Coupon Display Block in Sidebar */
+.couponOfferDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offerStatusHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bestOfferAppliedLabel {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.bestOfferAvailableLabel {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.appliedCodeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  padding: 8px 12px;
+  margin-top: 4px;
+}
+
+.appliedCodeBadge {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.appliedCodeSavings {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8a46a;
+}
+
+.checkOffersLink {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  width: fit-content;
+  transition: opacity 0.2s ease;
+}
+
+.checkOffersLink:hover {
+  opacity: 0.7;
+}
+
+/* Discount Modal Overlay */
+.discountModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+
+.discountModalContent {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 36px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.discountModalClose {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.discountModalClose:hover {
+  color: var(--text-primary);
+}
+
+.discountModalTitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.discountModalSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 6px 0 24px;
+}
+
+/* Manual Input */
+.modalManualCouponGroup {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: 8px;
+}
+
+.modalCouponInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-medium);
+  background-color: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+.modalCouponInput:focus {
+  border-color: var(--text-primary);
+}
+
+.modalCouponErrorText {
+  color: var(--accent-red, #dc3545);
+  font-size: 11px;
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+
+/* Coupon Cards */
+.couponCardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 20px;
+}
+
+.modalListLabel {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.couponCard {
+  border: 1px solid var(--border-medium);
+  background-color: var(--bg-primary);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.25s ease;
+}
+
+.couponCardActive {
+  border-color: #c8a46a;
+  box-shadow: 0 0 12px rgba(200, 164, 106, 0.08);
+}
+
+.couponCardIneligible {
+  opacity: 0.6;
+}
+
+.couponCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.couponCardCode {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.couponAppliedBadge {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: rgba(200, 164, 106, 0.1);
+  color: #c8a46a;
+  padding: 2px 8px;
+}
+
+.couponCardDesc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.couponCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.couponCardSavings {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8a46a;
+}
+
+.couponApplyBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.couponApplyBtn:hover {
+  color: #c8a46a;
+}
+
+.couponCardSpendMore {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.noCouponsMsg {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.checkboxLabelDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.noCreditsNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 6px 0 0 28px;
+}
+
+.inlineCreditsConfirmation {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 500;
+  color: #c8a46a;
+  margin: 8px 0 0 28px;
+  letter-spacing: 0.02em;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   MOBILE 3-STEP CHECKOUT WIZARD STYLES
+   Visible only on mobile (hidden desktop)
+   ========================================================================== */
+
+.mobileWizardHeader {
+  display: none; /* hidden desktop */
+}
+
+.mobileStepCtaWrap,
+.mobileStep2CtaWrap {
+  display: none; /* hidden desktop */
+}
+
+@media (max-width: 767px) {
+  .mobileWizardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(200, 164, 106, 0.04);
+    border: 1px solid rgba(200, 164, 106, 0.15);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 24px;
+  }
+
+  .mobileStepTab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .mobileStepTabActive {
+    color: #c8a46a;
+    background: rgba(200, 164, 106, 0.12);
+  }
+
+  .stepNum {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .mobileStepTabActive .stepNum {
+    background: #c8a46a;
+    color: #0a0a0a;
+  }
+
+  .stepConnector {
+    height: 1px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+  }
+
+  .mobileStepHidden {
+    display: none !important;
+  }
+
+  .mobileStepCtaWrap {
+    display: flex;
+    margin-top: 24px;
+  }
+
+  .mobileStep2CtaWrap {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .mobileWizardNextBtn {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: #f5f1e8;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobileWizardNextBtn:hover {
+    background: #ffffff;
+  }
+
+  .mobileWizardBackBtn {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #c8a46a;
+    border: 1px solid rgba(200, 164, 106, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+}
+
+/* Mobile Step 2 Payment Selection */
+.mobileStep2PaymentSection {
+  margin-top: 24px;
+  margin-bottom: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.paymentSectionLabel {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  margin-bottom: 14px;
+}
+
+/* Phone Number UX (+91 badge & soft warning) */
+.phoneInputWrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.phoneInputWrap:focus-within {
+  border-color: #c8a46a;
+}
+
+.phoneCountryBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.08);
+  border-right: 1px solid var(--border-subtle);
+  height: 44px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.phoneInput {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 0 12px !important;
+  height: 44px !important;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.softPhoneWarning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.2);
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+/* Zero Value Order Handling */
+.zeroPayFaded {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(40%);
+}
+
+.zeroPayNotice {
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.3);
+  color: #c8a46a;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+
+

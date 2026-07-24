@@ -190,15 +190,18 @@ export async function createOrder(input: CreateOrderInput) {
       };
     });
 
-    // 6. Create order
+    // 6. Create order (Auto-mark PAID & CONFIRMED if final payable is ₹0 via credits/discounts)
+    const isZeroPayable = pricing.finalPayable === 0;
+
     const order = await tx.order.create({
       data: {
         orderNumber,
         profileId: user?.id ?? null,
         email: data.shippingAddress.email,
-        status: 'PENDING',
-        paymentStatus: 'UNPAID',
-        paymentMethod: data.paymentMethod as any,
+        status: isZeroPayable ? 'CONFIRMED' : 'PENDING',
+        paymentStatus: isZeroPayable ? 'PAID' : 'UNPAID',
+        paidAt: isZeroPayable ? new Date() : null,
+        paymentMethod: isZeroPayable && data.paymentMethod === 'COD' ? 'WALLET' : (data.paymentMethod as any),
         subtotal: pricing.subtotal,
         shippingCost: pricing.shippingCost,
         discountAmount: pricing.couponDiscount,

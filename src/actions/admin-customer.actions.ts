@@ -142,6 +142,12 @@ export async function getAdminCustomerDetail(id: string) {
         },
         orderBy: { createdAt: 'desc' },
       },
+      careRequests: {
+        include: {
+          orderItem: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }
     },
   });
 
@@ -331,6 +337,34 @@ export async function getAdminCustomerDetail(id: string) {
     });
   });
 
+  // Care Requests
+  const careRequests = p.careRequests?.map((c: any) => ({
+    id: c.id,
+    productCode: c.productCode,
+    productName: c.orderItem.productName,
+    category: c.category,
+    description: c.description,
+    status: c.status,
+    pickupCharge: Number(c.pickupCharge),
+    repairCharge: Number(c.repairCharge),
+    returnCharge: Number(c.returnCharge),
+    totalCharge: Number(c.totalCharge),
+    paymentStatus: c.paymentStatus,
+    rejectReason: c.rejectReason,
+    additionalNotes: c.additionalNotes,
+    createdAt: c.createdAt.toISOString(),
+  })) || [];
+
+  careRequests.forEach((c) => {
+    timeline.push({
+      id: `care-${c.id}`,
+      type: 'return',
+      title: `GODSMOVE Care Requested`,
+      description: `Submitted care request for ${c.productName} (Code: ${c.productCode}) - Status: ${c.status}`,
+      date: c.createdAt,
+    });
+  });
+
   // Sort timeline chronologically descending
   timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -353,6 +387,7 @@ export async function getAdminCustomerDetail(id: string) {
     wallet,
     wishlist,
     returns,
+    careRequests,
     timeline,
   };
 }

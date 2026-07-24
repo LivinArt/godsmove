@@ -93,15 +93,21 @@ export function Merchandising({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="pim-grid-col2">
                 <div>
-                  <label className="form-label">Exclusive Collection Label</label>
-                  <input
-                    type="text"
-                    name="collectionName"
-                    value={formData.collectionName || ''}
-                    onChange={onChange}
+                  <label className="form-label">Collection (Assigned in Identity)</label>
+                  <div
                     className="admin-input"
-                    placeholder="e.g. Vault Archive"
-                  />
+                    style={{
+                      background: 'var(--admin-surface)',
+                      color: '#c8a46a',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontWeight: 600,
+                      opacity: 0.9,
+                      cursor: 'not-allowed',
+                    }}
+                  >
+                    {formData.collectionName || 'Default Catalog'}
+                  </div>
                 </div>
                 <div>
                   <label className="form-label">Editorial Badge Selection</label>

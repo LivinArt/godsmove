@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { X, Heart, ShoppingBag } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { resolveProductImages, resolveImageUrl } from '@/lib/image-resolver';
 import SizeSelector from './SizeSelector';
 import QuantitySelector from './QuantitySelector';
 import styles from './QuickViewModal.module.css';
@@ -79,7 +80,13 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     onClose();
   };
 
-  const images = product.images?.map((i: any) => i.url) || [product.frontImageUrl || '/placeholder.png'];
+  const { frontImage, backImage } = resolveProductImages(product);
+  const images = product.images && product.images.length > 0
+    ? product.images.map((i: any) => typeof i === 'string' ? i : i.url).map((url: string) => resolveImageUrl(url))
+    : [frontImage];
+  if (backImage && backImage !== '/images/placeholder.svg' && !images.includes(backImage)) {
+    images.push(backImage);
+  }
 
   return (
     <div className={styles.overlay} onClick={onClose} role="dialog" aria-modal="true">
@@ -93,7 +100,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
           <div className={styles.galleryZone}>
             <div className={styles.mainImageWrap}>
               <Image
-                src={images[activeImageIdx] || '/placeholder.png'}
+                src={images[activeImageIdx] || '/images/placeholder.svg'}
                 alt={product.name}
                 fill
                 className={styles.mainImg}

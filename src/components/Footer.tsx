@@ -1,81 +1,113 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight } from 'lucide-react';
 import styles from './Footer.module.css';
-
-function InstagramIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-    </svg>
-  );
-}
 
 export default function Footer() {
   return (
     <footer className={styles.footer}>
-      <div className={styles.emotionalStatementSection}>
-        <p className={styles.emotionalStatement}>
-          Designed to be owned. Not simply purchased.
-        </p>
-      </div>
-      <div className={styles.inner}>
-        <div className={styles.top}>
-          <div className={styles.brand}>
-            <Link href="/" className={styles.logoWrap} aria-label="GODSMOVE Home">
-              <img src="/images/godsmove-logo.png" alt="GODSMOVE" className={styles.logoImage} />
-            </Link>
-            <p className={styles.tagline}>Worn With Intent. SS26.</p>
-          </div>
-
-          <div className={styles.columns}>
-            <div className={styles.col}>
-              <h4 className={styles.colTitle}>Shop</h4>
-              <Link href="/drops" className={styles.colLink}>Explore Drops</Link>
-            </div>
-            <div className={styles.col}>
-              <h4 className={styles.colTitle}>World</h4>
-              <Link href="/archive" className={styles.colLink}>Archive</Link>
-              <Link href="/our-story" className={styles.colLink}>Our Story</Link>
-              <Link href="#" className={styles.colLink}>Contact</Link>
-            </div>
-            <div className={styles.col}>
-              <h4 className={styles.colTitle}>Help</h4>
-              <Link href="/sizing" className={styles.colLink}>Sizing</Link>
-              <Link href="/shipping" className={styles.colLink}>Shipping</Link>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.newsletter}>
-          <p className={styles.nlLabel}>Move with purpose.</p>
-          <form className={styles.nlForm} onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="email"
-              placeholder="Email address"
-              className={styles.nlInput}
-              id="footer-email"
-              aria-label="Email for newsletter"
+      <div className={styles.container}>
+        {/* Brand Header: Large Logo & Small Editorial statement */}
+        <div className={styles.brandHeader}>
+          <div className={styles.logoWrap}>
+            <Image
+              src="/images/logo/logo-horizontal-white.png"
+              alt="GODSMOVE"
+              width={320}
+              height={40}
+              className={styles.logoImg}
             />
-            <button type="submit" className={styles.nlBtn} id="footer-subscribe" aria-label="Subscribe">
-              <ArrowUpRight size={18} />
-            </button>
-          </form>
+          </div>
+          <p className={styles.editorialSentence}>Crafted for permanence.</p>
         </div>
 
-        <div className={styles.bottom}>
-          <div className={styles.legal}>
-            <span>© 2026 GODSMOVE. All rights reserved.</span>
-            <Link href="/policies">Our Policies</Link>
-            <Link href="/terms">Terms & Conditions</Link>
+        {/* Elegant divider */}
+        <div className={styles.divider} />
+
+        {/* Navigation Grid */}
+        <div className={styles.grid}>
+          {/* Column 1: Shop */}
+          <div className={styles.col}>
+            <h3 className={styles.colTitle}>Shop</h3>
+            <ul className={styles.colList}>
+              <li><Link href="/drops">Drops</Link></li>
+              <li><Link href="/exclusive-rack">Exclusive Rack</Link></li>
+              <li><Link href="/drops">Collections</Link></li>
+              <li><Link href="/#new-arrivals">New Arrivals</Link></li>
+              <li><Link href="/#editors-selection">Editor's Selection</Link></li>
+            </ul>
           </div>
-          <div className={styles.social}>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <InstagramIcon size={18} />
-            </a>
+
+          {/* Column 2: Client Services */}
+          <div className={styles.col}>
+            <h3 className={styles.colTitle}>Client Services</h3>
+            <ul className={styles.colList}>
+              <li><Link href="/profile">Orders</Link></li>
+              <li><Link href="/shipping">Shipping</Link></li>
+              <li><Link href="/profile">Returns</Link></li>
+              <li><span className={styles.inactiveLink}>Repair & Care</span></li>
+              <li><Link href="/our-story">Contact</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 3: Members */}
+          <div className={styles.col}>
+            <h3 className={styles.colTitle}>Members</h3>
+            <ul className={styles.colList}>
+              <li><Link href="/wishlist">Wishlist</Link></li>
+              <li><Link href="/profile">Passport</Link></li>
+              <li><Link href="/profile">Wallet</Link></li>
+              <li><Link href="/profile">Account</Link></li>
+              <li><Link href="/archive">Archive</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 4: World of GODSMOVE */}
+          <div className={styles.col}>
+            <h3 className={styles.colTitle}>World of GODSMOVE</h3>
+            <ul className={styles.colList}>
+              <li><Link href="/our-story">Story</Link></li>
+              <li><span className={styles.inactiveLink}>Journal</span></li>
+              <li><Link href="/our-story">Craftsmanship</Link></li>
+              <li><Link href="/our-story">Materials</Link></li>
+              <li><span className={styles.inactiveLink}>Careers</span></li>
+              <li><span className={styles.inactiveLink}>Press</span></li>
+            </ul>
+          </div>
+
+          {/* Column 5: Newsletter */}
+          <div className={`${styles.col} ${styles.newsletterCol}`}>
+            <h3 className={styles.colTitle}>Newsletter</h3>
+            <p className={styles.newsletterText}>
+              Receive archival releases, editorial notes and limited drops.
+            </p>
+            <form className={styles.newsletterForm} onSubmit={(e) => e.preventDefault()}>
+              <input
+                type="email"
+                placeholder="Email address"
+                className={styles.newsletterInput}
+                id="footer-newsletter-email"
+                required
+              />
+              <button type="submit" className={styles.newsletterBtn} aria-label="Subscribe">
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Bottom Strip */}
+        <div className={styles.bottom}>
+          <div className={styles.bottomLeft}>
+            <span>Designed in India. Crafted with intent.</span>
+            <span className={styles.copyright}>© GODSMOVE.</span>
+          </div>
+          <div className={styles.socials}>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer">Pinterest</a>
+            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
           </div>
         </div>
       </div>

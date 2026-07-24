@@ -3,11 +3,10 @@ const { prisma } = require('./src/lib/prisma');
 
 async function main() {
   const products = await prisma.product.findMany({
-    take: 5,
     include: { images: { orderBy: { position: 'asc' } } }
   });
   for (const p of products) {
-    console.log(`\nProduct: ${p.name} (channel: ${p.channel})`);
+    console.log(`\nProduct: ${p.name} (id: ${p.id}, channel: ${p.channel}, status: ${p.status})`);
     console.log(`  frontImageUrl: ${p.frontImageUrl || 'null'}`);
     console.log(`  images count: ${p.images.length}`);
     p.images.forEach((img, i) => {

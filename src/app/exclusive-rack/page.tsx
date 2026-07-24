@@ -3,8 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import ExclusiveRack, { type ExclusiveRackProduct } from '@/components/ExclusiveRack';
-import ProductCard from '@/components/ProductCard';
+import ExclusiveRackClient from './ExclusiveRackClient';
 import { getStorefrontProducts } from '@/actions/storefront.actions';
 import styles from './page.module.css';
 
@@ -31,11 +30,6 @@ export default async function ExclusiveRackPage() {
     return true;
   });
 
-  // First product goes into the hero ExclusiveRack carousel
-  const heroProducts = products.slice(0, 3);
-  // Remaining products rendered as a catalogue grid
-  const gridProducts = products.slice(3);
-
   return (
     <>
       <Navbar />
@@ -43,32 +37,7 @@ export default async function ExclusiveRackPage() {
 
       <main className={styles.page}>
         {products.length > 0 ? (
-          <>
-            {/* Hero: ExclusiveRack editorial carousel */}
-            <ExclusiveRack products={heroProducts as unknown as ExclusiveRackProduct[]} />
-
-            {/* Grid: Remaining exclusive pieces */}
-            {gridProducts.length > 0 && (
-              <section className={styles.gridSection}>
-                <div className="container">
-                  <div className={styles.gridHeader}>
-                    <span className={styles.gridLabel}>The Archive</span>
-                    <h2 className={styles.gridTitle}>Every Piece. Selected with Intent.</h2>
-                    <p className={styles.gridDesc}>
-                      Each entry carries weight. Nothing here is accidental.
-                    </p>
-                  </div>
-                  <div className={styles.grid}>
-                    {gridProducts.map((product) => (
-                      <div key={product.id} className={styles.gridItem}>
-                        <ProductCard product={product as any} theme="dark" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-          </>
+          <ExclusiveRackClient products={products} />
         ) : (
           <div className={`container ${styles.empty}`}>
             <span className={styles.emptyLabel}>EXCLUSIVE RACK</span>

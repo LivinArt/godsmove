@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ExclusiveCountdown } from '@/components/exclusive/ExclusiveCountdown';
+import { resolveProductImages } from '@/lib/image-resolver';
 import styles from './exclusive-access.module.css';
 
 type DashboardData = {
@@ -67,10 +68,10 @@ export function ExclusiveAccessPanel({ data }: { data: DashboardData }) {
           <ul className={styles.productList}>
             {data.unlocks.map((u) => {
               const draw = u.product.exclusiveDraws?.[0];
-              const img = u.product.images?.[0]?.url;
+              const { frontImage } = resolveProductImages(u.product);
               return (
                 <li key={u.product.id} className={styles.productCard}>
-                  {img && <img src={img} alt="" className={styles.thumb} />}
+                  {frontImage && <img src={frontImage} alt="" className={styles.thumb} />}
                   <div>
                     <Link href={`/product/${u.product.slug}`} className={styles.productName}>
                       {u.product.name}
