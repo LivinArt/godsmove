@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -6,12 +7,15 @@ import CartDrawer from '@/components/CartDrawer';
 import ScrollReveal from '@/components/ScrollReveal';
 import ProductCard from '@/components/ProductCard';
 import { getProducts } from '@/actions/product.actions';
+import { constructMetadata } from '@/lib/seo-metadata';
 import styles from './our-story.module.css';
 
-export const metadata = {
+export const metadata: Metadata = constructMetadata({
   title: 'Our Story — GODSMOVE Atelier Archive',
-  description: 'No Coincidence. Every design carries meaning. Clothing is a statement.',
-};
+  description: 'No Coincidence. Every design carries meaning. Clothing is a statement of intent. Explore the origin and manifesto of GODSMOVE.',
+  path: '/our-story',
+  keywords: ['GODSMOVE story', 'atelier archive', 'fashion manifesto', 'luxury streetwear origin'],
+});
 
 export default async function OurStoryPage() {
   const exploreProducts = await getProducts({ status: 'ACTIVE', take: 6 }).catch(() => []);

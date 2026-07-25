@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -9,6 +10,7 @@ import {
   getStorefrontProducts,
   getStorefrontCategories,
 } from '@/actions/storefront.actions';
+import { constructMetadata } from '@/lib/seo-metadata';
 import styles from './category.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -37,18 +39,38 @@ const DEFAULT_EDITORIAL_LINES = [
 const EXCLUSIVE_EDITORIAL = 'The rarest allocations remain reserved inside the archive.';
 
 // Section 4 — drops editorial lines
-const DROPS_EDITORIAL = 'The newest arrivals entering the archive.';
+const DROPS_EDITORIAL = 'New allocations released from the archive.';
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const categories = await getStorefrontCategories();
   const category = categories.find((c: any) => c.slug === slug);
-  return {
-    title: `${category ? category.name.toUpperCase() : 'Category'} — GODSMOVE`,
-    description: category
-      ? `Shop ${category.name} from the GODSMOVE archive. ${EDITORIAL_LINES[slug] || DEFAULT_EDITORIAL_LINES[0]}`
-      : 'GODSMOVE Category Archive.',
-  };
+  
+  if (!category) {
+    return constructMetadata({
+      title: 'Category Not Found',
+      description: 'The requested category archive could not be located.',
+      path: `/category/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  const categoryTitle = `${category.name} Collection | Luxury Streetwear`;
+  const categoryDesc = `Explore ${category.name} from the GODSMOVE archive. ${EDITORIAL_LINES[slug] || DEFAULT_EDITORIAL_LINES[0]} Premium heavy cotton fabric, boxy drop-shoulder cuts, and limited allocations.`;
+
+  return constructMetadata({
+    title: categoryTitle,
+    description: categoryDesc,
+    path: `/category/${slug}`,
+    image: category.imageUrl || null,
+    keywords: [
+      category.name,
+      `GODSMOVE ${category.name}`,
+      `oversized ${category.name} India`,
+      'streetwear collection',
+      'architectural wear',
+    ],
+  });
 }
 
 export default async function CategoryPage({ params }: PageProps) {

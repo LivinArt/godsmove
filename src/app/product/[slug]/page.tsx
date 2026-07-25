@@ -12,17 +12,43 @@ import { createClient } from '@/lib/supabase/server';
 import ProductClient from './ProductClient';
 import { getProductBreadcrumb } from '@/lib/product-channel-label';
 import { resolveProductImages } from '@/lib/image-resolver';
+import { Metadata } from 'next';
+import { constructMetadata } from '@/lib/seo-metadata';
 import styles from './page.module.css';
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getStorefrontProductBySlug(slug);
-  if (!product) return { title: 'Product Not Found — GODSMOVE' };
-  
-  return {
-    title: `${product.seoTitle || product.name} — GODSMOVE`,
-    description: product.seoDescription || product.shortDesc || product.description.substring(0, 160),
-  };
+  if (!product) {
+    return constructMetadata({
+      title: 'Piece Not Found',
+      description: 'The requested statement piece could not be located in the GODSMOVE archive.',
+      path: `/product/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  const images = resolveProductImages(product);
+  const primaryImage = images.frontImage || images.backImage || null;
+
+  return constructMetadata({
+    title: `${product.seoTitle || product.name} | GODSMOVE`,
+    description:
+      product.seoDescription ||
+      product.shortDesc ||
+      product.tagline ||
+      (product.description ? product.description.substring(0, 160) : `Shop ${product.name} from GODSMOVE. Architectural silhouettes engineered with heavy cotton and drop-shoulder cut.`),
+    path: `/product/${product.slug}`,
+    image: primaryImage,
+    keywords: [
+      product.name,
+      product.category?.name || 'Streetwear',
+      product.collectionName || 'Archival Piece',
+      'GODSMOVE apparel',
+      'oversized t-shirt',
+      'drop shoulder tee',
+    ],
+  });
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {

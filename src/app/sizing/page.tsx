@@ -1,9 +1,13 @@
+import { Metadata } from 'next';
 import LegalLayout from '@/components/LegalLayout';
+import { constructMetadata } from '@/lib/seo-metadata';
 
-export const metadata = {
-  title: 'Sizing Guide | GODSMOVE',
-  description: 'Designed to fit the way statement pieces should.',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Sizing Guide & Oversized Measurements | GODSMOVE',
+  description: 'Detailed measurement charts and boxy fit guides for GODSMOVE drop-shoulder tees, heavy fleece hoodies, and statement apparel.',
+  path: '/sizing',
+  keywords: ['GODSMOVE sizing guide', 'oversized tee measurements', 'drop shoulder fit guide', 'chest length chart'],
+});
 
 export default function SizingPage() {
   return (

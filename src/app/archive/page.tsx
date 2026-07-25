@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -6,12 +7,15 @@ import CartDrawer from '@/components/CartDrawer';
 import ScrollReveal from '@/components/ScrollReveal';
 import { getArchivePosts } from '@/actions/editorial.actions';
 import { archiveEntries } from '@/data/collections';
+import { constructMetadata } from '@/lib/seo-metadata';
 import styles from './page.module.css';
 
-export const metadata = {
-  title: 'The Archive — GODSMOVE Editorial Publication',
+export const metadata: Metadata = constructMetadata({
+  title: 'The Archive Journal & Editorial — GODSMOVE',
   description: 'Production notes, colour studies, and architectural garment observations. Explore the GODSMOVE editorial journal.',
-};
+  path: '/archive',
+  keywords: ['GODSMOVE journal', 'fashion editorial', 'colour studies', 'garment observations'],
+});
 
 const typeLabels: Record<string, string> = {
   EDITORIAL: 'Editorial',

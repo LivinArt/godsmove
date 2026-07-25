@@ -1,9 +1,13 @@
+import { Metadata } from 'next';
 import LegalLayout from '@/components/LegalLayout';
+import { constructMetadata } from '@/lib/seo-metadata';
 
-export const metadata = {
-  title: 'Our Policies | GODSMOVE',
-  description: 'Unified reference center for privacy, data, and exchange policies.',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Privacy & Exchange Policies | GODSMOVE Reference Center',
+  description: 'Unified reference center for privacy protection, data security, and return/exchange protocols at GODSMOVE.',
+  path: '/policies',
+  keywords: ['GODSMOVE privacy policy', 'data security', 'exchange policy', 'customer rights'],
+});
 
 export default function PoliciesPage() {
   return (

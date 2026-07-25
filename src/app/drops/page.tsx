@@ -1,16 +1,21 @@
+import { Metadata } from 'next';
 import { Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { getStorefrontProducts, getStorefrontDrops, getStorefrontCategories } from '@/actions/storefront.actions';
+import { constructMetadata } from '@/lib/seo-metadata';
 import ShopClient from './ShopClient';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Shop — GODSMOVE',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Shop All Drops & Releases — GODSMOVE',
+  description: 'Explore limited allocations and architectural drops from GODSMOVE. Premium oversized tees, heavy fleece hoodies, and statement wear.',
+  path: '/drops',
+  keywords: ['streetwear drops India', 'limited edition streetwear', 'GODSMOVE shop', 'oversized collection'],
+});
 
 export default async function ShopPage() {
   const [products, drops, categories] = await Promise.all([

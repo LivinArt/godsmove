@@ -1,9 +1,13 @@
+import { Metadata } from 'next';
 import LegalLayout from '@/components/LegalLayout';
+import { constructMetadata } from '@/lib/seo-metadata';
 
-export const metadata = {
-  title: 'Terms & Conditions | GODSMOVE',
-  description: 'The definitive terms governing the use of the GODSMOVE platform.',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Terms & Conditions | GODSMOVE Legal',
+  description: 'The official terms, conditions, and platform agreement governing purchases, drops, and access to GODSMOVE.',
+  path: '/terms',
+  keywords: ['GODSMOVE terms and conditions', 'legal terms', 'storefront terms of service'],
+});
 
 export default function TermsPage() {
   return (

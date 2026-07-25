@@ -1,9 +1,13 @@
+import { Metadata } from 'next';
 import LegalLayout from '@/components/LegalLayout';
+import { constructMetadata } from '@/lib/seo-metadata';
 
-export const metadata = {
-  title: 'Shipping Policy | GODSMOVE',
-  description: 'Logistics and delivery timelines for your statement pieces.',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Shipping Policy & Delivery Timelines | GODSMOVE',
+  description: 'Logistics protocols, Pan-India delivery timelines, and order tracking details for your statement pieces.',
+  path: '/shipping',
+  keywords: ['GODSMOVE shipping policy', 'Pan-India delivery', 'streetwear shipping timelines'],
+});
 
 export default function ShippingPage() {
   return (

@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -5,14 +6,17 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ExclusiveRackClient from './ExclusiveRackClient';
 import { getStorefrontProducts } from '@/actions/storefront.actions';
+import { constructMetadata } from '@/lib/seo-metadata';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Exclusive Rack — GODSMOVE',
-  description: 'The permanent archive of curated GODSMOVE artifacts. Rare pieces built with intent, allocated to those who understand them.',
-};
+export const metadata: Metadata = constructMetadata({
+  title: 'Exclusive Rack — Archived Allocations | GODSMOVE',
+  description: 'The permanent archive of curated GODSMOVE artifacts. Rare statement pieces built with intent and allocated to decisive creators.',
+  path: '/exclusive-rack',
+  keywords: ['exclusive rack', 'GODSMOVE vault', 'archival streetwear', 'rare drop allocations'],
+});
 
 export default async function ExclusiveRackPage() {
   // Query by the isExclusiveRack PIM flag (set in Admin Merchandising tab)

@@ -5,6 +5,7 @@ import CompareBar from "@/components/CompareBar";
 import { CinematicSiteLoader } from "@/components/CinematicSiteLoader";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthProvider } from "@/context/AuthContext";
+import { constructMetadata } from "@/lib/seo-metadata";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -13,24 +14,20 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-export const metadata: Metadata = {
-  title: "GODSMOVE — Make Your Move.",
+export const metadata: Metadata = constructMetadata({
+  title: "GODSMOVE — Make Your Move | Luxury Streetwear",
   description:
-    "Worn With Intent. GODSMOVE is built for people who move with purpose — decisive creators who execute at the highest level.",
-  keywords: ["streetwear", "fashion", "India", "oversized", "drop shoulder", "editorial", "culture", "godsmove"],
-  openGraph: {
-    title: "GODSMOVE — Make Your Move.",
-    description: "Worn With Intent.",
-    type: "website",
-    locale: "en_IN",
-    siteName: "GODSMOVE",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "GODSMOVE",
-    description: "Worn With Intent.",
-  },
-};
+    "Worn With Intent. GODSMOVE is engineered for decisive creators — architectural silhouettes, heavy 240+ GSM drop-shoulder tees, and limited archival allocations.",
+  path: "/",
+  keywords: [
+    "GODSMOVE",
+    "luxury streetwear India",
+    "oversized t-shirts India",
+    "drop shoulder heavy t-shirt",
+    "architectural apparel",
+    "decisive creators streetwear",
+  ],
+});
 
 export default function RootLayout({
   children,
