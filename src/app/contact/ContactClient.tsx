@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Mail, MessageSquare, Phone, Clock, ChevronDown, CheckCircle2, Send } from 'lucide-react';
 import styles from './contact.module.css';
+import { useStore } from '@/store/useStore';
+import { submitContactEnquiryAction } from '@/actions/care.actions';
 
 const FAQS = [
   {
@@ -28,6 +30,8 @@ const FAQS = [
 ];
 
 export default function ContactClient() {
+  const { showToast } = useStore();
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -41,13 +45,26 @@ export default function ContactClient() {
   const [submitting, setSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await submitContactEnquiryAction({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        subject: form.subject,
+        orderNumber: form.orderNumber || undefined,
+        message: form.message,
+      });
+      showToast('Inquiry Received', 'Our Concierge Team will respond to you within 24 hours.');
       setSubmitted(true);
-    }, 800);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      showToast('Submission Failed', msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

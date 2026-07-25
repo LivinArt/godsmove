@@ -117,7 +117,8 @@ export default function MobileQuickAddSheet({
                     type="button"
                     onClick={() => setSelectedColorState(c)}
                     style={{
-                      padding: '6px 14px',
+                      padding: '10px 16px',
+                      minHeight: '44px',
                       borderRadius: '4px',
                       fontFamily: 'var(--font-heading)',
                       fontSize: '11px',

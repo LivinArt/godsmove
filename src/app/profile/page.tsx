@@ -491,11 +491,11 @@ export default function ProfilePage() {
       { key: 'requested', label: 'Return Requested' },
       { key: 'admin_review', label: 'Admin Review' },
       { key: 'approved', label: 'Approved' },
+      { key: 'wallet_refund', label: 'Wallet Refund Issued' },
       { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
       { key: 'collected', label: 'Collected' },
       { key: 'inspection', label: 'Inspection' },
-      { key: 'refund_approved', label: 'Refund Approved' },
-      { key: 'refund_completed', label: 'Refund Completed' }
+      { key: 'refund_completed', label: 'Return Completed' }
     ];
 
     const status = ret.status; // PENDING, APPROVED, PICKUP_SCHEDULED, COLLECTED, RECEIVED, INSPECTION, REFUND_PROCESSED, COMPLETED, REJECTED
@@ -505,17 +505,15 @@ export default function ProfilePage() {
     if (status === 'PENDING') {
       activeIndex = 1; // admin review
     } else if (status === 'APPROVED') {
-      activeIndex = 2; // approved (next is pickup scheduled)
+      activeIndex = 3; // approved → wallet refund issued immediately
     } else if (status === 'PICKUP_SCHEDULED') {
-      activeIndex = 3; // pickup scheduled
+      activeIndex = 4; // pickup scheduled
     } else if (status === 'COLLECTED') {
-      activeIndex = 4; // collected
+      activeIndex = 5; // collected
     } else if (['RECEIVED', 'INSPECTION'].includes(status)) {
-      activeIndex = 5; // inspection
-    } else if (status === 'REFUND_PROCESSED') {
-      activeIndex = 6; // refund approved
-    } else if (status === 'COMPLETED') {
-      activeIndex = 7; // refund completed
+      activeIndex = 6; // inspection
+    } else if (['REFUND_PROCESSED', 'COMPLETED'].includes(status)) {
+      activeIndex = 7; // return completed
     }
 
     return stages.map((stage, idx) => {
@@ -523,7 +521,7 @@ export default function ProfilePage() {
       if (idx < activeIndex) {
         state = 'completed';
       } else if (idx === activeIndex) {
-        if (activeIndex === 7 && status === 'COMPLETED') {
+        if (activeIndex === 7 && ['REFUND_PROCESSED', 'COMPLETED'].includes(status)) {
           state = 'completed';
         } else {
           state = 'current';
@@ -535,11 +533,11 @@ export default function ProfilePage() {
         if (idx === 0) return e.status === 'REQUESTED' || e.status === 'PENDING';
         if (idx === 1) return e.status === 'PENDING';
         if (idx === 2) return e.status === 'APPROVED';
-        if (idx === 3) return e.status === 'PICKUP_SCHEDULED';
-        if (idx === 4) return e.status === 'COLLECTED';
-        if (idx === 5) return e.status === 'RECEIVED' || e.status === 'INSPECTION';
-        if (idx === 6) return e.status === 'REFUND_PROCESSED';
-        if (idx === 7) return e.status === 'COMPLETED';
+        if (idx === 3) return e.status === 'APPROVED'; // wallet refund same timestamp as approval
+        if (idx === 4) return e.status === 'PICKUP_SCHEDULED';
+        if (idx === 5) return e.status === 'COLLECTED';
+        if (idx === 6) return e.status === 'RECEIVED' || e.status === 'INSPECTION';
+        if (idx === 7) return e.status === 'REFUND_PROCESSED' || e.status === 'COMPLETED';
         return false;
       });
 
@@ -1174,14 +1172,14 @@ export default function ProfilePage() {
                       <div className={styles.formGroup}>
                         <label>Mobile Number</label>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-medium)', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.03)', overflow: 'hidden' }}>
-                          <span style={{ padding: '0 10px', fontSize: '12px', fontWeight: 600, color: '#c8a46a', background: 'rgba(200, 164, 106, 0.08)', height: '40px', display: 'flex', alignItems: 'center', borderRight: '1px solid var(--border-subtle)', whiteSpace: 'nowrap' }}>
+                          <span style={{ padding: '0 10px', fontSize: '12px', fontWeight: 600, color: '#c8a46a', background: 'rgba(200, 164, 106, 0.08)', minHeight: '48px', display: 'flex', alignItems: 'center', borderRight: '1px solid var(--border-subtle)', whiteSpace: 'nowrap' }}>
                             🇮🇳 +91
                           </span>
                           <input
                             type="tel"
                             required
                             maxLength={10}
-                            style={{ border: 'none', background: 'transparent', padding: '0 10px', height: '40px', flex: 1, outline: 'none', color: 'var(--text-primary)', fontSize: '14px' }}
+                            style={{ border: 'none', background: 'transparent', padding: '0 10px', minHeight: '48px', flex: 1, outline: 'none', color: 'var(--text-primary)', fontSize: '14px' }}
                             placeholder="10-digit mobile"
                             value={addressForm.phone}
                             onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
@@ -1197,7 +1195,8 @@ export default function ProfilePage() {
                               type="button"
                               onClick={() => setAddressForm({ ...addressForm, label: type })}
                               style={{
-                                padding: '10px 8px',
+                                padding: '12px 8px',
+                                minHeight: '52px',
                                 border: addressForm.label === type ? '1.5px solid #c8a46a' : '1px solid var(--border-medium)',
                                 background: addressForm.label === type ? 'rgba(200, 164, 106, 0.06)' : 'transparent',
                                 color: addressForm.label === type ? '#c8a46a' : 'var(--text-secondary)',
@@ -1211,6 +1210,7 @@ export default function ProfilePage() {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '4px',
                               }}
                             >
@@ -1489,22 +1489,22 @@ export default function ProfilePage() {
                         const itemThumb = resolveOrderItemImageUrl(orderItem);
                         const orderNumber = ret.order?.orderNumber || orderItem?.orderNumber || 'Reference';
 
-                        // 6 Stage Progress Steps
+                        // 6 Stage Progress Steps (customer-facing)
                         const stages = [
                           { label: 'Requested', status: 'PENDING' },
                           { label: 'Approved', status: 'APPROVED' },
-                          { label: 'Scheduled', status: 'PICKUP_SCHEDULED' },
-                          { label: 'Collected', status: 'COLLECTED' },
+                          { label: 'Credits Issued', status: 'APPROVED' }, // refund at approval
+                          { label: 'In Transit', status: 'PICKUP_SCHEDULED' },
                           { label: 'Inspection', status: 'INSPECTION' },
-                          { label: 'Refunded', status: 'COMPLETED' },
+                          { label: 'Completed', status: 'COMPLETED' },
                         ];
 
                         const getStageIdx = (st: string) => {
                           const s = (st || '').toUpperCase();
                           if (s === 'PENDING') return 0;
-                          if (s === 'APPROVED') return 1;
-                          if (s === 'PICKUP_SCHEDULED') return 2;
-                          if (s === 'COLLECTED') return 3;
+                          if (s === 'APPROVED') return 2; // approved = credits issued (step 2)
+                          if (s === 'PICKUP_SCHEDULED') return 3;
+                          if (s === 'COLLECTED') return 4;
                           if (['RECEIVED', 'INSPECTION'].includes(s)) return 4;
                           if (['REFUND_PROCESSED', 'COMPLETED'].includes(s)) return 5;
                           return 0;

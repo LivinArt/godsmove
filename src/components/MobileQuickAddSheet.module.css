@@ -89,16 +89,16 @@
     letter-spacing: -0.01em;
   }
 
-  /* Size Grid */
+  /* Size Grid — adaptive grid prevents cramping on narrow screens */
   .sizeGrid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
     gap: 8px;
     margin-bottom: 12px;
   }
 
   .sizeBtn {
-    height: 42px;
+    min-height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -112,6 +112,13 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    width: 100%;
+  }
+
+  .sizeBtn:not(.sizeBtnDisabled):hover {
+    background: rgba(200, 164, 106, 0.08);
+    border-color: rgba(200, 164, 106, 0.4);
+    color: #c8a46a;
   }
 
   .sizeBtn:not(.sizeBtnDisabled):active {

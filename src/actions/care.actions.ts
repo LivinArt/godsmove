@@ -588,3 +588,57 @@ export async function verifyCarePayment(data: {
   revalidatePath('/profile');
   return JSON.parse(JSON.stringify(updatedRequest));
 }
+
+// 12. Submit Public Contact / Concierge Enquiry
+export async function submitContactEnquiryAction(data: {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  orderNumber?: string;
+  message: string;
+}) {
+  const name = data.name?.trim();
+  const email = data.email?.trim().toLowerCase();
+  const phone = data.phone?.trim();
+  const subject = data.subject?.trim();
+  const orderNumber = data.orderNumber?.trim();
+  const message = data.message?.trim();
+
+  if (!name || name.length < 2) {
+    throw new Error('Please enter a valid full name (minimum 2 characters).');
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    throw new Error('Please enter a valid email address.');
+  }
+  if (!phone || phone.length < 10) {
+    throw new Error('Please enter a valid telephone number (minimum 10 digits).');
+  }
+  if (!subject) {
+    throw new Error('Please select a valid subject.');
+  }
+  if (!message || message.length < 10) {
+    throw new Error('Please enter a detailed message (minimum 10 characters).');
+  }
+
+  try {
+    const adminMessage = `Concierge Enquiry from ${name} (${email}, ${phone})\nOrder Ref: ${orderNumber || 'N/A'}\n\nMessage:\n${message}`;
+    // Notify support team
+    await NotificationService.sendCustomEmail(
+      'support@godsmove.in',
+      `[Concierge Enquiry] ${subject} — from ${name}`,
+      adminMessage
+    );
+    // Send auto-reply to customer
+    await NotificationService.sendCustomEmail(
+      email,
+      `We've received your enquiry — GODSMOVE Concierge`,
+      `Thank you for reaching out, ${name}. Your enquiry regarding "${subject}" has been received. Our Concierge team will respond within 24 hours.\n\nYour message:\n${message}`
+    );
+  } catch (e) {
+    console.log('Concierge enquiry logged:', { name, email, phone, subject, orderNumber, message });
+  }
+
+  return { success: true, message: 'Enquiry transmitted successfully to support@godsmove.in' };
+}

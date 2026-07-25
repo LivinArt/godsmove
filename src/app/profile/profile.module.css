@@ -499,10 +499,16 @@
 /* ── ADDRESSES ── */
 .addressForm {
   border: 1px solid var(--border-subtle);
-  padding: var(--space-xl);
+  padding: var(--space-md);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-xl);
   background-color: var(--bg-secondary);
+}
+
+@media (min-width: 480px) {
+  .addressForm {
+    padding: var(--space-xl);
+  }
 }
 
 .addressList {
@@ -577,8 +583,10 @@
 
 .addressActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-sm);
   margin-top: auto;
   padding-top: var(--space-md);
   border-top: 1px solid var(--border-subtle);
@@ -593,7 +601,12 @@
   font-family: var(--font-heading);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0;
+  /* Minimum 44px touch target */
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-xs);
 }
 
 .actionLink:hover {
@@ -605,6 +618,12 @@
   border: none;
   color: var(--text-muted);
   cursor: pointer;
+  /* Minimum 44px touch target */
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px;
   transition: color 0.2s ease;
 }
@@ -650,8 +669,10 @@
 
 @media (max-width: 600px) {
   .orderCardMainRow {
+    /* Stack: meta → total → status → actions */
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
+    padding: 16px;
   }
 }
 
@@ -708,6 +729,29 @@
   }
 }
 
+@media (max-width: 600px) {
+  .orderMetaCol {
+    order: 1;
+  }
+  .orderTotalCol {
+    order: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .orderStatusCol {
+    order: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .orderActionsCol {
+    order: 4;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+}
+
 .deliveredPill {
   display: inline-flex;
   align-items: center;
@@ -728,7 +772,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
+  gap: 5px;
+  min-height: 44px;
   min-width: 110px;
   padding: 8px 14px;
   font-family: var(--font-heading);
@@ -740,6 +785,15 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .trackOrderBtn,
+  .invoiceBtn,
+  .disclosureBtn {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .invoiceBtn {
@@ -1340,6 +1394,17 @@
 .buttonRow {
   display: flex;
   gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 400px) {
+  .buttonRow {
+    flex-direction: column-reverse;
+  }
+  .buttonRow > * {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ── Digital Passports & Preferences ── */
@@ -1545,10 +1610,29 @@
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-2xl);
   position: relative;
   box-shadow: 0 20px 40px rgba(0,0,0,0.5);
   animation: modalEnter 0.3s ease;
+  /* Smooth scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile: bottom-sheet style */
+@media (max-width: 540px) {
+  .modalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modalContent {
+    max-width: 100%;
+    max-height: 88vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: var(--space-xl) var(--space-md) var(--space-2xl);
+    animation: modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
 @keyframes modalEnter {
@@ -1556,15 +1640,26 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .modalCloseBtn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
   transition: color 0.2s ease;
+  /* Minimum 44px touch target */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modalCloseBtn:hover {
