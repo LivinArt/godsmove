@@ -21,6 +21,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
   const [quantity, setQuantity] = useState(1);
   const [sizeError, setSizeError] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const touchStartY = useRef<number>(0);
 
   const { addToCart, toggleWishlist, isInWishlist, showToast } = useStore();
   const wishlisted = product ? isInWishlist(product.id) : false;
@@ -88,7 +89,6 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     images.push(backImage);
   }
 
-  const touchStartY = useRef<number>(0);
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
