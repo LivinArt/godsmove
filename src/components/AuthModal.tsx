@@ -11,9 +11,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  redirectPath?: string;
 }
 
-export default function AuthModal({ isOpen, onClose, onSuccess }: Props) {
+export default function AuthModal({ isOpen, onClose, onSuccess, redirectPath }: Props) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,11 +55,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/profile';
+      // Use explicit redirectPath if provided, else fall back to current page path
+      const destinationPath = redirectPath ||
+        (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/profile');
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(currentPath)}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destinationPath)}`,
         },
       });
       if (error) throw error;

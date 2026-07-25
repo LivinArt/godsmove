@@ -217,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setModalAction(null);
         }}
         onSuccess={handleModalSuccess}
+        redirectPath={modalAction === 'profile' ? '/profile' : undefined}
       />
     </AuthContext.Provider>
   );
