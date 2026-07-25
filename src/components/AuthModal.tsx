@@ -169,7 +169,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, redirectPath }: 
               <span>Secure Authentication powered by Google</span>
             </div>
             <div className={styles.legalLinks}>
-              <Link href="/policies" onClick={onClose}>
+              <Link href="/privacy" onClick={onClose}>
                 Privacy Policy
               </Link>
               <span className={styles.dot}>•</span>

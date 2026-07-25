@@ -146,7 +146,7 @@ function LoginForm() {
           <span>Secure Authentication powered by Google</span>
         </div>
         <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'rgba(255, 255, 255, 0.45)' }}>
-          <Link href="/policies" style={{ color: 'rgba(255, 255, 255, 0.45)', textDecoration: 'none' }}>Privacy Policy</Link>
+          <Link href="/privacy" style={{ color: 'rgba(255, 255, 255, 0.45)', textDecoration: 'none' }}>Privacy Policy</Link>
           <span>•</span>
           <Link href="/terms" style={{ color: 'rgba(255, 255, 255, 0.45)', textDecoration: 'none' }}>Terms of Service</Link>
         </div>
