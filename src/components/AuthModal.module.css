@@ -4,15 +4,17 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .overlay.open {
@@ -20,58 +22,106 @@
   pointer-events: auto;
 }
 
+/* Desktop Luxury Container (28px Rounded Glass Surface) */
 .container {
-  background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  background: rgba(14, 14, 14, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(250, 248, 245, 0.12);
+  border-radius: 28px;
   width: 100%;
-  max-width: 420px;
-  padding: 48px 36px;
+  max-width: 440px;
+  padding: 44px 36px 36px;
   position: relative;
-  transform: scale(0.95);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(200, 164, 106, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .overlay.open .container {
-  transform: scale(1);
+  transform: scale(1) translateY(0);
+}
+
+.dragHandle {
+  display: none;
 }
 
 .closeBtn {
   position: absolute;
-  top: 24px;
-  right: 24px;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  padding: 4px;
-  transition: color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.25s ease;
 }
 
 .closeBtn:hover {
-  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FAF8F5;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+.brandHeader {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.logo {
+  object-fit: contain;
+  filter: brightness(1.05);
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 300;
-  color: #fff;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 8px;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: #FAF8F5;
+  margin: 0 0 12px;
 }
 
 .subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(250, 248, 245, 0.6);
+  margin: 0 0 28px;
+  max-width: 360px;
+  letter-spacing: 0.01em;
+}
+
+.errorBanner {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-  text-align: center;
-  letter-spacing: 0.05em;
-  margin-bottom: 36px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.actionWrap {
+  width: 100%;
+  margin-bottom: 28px;
 }
 
 .btnGoogle {
@@ -80,160 +130,150 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: #fff;
-  color: #000;
-  border: none;
-  padding: 14px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  background: #FAF8F5;
+  color: #0c0c0c;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  padding: 16px 24px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 .btnGoogle:hover {
-  opacity: 0.9;
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(200, 164, 106, 0.25);
 }
 
-.divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 24px 0;
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.btnGoogle:active {
+  transform: translateY(0);
 }
 
-.dividerLine {
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.dividerText {
-  padding: 0 16px;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.label {
-  font-size: 10px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.input {
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 14px;
-  font-size: 13px;
-  color: #fff;
-  letter-spacing: 0.03em;
-  border-radius: 2px;
-  transition: border-color 0.2s ease;
-}
-
-.input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.btnSubmit {
-  width: 100%;
-  background: transparent;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 14px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btnSubmit:hover {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
-}
-
-.btnSubmit:disabled {
-  opacity: 0.5;
+.btnGoogle:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
-  background: transparent;
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
+  transform: none;
 }
 
-.error {
-  font-size: 12px;
-  color: #ef4444;
-  text-align: center;
-  letter-spacing: 0.02em;
+.googleIcon {
+  flex-shrink: 0;
 }
 
-.success {
-  font-size: 12px;
-  color: #22c55e;
-  text-align: center;
-  letter-spacing: 0.02em;
+.spinner {
+  animation: spin 1s linear infinite;
+  color: #0c0c0c;
 }
 
-.otpGrid {
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.footer {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 12px 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid rgba(250, 248, 245, 0.08);
+  padding-top: 20px;
 }
 
-.otpInput {
-  width: 48px;
-  height: 48px;
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  border-radius: 2px;
-}
-
-.otpInput:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.resendText {
+.securityNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  text-align: center;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  margin-top: 12px;
+  font-weight: 500;
+  color: #c8a46a;
+  letter-spacing: 0.04em;
 }
 
-.resendText:hover {
-  color: #fff;
+.shieldIcon {
+  color: #c8a46a;
+}
+
+.legalLinks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(250, 248, 245, 0.45);
+}
+
+.legalLinks a {
+  color: rgba(250, 248, 245, 0.45);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.legalLinks a:hover {
+  color: #c8a46a;
+}
+
+.dot {
+  color: rgba(250, 248, 245, 0.25);
+  font-size: 10px;
+}
+
+/* ==================================================
+   MOBILE DESIGN (75% Bottom Sheet with Drag Handle)
+   ================================================== */
+@media (max-width: 767px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 100%;
+    border-radius: 28px 28px 0 0;
+    border-bottom: none;
+    padding: 12px 24px max(28px, env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.7);
+  }
+
+  .overlay.open .container {
+    transform: translateY(0);
+  }
+
+  .dragHandle {
+    display: block;
+    width: 44px;
+    height: 4px;
+    background: rgba(250, 248, 245, 0.2);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .closeBtn {
+    top: 16px;
+    right: 16px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  .btnGoogle {
+    padding: 15px 20px;
+    font-size: 11px;
+  }
 }

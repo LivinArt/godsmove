@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingBag, Heart, Menu, X, User, Home, Sparkles, Star, BookOpen } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
 import styles from './Navbar.module.css';
 
@@ -24,6 +25,8 @@ const HAMBURGER_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, openAuthModal } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const { isCartOpen, setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
@@ -141,15 +144,22 @@ export default function Navbar() {
               </div>
 
               <div className={styles.actionWrapper}>
-                <Link
-                  href="/profile"
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (user) {
+                      router.push('/profile');
+                    } else {
+                      openAuthModal('profile');
+                    }
+                  }}
                   className={`${styles.actionBtn} ${isProfileActive ? styles.actionBtnActive : ''}`}
-                  aria-label="Your Profile"
+                  aria-label={user ? 'Your Profile' : 'Sign In'}
                   id="nav-profile"
                 >
                   <User size={20} strokeWidth={1.8} />
-                </Link>
-                <span className={styles.tooltip}>Your Profile</span>
+                </button>
+                <span className={styles.tooltip}>{user ? 'Your Profile' : 'Sign In'}</span>
               </div>
 
               <div className={styles.actionWrapper}>
