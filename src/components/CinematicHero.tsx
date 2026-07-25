@@ -120,6 +120,7 @@ export default function CinematicHero({ slides }: { slides: CinematicHeroSlide[]
                   priority={i === 0}
                   loading={i === 0 ? undefined : 'lazy'}
                   sizes="100vw"
+                  fetchPriority={i === 0 ? 'high' : 'low'}
                   className={`${styles.imageDesktop} ${styles.imageKen}`}
                 />
                 <Image
@@ -129,6 +130,7 @@ export default function CinematicHero({ slides }: { slides: CinematicHeroSlide[]
                   priority={i === 0}
                   loading={i === 0 ? undefined : 'lazy'}
                   sizes="100vw"
+                  fetchPriority={i === 0 ? 'high' : 'low'}
                   className={`${styles.imageMobile} ${styles.imageKen}`}
                 />
               </div>

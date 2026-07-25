@@ -414,3 +414,33 @@ html[data-gm-veil='exiting'] #hero {
     font-size: clamp(24px, 7vw, 36px);
   }
 }
+
+/* ============================================
+   CORE WEB VITALS OPTIMIZATIONS (LCP, CLS, INP)
+   ============================================ */
+
+/* 1. Prevent Layout Shift (CLS) on grain & fixed overlays */
+.grain-overlay {
+  pointer-events: none;
+  contain: strict;
+  will-change: transform;
+}
+
+/* 2. Optimize INP for offscreen heavy sections */
+footer,
+.recently-viewed-section,
+.archive-editorial-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
+}
+
+/* 3. Smooth font rendering & image containment */
+html {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  content-visibility: auto;
+}
