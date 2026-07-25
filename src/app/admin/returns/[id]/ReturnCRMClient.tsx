@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { trackRefund } from '@/lib/gtag-ecommerce';
 import {
   updateReturnStatus,
   approveReturnRefund,
@@ -140,6 +141,14 @@ export default function ReturnCRMClient({
         taxAdjustment: taxAdjustmentAmt,
         refundSummaryDescription: `Return for Order #${ret.orderNumber} approved. Outbound ship deduction: ₹${outboundShipAmt}, Return logistics deduction: ₹${returnLogisticsAmt}.`,
       });
+
+      try {
+        const netRefund = Math.max(0, productPriceSum - outboundShipAmt - returnLogisticsAmt + taxAdjustmentAmt);
+        trackRefund(ret.orderNumber || ret.orderId, netRefund);
+      } catch (e) {
+        // ignore
+      }
+
       alert('Refund approved and issued successfully.');
       router.refresh();
     } catch (err: any) {

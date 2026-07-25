@@ -7,6 +7,7 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
+import { formatGA4Item, trackViewItemList } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
 
 type SortOption = 'newest' | 'price-low' | 'price-high';
@@ -38,6 +39,18 @@ export default function ShopClient({
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('newest');
+
+  // GA4 trackViewItemList on catalog view
+  useEffect(() => {
+    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
+      try {
+        const gaItems = initialProducts.map((p, idx) => formatGA4Item(p, undefined, 1, idx));
+        trackViewItemList(gaItems, categoryDetails?.name || 'Shop Catalog', 'shop_catalog');
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [initialProducts, categoryDetails]);
 
   // Initialize filters from search parameters
   useEffect(() => {

@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
+import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
 
 export default function CartPage() {
@@ -17,7 +18,19 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (cart.length > 0) {
+      try {
+        const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+        const subtotal = cart.reduce((acc, item) => {
+          const variant = item.product.variants?.find((v: any) => v.size === item.size);
+          return acc + (variant?.price ? Number(variant.price) : 0) * item.quantity;
+        }, 0);
+        trackViewCart(gaItems, subtotal);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [cart]);
 
   const total = cart.reduce((acc, item) => {
     const variant = item.product.variants?.find((v: any) => v.size === item.size);
@@ -146,7 +159,20 @@ export default function CartPage() {
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
                 
-                <Link href="/checkout" className="btn btn-primary" id="cart-checkout" style={{ width: '100%', padding: '18px 0', marginTop: 'var(--space-md)' }}>
+                <Link
+                  href="/checkout"
+                  className="btn btn-primary"
+                  id="cart-checkout"
+                  style={{ width: '100%', padding: '18px 0', marginTop: 'var(--space-md)' }}
+                  onClick={() => {
+                    try {
+                      const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+                      trackBeginCheckout(gaItems, total);
+                    } catch (e) {
+                      // ignore
+                    }
+                  }}
+                >
                   <Lock size={14} style={{ marginRight: '8px' }} /> Secure Checkout
                 </Link>
                 

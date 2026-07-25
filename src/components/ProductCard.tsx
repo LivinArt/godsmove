@@ -11,6 +11,7 @@ import { useAtmosphericRevealPointer } from '@/components/exclusive/useAtmospher
 import { resolveProductImages } from '@/lib/image-resolver';
 import QuickViewModal from './QuickViewModal';
 import MobileQuickAddSheet from './MobileQuickAddSheet';
+import { formatGA4Item, trackSelectItem } from '@/lib/gtag-ecommerce';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
@@ -110,7 +111,17 @@ export default function ProductCard({
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className={styles.imageWrapContainer}>
-        <Link href={`/product/${product.slug}`} className={styles.imageWrap}>
+        <Link
+          href={`/product/${product.slug}`}
+          className={styles.imageWrap}
+          onClick={() => {
+            try {
+              trackSelectItem(formatGA4Item(product, undefined, 1, index));
+            } catch (e) {
+              // ignore
+            }
+          }}
+        >
           {isExclusiveUnlockListing ? (
             <div
               ref={revealHostRef}

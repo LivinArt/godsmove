@@ -9,6 +9,7 @@ import {
   EXCLUSIVE_CART_TOAST_MESSAGE,
   isExclusiveChannel,
 } from '@/lib/cart-rules';
+import { formatGA4Item, trackAddToCart, trackRemoveFromCart } from '@/lib/gtag-ecommerce';
 
 export interface CartItem {
   product: any; // Prisma Product with images and variants
@@ -119,9 +120,29 @@ export const useStore = create<StoreState>()(
         }
 
         set({ isCartOpen: true, cartOpenSource: 'quickAdd' });
+
+        try {
+          const gaItem = formatGA4Item(product, size, quantity);
+          trackAddToCart(gaItem);
+        } catch (err) {
+          console.error('GA4 addToCart tracking error:', err);
+        }
       },
 
       removeFromCart: (productId, size) => {
+        const itemToRemove = get().cart.find(
+          (item) => item.product?.id === productId && item.size === size
+        );
+
+        if (itemToRemove?.product) {
+          try {
+            const gaItem = formatGA4Item(itemToRemove.product, itemToRemove.size, itemToRemove.quantity);
+            trackRemoveFromCart(gaItem);
+          } catch (err) {
+            console.error('GA4 removeFromCart tracking error:', err);
+          }
+        }
+
         set({
           cart: get().cart.filter(
             (item) => !(item.product.id === productId && item.size === size)

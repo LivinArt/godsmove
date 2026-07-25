@@ -13,6 +13,7 @@ import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/
 import { getMyProfile } from '@/actions/profile.actions';
 import { createOrder, confirmOrder } from '@/actions/order.actions';
 import { resolveProductImages } from '@/lib/image-resolver';
+import { formatGA4Item, trackAddShippingInfo, trackAddPaymentInfo, trackPurchase } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
 
 export default function CheckoutPage() {
@@ -299,6 +300,12 @@ export default function CheckoutPage() {
         // Continue
       }
     }
+    try {
+      const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+      trackAddShippingInfo(gaItems, finalPayable);
+    } catch (e) {
+      // ignore
+    }
     setMobileStep(2);
   };
 
@@ -373,6 +380,14 @@ export default function CheckoutPage() {
         actualPaymentMethod = 'MIXED';
       }
 
+      // Dispatch GA4 add_payment_info
+      try {
+        const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+        trackAddPaymentInfo(gaItems, finalPayable, actualPaymentMethod);
+      } catch (e) {
+        // ignore
+      }
+
       // 2. Call createOrder server action
       const order = await createOrder({
         items: orderItems,
@@ -406,6 +421,12 @@ export default function CheckoutPage() {
 
       // 3. Complete checkout payment sequence
       if (actualPaymentMethod === 'COD' || actualPaymentMethod === 'WALLET') {
+        try {
+          const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+          trackPurchase(order.orderNumber || order.id, finalPayable, gaItems, 0, 0, appliedCoupon || undefined);
+        } catch (e) {
+          // ignore
+        }
         // Instant success checkouts: Clear instantCheckout if present, otherwise clear cart
         if (instantCheckout) {
           useStore.setState({ instantCheckout: null });
@@ -426,6 +447,13 @@ export default function CheckoutPage() {
               const payId = 'pay_mock_' + Math.random().toString(36).substring(7);
               const ordId = 'ord_mock_' + Math.random().toString(36).substring(7);
               await confirmOrder(order.id, payId, ordId);
+
+              try {
+                const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+                trackPurchase(order.orderNumber || order.id, finalPayable, gaItems, 0, 0, appliedCoupon || undefined);
+              } catch (e) {
+                // ignore
+              }
               
               if (instantCheckout) {
                 useStore.setState({ instantCheckout: null });

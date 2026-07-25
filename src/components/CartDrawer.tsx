@@ -8,6 +8,7 @@ import { useStore } from '@/store/useStore';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
 import styles from './CartDrawer.module.css';
 
 const RESERVATION_MESSAGES = [
@@ -27,15 +28,24 @@ export default function CartDrawer() {
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reservationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Lock body scroll when open
+  // Lock body scroll + trackViewCart when open
   useEffect(() => {
     if (isCartOpen) {
       document.body.style.overflow = 'hidden';
+      if (cart.length > 0) {
+        try {
+          const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+          const total = getCartTotal();
+          trackViewCart(gaItems, total);
+        } catch (e) {
+          // ignore
+        }
+      }
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [isCartOpen]);
+  }, [isCartOpen, cart, getCartTotal]);
 
   // Keyboard close
   useEffect(() => {
@@ -203,6 +213,13 @@ export default function CartDrawer() {
               type="button"
               className={`btn btn-primary ${styles.checkoutBtn}`}
               onClick={() => {
+                try {
+                  const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+                  const total = getCartTotal();
+                  trackBeginCheckout(gaItems, total);
+                } catch (e) {
+                  // ignore
+                }
                 requireAuth('checkout', () => {
                   setInstantCheckout(null);
                   setCartOpen(false);

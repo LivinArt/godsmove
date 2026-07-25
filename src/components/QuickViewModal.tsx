@@ -8,6 +8,7 @@ import { useStore } from '@/store/useStore';
 import { resolveProductImages, resolveImageUrl } from '@/lib/image-resolver';
 import SizeSelector from './SizeSelector';
 import QuantitySelector from './QuantitySelector';
+import { formatGA4Item, trackViewItem } from '@/lib/gtag-ecommerce';
 import styles from './QuickViewModal.module.css';
 
 interface QuickViewModalProps {
@@ -33,13 +34,20 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
       setQuantity(1);
       setActiveImageIdx(0);
       setSizeError(false);
+      if (product) {
+        try {
+          trackViewItem(formatGA4Item(product));
+        } catch (e) {
+          // ignore
+        }
+      }
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, [isOpen, product]);
 
   if (!isOpen || !product) return null;
 

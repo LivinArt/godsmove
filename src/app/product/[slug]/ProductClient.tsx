@@ -24,6 +24,7 @@ import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
+import { formatGA4Item, trackViewItem } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
 
 export default function ProductClient({
@@ -55,7 +56,16 @@ export default function ProductClient({
     } catch (e) {
       // ignore
     }
-  }, [product.id]);
+
+    if (product) {
+      try {
+        const gaItem = formatGA4Item(product, selectedSize || undefined, 1);
+        trackViewItem(gaItem);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [product, selectedSize]);
 
   const { requireAuth } = useAuth();
   const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
