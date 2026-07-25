@@ -32,7 +32,12 @@ export default function WishlistClient() {
           return;
         }
 
-        const productIds = wishlist.map((item) => item.productId);
+        const productIds = wishlist.map((item) => item.productId).filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+        if (productIds.length === 0) {
+          if (isMounted) setIsLoading(false);
+          return;
+        }
+
         const data = await getStorefrontProducts({ ids: productIds });
         
         if (!isMounted) return;
@@ -119,7 +124,9 @@ export default function WishlistClient() {
               key={item.productId} 
               item={item} 
               liveProduct={live} 
-              onQuickView={(prod) => setSelectedProduct(prod)}
+              onQuickView={(prod) => {
+                if (prod) setSelectedProduct(prod);
+              }}
             />
           );
         })}
@@ -127,7 +134,7 @@ export default function WishlistClient() {
 
       <QuickViewModal
         product={selectedProduct}
-        isOpen={selectedProduct !== null}
+        isOpen={Boolean(selectedProduct)}
         onClose={() => setSelectedProduct(null)}
       />
     </div>

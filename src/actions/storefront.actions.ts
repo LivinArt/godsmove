@@ -41,7 +41,7 @@ export async function getStorefrontProducts(params?: {
       ...(params?.dropId && { dropId: params.dropId }),
       ...(channel && { channel }),
       ...(applyFeaturedFilter && { isFeatured: featuredFilter }),
-      ...(params?.ids && params.ids.length > 0 && { id: { in: params.ids } }),
+      ...(params?.ids && params.ids.filter(Boolean).length > 0 && { id: { in: params.ids.filter((id): id is string => typeof id === 'string' && id.trim().length > 0) } }),
       ...(params?.isExclusiveRack !== undefined && { isExclusiveRack: params.isExclusiveRack }),
       ...(params?.showOnHomepage !== undefined && { showOnHomepage: params.showOnHomepage }),
       ...(params?.showOnExclusivePage !== undefined && { showOnExclusivePage: params.showOnExclusivePage }),

@@ -894,7 +894,7 @@ export default function CheckoutPage() {
                     </div>
                     {isLoggedIn && (
                       <div className={`${styles.field} ${styles.fieldFull}`} style={{ marginTop: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#FAF8F5' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#000000' }}>
                           <input
                             type="checkbox"
                             checked={saveAddress}

@@ -202,7 +202,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
               </p>
             </div>
 
-            <Link href={`/product/${product.slug}`} className={styles.viewFullLink} onClick={onClose}>
+            <Link href={product?.slug ? `/product/${product.slug}` : '/drops'} prefetch={false} className={styles.viewFullLink} onClick={onClose}>
               View Full Ownership Details
             </Link>
           </div>

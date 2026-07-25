@@ -39,24 +39,27 @@ export default function MobileQuickAddSheet({
     }
   }, [colors, selectedColorState]);
 
-  // Lock body scroll when open
+  // Allow natural page scrolling while drawer is open + close on outside click
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+    if (!isOpen) return;
 
-  // Keyboard close
-  useEffect(() => {
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+
+    window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [isOpen, onClose]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
