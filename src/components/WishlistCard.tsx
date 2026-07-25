@@ -121,7 +121,6 @@ export default function WishlistCard({ item, liveProduct, onQuickView }: Wishlis
           <button 
             className={styles.quickViewBtn}
             onClick={() => onQuickView(liveProduct)}
-            disabled={!liveProduct}
           >
             <Eye size={13} style={{ marginRight: 6 }} /> Quick View
           </button>

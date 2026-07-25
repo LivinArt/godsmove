@@ -64,8 +64,8 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     : 99;
 
   const baseVariant = product.variants?.[0];
-  const price = baseVariant?.price ? Number(baseVariant.price) : 0;
-  const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
+  const price = baseVariant?.price ? Number(baseVariant.price) : (product.price ? Number(product.price) : 0);
+  const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : (product.comparePrice ? Number(product.comparePrice) : null);
   const colorName = baseVariant?.color || 'Standard';
 
   const hasDiscount = comparePrice != null && comparePrice > price && price > 0;
@@ -77,13 +77,21 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
       return;
     }
     addToCart(product, selectedSize, quantity);
-    showToast('Added to Bag', `${product.name} (Size ${selectedSize}) has been added to your bag.`);
+    showToast('Added to Bag', `${product.name || 'Item'} (Size ${selectedSize}) has been added to your bag.`);
     onClose();
   };
 
   const { frontImage, backImage } = resolveProductImages(product);
-  const images = product.images && product.images.length > 0
-    ? product.images.map((i: any) => typeof i === 'string' ? i : i.url).map((url: string) => resolveImageUrl(url))
+  const rawImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images.map((i: any) => {
+        if (typeof i === 'string') return i;
+        if (i && typeof i === 'object') return typeof i.url === 'string' ? i.url : null;
+        return null;
+      }).filter((url: any): url is string => typeof url === 'string' && url.length > 0)
+    : [];
+
+  const images = rawImages.length > 0
+    ? rawImages.map((url: string) => resolveImageUrl(url))
     : [frontImage];
   if (backImage && backImage !== '/images/placeholder.svg' && !images.includes(backImage)) {
     images.push(backImage);

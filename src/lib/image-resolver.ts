@@ -5,8 +5,8 @@
 
 const BUCKET_URL_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fxgbkmuqlizeosvidezm.supabase.co'}/storage/v1/object/public/product-images`;
 
-export function resolveImageUrl(path: string | null | undefined): string {
-  if (!path || path === 'null') {
+export function resolveImageUrl(path: string | null | undefined | any): string {
+  if (!path || path === 'null' || typeof path !== 'string') {
     return '/images/placeholder.svg';
   }
 

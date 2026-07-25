@@ -125,7 +125,14 @@ export default function WishlistClient() {
               item={item} 
               liveProduct={live} 
               onQuickView={(prod) => {
-                if (prod) setSelectedProduct(prod);
+                const target = prod || live || {
+                  id: item.productId,
+                  name: item.name,
+                  slug: item.slug,
+                  images: item.images,
+                  variants: [{ id: 'default', size: 'M', price: item.price, comparePrice: item.comparePrice }],
+                };
+                setSelectedProduct(target);
               }}
             />
           );
