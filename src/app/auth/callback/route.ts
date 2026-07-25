@@ -11,9 +11,13 @@ export async function GET(request: Request) {
 
   // Prefer the cookie destination (set before OAuth to survive Supabase/Vercel redirect stripping)
   const cookieStore = await cookies();
-  const cookieNext = cookieStore.get('godsmove_oauth_next')?.value;
+  const rawCookieNext = cookieStore.get('godsmove_oauth_next')?.value;
+  // Cookie value is URL-encoded by the shared oauth helper — decode it
+  const cookieNext = rawCookieNext ? decodeURIComponent(rawCookieNext) : undefined;
   const queryNext = searchParams.get('redirectTo') || searchParams.get('next');
-  const next = cookieNext || queryNext || '/profile';
+  // Ensure destination is always a relative path (security: never allow external redirects)
+  const rawNext = cookieNext || queryNext || '/profile';
+  const next = rawNext.startsWith('/') ? rawNext : '/profile';
 
   if (code) {
     const supabase = await createClient();

@@ -4,6 +4,7 @@ import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { initiateGoogleOAuth } from '@/lib/auth/oauth';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -47,12 +48,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-        },
-      });
+      const { error } = await initiateGoogleOAuth(supabase, redirectTo);
       if (error) throw error;
     } catch (err: any) {
       setError(err.message || 'Google authentication failed. Please try again.');

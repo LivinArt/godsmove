@@ -4,6 +4,7 @@ import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { initiateGoogleOAuth } from '@/lib/auth/oauth';
 import Image from 'next/image';
 import { LuxuryAuthLoader } from '@/components/LuxuryAuthLoader';
 
@@ -30,16 +31,7 @@ function AdminLoginForm() {
     setError(null);
     setLoading(true);
     try {
-      // Store intended destination in a cookie before OAuth so the callback route
-      // can read it back reliably (Supabase/Vercel may strip custom ?next= query params)
-      document.cookie = `godsmove_oauth_next=/admin; path=/; max-age=300; SameSite=Lax`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const { error } = await initiateGoogleOAuth(supabase, '/admin');
       if (error) throw error;
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please try again.');

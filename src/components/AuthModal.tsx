@@ -5,6 +5,7 @@ import { X, Loader2, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { initiateGoogleOAuth } from '@/lib/auth/oauth';
 import styles from './AuthModal.module.css';
 
 import { LuxuryAuthLoader } from './LuxuryAuthLoader';
@@ -58,17 +59,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, redirectPath }: 
     setError(null);
     setLoading(true);
     try {
-      // Use explicit redirectPath if provided, else fall back to current page path
-      const destinationPath = redirectPath ||
+      // Destination: explicit prop takes priority, else current page path
+      const destination = redirectPath ||
         (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/profile');
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destinationPath)}`,
-        },
-      });
+      const { error } = await initiateGoogleOAuth(supabase, destination);
       if (error) throw error;
-      // Do NOT call onSuccess() or setLoading(false) here so LuxuryAuthLoader stays mounted full-screen until browser redirects!
+      // Do NOT setLoading(false) — LuxuryAuthLoader stays mounted until browser redirects
     } catch (err: any) {
       setError(err.message || 'Google authentication failed. Please try again.');
       setLoading(false);
