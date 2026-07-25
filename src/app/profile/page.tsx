@@ -52,6 +52,7 @@ import {
 } from '@/actions/care.actions';
 import { createClient } from '@/lib/supabase/client';
 import { useStore } from '@/store/useStore';
+import { useAuth } from '@/context/AuthContext';
 import { resolveImageUrl, resolveOrderItemImageUrl } from '@/lib/image-resolver';
 import { uploadImage } from '@/lib/supabase/storage';
 import styles from './profile.module.css';
@@ -167,6 +168,7 @@ function RenderSkeleton({ tab }: { tab: string }) {
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useStore();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'menu' | 'detail'>('menu');
   const [isLoading, setIsLoading] = useState(true);
@@ -565,8 +567,7 @@ export default function ProfilePage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          showToast('Authentication Required', 'Please sign in to access your profile.');
-          router.push(`/login?redirectTo=/profile`);
+          router.push('/');
           return;
         }
 
@@ -622,8 +623,7 @@ export default function ProfilePage() {
           }
         }
       } catch (err: any) {
-        showToast('Authentication Required', 'Please sign in to access your profile.');
-        router.push(`/login?redirectTo=/profile`);
+        router.push('/');
       } finally {
         setIsLoading(false);
       }
@@ -725,9 +725,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    useStore.setState({ cart: [] });
-    router.push('/');
+    await logout();
   };
 
   // Trigger Return/Exchange Workflow

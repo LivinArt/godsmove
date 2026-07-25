@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Minus, Plus, X, ArrowRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { resolveProductImages } from '@/lib/image-resolver';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import styles from './CartDrawer.module.css';
 
 const RESERVATION_MESSAGES = [
@@ -16,6 +18,8 @@ const RESERVATION_MESSAGES = [
 ];
 
 export default function CartDrawer() {
+  const router = useRouter();
+  const { requireAuth } = useAuth();
   const { cart, isCartOpen, cartOpenSource, setCartOpen, updateQuantity, removeFromCart, getCartTotal, setInstantCheckout } = useStore();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [reservationMsg, setReservationMsg] = useState('');
@@ -195,17 +199,20 @@ export default function CartDrawer() {
               <span>₹{total.toLocaleString('en-IN')}</span>
             </div>
             <p className={styles.shipping}>Shipping calculated at checkout</p>
-            <Link
-              href="/checkout"
+            <button
+              type="button"
               className={`btn btn-primary ${styles.checkoutBtn}`}
               onClick={() => {
-                setInstantCheckout(null);
-                setCartOpen(false);
+                requireAuth('checkout', () => {
+                  setInstantCheckout(null);
+                  setCartOpen(false);
+                  router.push('/checkout');
+                }, { type: 'checkout' });
               }}
             >
               Checkout
               <ArrowRight size={14} />
-            </Link>
+            </button>
           </div>
         )}
       </div>

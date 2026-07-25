@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { isSuperAdminEmail } from '@/lib/admin-auth';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
 import './admin.css';
@@ -19,8 +20,8 @@ export default async function AdminLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login?redirectTo=/admin');
+  if (!user || !isSuperAdminEmail(user.email)) {
+    return <>{children}</>;
   }
 
   const profile = await prisma.profile.findUnique({
@@ -30,7 +31,7 @@ export default async function AdminLayout({
 
   const adminRoles = ['ADMIN', 'CONTENT_EDITOR', 'OPERATIONS', 'SUPPORT', 'MARKETING'];
   if (!profile || !adminRoles.includes(profile.role)) {
-    redirect('/');
+    return <>{children}</>;
   }
 
   const adminUser = {

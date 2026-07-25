@@ -23,6 +23,7 @@ import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
 import { useStore } from '@/store/useStore';
+import { useAuth } from '@/context/AuthContext';
 import styles from './page.module.css';
 
 export default function ProductClient({
@@ -56,6 +57,7 @@ export default function ProductClient({
     }
   }, [product.id]);
 
+  const { requireAuth } = useAuth();
   const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
@@ -134,8 +136,14 @@ export default function ProductClient({
       return;
     }
     setSizeError(false);
-    setInstantCheckout({ product, size: selectedSize, quantity });
-    router.push('/checkout');
+    requireAuth(
+      'checkout',
+      () => {
+        setInstantCheckout({ product, size: selectedSize, quantity });
+        router.push('/checkout');
+      },
+      { type: 'checkout', product, size: selectedSize, quantity }
+    );
   };
 
   const handleShare = () => {
@@ -381,7 +389,7 @@ export default function ProductClient({
               <div className={styles.utilitySquareActions}>
                 <button
                   className={`${styles.squareActionBtn} ${wishlisted ? styles.wishlisted : ''}`}
-                  onClick={() => toggleWishlist(product)}
+                  onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
                   aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                   id="pdp-wishlist"
                 >
@@ -482,7 +490,7 @@ export default function ProductClient({
         {/* Wishlist */}
         <button
           className={`${styles.mobileBarWishlist} ${wishlisted ? styles.wishlisted : ''}`}
-          onClick={() => toggleWishlist(product)}
+          onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
           aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           id="mobile-pdp-wishlist"
         >

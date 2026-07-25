@@ -9,6 +9,7 @@ import { ExclusiveCountdown } from './ExclusiveCountdown';
 import { useStore } from '@/store/useStore';
 import { AtmosphericLockedRevealLayers } from './AtmosphericLockedRevealLayers';
 import { useAtmosphericRevealPointer } from './useAtmosphericRevealPointer';
+import { useAuth } from '@/context/AuthContext';
 import styles from './exclusive.module.css';
 
 type Props = {
@@ -35,6 +36,7 @@ export function LockedProductOverlay({
   isLoggedIn,
 }: Props) {
   const router = useRouter();
+  const { requireAuth } = useAuth();
   const { showToast } = useStore();
   const [pending, startTransition] = useTransition();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -47,20 +49,21 @@ export function LockedProductOverlay({
   const ctaLabel = unlockButtonText?.trim() || 'Request Clearance';
 
   const handleUnlock = () => {
-    if (!isLoggedIn) {
-      router.push(`/login?redirectTo=/product/${productSlug}`);
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        await unlockProduct({ productId });
-        showToast('Clearance Granted', 'You may proceed with acquisition.');
-        router.refresh();
-      } catch (e: unknown) {
-        showToast('Clearance Denied', e instanceof Error ? e.message : 'Please try again.');
-      }
-    });
+    requireAuth(
+      'unlock',
+      () => {
+        startTransition(async () => {
+          try {
+            await unlockProduct({ productId });
+            showToast('Clearance Granted', 'You may proceed with acquisition.');
+            router.refresh();
+          } catch (e: unknown) {
+            showToast('Clearance Denied', e instanceof Error ? e.message : 'Please try again.');
+          }
+        });
+      },
+      { type: 'navigate', url: `/product/${productSlug}` }
+    );
   };
 
   return (
@@ -109,20 +112,14 @@ export function LockedProductOverlay({
 
         {teaser && <p className={styles.vaultTeaser}>{teaser}</p>}
 
-        {isLoggedIn ? (
-          <button
-            type="button"
-            className={styles.vaultCta}
-            onClick={handleUnlock}
-            disabled={pending}
-          >
-            {pending ? 'Processing…' : ctaLabel}
-          </button>
-        ) : (
-          <Link href={`/login?redirectTo=/product/${productSlug}`} className={styles.vaultCta}>
-            {ctaLabel}
-          </Link>
-        )}
+        <button
+          type="button"
+          className={styles.vaultCta}
+          onClick={handleUnlock}
+          disabled={pending}
+        >
+          {pending ? 'Processing…' : ctaLabel}
+        </button>
 
         <p className={styles.vaultTrust}>
           Approval grants a temporary acquisition opportunity.

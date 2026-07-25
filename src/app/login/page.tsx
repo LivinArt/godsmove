@@ -14,23 +14,35 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ['300', '400', '500', '600', '700', '800'],
 });
 
+import { useAuth } from '@/context/AuthContext';
+
 function LoginForm() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || searchParams.get('next') || '/profile';
+  const { user, openAuthModal } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Parse error query params
   useEffect(() => {
     const err = searchParams.get('error');
     if (err) setError(err);
   }, [searchParams]);
 
-  // Google OAuth Login
+  // Customer auth uses AuthModal popup exclusively -- redirect standalone /login route to home / profile
+  useEffect(() => {
+    if (user) {
+      router.replace('/profile');
+    } else {
+      router.replace('/');
+      openAuthModal('login');
+    }
+  }, [user, router, openAuthModal]);
+
+  // Fallback Form (Used primarily for Admin or direct fallback)
   async function handleGoogleLogin() {
     setError(null);
     setLoading(true);
@@ -52,7 +64,7 @@ function LoginForm() {
     <div className={styles.container}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
         <Image
-          src="/images/logo/Scroll.png"
+          src="/images/logo/auth-modal-logo.png"
           alt="GODSMOVE"
           width={150}
           height={38}

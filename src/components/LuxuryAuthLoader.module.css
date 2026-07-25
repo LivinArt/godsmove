@@ -1,0 +1,95 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background-color: #060606;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+.glowEffect {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(200, 164, 106, 0.15) 0%, rgba(6, 6, 6, 0) 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  animation: pulseGlow 3s ease-in-out infinite alternate;
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 360px;
+}
+
+.logoWrap {
+  margin-bottom: 28px;
+}
+
+.logo {
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+}
+
+.spinnerWrap {
+  margin-bottom: 20px;
+  color: #c8a46a;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.title {
+  font-family: var(--font-heading, inherit);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: #FAF8F5;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(250, 248, 245, 0.5);
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  from {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 
+const SUPER_ADMIN_EMAIL = 'livinarttech@gmail.com';
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
@@ -14,6 +16,16 @@ export async function GET(request: Request) {
       // Synchronize database Profile & Wallet for new logins
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const userEmail = (user.email || '').toLowerCase();
+        const isAdminTarget = next.startsWith('/admin');
+        const isSuperAdminEmail = userEmail === SUPER_ADMIN_EMAIL;
+
+        // Reject non-super-admin emails attempting to access /admin
+        if (isAdminTarget && !isSuperAdminEmail) {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(`${origin}/admin/login?error=access_denied`);
+        }
+
         try {
           const email = user.email || '';
           await prisma.$transaction(async (tx) => {
@@ -25,9 +37,14 @@ export async function GET(request: Request) {
                   email,
                   firstName: email.split('@')[0] || 'User',
                   lastName: '',
-                  role: 'CUSTOMER',
+                  role: isSuperAdminEmail ? 'ADMIN' : 'CUSTOMER',
                   tier: 'STANDARD',
                 },
+              });
+            } else if (isSuperAdminEmail && profile.role !== 'ADMIN') {
+              await tx.profile.update({
+                where: { id: user.id },
+                data: { role: 'ADMIN' },
               });
             }
 

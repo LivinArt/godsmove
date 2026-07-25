@@ -74,10 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (pending.type === 'cart') {
             addToCart(pending.product, pending.size, pending.quantity || 1);
           } else if (pending.type === 'wishlist') {
-            toggleWishlist(pending.product);
+            if (pending.product) {
+              toggleWishlist(pending.product);
+            } else {
+              router.push('/wishlist');
+            }
           } else if (pending.type === 'checkout') {
-            setInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+            if (pending.product) {
+              setInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+            }
             router.push('/checkout');
+          } else if (pending.type === 'profile') {
+            router.push('/profile');
+          } else if (pending.type === 'navigate' && pending.url) {
+            router.push(pending.url);
           }
         } catch (e) {
           console.error('Failed to execute pending action:', e);
@@ -124,9 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       callback();
     } else {
-      if (pendingDetails) {
-        sessionStorage.setItem('godsmove_pending_action', JSON.stringify(pendingDetails));
-      }
+      const details = pendingDetails || { type: action };
+      sessionStorage.setItem('godsmove_pending_action', JSON.stringify(details));
       setModalAction(action);
       setOnSuccessCallback(() => callback);
       setIsModalOpen(true);
@@ -134,24 +143,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function openAuthModal(action?: string) {
+    if (action) {
+      sessionStorage.setItem('godsmove_pending_action', JSON.stringify({ type: action }));
+    }
     setModalAction(action || null);
     setIsModalOpen(true);
   }
 
   async function logout() {
-    // Destroy Supabase session
-    await supabase.auth.signOut();
-    
-    // Clear local states
+    // 1. Close any modal & callbacks
+    setIsModalOpen(false);
+    setOnSuccessCallback(null);
+    setModalAction(null);
+
+    // 2. Clear local states immediately
     setUser(null);
     setProfile(null);
-    
-    // Clear all client Zustand stores
     clearCart();
     clearWishlist();
-    
-    // Redirect to home and refresh
-    router.push('/');
+
+    // 3. Navigate away to home page '/' FIRST so middleware doesn't intercept /profile as unauthenticated
+    router.replace('/');
+
+    // 4. Destroy Supabase session
+    await supabase.auth.signOut();
     router.refresh();
   }
 
@@ -164,9 +179,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleModalSuccess = () => {
     if (onSuccessCallback) {
       onSuccessCallback();
+    } else {
+      const pendingStr = sessionStorage.getItem('godsmove_pending_action');
+      if (pendingStr) {
+        try {
+          const pending = JSON.parse(pendingStr);
+          sessionStorage.removeItem('godsmove_pending_action');
+          if (pending.type === 'cart') {
+            addToCart(pending.product, pending.size, pending.quantity || 1);
+          } else if (pending.type === 'wishlist') {
+            if (pending.product) {
+              toggleWishlist(pending.product);
+            } else {
+              router.push('/wishlist');
+            }
+          } else if (pending.type === 'checkout') {
+            if (pending.product) {
+              setInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+            }
+            router.push('/checkout');
+          } else if (pending.type === 'profile') {
+            router.push('/profile');
+          } else if (pending.type === 'navigate' && pending.url) {
+            router.push(pending.url);
+          }
+        } catch (e) {
+          console.error('Failed to execute pending action:', e);
+        }
+      }
     }
     setOnSuccessCallback(null);
     setModalAction(null);
+    setIsModalOpen(false);
   };
 
   return (

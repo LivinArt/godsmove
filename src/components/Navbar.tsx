@@ -26,7 +26,7 @@ const HAMBURGER_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, openAuthModal } = useAuth();
+  const { user, openAuthModal, requireAuth } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const { isCartOpen, setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
@@ -131,15 +131,18 @@ export default function Navbar() {
           <div className={styles.rightZone}>
             <div className={styles.actions}>
               <div className={styles.actionWrapper}>
-                <Link
-                  href="/wishlist"
+                <button
+                  type="button"
+                  onClick={() => {
+                    requireAuth('wishlist', () => router.push('/wishlist'), { type: 'wishlist' });
+                  }}
                   className={`${styles.actionBtn} ${isWishlistActive ? styles.actionBtnActive : ''}`}
                   aria-label="Your Wishlist"
                   id="nav-wishlist"
                 >
                   <Heart size={20} strokeWidth={1.8} />
                   {wishlistCount > 0 && <span className={styles.badge}>{wishlistCount}</span>}
-                </Link>
+                </button>
                 <span className={styles.tooltip}>Your Wishlist</span>
               </div>
 

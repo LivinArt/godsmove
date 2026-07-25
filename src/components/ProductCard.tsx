@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ArrowLeftRight, Plus } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useAuth } from '@/context/AuthContext';
 import { AtmosphericLockedRevealLayers } from '@/components/exclusive/AtmosphericLockedRevealLayers';
 import { useAtmosphericRevealPointer } from '@/components/exclusive/useAtmosphericRevealPointer';
 import { resolveProductImages } from '@/lib/image-resolver';
@@ -30,6 +31,7 @@ export default function ProductCard({
   isDominant = false,
 }: ProductCardProps) {
   const [mounted, setMounted] = useState(false);
+  const { requireAuth } = useAuth();
   
   useEffect(() => {
     setMounted(true);
@@ -189,7 +191,7 @@ export default function ProductCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              toggleWishlist(product);
+              requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product });
             }}
             aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
