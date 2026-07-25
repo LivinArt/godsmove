@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { X, Heart, ShoppingBag } from 'lucide-react';
@@ -88,9 +88,26 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     images.push(backImage);
   }
 
+  const touchStartY = useRef<number>(0);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (deltaY > 60) {
+      onClose();
+    }
+  };
+
   return (
     <div className={styles.overlay} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className={styles.dragHandle} />
         <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
           <X size={20} />
         </button>

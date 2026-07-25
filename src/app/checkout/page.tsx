@@ -8,7 +8,7 @@ import { ArrowLeft, Lock, Loader2, Check, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
-import { getMyAddresses, updateAddress } from '@/actions/address.actions';
+import { getMyAddresses, createAddress, updateAddress } from '@/actions/address.actions';
 import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/wallet.actions';
 import { getMyProfile } from '@/actions/profile.actions';
 import { createOrder, confirmOrder } from '@/actions/order.actions';
@@ -29,6 +29,7 @@ export default function CheckoutPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
+  const [saveAddress, setSaveAddress] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
 
   // Form Field States
@@ -380,6 +381,28 @@ export default function CheckoutPage() {
         couponCode: appliedCoupon || undefined,
         walletAmountToUse: walletCreditsToUse,
       });
+
+      // Save address for future orders if checked and using new address
+      if (isLoggedIn && saveAddress && selectedAddressId === 'new') {
+        try {
+          const newAddr = await createAddress({
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            line1: form.address.trim(),
+            city: form.city.trim(),
+            state: form.state.trim(),
+            pincode: form.pincode.trim(),
+            phone: form.phone.trim(),
+            isDefault: addresses.length === 0,
+            label: 'Home',
+          });
+          if (newAddr) {
+            setAddresses((prev) => [...prev, newAddr]);
+          }
+        } catch (addrErr) {
+          console.error('Failed to save address for future orders:', addrErr);
+        }
+      }
 
       // 3. Complete checkout payment sequence
       if (actualPaymentMethod === 'COD' || actualPaymentMethod === 'WALLET') {
@@ -869,6 +892,19 @@ export default function CheckoutPage() {
                         onChange={handleChange}
                       />
                     </div>
+                    {isLoggedIn && (
+                      <div className={`${styles.field} ${styles.fieldFull}`} style={{ marginTop: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#FAF8F5' }}>
+                          <input
+                            type="checkbox"
+                            checked={saveAddress}
+                            onChange={(e) => setSaveAddress(e.target.checked)}
+                            style={{ accentColor: '#c8a46a', width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                          <span>Save this address for future orders</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

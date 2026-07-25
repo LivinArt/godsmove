@@ -1557,10 +1557,10 @@
     gap: 10px !important;
   }
 
-  /* Related section mobile spacing refinement (Task 3) */
+  /* Related section mobile spacing refinement (Task 4) */
   .related {
-    margin-top: 32px !important;
-    padding-top: 24px !important;
+    margin-top: 16px !important;
+    padding-top: 16px !important;
   }
   
   .relatedTitle {
@@ -1569,9 +1569,9 @@
     text-align: center !important;
   }
 
-  /* Craftsmanship mobile redesign (Task 4): Centered Heading + 2x2 Centered Grid */
+  /* Craftsmanship mobile section spacing */
   .editorialMagazineSection {
-    padding: 32px 16px !important;
+    padding: 24px 16px 12px !important;
   }
 
   .editorialMagazineSection > div {

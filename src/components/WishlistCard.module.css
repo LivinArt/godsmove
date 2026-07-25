@@ -203,3 +203,24 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+@media (max-width: 767px) {
+  .info {
+    padding: 12px 10px;
+    gap: 8px;
+  }
+  .name {
+    font-size: 13px;
+  }
+  .actions {
+    gap: 4px;
+    margin-top: 10px;
+  }
+  .cartBtn,
+  .quickViewBtn {
+    height: 34px;
+    font-size: 9.5px;
+    padding: 0 2px;
+    letter-spacing: 0.02em;
+  }
+}

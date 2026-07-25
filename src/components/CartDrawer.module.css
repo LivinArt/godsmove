@@ -19,6 +19,8 @@
   top: 0;
   right: 0;
   bottom: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 1200;
   width: 100%;
   max-width: 440px;
@@ -33,10 +35,12 @@
   transform: translateX(0);
 }
 
-/* ── Mobile: 85vw partial-width sheet ── */
+/* ── Mobile: 88vw partial-width sheet full height ── */
 @media (max-width: 767px) {
   .drawer {
-    max-width: 85vw;
+    max-width: 88vw;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .overlay {
@@ -110,6 +114,7 @@
 .body {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: var(--space-lg);
 }
 
@@ -250,11 +255,13 @@
 /* ── Footer ── */
 .footer {
   padding: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   background-color: #faf8f5;
+  flex-shrink: 0;
 }
 
 .subtotal {

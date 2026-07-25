@@ -36,14 +36,15 @@
     right: 0;
     z-index: 1600;
     background: rgba(14, 14, 14, 0.97);
-    border-radius: 24px 24px 0 0;
+    border-radius: 20px 20px 0 0;
     border-top: 1px solid rgba(200, 164, 106, 0.2);
-    padding: 0 20px 32px;
-    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    padding: 0 16px 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 70vh;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 48vh;
     overflow-y: auto;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
   }
 
   .sheetOpen {
@@ -52,11 +53,11 @@
 
   /* Drag Handle */
   .handle {
-    width: 40px;
+    width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.15);
-    margin: 14px auto 20px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 10px auto 12px;
     flex-shrink: 0;
   }
 
@@ -64,9 +65,9 @@
   .header {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+    gap: 2px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
@@ -81,7 +82,7 @@
 
   .productName {
     font-family: var(--font-heading);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 400;
     color: #f5f1e8;
     margin: 0;
@@ -93,11 +94,11 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .sizeBtn {
-    height: 48px;
+    height: 42px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
