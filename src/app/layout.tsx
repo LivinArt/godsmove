@@ -6,6 +6,8 @@ import { CinematicSiteLoader } from "@/components/CinematicSiteLoader";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthProvider } from "@/context/AuthContext";
 import { constructMetadata } from "@/lib/seo-metadata";
+import JsonLd from "@/components/JsonLd";
+import { getOrganizationSchema, getWebSiteSchema } from "@/lib/json-ld";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -40,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={plusJakartaSans.variable}>
       <body>
+        <JsonLd schema={[getOrganizationSchema(), getWebSiteSchema()]} />
         <GoogleAnalytics />
         <div className="grain-overlay" aria-hidden="true" />
         <AuthProvider>

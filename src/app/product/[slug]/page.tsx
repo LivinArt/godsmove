@@ -14,6 +14,8 @@ import { getProductBreadcrumb } from '@/lib/product-channel-label';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { Metadata } from 'next';
 import { constructMetadata } from '@/lib/seo-metadata';
+import JsonLd from '@/components/JsonLd';
+import { getProductSchema, getBreadcrumbSchema } from '@/lib/json-ld';
 import styles from './page.module.css';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -143,6 +145,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const coverImage = frontImage;
   const breadcrumb = getProductBreadcrumb(product);
 
+  const productJsonLd = getProductSchema(product, coverImage);
+  const breadcrumbJsonLd = getBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: breadcrumb.label, url: breadcrumb.href },
+    { name: product.name, url: `/product/${product.slug}` },
+  ]);
+
   let profile: any = null;
   try {
     profile = await getMyProfile();
@@ -152,6 +161,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
+      <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />
       <Navbar />
       <CartDrawer />
 

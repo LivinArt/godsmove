@@ -11,6 +11,8 @@ import {
   getStorefrontCategories,
 } from '@/actions/storefront.actions';
 import { constructMetadata } from '@/lib/seo-metadata';
+import JsonLd from '@/components/JsonLd';
+import { getCollectionSchema, getBreadcrumbSchema } from '@/lib/json-ld';
 import styles from './category.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -98,8 +100,21 @@ export default async function CategoryPage({ params }: PageProps) {
     EDITORIAL_LINES[slug] ||
     DEFAULT_EDITORIAL_LINES[Math.abs(slug.charCodeAt(0) - 97) % DEFAULT_EDITORIAL_LINES.length];
 
+  const collectionJsonLd = getCollectionSchema(
+    `${category.name} Collection`,
+    editorialLine,
+    `/category/${slug}`,
+    categoryProducts
+  );
+
+  const breadcrumbJsonLd = getBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: category.name, url: `/category/${slug}` },
+  ]);
+
   return (
     <>
+      <JsonLd schema={[collectionJsonLd, breadcrumbJsonLd]} />
       <Navbar />
       <CartDrawer />
 
