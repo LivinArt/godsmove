@@ -10,15 +10,6 @@ async function getAuthedUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    if (process.env.NODE_ENV === 'development') {
-      const firstCustomer = await prisma.profile.findFirst({
-        where: { role: 'CUSTOMER' }
-      });
-      if (firstCustomer) {
-        return { id: firstCustomer.id, email: firstCustomer.email } as any;
-      }
-      return { id: 'dev-bypass', email: 'guest@godsmove.com' } as any;
-    }
     throw new Error('UNAUTHORIZED');
   }
   return user;

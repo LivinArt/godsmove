@@ -11,11 +11,6 @@ async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { cookies } = await import('next/headers');
-  const cookieStore = await cookies();
-  const bypass = cookieStore.get('admin_bypass')?.value === process.env.ADMIN_SECRET;
-
-  if (bypass) return { id: 'bypass', role: 'ADMIN' };
   if (!user) {
     console.log('[requireAdmin Check] Rejected: No user session found.');
     throw new Error('UNAUTHORIZED');

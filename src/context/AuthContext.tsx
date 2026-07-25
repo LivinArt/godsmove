@@ -40,34 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const toggleWishlist = useStore((s) => s.toggleWishlist);
   const setInstantCheckout = useStore((s) => s.setInstantCheckout);
 
-  const [user, setUser] = useState<User | null>(
-    process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-      ? ({
-          id: '00000000-0000-0000-0000-000000000000',
-          email: 'dev@godsmove.com',
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        } as any)
-      : null
-  );
-  const [profile, setProfile] = useState<Profile | null>(
-    process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-      ? {
-          id: '00000000-0000-0000-0000-000000000000',
-          email: 'dev@godsmove.com',
-          godsmoveId: 'DEV-USER-001',
-          firstName: 'Dev',
-          lastName: 'User',
-          phone: '9876543210',
-          role: 'ADMIN',
-          tier: 'STANDARD',
-          dob: null,
-        }
-      : null
-  );
-  const [loading, setLoading] = useState(
-    process.env.NEXT_PUBLIC_DEV_MODE === 'true' ? false : true
-  );
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,12 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loading, addToCart, toggleWishlist, setInstantCheckout, router]);
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-      setLoading(false);
-      return;
-    }
-
-    // Initial Session check
+    // Initial Session check via Supabase Auth
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -169,14 +139,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    if (process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-      document.cookie = 'gm_logged_out=true; path=/; max-age=3600';
-      document.cookie = 'gm_dev_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    }
+    // Destroy Supabase session
     await supabase.auth.signOut();
+    
+    // Clear local states
+    setUser(null);
+    setProfile(null);
+    
     // Clear all client Zustand stores
     clearCart();
     clearWishlist();
+    
     // Redirect to home and refresh
     router.push('/');
     router.refresh();

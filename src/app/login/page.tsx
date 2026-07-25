@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Image from 'next/image';
@@ -23,8 +23,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
   // Parse error query params
   useEffect(() => {
@@ -49,18 +47,6 @@ function LoginForm() {
       setLoading(false);
     }
   }
-
-  // Dev Mode Sandbox Bypass Actions
-  const handleDevBypass = (role: 'ADMIN' | 'USER') => {
-    document.cookie = 'gm_logged_out=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;';
-    document.cookie = `gm_dev_role=${role}; path=/; max-age=604800;`;
-    
-    setMessage(`Bypassed as Dev ${role}. Synchronizing workspace...`);
-    setTimeout(() => {
-      router.push(redirectTo);
-      router.refresh();
-    }, 400);
-  };
 
   return (
     <div className={styles.container}>
@@ -157,32 +143,6 @@ function LoginForm() {
           <Link href="/terms" style={{ color: 'rgba(255, 255, 255, 0.45)', textDecoration: 'none' }}>Terms of Service</Link>
         </div>
       </div>
-
-      {/* Dev Mode Sandbox Bypasses */}
-      {isDevMode && (
-        <div style={{ marginTop: '28px', padding: '16px', background: 'rgba(200, 164, 106, 0.04)', border: '1px solid rgba(200, 164, 106, 0.15)', borderRadius: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', color: '#c8a46a', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            <Sparkles size={12} />
-            <span>Dev Sandbox Session Bypass</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={() => handleDevBypass('ADMIN')}
-              style={{ background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff', fontSize: '10px', padding: '10px', cursor: 'pointer', borderRadius: '4px' }}
-            >
-              Bypass as Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDevBypass('USER')}
-              style={{ background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff', fontSize: '10px', padding: '10px', cursor: 'pointer', borderRadius: '4px' }}
-            >
-              Bypass as Customer
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

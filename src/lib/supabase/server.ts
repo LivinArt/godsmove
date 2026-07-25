@@ -2,66 +2,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
-// Helper to ensure the development profiles and wallets exist in the DB
-async function ensureDevUsersExist() {
-  if (process.env.NEXT_PUBLIC_DEV_MODE !== 'true') return;
-  try {
-    const devId = '00000000-0000-0000-0000-000000000000';
-    await prisma.profile.upsert({
-      where: { id: devId },
-      update: { role: 'ADMIN' },
-      create: {
-        id: devId,
-        email: 'dev@godsmove.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        phone: '9876543210',
-        role: 'ADMIN',
-        tier: 'STANDARD',
-        marketingEmails: true,
-        orderUpdateEmails: true,
-      },
-    });
-
-    await prisma.wallet.upsert({
-      where: { profileId: devId },
-      update: {},
-      create: {
-        profileId: devId,
-        balance: 100000, // ₹1,00,000 for local testing
-      },
-    });
-
-    const customerId = '11111111-1111-1111-1111-111111111111';
-    await prisma.profile.upsert({
-      where: { id: customerId },
-      update: {},
-      create: {
-        id: customerId,
-        email: 'customer@godsmove.com',
-        firstName: 'Customer',
-        lastName: 'User',
-        phone: '9999999999',
-        role: 'CUSTOMER',
-        tier: 'STANDARD',
-        marketingEmails: true,
-        orderUpdateEmails: true,
-      },
-    });
-
-    await prisma.wallet.upsert({
-      where: { profileId: customerId },
-      update: {},
-      create: {
-        profileId: customerId,
-        balance: 5000, // ₹5,000 for customer testing
-      },
-    });
-  } catch (err) {
-    console.error('Failed to ensure dev users exist in database:', err);
-  }
-}
-
 // Helper to ensure any logged-in user has an active profile and wallet
 async function ensureProfileSynced(userId: string, email: string) {
   try {
@@ -98,69 +38,12 @@ async function ensureProfileSynced(userId: string, email: string) {
   }
 }
 
-const mockAdminUser = {
-  id: '00000000-0000-0000-0000-000000000000',
-  email: 'dev@godsmove.com',
-  aud: 'authenticated',
-  role: 'authenticated',
-  app_metadata: {},
-  user_metadata: {},
-  created_at: new Date().toISOString(),
-};
-
-const mockCustomerUser = {
-  id: '11111111-1111-1111-1111-111111111111',
-  email: 'customer@godsmove.com',
-  aud: 'authenticated',
-  role: 'authenticated',
-  app_metadata: {},
-  user_metadata: {},
-  created_at: new Date().toISOString(),
-};
-
-function wrapWithMockAuth(client: any, cookieStore: any) {
-  if (process.env.NEXT_PUBLIC_DEV_MODE !== 'true') return client;
-
-  const originalGetUser = client.auth.getUser.bind(client.auth);
-  const originalGetSession = client.auth.getSession.bind(client.auth);
-
-  const getActiveMockUser = () => {
-    const role = cookieStore.get('gm_dev_role')?.value;
-    return role === 'USER' ? mockCustomerUser : mockAdminUser;
-  };
-
-  client.auth.getUser = async (...args: any[]) => {
-    const res = await originalGetUser(...args);
-    if (res.data?.user) return res;
-
-    const isLoggedOut = cookieStore.get('gm_logged_out')?.value === 'true';
-    if (isLoggedOut) {
-      return { data: { user: null }, error: null };
-    }
-    return { data: { user: getActiveMockUser() as any }, error: null };
-  };
-
-  client.auth.getSession = async (...args: any[]) => {
-    const res = await originalGetSession(...args);
-    if (res.data?.session) return res;
-
-    const isLoggedOut = cookieStore.get('gm_logged_out')?.value === 'true';
-    if (isLoggedOut) {
-      return { data: { session: null }, error: null };
-    }
-    const user = getActiveMockUser();
-    return { data: { session: { user } as any }, error: null };
-  };
-
-  return client;
-}
-
 /**
  * Server-side Supabase client — for Server Components, Server Actions, Route Handlers.
  * Uses cookie-based session management via @supabase/ssr.
+ * Zero mock sessions or dev overrides.
  */
 export async function createClient() {
-  await ensureDevUsersExist();
   const cookieStore = await cookies();
 
   const client = createServerClient(
@@ -177,29 +60,24 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // setAll called from a Server Component — can be safely ignored
-            // Middleware handles cookie refresh
+            // setAll called from a Server Component — handled by middleware
           }
         },
       },
     }
   );
 
-  const wrapped = wrapWithMockAuth(client, cookieStore);
-
-  const originalGetUser = wrapped.auth.getUser.bind(wrapped.auth);
-  wrapped.auth.getUser = async (...args: any[]) => {
+  const originalGetUser = client.auth.getUser.bind(client.auth);
+  client.auth.getUser = async (...args: any[]) => {
     const res = await originalGetUser(...args);
     if (res.data?.user) {
       const user = res.data.user;
-      if (user.id !== '00000000-0000-0000-0000-000000000000' && user.id !== '11111111-1111-1111-1111-111111111111') {
-        await ensureProfileSynced(user.id, user.email || '');
-      }
+      await ensureProfileSynced(user.id, user.email || '');
     }
     return res;
   };
 
-  return wrapped;
+  return client;
 }
 
 /**
@@ -208,7 +86,6 @@ export async function createClient() {
  * NEVER expose to browser.
  */
 export async function createAdminClient() {
-  await ensureDevUsersExist();
   const cookieStore = await cookies();
 
   const client = createServerClient(
@@ -232,19 +109,15 @@ export async function createAdminClient() {
     }
   );
 
-  const wrapped = wrapWithMockAuth(client, cookieStore);
-
-  const originalGetUser = wrapped.auth.getUser.bind(wrapped.auth);
-  wrapped.auth.getUser = async (...args: any[]) => {
+  const originalGetUser = client.auth.getUser.bind(client.auth);
+  client.auth.getUser = async (...args: any[]) => {
     const res = await originalGetUser(...args);
     if (res.data?.user) {
       const user = res.data.user;
-      if (user.id !== '00000000-0000-0000-0000-000000000000' && user.id !== '11111111-1111-1111-1111-111111111111') {
-        await ensureProfileSynced(user.id, user.email || '');
-      }
+      await ensureProfileSynced(user.id, user.email || '');
     }
     return res;
   };
 
-  return wrapped;
+  return client;
 }

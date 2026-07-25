@@ -565,57 +565,8 @@ export default function ProfilePage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          console.warn('[GODSMOVE Care Dev Bypass] Unauthenticated user detected. Loading mock profile & live care records.');
-          
-          const [cares, careProds] = await Promise.all([
-            getCustomerCareRequests().catch(() => []),
-            getPurchasedProducts().catch(() => [])
-          ]);
-
-          setProfile({
-            id: 'dev-bypass',
-            email: 'guest@godsmove.com',
-            firstName: 'Decisive',
-            lastName: 'Creator',
-            role: 'CUSTOMER'
-          });
-          setPersonalForm({
-            firstName: 'Decisive',
-            lastName: 'Creator',
-            phone: '',
-            dob: ''
-          });
-          setAddresses([]);
-          setCollection([]);
-          setReturns([]);
-          setWallet({ balance: 10000, currency: 'INR', transactions: [] });
-          setCareRequests(cares);
-          setCareProducts(careProds);
-
-          const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
-          const params = new URLSearchParams(window.location.search);
-          const tabParam = params.get('tab');
-          const mapped = (tabParam === 'collection' || tabParam === 'orders') ? 'collection' :
-                         (tabParam === 'care' || tabParam === 'passport') ? 'passport' :
-                         tabParam === 'personal' ? 'personal' :
-                         tabParam === 'addresses' ? 'addresses' :
-                         tabParam === 'returns' ? 'returns' :
-                         tabParam === 'wallet' ? 'wallet' :
-                         tabParam === 'settings' ? 'settings' : null;
-
-          if (mapped) {
-            setActiveTab(mapped);
-            setMobileView('detail');
-          } else {
-            if (isMobile) {
-              setActiveTab(null);
-              setMobileView('menu');
-            } else {
-              setActiveTab('personal');
-              setMobileView('detail');
-            }
-          }
-          setIsLoading(false);
+          showToast('Authentication Required', 'Please sign in to access your profile.');
+          router.push(`/login?redirectTo=/profile`);
           return;
         }
 
@@ -671,38 +622,8 @@ export default function ProfilePage() {
           }
         }
       } catch (err: any) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[GODSMOVE Care Dev Bypass] Fallback to mock profile:', err);
-          setProfile({ id: 'dev-bypass', email: 'guest@godsmove.com', firstName: 'Decisive', lastName: 'Creator' });
-          setWallet({ balance: 10000, currency: 'INR', transactions: [] });
-          
-          const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
-          const params = new URLSearchParams(window.location.search);
-          const tabParam = params.get('tab');
-          const mapped = (tabParam === 'collection' || tabParam === 'orders') ? 'collection' :
-                         (tabParam === 'care' || tabParam === 'passport') ? 'passport' :
-                         tabParam === 'personal' ? 'personal' :
-                         tabParam === 'addresses' ? 'addresses' :
-                         tabParam === 'returns' ? 'returns' :
-                         tabParam === 'wallet' ? 'wallet' :
-                         tabParam === 'settings' ? 'settings' : null;
-          if (mapped) {
-            setActiveTab(mapped);
-            setMobileView('detail');
-          } else {
-            if (isMobile) {
-              setActiveTab(null);
-              setMobileView('menu');
-            } else {
-              setActiveTab('personal');
-              setMobileView('detail');
-            }
-          }
-        } else {
-          // Redirect to login if unauthorized
-          showToast('Authentication Required', 'Please sign in to access your profile.');
-          router.push(`/login?redirect=/profile`);
-        }
+        showToast('Authentication Required', 'Please sign in to access your profile.');
+        router.push(`/login?redirectTo=/profile`);
       } finally {
         setIsLoading(false);
       }

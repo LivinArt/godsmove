@@ -4,19 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { createAdminClient } from '@/lib/supabase/server';
 
-// helper to assert admin status or has admin_bypass cookie
+// helper to assert admin status
 async function requireAdmin() {
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // If no logged in user, check if admin_bypass cookie is set in next request headers
-  // Since we are in Server Actions, cookies can be checked.
-  const { cookies } = await import('next/headers');
-  const cookieStore = await cookies();
-  const bypass = cookieStore.get('admin_bypass')?.value === process.env.ADMIN_SECRET;
-
-  if (bypass) return { id: 'bypass', role: 'ADMIN' };
   if (!user) throw new Error('UNAUTHORIZED');
 
   const profile = await prisma.profile.findUnique({

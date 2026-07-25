@@ -46,10 +46,7 @@ export async function GET(request: Request) {
         }
       }
 
-      const response = NextResponse.redirect(`${origin}${next}`);
-      // Remove gm_logged_out cookie upon successful authentication
-      response.cookies.set('gm_logged_out', '', { path: '/', expires: new Date(0) });
-      return response;
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 

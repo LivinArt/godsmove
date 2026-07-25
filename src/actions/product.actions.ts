@@ -20,11 +20,8 @@ import {
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function requireAdmin() {
-  const bypass = await hasAdminBypass();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
-  if (bypass) return user || { id: 'bypass-admin', email: 'admin@godsmove.in' } as any;
 
   if (!user) throw new Error('UNAUTHORIZED');
 

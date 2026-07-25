@@ -7,16 +7,6 @@ import { createClient } from '@/lib/supabase/server';
 async function getCurrentUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user && process.env.NODE_ENV === 'development') {
-    const firstCustomer = await prisma.profile.findFirst({
-      where: { role: 'CUSTOMER' },
-      select: { id: true, email: true },
-    });
-    if (firstCustomer) {
-      return { id: firstCustomer.id, email: firstCustomer.email } as any;
-    }
-    return { id: 'dev-bypass', email: 'dev@godsmove.com' } as any;
-  }
   return user;
 }
 
