@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import GlobalToast from "@/components/GlobalToast";
 import CompareBar from "@/components/CompareBar";
 import { CinematicSiteLoader } from "@/components/CinematicSiteLoader";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={plusJakartaSans.variable}>
       <body>
+        <GoogleAnalytics />
         <div className="grain-overlay" aria-hidden="true" />
         <AuthProvider>
           {children}
