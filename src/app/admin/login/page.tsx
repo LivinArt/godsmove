@@ -30,10 +30,14 @@ function AdminLoginForm() {
     setError(null);
     setLoading(true);
     try {
+      // Store intended destination in a cookie before OAuth so the callback route
+      // can read it back reliably (Supabase/Vercel may strip custom ?next= query params)
+      document.cookie = `godsmove_oauth_next=/admin; path=/; max-age=300; SameSite=Lax`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) throw error;
