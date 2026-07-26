@@ -215,29 +215,39 @@ export const InvoiceService = {
                 <span>${data.shippingCost === 0 ? 'FREE' : formatINR(data.shippingCost)}</span>
               </div>
               
-              <!-- GST breakdown splits -->
-              <div class="totals-row" style="border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 8px; font-size: 10px; color: #555;">
-                <span>Taxable Value:</span>
-                <span>${formatINR(Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost) - (Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost)) * 0.107)}</span>
-              </div>
-              ${data.shippingAddress.state.trim().toUpperCase() === 'HARYANA' ? `
-              <div class="totals-row" style="font-size: 10px; color: #555;">
-                <span>CGST:</span>
-                <span>${formatINR(((Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost)) * 0.107) / 2)}</span>
-              </div>
-              <div class="totals-row" style="font-size: 10px; color: #555;">
-                <span>SGST:</span>
-                <span>${formatINR(((Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost)) * 0.107) / 2)}</span>
-              </div>
-              ` : `
-              <div class="totals-row" style="font-size: 10px; color: #555;">
-                <span>IGST:</span>
-                <span>${formatINR((Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost)) * 0.107)}</span>
-              </div>
-              `}
+              <!-- GST breakdown splits (MRP Inclusive Tax Calculation) -->
+              ${(() => {
+                const netOrderTotal = Math.max(0, Number(data.subtotal) - Number(data.discountAmount) - Number(data.walletCredit) + Number(data.shippingCost));
+                const taxableVal = Number((netOrderTotal / 1.12).toFixed(2));
+                const gstIncluded = Number((netOrderTotal - taxableVal).toFixed(2));
+                const halfGst = Number((gstIncluded / 2).toFixed(2));
+                const isIntraState = data.shippingAddress.state.trim().toUpperCase() === 'HARYANA';
+
+                return `
+                  <div class="totals-row" style="border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 8px; font-size: 10px; color: #555;">
+                    <span>Taxable Value (Excl. GST):</span>
+                    <span>${formatINR(taxableVal)}</span>
+                  </div>
+                  ${isIntraState ? `
+                  <div class="totals-row" style="font-size: 10px; color: #555;">
+                    <span>CGST (6%):</span>
+                    <span>${formatINR(halfGst)}</span>
+                  </div>
+                  <div class="totals-row" style="font-size: 10px; color: #555;">
+                    <span>SGST (6%):</span>
+                    <span>${formatINR(halfGst)}</span>
+                  </div>
+                  ` : `
+                  <div class="totals-row" style="font-size: 10px; color: #555;">
+                    <span>IGST (12%):</span>
+                    <span>${formatINR(gstIncluded)}</span>
+                  </div>
+                  `}
+                `;
+              })()}
               
               <div class="totals-row grand">
-                <span>Grand Total:</span>
+                <span>Grand Total (Incl. GST):</span>
                 <span>${formatINR(data.total)}</span>
               </div>
             </div>

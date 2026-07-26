@@ -245,6 +245,9 @@ export default function ProductClient({
                 <span className={styles.heroDiscountBadge}>{discountPercent}% OFF</span>
               )}
             </div>
+            <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '4px', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>
+              Price inclusive of GST
+            </div>
 
             <div className={styles.heroDivider} />
 

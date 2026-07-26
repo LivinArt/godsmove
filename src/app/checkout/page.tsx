@@ -257,23 +257,10 @@ export default function CheckoutPage() {
   // Mobile Step Wizard State (1: Address, 2: Summary/GST, 3: Payment)
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
-  // Calculate pricing & GST
+  // Calculate pricing (MRP Inclusive GST Model - No separate GST added)
   const subtotalAfterCoupon = Math.max(0, subtotal - discountAmount);
-  
-  // Dynamic per-item GST calculation based on product.gstPercentage (default 18%)
-  const totalGst = checkoutItems.reduce((acc, item) => {
-    const variant = item.product.variants?.find((v: any) => v.size === item.size);
-    const itemPrice = variant?.price ? Number(variant.price) : 0;
-    const itemTotal = itemPrice * item.quantity;
-    const itemDiscount = subtotal > 0 ? (itemTotal / subtotal) * discountAmount : 0;
-    const taxable = Math.max(0, itemTotal - itemDiscount);
-    const rate = item.product.gstPercentage !== undefined && item.product.gstPercentage !== null ? Number(item.product.gstPercentage) : 18;
-    return acc + (taxable * rate) / 100;
-  }, 0);
-
-  const roundedGst = Math.round(totalGst);
   const shipping = subtotalAfterCoupon > 1999 ? 0 : 149;
-  const totalBeforeCredits = subtotalAfterCoupon + roundedGst + shipping;
+  const totalBeforeCredits = subtotalAfterCoupon + shipping;
   const walletCreditsToUse = useCredits ? Math.min(walletBalance, totalBeforeCredits) : 0;
   const finalPayable = Math.max(0, totalBeforeCredits - walletCreditsToUse);
 
@@ -1111,16 +1098,15 @@ export default function CheckoutPage() {
                   <span>Subtotal</span>
                   <span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
+                <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.45)', marginTop: '-8px', marginBottom: '8px', letterSpacing: '0.04em', fontFamily: 'var(--font-heading)' }}>
+                  Price inclusive of GST
+                </div>
                 {discountAmount > 0 && (
                   <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
                     <span>Discount</span>
                     <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
-                <div className={styles.orderRow}>
-                  <span>Estimated GST</span>
-                  <span>₹{roundedGst.toLocaleString('en-IN')}</span>
-                </div>
                 <div className={styles.orderRow}>
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>

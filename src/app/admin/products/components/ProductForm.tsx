@@ -827,28 +827,87 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }} className="pim-grid-col2">
-                  <div>
-                    <label className="form-label">Fulfillment Cost Price (₹)</label>
-                    <input
-                      type="number"
-                      name="costPrice"
-                      value={formData.costPrice || ''}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="e.g. 1200"
-                    />
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '24px', paddingTop: '24px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c8a46a', marginBottom: '16px' }}>
+                    MRP & GST Pricing Architecture (Inclusive Model)
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+                    <div>
+                      <label className="form-label">Cost Price (₹)</label>
+                      <input
+                        type="number"
+                        name="costPrice"
+                        value={formData.costPrice || ''}
+                        onChange={handleChange}
+                        className="admin-input"
+                        placeholder="e.g. 1200"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Selling Price (Inclusive of GST) (₹)</label>
+                      <input
+                        type="number"
+                        name="mrp"
+                        value={formData.mrp || ''}
+                        onChange={handleChange}
+                        className="admin-input"
+                        placeholder="e.g. 2999"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="form-label">Barcode / UPC (Optional)</label>
-                    <input
-                      type="text"
-                      name="barcode"
-                      value={formData.barcode}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="e.g. 89012345678"
-                    />
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }} className="pim-grid-col2">
+                    <div>
+                      <label className="form-label">GST Rate %</label>
+                      <select
+                        className="admin-input admin-select"
+                        value={[0, 5, 12, 18, 28].includes(Number(formData.gstPercentage)) ? String(formData.gstPercentage) : 'custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'custom') {
+                            setFormData((prev: any) => ({ ...prev, gstPercentage: prev.gstPercentage || 12 }));
+                          } else {
+                            setFormData((prev: any) => ({ ...prev, gstPercentage: Number(val) }));
+                          }
+                        }}
+                      >
+                        <option value="0">0% (Exempted)</option>
+                        <option value="5">5% (Apparel & Low Rate)</option>
+                        <option value="12">12% (Standard Fashion Rate)</option>
+                        <option value="18">18% (Standard Rate)</option>
+                        <option value="28">28% (Luxury Rate)</option>
+                        <option value="custom">Custom Percentage</option>
+                      </select>
+
+                      {![0, 5, 12, 18, 28].includes(Number(formData.gstPercentage)) && (
+                        <div style={{ marginTop: '10px' }}>
+                          <label className="form-label">Custom GST Percentage (%)</label>
+                          <input
+                            type="number"
+                            name="gstPercentage"
+                            value={formData.gstPercentage ?? ''}
+                            onChange={handleChange}
+                            className="admin-input"
+                            placeholder="Enter custom GST % (e.g. 7.5)"
+                            step="0.1"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="form-label">Barcode / UPC (Optional)</label>
+                      <input
+                        type="text"
+                        name="barcode"
+                        value={formData.barcode}
+                        onChange={handleChange}
+                        className="admin-input"
+                        placeholder="e.g. 89012345678"
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1000,6 +1059,65 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Admin Visibility Only Financial & GST Breakdown */}
+                <div style={{ background: 'rgba(200, 164, 106, 0.04)', border: '1px solid rgba(200, 164, 106, 0.2)', padding: '24px', borderRadius: '4px', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c8a46a', margin: 0 }}>
+                      Financial & GST Tax Breakdown (Admin Visibility Only)
+                    </h4>
+                    <span style={{ fontSize: '10px', color: '#8c857b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Internal Compliance Metrics
+                    </span>
+                  </div>
+
+                  {(() => {
+                    const sp = Number(formData.mrp || variants[0]?.price || 0);
+                    const cp = Number(formData.costPrice || 0);
+                    const gstRate = Number(formData.gstPercentage || 12);
+                    const netPrice = sp > 0 ? Number((sp / (1 + gstRate / 100)).toFixed(2)) : 0;
+                    const gstIncluded = sp > 0 ? Number((sp - netPrice).toFixed(2)) : 0;
+                    const compPrice = Number(variants[0]?.comparePrice || 0);
+
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Cost Price</span>
+                          <strong style={{ fontSize: '14px', color: '#fff' }}>₹{cp.toLocaleString('en-IN')}</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Selling Price (Inclusive GST)</span>
+                          <strong style={{ fontSize: '14px', color: '#c8a46a' }}>₹{sp.toLocaleString('en-IN')}</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Rate</span>
+                          <strong style={{ fontSize: '14px', color: '#fff' }}>{gstRate}%</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Amount Included</span>
+                          <strong style={{ fontSize: '14px', color: '#22c55e' }}>₹{gstIncluded.toLocaleString('en-IN')}</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Net Price Before GST</span>
+                          <strong style={{ fontSize: '14px', color: '#fff' }}>₹{netPrice.toLocaleString('en-IN')}</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Compare Price</span>
+                          <strong style={{ fontSize: '14px', color: '#9ca3af' }}>{compPrice > 0 ? `₹${compPrice.toLocaleString('en-IN')}` : 'N/A'}</strong>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <p style={{ fontSize: '10px', color: '#8c857b', marginTop: '12px', marginBottom: 0, fontStyle: 'italic' }}>
+                    Note: These calculations are strictly internal for tax filing & margin analytics. Customers see only the final Selling Price with &quot;Price inclusive of GST&quot; subtext.
+                  </p>
                 </div>
 
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
