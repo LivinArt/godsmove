@@ -19,6 +19,96 @@ export interface NotificationUserRecipient {
  * Future services (e.g. WhatsAppService) plug into this class without altering core business logic.
  */
 export class NotificationService {
+  private static sentOrderIds = new Set<string>();
+
+  /**
+   * Helper method to map a Prisma Order database record and dispatch Order Confirmation email cleanly.
+   * Includes idempotency guard to prevent duplicate dispatches for the same order ID.
+   */
+  static async sendOrderConfirmationForOrder(order: any) {
+    if (!order || !order.id) {
+      console.warn('⚠️ [NOTIFICATION SERVICE] Attempted to send order confirmation for invalid order record.');
+      return { success: false, error: 'Invalid order object' };
+    }
+
+    // Idempotency check: prevent duplicate emails for the same order
+    if (NotificationService.sentOrderIds.has(order.id)) {
+      console.log(`ℹ️ [NOTIFICATION SERVICE] Order confirmation email already sent for order ${order.id} (${order.orderNumber}). Skipping duplicate dispatch.`);
+      return { success: true, duplicate: true };
+    }
+
+    // Mark order as processed for email dispatch
+    NotificationService.sentOrderIds.add(order.id);
+
+    const addr = typeof order.shippingAddress === 'string'
+      ? JSON.parse(order.shippingAddress)
+      : (order.shippingAddress || {});
+
+    const recipientName = addr.firstName
+      ? `${addr.firstName} ${addr.lastName || ''}`.trim()
+      : 'Valued Collector';
+
+    const targetEmail = order.email || addr.email || 'support@godsmove.in';
+
+    const formattedDate = order.createdAt
+      ? new Date(order.createdAt).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : new Date().toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
+    const items = Array.isArray(order.items)
+      ? order.items.map((item: any) => ({
+          id: item.id || item.variantId,
+          title: item.productName || item.name || 'GODSMOVE Statement Piece',
+          size: item.size || 'L',
+          color: item.color || null,
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price || 0),
+          imageUrl: item.variant?.product?.frontImageUrl || item.variant?.product?.images?.[0]?.url || 'https://godsmove.in/images/hero-1.jpg',
+        }))
+      : [];
+
+    const emailPayload: OrderConfirmationEmailProps = {
+      customerName: recipientName,
+      orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
+      orderDate: formattedDate,
+      items,
+      subtotal: Number(order.subtotal || 0),
+      shipping: Number(order.shippingCost || 0),
+      walletDiscount: Number(order.walletCredit || 0),
+      couponDiscount: Number(order.discountAmount || 0),
+      total: Number(order.total || 0),
+      shippingAddress: {
+        name: recipientName,
+        line1: addr.line1 || 'Address Line 1',
+        line2: addr.line2 || null,
+        city: addr.city || 'Mumbai',
+        state: addr.state || 'Maharashtra',
+        pincode: addr.pincode || '400050',
+        phone: addr.phone || '',
+      },
+      trackOrderUrl: 'https://godsmove.in/profile',
+      continueShoppingUrl: 'https://godsmove.in/drops',
+    };
+
+    try {
+      console.log(`[NOTIFICATION SERVICE] Dispatching Order Confirmation Email for Order #${order.orderNumber} to ${targetEmail}`);
+      const emailResult = await EmailService.sendOrderConfirmation(targetEmail, emailPayload);
+      console.log(`✅ [NOTIFICATION SERVICE] Order Confirmation Email sent successfully for #${order.orderNumber}. Resend ID: ${emailResult.id || 'N/A'}`);
+      return { success: true, email: emailResult };
+    } catch (err: any) {
+      console.error(`❌ [NOTIFICATION SERVICE] Non-critical email dispatch failure for order ${order.id}:`, err?.message || err);
+      // Return error result without throwing so database order creation/verification NEVER fails
+      return { success: false, error: err?.message || 'Email dispatch failed' };
+    }
+  }
+
   /**
    * Dispatch Order Confirmation across configured channels
    */

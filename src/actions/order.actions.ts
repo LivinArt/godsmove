@@ -15,7 +15,7 @@ import {
   type CreateOrderInput,
 } from '@/lib/validations/order';
 import { InvoiceService } from '@/lib/invoice';
-import { NotificationService } from '@/lib/notification';
+import { NotificationService } from '@/notifications/notification.service';
 import { calculateETA } from '@/lib/logistics';
 import { PricingEngine } from '@/lib/pricing-engine';
 import { WalletService } from '@/lib/wallet-service';
@@ -23,9 +23,13 @@ import { WalletService } from '@/lib/wallet-service';
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function getCurrentUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 async function requireAdmin() {
@@ -59,7 +63,7 @@ export async function createOrder(input: CreateOrderInput) {
   const data = CreateOrderSchema.parse(input);
   const user = await getCurrentUser();
 
-  return prisma.$transaction(async (tx) => {
+  const createdOrder = await prisma.$transaction(async (tx) => {
     // 1. Validate and fetch all variants with inventory
     const variantIds = data.items.map((i) => i.variantId);
     const variants = await tx.productVariant.findMany({
@@ -263,6 +267,37 @@ export async function createOrder(input: CreateOrderInput) {
 
     return order;
   });
+
+  // Non-blocking Order Confirmation Email trigger for COD & Zero Payable orders (after DB commit)
+  if (createdOrder && (createdOrder.paymentMethod === 'COD' || Number(createdOrder.total) === 0 || createdOrder.status === 'CONFIRMED')) {
+    try {
+      const fullOrder = await prisma.order.findUnique({
+        where: { id: createdOrder.id },
+        include: {
+          items: {
+            include: {
+              variant: {
+                include: {
+                  product: {
+                    include: { images: { orderBy: { position: 'asc' } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (fullOrder) {
+        NotificationService.sendOrderConfirmationForOrder(fullOrder).catch((err: any) => {
+          console.error(`❌ [ORDER SERVICE] Non-critical email error for COD order ${createdOrder.id}:`, err);
+        });
+      }
+    } catch (err: any) {
+      console.error(`❌ [ORDER SERVICE] Non-critical error fetching order details for email:`, err);
+    }
+  }
+
+  return createdOrder;
 }
 
 // ── CONFIRM ORDER (after payment) ────────────────────────────────────────────
@@ -323,7 +358,20 @@ export async function confirmOrder(
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true, profile: true },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: { images: { orderBy: { position: 'asc' } } },
+                },
+              },
+            },
+          },
+        },
+        profile: true,
+      },
     });
     if (order) {
       const addr = typeof order.shippingAddress === 'string'
@@ -365,30 +413,19 @@ export async function confirmOrder(
       // 1. Generate & Save invoice
       await InvoiceService.saveInvoiceFile(invoiceData);
 
-      // 2. Dispatch Order Confirmation Notification
-      const itemsListHtml = order.items
-        .map(
-          (i) => `
-        <tr>
-          <td>${i.productName} (Size: ${i.size}) &times; ${i.quantity}</td>
-          <td style="text-align: right;">₹${Number(i.total).toLocaleString('en-IN')}</td>
-        </tr>
-      `
-        )
-        .join('');
-      await NotificationService.sendOrderConfirmation(
-        order.email,
-        order.orderNumber,
-        itemsListHtml,
-        `₹${Number(order.total).toLocaleString('en-IN')}`
-      );
+      // 2. Dispatch Order Confirmation Notification (Idempotency protected)
+      NotificationService.sendOrderConfirmationForOrder(order).catch((err: any) => {
+        console.error(`❌ [ORDER SERVICE] Non-critical email error for confirmed order ${orderId}:`, err);
+      });
     }
   } catch (err) {
     console.error('Invoice or notification generation failed:', err);
   }
 
-  revalidatePath('/admin/orders');
-  revalidatePath('/profile');
+  try {
+    revalidatePath('/admin/orders');
+    revalidatePath('/profile');
+  } catch {}
   return updated;
 }
 
@@ -643,23 +680,7 @@ export async function emailInvoice(orderId: string) {
   });
   if (!order) throw new Error('Order not found');
 
-  const itemsListHtml = order.items
-    .map(
-      (i) => `
-    <tr>
-      <td>${i.productName} (Size: ${i.size}) &times; ${i.quantity}</td>
-      <td style="text-align: right;">₹${Number(i.total).toLocaleString('en-IN')}</td>
-    </tr>
-  `
-    )
-    .join('');
-  
-  await NotificationService.sendOrderConfirmation(
-    order.email,
-    order.orderNumber,
-    itemsListHtml,
-    `₹${Number(order.total).toLocaleString('en-IN')}`
-  );
-  return { success: true };
+  const result = await NotificationService.sendOrderConfirmationForOrder(order);
+  return { success: true, result };
 }
 
