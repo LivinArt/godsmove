@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './MobileQuickAddSheet.module.css';
 
 interface SizeItem {
@@ -32,6 +33,11 @@ export default function MobileQuickAddSheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number>(0);
   const [selectedColorState, setSelectedColorState] = useState<string>(colors && colors.length > 0 ? colors[0] : '');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (colors && colors.length > 0 && !selectedColorState) {
@@ -78,9 +84,9 @@ export default function MobileQuickAddSheet({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -182,6 +188,7 @@ export default function MobileQuickAddSheet({
           {actionType === 'buy' ? 'Select specifications to proceed to checkout' : 'Select a size to add to your bag'}
         </p>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
