@@ -32,7 +32,16 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
   const from = payload.from || DEFAULT_SENDER;
   const replyTo = payload.replyTo || DEFAULT_REPLY_TO;
 
-  if (!resend) {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ [CRITICAL DEPLOYMENT ERROR]: RESEND_API_KEY environment variable is missing in production!');
+      return {
+        success: false,
+        error: 'CRITICAL: RESEND_API_KEY environment variable is missing in production.',
+      };
+    }
     console.log('--- [RESEND SIMULATION MODE] ---');
     console.log(`From: ${from}`);
     console.log(`To: ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}`);
@@ -42,8 +51,10 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
     return { success: true, id: `sim_${Date.now()}` };
   }
 
+  const client = resend || new Resend(apiKey);
+
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await client.emails.send({
       from,
       to: payload.to,
       replyTo,
