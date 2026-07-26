@@ -759,7 +759,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 <h2 style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', color: '#fff' }}>
                   Taxation & Logistics Info
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
                   <div>
                     <label className="form-label">HSN Tax Code <span style={{ color: '#ef4444' }}>*</span></label>
                     <input
@@ -771,21 +771,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                       placeholder="e.g. 61091000"
                       required
                     />
-                  </div>
-                  <div>
-                    <label className="form-label">GST Tax Slab %</label>
-                    <select
-                      name="gstPercentage"
-                      value={formData.gstPercentage}
-                      onChange={handleChange}
-                      className="admin-input admin-select"
-                    >
-                      <option value="0">0% (Exempt)</option>
-                      <option value="5">5% (Standard Apparel)</option>
-                      <option value="12">12% (Standard Leather/Apparel)</option>
-                      <option value="18">18% (Luxury rate)</option>
-                      <option value="28">28% (Super luxury)</option>
-                    </select>
                   </div>
                 </div>
 

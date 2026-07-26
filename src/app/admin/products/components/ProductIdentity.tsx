@@ -239,22 +239,6 @@ export function ProductIdentity({
               <option value="SOLD_OUT">Sold Out</option>
             </select>
           </div>
-
-          <div>
-            <label className="form-label">GST Tax Rate (%)</label>
-            <select
-              name="gstPercentage"
-              value={formData.gstPercentage !== undefined && formData.gstPercentage !== null ? formData.gstPercentage : 18}
-              onChange={(e) => setFormData((prev: any) => ({ ...prev, gstPercentage: Number(e.target.value) }))}
-              className="admin-input admin-select"
-            >
-              <option value={0}>0% GST (Exempt)</option>
-              <option value={5}>5% GST</option>
-              <option value={12}>12% GST</option>
-              <option value={18}>18% GST (Standard)</option>
-              <option value={28}>28% GST (Luxury)</option>
-            </select>
-          </div>
         </div>
       </div>
     </section>

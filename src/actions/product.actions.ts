@@ -391,7 +391,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
   revalidatePath('/exclusive-rack');
   revalidatePath('/admin/exclusive-draws');
   revalidatePath('/');
-  return product;
+  return serializePrisma(product);
 }
 
 // ── VARIANTS ─────────────────────────────────────────────────────────────────
