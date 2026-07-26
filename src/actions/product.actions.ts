@@ -249,42 +249,42 @@ export async function deleteProduct(id: string) {
 
 export async function upsertProductRecord(input: UpsertProductInput) {
   await requireAdmin();
-  const parsedInput = UpsertProductSchema.parse(input);
-  const { id, variants, images, ...productData } = parsedInput;
+  const parsedData = UpsertProductSchema.parse(input);
+  const { id, variants, images, comparePrice, ...scalarFields } = parsedData;
 
   // Sync visibility flags and channels
-  if (productData.channel === 'DROP') {
-    productData.isFeatured = productData.showOnHomepage;
-    productData.isExclusiveRack = false;
-    productData.showOnExclusivePage = false;
-  } else if (productData.channel === 'EXCLUSIVE_RACK') {
-    productData.isExclusiveRack = true;
-    productData.showOnExclusivePage = true;
-    productData.isFeatured = false;
-  } else if (productData.channel === 'EXCLUSIVE_UNLOCK') {
-    productData.isFeatured = false;
-    productData.isExclusiveRack = false;
-    productData.showOnExclusivePage = false;
-    productData.showOnHomepage = false;
+  if (scalarFields.channel === 'DROP') {
+    scalarFields.isFeatured = scalarFields.showOnHomepage;
+    scalarFields.isExclusiveRack = false;
+    scalarFields.showOnExclusivePage = false;
+  } else if (scalarFields.channel === 'EXCLUSIVE_RACK') {
+    scalarFields.isExclusiveRack = true;
+    scalarFields.showOnExclusivePage = true;
+    scalarFields.isFeatured = false;
+  } else if (scalarFields.channel === 'EXCLUSIVE_UNLOCK') {
+    scalarFields.isFeatured = false;
+    scalarFields.isExclusiveRack = false;
+    scalarFields.showOnExclusivePage = false;
+    scalarFields.showOnHomepage = false;
   }
 
   // Media Reuse Banner/Hero
-  if (productData.useCoverImage && productData.frontImageUrl) {
-    productData.collectionBanner = productData.frontImageUrl;
-    productData.collectionHeroImage = productData.frontImageUrl;
+  if (scalarFields.useCoverImage && scalarFields.frontImageUrl) {
+    scalarFields.collectionBanner = scalarFields.frontImageUrl;
+    scalarFields.collectionHeroImage = scalarFields.frontImageUrl;
   }
 
   let existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
-  if (!existing && productData.slug) {
-    existing = await prisma.product.findFirst({ where: { slug: productData.slug } });
+  if (!existing && scalarFields.slug) {
+    existing = await prisma.product.findFirst({ where: { slug: scalarFields.slug } });
   }
 
   const targetId = existing?.id || id;
-  const becomingActive = existing?.status !== 'ACTIVE' && productData.status === 'ACTIVE';
+  const becomingActive = existing?.status !== 'ACTIVE' && scalarFields.status === 'ACTIVE';
 
   const productWrite = {
-    ...productData,
-    domain: domainFromChannel(productData.channel),
+    ...scalarFields,
+    domain: domainFromChannel(scalarFields.channel),
   };
 
   const product = await prisma.$transaction(async (tx) => {
@@ -302,7 +302,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
       p = await tx.product.create({
         data: {
           ...productWrite,
-          publishedAt: productData.status === 'ACTIVE' ? new Date() : null,
+          publishedAt: scalarFields.status === 'ACTIVE' ? new Date() : null,
         },
       });
     }
@@ -344,8 +344,8 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     });
 
     // Variant price override logic: use variant-specific price if edited; otherwise fallback to product default MRP
-    const defaultPrice = Number(productData.mrp || 0);
-    const defaultComparePrice = productData.comparePrice ? Number(productData.comparePrice) : null;
+    const defaultPrice = Number(scalarFields.mrp || 0);
+    const defaultComparePrice = comparePrice ? Number(comparePrice) : null;
 
     for (const v of variants) {
       const { initialStock, ...variantData } = v;
