@@ -10,6 +10,8 @@ interface VariantManagerProps {
   onChange: (variants: FormVariantInput[]) => void;
   productSlug: string;
   globalCostPrice: number;
+  globalSellingPrice: number;
+  globalComparePrice?: number | null;
   globalGstPercentage: number;
 }
 
@@ -18,6 +20,8 @@ export function VariantManager({
   onChange,
   productSlug,
   globalCostPrice,
+  globalSellingPrice,
+  globalComparePrice,
   globalGstPercentage
 }: VariantManagerProps) {
   // Option matrix setup state
@@ -75,7 +79,7 @@ export function VariantManager({
     setWizardSizes(wizardSizes.filter((s) => s !== size));
   };
 
-  // Compile wizard matrix combinations
+  // Compile wizard matrix combinations — Inherit product selling price
   const compileWizardMatrix = () => {
     const activeColors = hasColorVariants ? wizardColors : [{ name: '', hex: '' }];
     const activeSizes = hasSizeVariants ? wizardSizes : ['ONE_SIZE'];
@@ -101,8 +105,8 @@ export function VariantManager({
           size: size as any,
           color: colorName,
           colorHex,
-          price: matched?.price || 0,
-          comparePrice: matched?.comparePrice || null,
+          price: globalSellingPrice,
+          comparePrice: globalComparePrice || null,
           position: pos++,
           isActive: matched ? matched.isActive : true,
           initialStock: matched?.initialStock || 0,
@@ -340,8 +344,7 @@ export function VariantManager({
                 <th>SKU Code</th>
                 <th style={{ width: '90px' }}>Size</th>
                 <th style={{ width: '100px' }}>Colour</th>
-                <th style={{ width: '120px' }}>Selling Price</th>
-                <th style={{ width: '120px' }}>Compare Price</th>
+                <th style={{ width: '140px' }}>Inherited Selling Price</th>
                 <th style={{ width: '90px' }}>Stock</th>
                 <th style={{ width: '180px' }}>Taxes & Margins</th>
                 <th style={{ width: '50px', textAlign: 'right' }}>Actions</th>
@@ -349,7 +352,7 @@ export function VariantManager({
             </thead>
             <tbody>
               {variants.map((v, idx) => {
-                const splits = calculatePricing(v.price, globalCostPrice, globalGstPercentage);
+                const splits = calculatePricing(globalSellingPrice, globalCostPrice, globalGstPercentage);
                 return (
                   <tr key={idx} style={{ opacity: v.isActive ? 1 : 0.4 }}>
                     <td>
@@ -379,26 +382,17 @@ export function VariantManager({
                       </span>
                     </td>
                     <td>
-                      <input
-                        type="number"
-                        value={v.price || ''}
-                        onChange={(e) => updateVariant(idx, 'price', parseFloat(e.target.value) || 0)}
-                        className="admin-input"
-                        style={{ padding: '6px 8px', fontSize: '12px' }}
-                        placeholder="₹ Price"
-                        min="0"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={v.comparePrice || ''}
-                        onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="admin-input"
-                        style={{ padding: '6px 8px', fontSize: '12px' }}
-                        placeholder="₹ MRP"
-                        min="0"
-                      />
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#c8a46a' }}>
+                        ₹{globalSellingPrice.toLocaleString('en-IN')}
+                        {globalComparePrice ? (
+                          <span style={{ fontSize: '10px', color: '#9ca3af', textDecoration: 'line-through', marginLeft: '6px' }}>
+                            ₹{globalComparePrice.toLocaleString('en-IN')}
+                          </span>
+                        ) : null}
+                      </div>
+                      <span style={{ fontSize: '9px', color: '#8c857b', display: 'block', marginTop: '2px' }}>
+                        Inherited from Product
+                      </span>
                     </td>
                     <td>
                       <input
@@ -413,7 +407,7 @@ export function VariantManager({
                     </td>
                     <td>
                       <div style={{ fontSize: '9px', color: 'var(--admin-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span>GST: ₹{splits.gstAmount} | Rev: ₹{splits.netRevenue}</span>
+                        <span>GST ({globalGstPercentage}%): ₹{splits.gstAmount} | Rev: ₹{splits.netRevenue}</span>
                         <span style={{ color: splits.profit >= 0 ? '#22c55e' : '#ef4444' }}>
                           Profit: ₹{splits.profit} ({splits.margin}%)
                         </span>
@@ -439,7 +433,7 @@ export function VariantManager({
         {/* Mobile / Tablet Cards View */}
         <div className="v-mobile-cards">
           {variants.map((v, idx) => {
-            const splits = calculatePricing(v.price, globalCostPrice, globalGstPercentage);
+            const splits = calculatePricing(globalSellingPrice, globalCostPrice, globalGstPercentage);
             return (
               <div
                 key={idx}
@@ -500,28 +494,16 @@ export function VariantManager({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Selling Price</label>
-                    <input
-                      type="number"
-                      value={v.price || ''}
-                      onChange={(e) => updateVariant(idx, 'price', parseFloat(e.target.value) || 0)}
-                      className="admin-input"
-                      style={{ padding: '6px 8px', fontSize: '12px' }}
-                      placeholder="₹ Price"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Compare Price</label>
-                    <input
-                      type="number"
-                      value={v.comparePrice || ''}
-                      onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
-                      className="admin-input"
-                      style={{ padding: '6px 8px', fontSize: '12px' }}
-                      placeholder="₹ MRP"
-                    />
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Inherited Price (Product MRP)</label>
+                    <div style={{ background: 'rgba(200,164,106,0.06)', border: '1px solid rgba(200,164,106,0.2)', padding: '8px 12px', fontSize: '12px', fontWeight: 600, color: '#c8a46a', borderRadius: '2px' }}>
+                      ₹{globalSellingPrice.toLocaleString('en-IN')}
+                      {globalComparePrice ? (
+                        <span style={{ fontSize: '10px', color: '#9ca3af', textDecoration: 'line-through', marginLeft: '6px' }}>
+                          ₹{globalComparePrice.toLocaleString('en-IN')}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div>

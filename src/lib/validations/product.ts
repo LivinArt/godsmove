@@ -95,6 +95,10 @@ export const CreateProductSchema = z.object({
     emptyStringToNull,
     z.coerce.number().positive().optional().nullable()
   ),
+  comparePrice: z.preprocess(
+    emptyStringToNull,
+    z.coerce.number().positive().optional().nullable()
+  ),
   hsn: z.string().optional().nullable(),
   netQuantity: z.coerce.number().int().default(1),
 

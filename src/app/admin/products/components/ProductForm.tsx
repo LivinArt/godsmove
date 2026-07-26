@@ -514,13 +514,24 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       const parsedFrom = formData.featuredFrom ? new Date(formData.featuredFrom) : null;
       const parsedUntil = formData.featuredUntil ? new Date(formData.featuredUntil) : null;
 
+      const productSellingPrice = Number(formData.mrp || 0);
+      const productComparePrice = formData.comparePrice ? Number(formData.comparePrice) : null;
+
       const payload: UpsertProductInput = {
         ...formData,
+        mrp: productSellingPrice,
+        costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
+        gstPercentage: Number(formData.gstPercentage || 12.0),
         dropId: formData.dropId || null,
         featuredFrom: parsedFrom,
         featuredUntil: parsedUntil,
         images,
-        variants: variants.map((v, idx) => ({ ...v, position: idx })),
+        variants: variants.map((v, idx) => ({
+          ...v,
+          price: productSellingPrice,
+          comparePrice: productComparePrice,
+          position: idx,
+        })),
         garmentLifeCycle: JSON.stringify(stages),
       };
 
@@ -961,6 +972,8 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 onChange={setVariants}
                 productSlug={formData.slug}
                 globalCostPrice={Number(formData.costPrice || 0)}
+                globalSellingPrice={Number(formData.mrp || 0)}
+                globalComparePrice={formData.comparePrice ? Number(formData.comparePrice) : null}
                 globalGstPercentage={Number(formData.gstPercentage || 12.0)}
               />
             </section>

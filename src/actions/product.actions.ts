@@ -343,15 +343,25 @@ export async function upsertProductRecord(input: UpsertProductInput) {
       data: { isActive: false },
     });
 
+    // Inherit product-level single source of truth price & comparePrice for variants
+    const inheritedPrice = Number(productData.mrp || 0);
+    const inheritedComparePrice = productData.comparePrice ? Number(productData.comparePrice) : null;
+
     for (const v of variants) {
       const { initialStock, ...variantData } = v;
+      const syncVariantData = {
+        ...variantData,
+        price: inheritedPrice,
+        comparePrice: inheritedComparePrice,
+      };
+
       const existingVariant = await tx.productVariant.findUnique({ where: { sku: v.sku } });
       let variantId = existingVariant?.id;
 
       if (existingVariant) {
         await tx.productVariant.update({
           where: { id: existingVariant.id },
-          data: { ...variantData, isActive: true }, // reactivate if archived
+          data: { ...syncVariantData, isActive: true }, // reactivate if archived
         });
         
         // Update stock if initialStock is provided during edit
@@ -363,7 +373,7 @@ export async function upsertProductRecord(input: UpsertProductInput) {
         }
       } else {
         const newV = await tx.productVariant.create({
-          data: { ...variantData, productId: p.id },
+          data: { ...syncVariantData, productId: p.id },
         });
         variantId = newV.id;
 
