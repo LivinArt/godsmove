@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { getMarketingDashboardStats } from '@/actions/marketing.actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MarketingDashboardPage() {
   const { kpis, chartData } = await getMarketingDashboardStats();
 

@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MarketingCustomersPage() {
   const customers = await prisma.profile.findMany({
     orderBy: { createdAt: 'desc' },
