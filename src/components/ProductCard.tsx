@@ -237,35 +237,6 @@ export default function ProductCard({
           </button>
         )}
 
-        {/* Quick Add Slide-up Panel (Desktop hover) */}
-        {cardSizes.length > 0 && (
-          <div className={styles.quickAddPanel}>
-            <span className={styles.quickAddTitle}>Quick Add</span>
-            <div className={styles.quickAddSizes}>
-              {cardSizes.map(item => {
-                const isAddingThis = addingSize === item.size;
-                return (
-                  <button
-                    key={item.size}
-                    disabled={!item.available || addingSize !== null}
-                    className={`${styles.sizeBtn} ${!item.available ? styles.sizeDisabled : ''} ${isAddingThis ? styles.sizeAdding : ''}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleQuickAdd(item.size);
-                    }}
-                  >
-                    {isAddingThis ? (
-                      <span className={styles.loadingSpinner} />
-                    ) : (
-                      item.size
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className={`${styles.info} ${isDark ? styles.infoDark : ''}`}>

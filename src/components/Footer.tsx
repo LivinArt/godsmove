@@ -54,21 +54,39 @@ export default function Footer() {
             PART 1: LUXURY SERVICE STRIP (MONOCHROME CARDS)
             ============================================================ */}
         <section className={styles.serviceStripSection} aria-label="Luxury Brand Commitments">
-          <div className={styles.serviceStripGrid}>
-            {SERVICE_ITEMS.map((item, idx) => {
-              const IconComp = item.icon;
-              return (
-                <div key={idx} className={styles.serviceCard}>
-                  <div className={styles.serviceIconWrap}>
-                    <IconComp size={20} strokeWidth={1.25} className={styles.serviceIcon} />
+          <div className={styles.serviceMarqueeContainer}>
+            <div className={styles.serviceMarqueeTrack}>
+              {/* Primary Track */}
+              {SERVICE_ITEMS.map((item, idx) => {
+                const IconComp = item.icon;
+                return (
+                  <div key={`p-${idx}`} className={styles.serviceCard}>
+                    <div className={styles.serviceIconWrap}>
+                      <IconComp size={20} strokeWidth={1.25} className={styles.serviceIcon} />
+                    </div>
+                    <div className={styles.serviceContent}>
+                      <h4 className={styles.serviceTitle}>{item.title}</h4>
+                      <p className={styles.serviceSubtitle}>{item.subtitle}</p>
+                    </div>
                   </div>
-                  <div className={styles.serviceContent}>
-                    <h4 className={styles.serviceTitle}>{item.title}</h4>
-                    <p className={styles.serviceSubtitle}>{item.subtitle}</p>
+                );
+              })}
+              {/* Duplicate Track for Seamless Infinite Mobile Marquee Loop */}
+              {SERVICE_ITEMS.map((item, idx) => {
+                const IconComp = item.icon;
+                return (
+                  <div key={`d-${idx}`} className={`${styles.serviceCard} ${styles.serviceCardDuplicate}`}>
+                    <div className={styles.serviceIconWrap}>
+                      <IconComp size={20} strokeWidth={1.25} className={styles.serviceIcon} />
+                    </div>
+                    <div className={styles.serviceContent}>
+                      <h4 className={styles.serviceTitle}>{item.title}</h4>
+                      <p className={styles.serviceSubtitle}>{item.subtitle}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </section>
 

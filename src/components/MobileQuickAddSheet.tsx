@@ -39,7 +39,7 @@ export default function MobileQuickAddSheet({
     }
   }, [colors, selectedColorState]);
 
-  // Allow natural page scrolling while drawer is open + close on outside click
+  // Allow natural page scrolling while drawer is open + close on outside click or page scroll
   useEffect(() => {
     if (!isOpen) return;
 
@@ -53,11 +53,17 @@ export default function MobileQuickAddSheet({
       if (e.key === 'Escape') onClose();
     };
 
+    const handleScroll = () => {
+      onClose();
+    };
+
     window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('keydown', handleKey);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [isOpen, onClose]);
 

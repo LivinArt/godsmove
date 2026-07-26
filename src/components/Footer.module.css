@@ -19,50 +19,47 @@
 }
 
 /* ============================================================
-   PART 1: LUXURY SERVICE STRIP
+   PART 1: LUXURY SERVICE STRIP (MOBILE CONTINUOUS MARQUEE)
    ============================================================ */
 .serviceStripSection {
   margin-bottom: 56px;
 }
 
-.serviceStripGrid {
+.serviceMarqueeContainer {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.serviceMarqueeTrack {
   display: flex;
   gap: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 12px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  width: max-content;
+  animation: serviceMarqueeScroll 26s linear infinite;
+  will-change: transform;
 }
 
-.serviceStripGrid::-webkit-scrollbar {
-  display: none;
+.serviceMarqueeTrack:hover,
+.serviceMarqueeTrack:active,
+.serviceMarqueeTrack:focus-within {
+  animation-play-state: paused;
 }
 
-@media (min-width: 768px) {
-  .serviceStripGrid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    overflow-x: visible;
-    padding-bottom: 0;
+@keyframes serviceMarqueeScroll {
+  0% {
+    transform: translateX(0);
   }
-}
-
-@media (min-width: 1200px) {
-  .serviceStripGrid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
+  100% {
+    transform: translateX(calc(-50% - 8px));
   }
 }
 
 .serviceCard {
-  flex: 0 0 260px;
-  scroll-snap-align: start;
+  flex: 0 0 270px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 24px 20px;
-  border-radius: 2px;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -72,8 +69,31 @@
 }
 
 @media (min-width: 768px) {
+  .serviceMarqueeContainer {
+    overflow: visible;
+  }
+
+  .serviceMarqueeTrack {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    animation: none;
+  }
+
+  .serviceCardDuplicate {
+    display: none !important;
+  }
+
   .serviceCard {
     flex: initial;
+  }
+}
+
+@media (min-width: 1200px) {
+  .serviceMarqueeTrack {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
   }
 }
 

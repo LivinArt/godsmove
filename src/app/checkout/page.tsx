@@ -427,15 +427,15 @@ export default function CheckoutPage() {
         } catch (e) {
           // ignore
         }
-        // Instant success checkouts: Clear instantCheckout if present, otherwise clear cart
+        // Instant success checkouts: Set success state first, then clear cart
+        setConfirmedOrderNumber(order.orderNumber);
+        setShowSuccessModal(true);
+        setIsSubmitLoading(false);
         if (instantCheckout) {
           useStore.setState({ instantCheckout: null });
         } else {
           useStore.setState({ cart: [] });
         }
-        setConfirmedOrderNumber(order.orderNumber);
-        setShowSuccessModal(true);
-        setIsSubmitLoading(false);
       } else {
         // Razorpay secure checkout simulation (Dev Bypass)
         setSimulatedPaymentStep('initiating');
@@ -455,15 +455,15 @@ export default function CheckoutPage() {
                 // ignore
               }
               
+              setConfirmedOrderNumber(order.orderNumber);
+              setShowSuccessModal(true);
+              setIsSubmitLoading(false);
+              setSimulatedPaymentStep(null);
               if (instantCheckout) {
                 useStore.setState({ instantCheckout: null });
               } else {
                 useStore.setState({ cart: [] });
               }
-              setSimulatedPaymentStep(null);
-              setConfirmedOrderNumber(order.orderNumber);
-              setShowSuccessModal(true);
-              setIsSubmitLoading(false);
             } catch (err: any) {
               showToast('Payment Confirmation Error', err.message || 'Failed to confirm transaction.');
               setSimulatedPaymentStep(null);
@@ -478,7 +478,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (checkoutItems.length === 0) {
+  if (checkoutItems.length === 0 && !showSuccessModal) {
     return (
       <>
         <Navbar />
