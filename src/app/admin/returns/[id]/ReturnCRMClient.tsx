@@ -9,6 +9,7 @@ import {
   approveReturnRefund,
   approveAdminReturnRequest,
   updateAdminReturnQC,
+  completeReturnCase,
 } from '@/actions/admin-operations.actions';
 
 interface ReturnItem {
@@ -101,11 +102,12 @@ export default function ReturnCRMClient({
     }
   };
 
-  const handleApproveWithLogistics = async () => {
+  // ── STEP 1: Approve return (sets APPROVED) — refund calculator shows next ──
+  const handleApproveReturn = async () => {
     setLoading(true);
     try {
-      await approveAdminReturnRequest(ret.id, selectedCarrier);
-      alert(`Return approved. Reverse shipment created via ${selectedCarrier}.`);
+      await updateReturnStatus(ret.id, 'APPROVED', adminNotes || undefined);
+      alert('Return request approved. Please issue the wallet refund now.');
       router.refresh();
     } catch (err: any) {
       alert(err.message || 'Approval failed.');
@@ -114,19 +116,7 @@ export default function ReturnCRMClient({
     }
   };
 
-  const handleQCUpdate = async (status: 'RECEIVED' | 'INSPECTION' | 'REJECTED') => {
-    setLoading(true);
-    try {
-      await updateAdminReturnQC(ret.id, status, adminNotes);
-      alert(`QC Status updated to: ${status}`);
-      router.refresh();
-    } catch (err: any) {
-      alert(err.message || 'QC transition failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ── STEP 2: Issue wallet refund (sets REFUND_PROCESSED) ─────────────────────
   // Refund confirmation — uses inline React UI instead of window.confirm()
   // to avoid silent dialog dismissal in admin/headless environments.
   const handleRefundConfirm = async () => {
@@ -146,13 +136,54 @@ export default function ReturnCRMClient({
         const netRefund = Math.max(0, productPriceSum - outboundShipAmt - returnLogisticsAmt + taxAdjustmentAmt);
         trackRefund(ret.orderNumber || ret.orderId, netRefund);
       } catch (e) {
-        // ignore
+        // ignore analytics errors
       }
 
-      alert('Refund approved and issued successfully.');
+      alert('Wallet refund issued successfully. Now schedule the reverse pickup.');
       router.refresh();
     } catch (err: any) {
       alert(err.message || 'Failed to approve refund.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── STEP 3: Schedule reverse pickup (REFUND_PROCESSED → PICKUP_SCHEDULED) ──
+  const handleSchedulePickup = async () => {
+    setLoading(true);
+    try {
+      await approveAdminReturnRequest(ret.id, selectedCarrier);
+      alert(`Reverse pickup scheduled via ${selectedCarrier}.`);
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || 'Pickup scheduling failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQCUpdate = async (status: 'RECEIVED' | 'INSPECTION' | 'REJECTED') => {
+    setLoading(true);
+    try {
+      await updateAdminReturnQC(ret.id, status, adminNotes);
+      alert(`QC Status updated to: ${status}`);
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || 'QC transition failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── STEP 7: Complete case (INSPECTION → COMPLETED) — inventory restored ────
+  const handleCompleteCase = async () => {
+    setLoading(true);
+    try {
+      await completeReturnCase(ret.id, adminNotes || undefined);
+      alert('QC passed. Return case completed. Inventory restored.');
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || 'Case completion failed.');
     } finally {
       setLoading(false);
     }
@@ -162,15 +193,21 @@ export default function ReturnCRMClient({
     PENDING: 'badge badge-yellow',
     REQUESTED: 'badge badge-yellow',
     APPROVED: 'badge badge-blue',
+    REFUND_PROCESSED: 'badge badge-green',
     PICKUP_SCHEDULED: 'badge badge-blue',
     COLLECTED: 'badge badge-blue',
     RECEIVED: 'badge badge-blue',
     INSPECTION: 'badge badge-blue',
-    REFUND_PROCESSED: 'badge badge-green',
     WALLET_CREDITED: 'badge badge-green',
     COMPLETED: 'badge badge-green',
     REJECTED: 'badge badge-red',
   };
+
+  // ── NEW WORKFLOW: Refund is issued right after Approval ────────────────────
+  // PENDING/REQUESTED → APPROVED → REFUND_PROCESSED → PICKUP_SCHEDULED
+  //   → COLLECTED → RECEIVED → INSPECTION → COMPLETED
+  const isRefundStage = ret.status === 'APPROVED';
+  const isPickupStage = ret.status === 'REFUND_PROCESSED';
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
@@ -189,7 +226,7 @@ export default function ReturnCRMClient({
               </div>
             </div>
             <span className={STATUS_BADGE[ret.status] ?? 'badge badge-grey'}>
-              {ret.status.replace('_', ' ')}
+              {ret.status.replace(/_/g, ' ')}
             </span>
           </div>
 
@@ -275,9 +312,10 @@ export default function ReturnCRMClient({
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Operational QC controls & strictly wallet credit calculations */}
+      {/* RIGHT COLUMN: Workflow Controls */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Status controls */}
+
+        {/* ── WORKFLOW TRANSITIONS CARD ─────────────────────────────────────── */}
         <div className="admin-card" style={{ padding: 20 }}>
           <h3 style={{ marginTop: 0, marginBottom: 14, fontSize: 14 }}>Workflow Transitions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -298,25 +336,15 @@ export default function ReturnCRMClient({
               }}
             />
 
-            {/* Transition Flow triggers */}
+            {/* ── STEP 1: PENDING / REQUESTED → Approve ──────────────────────── */}
             {(ret.status === 'PENDING' || ret.status === 'REQUESTED') && (
               <>
-                <div style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '10px', background: 'var(--admin-surface-2)', marginBottom: 4 }}>
-                  <label style={{ fontSize: 10, color: 'var(--admin-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>
-                    Select Courier
-                  </label>
-                  <select 
-                    value={selectedCarrier}
-                    onChange={(e) => setSelectedCarrier(e.target.value)}
-                    style={{ width: '100%', padding: '6px 10px', borderRadius: 4, background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }}
-                  >
-                    <option value="Delhivery">Delhivery</option>
-                    <option value="Shiprocket">Shiprocket</option>
-                    <option value="BlueDart">Blue Dart</option>
-                  </select>
+                <div style={{ padding: '10px 14px', background: 'rgba(200,164,106,0.06)', border: '1px solid rgba(200,164,106,0.2)', borderRadius: 8, fontSize: 11, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--admin-accent)', display: 'block', marginBottom: 4 }}>New Workflow</strong>
+                  Approving will immediately present the Wallet Refund Calculator.
+                  Reverse pickup is scheduled <em>after</em> the refund is issued.
                 </div>
-
-                <button onClick={handleApproveWithLogistics} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <button onClick={handleApproveReturn} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                   Approve Return Case
                 </button>
                 <button onClick={() => handleStateUpdate('REQUESTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-accent)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -328,33 +356,76 @@ export default function ReturnCRMClient({
               </>
             )}
 
-            {ret.status === 'APPROVED' && (
-              <button onClick={() => handleStateUpdate('PICKUP_SCHEDULED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Schedule Courier Pickup
-              </button>
+            {/* ── STEP 3: REFUND_PROCESSED → Schedule Pickup ─────────────────── */}
+            {isPickupStage && (
+              <>
+                <div style={{ padding: '10px 14px', background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 8, fontSize: 11, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
+                  <strong style={{ color: '#22c55e', display: 'block', marginBottom: 4 }}>✓ Wallet Refund Issued</strong>
+                  Customer has been credited {formatINR(ret.creditAmount)}. Now schedule the reverse courier pickup.
+                </div>
+                <div style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '10px', background: 'var(--admin-surface-2)' }}>
+                  <label style={{ fontSize: 10, color: 'var(--admin-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>
+                    Select Courier
+                  </label>
+                  <select
+                    value={selectedCarrier}
+                    onChange={(e) => setSelectedCarrier(e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', borderRadius: 4, background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)', fontSize: 12 }}
+                  >
+                    <option value="Delhivery">Delhivery</option>
+                    <option value="Shiprocket">Shiprocket</option>
+                    <option value="BlueDart">Blue Dart</option>
+                  </select>
+                </div>
+                <button onClick={handleSchedulePickup} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Schedule Courier Pickup
+                </button>
+                <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                  Cancel / Reject Case
+                </button>
+              </>
             )}
 
+            {/* ── STEP 4: PICKUP_SCHEDULED → Collected ───────────────────────── */}
             {ret.status === 'PICKUP_SCHEDULED' && (
-              <button onClick={() => handleStateUpdate('COLLECTED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Mark Package Collected
-              </button>
+              <>
+                <button onClick={() => handleStateUpdate('COLLECTED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Mark Package Collected
+                </button>
+                <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                  Cancel / Reject Case
+                </button>
+              </>
             )}
 
+            {/* ── STEP 5: COLLECTED → Received at Warehouse ──────────────────── */}
             {ret.status === 'COLLECTED' && (
-              <button onClick={() => handleQCUpdate('RECEIVED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Mark Package Received at Warehouse
-              </button>
+              <>
+                <button onClick={() => handleQCUpdate('RECEIVED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Mark Package Received at Warehouse
+                </button>
+                <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                  Cancel / Reject Case
+                </button>
+              </>
             )}
 
+            {/* ── STEP 6: RECEIVED → Initiate QC ────────────────────────────── */}
             {ret.status === 'RECEIVED' && (
-              <button onClick={() => handleQCUpdate('INSPECTION')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Initiate QC Quality Check
-              </button>
+              <>
+                <button onClick={() => handleQCUpdate('INSPECTION')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Initiate QC Quality Check
+                </button>
+                <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                  Cancel / Reject Case
+                </button>
+              </>
             )}
 
+            {/* ── STEP 7: INSPECTION → Complete Case (QC Pass) ───────────────── */}
             {ret.status === 'INSPECTION' && (
               <>
-                <button onClick={() => handleStateUpdate('REFUND_PROCESSED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <button onClick={handleCompleteCase} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                   Complete Quality Check (QC Pass)
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
@@ -363,13 +434,7 @@ export default function ReturnCRMClient({
               </>
             )}
 
-            {/* Fallback rejects for other states */}
-            {['APPROVED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED'].includes(ret.status) && (
-              <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
-                Reject / Cancel Case
-              </button>
-            )}
-
+            {/* Terminal states */}
             {ret.status === 'REJECTED' && (
               <div style={{ textAlign: 'center', color: 'var(--admin-danger)', fontSize: 12, fontWeight: 600, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>
                 Case Rejected
@@ -384,8 +449,8 @@ export default function ReturnCRMClient({
           </div>
         </div>
 
-        {/* STRICT REFUND CALCULATION SIDEBAR */}
-        {ret.status === 'REFUND_PROCESSED' && (
+        {/* ── STRICT REFUND CALCULATOR — shows immediately after Approval ───── */}
+        {isRefundStage && (
           <div className="admin-card" style={{ padding: 20, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-accent)' }}>
             <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 14, color: 'var(--admin-accent)' }}>Strict Wallet Refund Calculator</h3>
             <p style={{ fontSize: 11, color: 'var(--admin-muted)', lineHeight: 1.4, marginBottom: 16 }}>
@@ -490,20 +555,44 @@ export default function ReturnCRMClient({
           </div>
         )}
 
-        {/* Timeline representation */}
+        {/* ── WORKFLOW TIMELINE ────────────────────────────────────────────── */}
         <div className="admin-card" style={{ padding: 20 }}>
           <h3 style={{ marginTop: 0, marginBottom: 14, fontSize: 13 }}>Workflow Timeline</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 12 }}>
             {[
-              { label: 'Return Requested', active: ['PENDING', 'REQUESTED', 'APPROVED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
+              {
+                label: 'Return Requested',
+                active: ['PENDING', 'REQUESTED', 'APPROVED', 'REFUND_PROCESSED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
               ...(ret.status === 'REQUESTED' ? [{ label: 'Information Requested', active: true }] : []),
-              { label: 'Approved', active: ['APPROVED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'Pickup Scheduled', active: ['PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'Collected from Customer', active: ['COLLECTED', 'RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'Received at Warehouse', active: ['RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'QC Quality Check', active: ['INSPECTION', 'REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'Refund Processed', active: ['REFUND_PROCESSED', 'COMPLETED'].includes(ret.status) },
-              { label: 'Case Completed', active: ['COMPLETED'].includes(ret.status) },
+              {
+                label: 'Approved',
+                active: ['APPROVED', 'REFUND_PROCESSED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'Refund Processed',
+                active: ['REFUND_PROCESSED', 'PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'Pickup Scheduled',
+                active: ['PICKUP_SCHEDULED', 'COLLECTED', 'RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'Collected from Customer',
+                active: ['COLLECTED', 'RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'Received at Warehouse',
+                active: ['RECEIVED', 'INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'QC Quality Check',
+                active: ['INSPECTION', 'COMPLETED'].includes(ret.status),
+              },
+              {
+                label: 'Case Completed',
+                active: ['COMPLETED'].includes(ret.status),
+              },
               ...(ret.status === 'REJECTED' ? [{ label: 'Case Rejected', active: true }] : []),
             ].map((step) => {
               const active = step.active;

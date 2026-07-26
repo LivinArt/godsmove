@@ -761,13 +761,23 @@ export async function updateReturnStatus(returnId: string, status: string, notes
     }
   }
 
-  // REFUND_PROCESSED / COMPLETED requires: must have gone through INSPECTION
-  if (status === 'REFUND_PROCESSED' || status === 'COMPLETED') {
+  // REFUND_PROCESSED: now allowed from APPROVED (new workflow) OR INSPECTION/RECEIVED (legacy compat)
+  // COMPLETED: must have gone through INSPECTION (QC pass after refund)
+  if (status === 'REFUND_PROCESSED') {
+    const validPrecursor = ['APPROVED', 'INSPECTION', 'RECEIVED', 'REFUND_PROCESSED'].includes(ret.status);
+    if (!validPrecursor) {
+      throw new Error(
+        `Cannot move return to "REFUND_PROCESSED": Current status is "${ret.status}". ` +
+        `Return must be APPROVED or INSPECTED first.`
+      );
+    }
+  }
+  if (status === 'COMPLETED') {
     const validPrecursor = ['INSPECTION', 'RECEIVED', 'REFUND_PROCESSED'].includes(ret.status);
     if (!validPrecursor) {
       throw new Error(
-        `Cannot move return to "${status}": Current status is "${ret.status}". ` +
-        `Return must be RECEIVED or INSPECTED first.`
+        `Cannot move return to "COMPLETED": Current status is "${ret.status}". ` +
+        `Return must be INSPECTED or REFUND_PROCESSED first.`
       );
     }
   }
@@ -911,88 +921,36 @@ export async function approveReturnRefund(payload: {
       },
     });
 
-    // 5. Create ReturnEvent
+    // 5. Create ReturnEvent — REFUND_PROCESSED (logistics stages continue after this)
     await tx.returnEvent.create({
       data: {
         returnReqId: returnId,
-        status: 'COMPLETED',
-        description: `Wallet refund credited. Total refund amount: ₹${finalWalletRefund.toLocaleString('en-IN')}.`,
+        status: 'REFUND_PROCESSED',
+        description: `Wallet refund credited. Total refund amount: ₹${finalWalletRefund.toLocaleString('en-IN')}. Awaiting reverse logistics.`,
       },
     });
 
-    // 6. Update returnStatus on order items to COMPLETED
+    // 6. Update returnStatus on order items to REFUND_PROCESSED
     for (const item of ret.items) {
       await tx.orderItem.update({
         where: { id: item.orderItemId },
         data: {
-          returnStatus: 'COMPLETED',
+          returnStatus: 'REFUND_PROCESSED',
         },
       });
     }
 
-    // 7. Update return request status to COMPLETED and save credit issued
+    // 7. Update return request status to REFUND_PROCESSED and save credit issued
+    //    NOTE: Inventory restore and order status update happen in completeReturnCase
+    //    after QC quality check is passed — not here.
     await tx.returnRequest.update({
       where: { id: returnId },
       data: {
-        status: 'COMPLETED',
+        status: 'REFUND_PROCESSED',
         creditAmount: finalWalletRefund,
-        resolvedAt: new Date(),
         adminNotes: `Refund summary logged: Outbound shipping deduction: ₹${outboundShippingDeduction}, Pickup deduction: ₹${returnLogisticsDeduction}. Total issued: ₹${finalWalletRefund}.`,
       },
     });
-
-    // 8. Item-level return architecture: Order.status is only promoted to RETURNED when
-    //    ALL order items have been returned. For partial returns, the order stays COMPLETED
-    //    so remaining items retain their return eligibility. Return state lives on
-    //    OrderItem.returnStatus — NOT on the parent Order.
-    const allOrderItems = await tx.orderItem.findMany({
-      where: { orderId: ret.orderId },
-      select: { id: true, returnStatus: true },
-    });
-
-    // The items in THIS return batch were already updated to 'COMPLETED' in step 6 above.
-    // Check if every item in the order is now COMPLETED or has a resolved returnStatus.
-    const allItemsFullyReturned = allOrderItems.every(
-      (i) => i.returnStatus === 'COMPLETED'
-    );
-
-    if (allItemsFullyReturned) {
-      // Full order return: transition to terminal RETURNED state
-      await tx.order.update({
-        where: { id: ret.orderId },
-        data: {
-          status: 'RETURNED',
-          fulfillmentStatus: 'RETURNED',
-        },
-      });
-    }
-    // Partial return: Order.status remains COMPLETED — no order-level update needed.
-
-    // 9. Automatically restore inventory count (since return completed/inspected successfully)
-    for (const item of ret.items) {
-      let inv = await tx.inventory.findUnique({
-        where: { variantId: item.orderItem.variantId },
-      });
-
-      if (inv) {
-        await tx.inventory.update({
-          where: { id: inv.id },
-          data: {
-            soldStock: { decrement: Math.min(inv.soldStock, item.quantity) },
-          },
-        });
-
-        await tx.inventoryMovement.create({
-          data: {
-            inventoryId: inv.id,
-            delta: item.quantity,
-            type: 'RETURN',
-            orderId: ret.orderId,
-            reason: `Return Request #${returnId} Completed`,
-          },
-        });
-      }
-    }
 
     return { success: true, refundIssued: finalWalletRefund, email: ret.order.email };
   });
@@ -1427,4 +1385,99 @@ export async function updateAdminReturnQC(
   revalidatePath('/admin/returns');
   revalidatePath('/profile');
   return updated;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLETE RETURN CASE
+// Called after QC Quality Check passes (INSPECTION → COMPLETED).
+// Handles inventory restoration and order status promotion.
+// In the new workflow, refund has already been issued at APPROVED stage.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function completeReturnCase(returnId: string, notes?: string) {
+  await requireAdmin();
+
+  const ret = await prisma.returnRequest.findUnique({
+    where: { id: returnId },
+    include: { order: true, items: { include: { orderItem: true } } },
+  });
+  if (!ret) throw new Error('Return request not found');
+
+  // Must be INSPECTION or REFUND_PROCESSED to complete
+  const validPrecursor = ['INSPECTION', 'REFUND_PROCESSED'].includes(ret.status);
+  if (!validPrecursor) {
+    throw new Error(
+      `Cannot complete return case: Current status is "${ret.status}". ` +
+      `Return must be at INSPECTION or REFUND_PROCESSED stage.`
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Update return to COMPLETED
+    await tx.returnRequest.update({
+      where: { id: returnId },
+      data: {
+        status: 'COMPLETED',
+        resolvedAt: new Date(),
+        adminNotes: notes || ret.adminNotes || 'QC passed. Case completed.',
+      },
+    });
+
+    // 2. Update order items to COMPLETED
+    for (const item of ret.items) {
+      await tx.orderItem.update({
+        where: { id: item.orderItemId },
+        data: { returnStatus: 'COMPLETED' },
+      });
+    }
+
+    // 3. Create COMPLETED ReturnEvent
+    await tx.returnEvent.create({
+      data: {
+        returnReqId: returnId,
+        status: 'COMPLETED',
+        description: notes || 'QC quality check passed. Return case closed.',
+      },
+    });
+
+    // 4. Restore inventory (item physically returned and QC passed)
+    for (const item of ret.items) {
+      const inv = await tx.inventory.findUnique({
+        where: { variantId: item.orderItem.variantId },
+      });
+      if (inv) {
+        await tx.inventory.update({
+          where: { id: inv.id },
+          data: { soldStock: { decrement: Math.min(inv.soldStock, item.quantity) } },
+        });
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryId: inv.id,
+            delta: item.quantity,
+            type: 'RETURN',
+            orderId: ret.orderId,
+            reason: `Return Request #${returnId} — QC Passed, Case Completed`,
+          },
+        });
+      }
+    }
+
+    // 5. Promote order status to RETURNED if all items are fully returned
+    const allOrderItems = await tx.orderItem.findMany({
+      where: { orderId: ret.orderId },
+      select: { id: true, returnStatus: true },
+    });
+    const allFullyReturned = allOrderItems.every((i) => i.returnStatus === 'COMPLETED');
+    if (allFullyReturned) {
+      await tx.order.update({
+        where: { id: ret.orderId },
+        data: { status: 'RETURNED', fulfillmentStatus: 'RETURNED' },
+      });
+    }
+  });
+
+  revalidatePath(`/admin/returns/${returnId}`);
+  revalidatePath('/admin/returns');
+  revalidatePath('/admin');
+  revalidatePath('/profile');
+  return { success: true };
 }

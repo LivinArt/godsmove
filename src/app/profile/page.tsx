@@ -505,14 +505,16 @@ export default function ProfilePage() {
     if (status === 'PENDING') {
       activeIndex = 1; // admin review
     } else if (status === 'APPROVED') {
-      activeIndex = 3; // approved → wallet refund issued immediately
+      activeIndex = 2; // approved (awaiting refund)
+    } else if (status === 'REFUND_PROCESSED') {
+      activeIndex = 3; // refund processed (awaiting pickup scheduling)
     } else if (status === 'PICKUP_SCHEDULED') {
       activeIndex = 4; // pickup scheduled
     } else if (status === 'COLLECTED') {
       activeIndex = 5; // collected
     } else if (['RECEIVED', 'INSPECTION'].includes(status)) {
       activeIndex = 6; // inspection
-    } else if (['REFUND_PROCESSED', 'COMPLETED'].includes(status)) {
+    } else if (status === 'COMPLETED') {
       activeIndex = 7; // return completed
     }
 
@@ -521,7 +523,7 @@ export default function ProfilePage() {
       if (idx < activeIndex) {
         state = 'completed';
       } else if (idx === activeIndex) {
-        if (activeIndex === 7 && ['REFUND_PROCESSED', 'COMPLETED'].includes(status)) {
+        if (activeIndex === 7 && status === 'COMPLETED') {
           state = 'completed';
         } else {
           state = 'current';
@@ -533,11 +535,11 @@ export default function ProfilePage() {
         if (idx === 0) return e.status === 'REQUESTED' || e.status === 'PENDING';
         if (idx === 1) return e.status === 'PENDING';
         if (idx === 2) return e.status === 'APPROVED';
-        if (idx === 3) return e.status === 'APPROVED'; // wallet refund same timestamp as approval
+        if (idx === 3) return e.status === 'REFUND_PROCESSED' || e.status === 'WALLET_CREDITED';
         if (idx === 4) return e.status === 'PICKUP_SCHEDULED';
         if (idx === 5) return e.status === 'COLLECTED';
         if (idx === 6) return e.status === 'RECEIVED' || e.status === 'INSPECTION';
-        if (idx === 7) return e.status === 'REFUND_PROCESSED' || e.status === 'COMPLETED';
+        if (idx === 7) return e.status === 'COMPLETED';
         return false;
       });
 
@@ -1488,29 +1490,6 @@ export default function ProfilePage() {
                                           collection.flatMap(o => o.items).find(i => i.id === firstReturnItem?.orderItemId);
                         const itemThumb = resolveOrderItemImageUrl(orderItem);
                         const orderNumber = ret.order?.orderNumber || orderItem?.orderNumber || 'Reference';
-
-                        // 6 Stage Progress Steps (customer-facing)
-                        const stages = [
-                          { label: 'Requested', status: 'PENDING' },
-                          { label: 'Approved', status: 'APPROVED' },
-                          { label: 'Credits Issued', status: 'APPROVED' }, // refund at approval
-                          { label: 'In Transit', status: 'PICKUP_SCHEDULED' },
-                          { label: 'Inspection', status: 'INSPECTION' },
-                          { label: 'Completed', status: 'COMPLETED' },
-                        ];
-
-                        const getStageIdx = (st: string) => {
-                          const s = (st || '').toUpperCase();
-                          if (s === 'PENDING') return 0;
-                          if (s === 'APPROVED') return 2; // approved = credits issued (step 2)
-                          if (s === 'PICKUP_SCHEDULED') return 3;
-                          if (s === 'COLLECTED') return 4;
-                          if (['RECEIVED', 'INSPECTION'].includes(s)) return 4;
-                          if (['REFUND_PROCESSED', 'COMPLETED'].includes(s)) return 5;
-                          return 0;
-                        };
-
-                        const currentStageIdx = getStageIdx(ret.status);
 
                         return (
                           <div key={ret.id} className={styles.returnCard}>
