@@ -237,6 +237,22 @@ export default function ProductCard({
           </button>
         )}
 
+        {/* Desktop Quick Add Hover CTA Button (>= 1024px) */}
+        {cardSizes.length > 0 && (
+          <button
+            type="button"
+            className={styles.desktopQuickAddHoverBtn}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMobileQuickAddOpen(true);
+            }}
+            aria-label={`Quick add ${product.name}`}
+          >
+            <Plus size={14} strokeWidth={2.2} />
+            <span>Quick Add</span>
+          </button>
+        )}
       </div>
 
       <div className={`${styles.info} ${isDark ? styles.infoDark : ''}`}>
