@@ -343,16 +343,23 @@ export async function upsertProductRecord(input: UpsertProductInput) {
       data: { isActive: false },
     });
 
-    // Inherit product-level single source of truth price & comparePrice for variants
-    const inheritedPrice = Number(productData.mrp || 0);
-    const inheritedComparePrice = productData.comparePrice ? Number(productData.comparePrice) : null;
+    // Variant price override logic: use variant-specific price if edited; otherwise fallback to product default MRP
+    const defaultPrice = Number(productData.mrp || 0);
+    const defaultComparePrice = productData.comparePrice ? Number(productData.comparePrice) : null;
 
     for (const v of variants) {
       const { initialStock, ...variantData } = v;
+      const variantPrice = (v.price !== undefined && v.price !== null && Number(v.price) > 0)
+        ? Number(v.price)
+        : defaultPrice;
+      const variantComparePrice = (v.comparePrice !== undefined && v.comparePrice !== null)
+        ? Number(v.comparePrice)
+        : defaultComparePrice;
+
       const syncVariantData = {
         ...variantData,
-        price: inheritedPrice,
-        comparePrice: inheritedComparePrice,
+        price: variantPrice,
+        comparePrice: variantComparePrice,
       };
 
       const existingVariant = await tx.productVariant.findUnique({ where: { sku: v.sku } });

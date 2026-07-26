@@ -842,7 +842,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                     </div>
 
                     <div>
-                      <label className="form-label">Selling Price (Inclusive of GST) (₹)</label>
+                      <label className="form-label">Selling Price (Inclusive of GST) (₹) <span style={{ color: '#ef4444' }}>*</span></label>
                       <input
                         type="number"
                         name="mrp"
@@ -850,11 +850,24 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                         onChange={handleChange}
                         className="admin-input"
                         placeholder="e.g. 2999"
+                        required
                       />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }} className="pim-grid-col2">
+                    <div>
+                      <label className="form-label">Compare Price / Strikethrough MRP (₹)</label>
+                      <input
+                        type="number"
+                        name="comparePrice"
+                        value={formData.comparePrice || ''}
+                        onChange={handleChange}
+                        className="admin-input"
+                        placeholder="e.g. 4999"
+                      />
+                    </div>
+
                     <div>
                       <label className="form-label">GST Rate %</label>
                       <select
@@ -892,18 +905,18 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="form-label">Barcode / UPC (Optional)</label>
-                      <input
-                        type="text"
-                        name="barcode"
-                        value={formData.barcode}
-                        onChange={handleChange}
-                        className="admin-input"
-                        placeholder="e.g. 89012345678"
-                      />
-                    </div>
+                  <div style={{ marginTop: '16px' }}>
+                    <label className="form-label">Barcode / UPC (Optional)</label>
+                    <input
+                      type="text"
+                      name="barcode"
+                      value={formData.barcode || ''}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="e.g. 89012345678"
+                    />
                   </div>
                 </div>
               </section>
@@ -1071,45 +1084,58 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                   </div>
 
                   {(() => {
-                    const sp = Number(formData.mrp || variants[0]?.price || 0);
+                    const sp = Number(formData.mrp || 0);
                     const cp = Number(formData.costPrice || 0);
+                    const compPrice = formData.comparePrice ? Number(formData.comparePrice) : 0;
                     const gstRate = Number(formData.gstPercentage || 12);
-                    const netPrice = sp > 0 ? Number((sp / (1 + gstRate / 100)).toFixed(2)) : 0;
-                    const gstIncluded = sp > 0 ? Number((sp - netPrice).toFixed(2)) : 0;
-                    const compPrice = Number(variants[0]?.comparePrice || 0);
+                    const taxableValue = sp > 0 ? Number((sp / (1 + gstRate / 100)).toFixed(2)) : 0;
+                    const gstIncluded = sp > 0 ? Number((sp - taxableValue).toFixed(2)) : 0;
+
+                    const hasVariantOverrides = variants.some(v => 
+                      (v.price !== undefined && v.price !== null && Number(v.price) > 0 && Number(v.price) !== sp) ||
+                      (v.comparePrice !== undefined && v.comparePrice !== null && Number(v.comparePrice) !== compPrice)
+                    );
 
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Cost Price</span>
-                          <strong style={{ fontSize: '14px', color: '#fff' }}>₹{cp.toLocaleString('en-IN')}</strong>
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '16px', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Cost Price</span>
+                            <strong style={{ fontSize: '14px', color: '#fff' }}>₹{cp.toLocaleString('en-IN')}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Selling Price (Inclusive GST)</span>
+                            <strong style={{ fontSize: '14px', color: '#c8a46a' }}>₹{sp.toLocaleString('en-IN')}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Compare Price</span>
+                            <strong style={{ fontSize: '14px', color: '#9ca3af' }}>{compPrice > 0 ? `₹${compPrice.toLocaleString('en-IN')}` : 'N/A'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Rate</span>
+                            <strong style={{ fontSize: '14px', color: '#fff' }}>{gstRate}%</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Included</span>
+                            <strong style={{ fontSize: '14px', color: '#22c55e' }}>₹{gstIncluded.toLocaleString('en-IN')}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Taxable Value</span>
+                            <strong style={{ fontSize: '14px', color: '#fff' }}>₹{taxableValue.toLocaleString('en-IN')}</strong>
+                          </div>
                         </div>
 
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Selling Price (Inclusive GST)</span>
-                          <strong style={{ fontSize: '14px', color: '#c8a46a' }}>₹{sp.toLocaleString('en-IN')}</strong>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Rate</span>
-                          <strong style={{ fontSize: '14px', color: '#fff' }}>{gstRate}%</strong>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Amount Included</span>
-                          <strong style={{ fontSize: '14px', color: '#22c55e' }}>₹{gstIncluded.toLocaleString('en-IN')}</strong>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Net Price Before GST</span>
-                          <strong style={{ fontSize: '14px', color: '#fff' }}>₹{netPrice.toLocaleString('en-IN')}</strong>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Compare Price</span>
-                          <strong style={{ fontSize: '14px', color: '#9ca3af' }}>{compPrice > 0 ? `₹${compPrice.toLocaleString('en-IN')}` : 'N/A'}</strong>
-                        </div>
-                      </div>
+                        {hasVariantOverrides && (
+                          <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(200,164,106,0.08)', border: '1px solid rgba(200,164,106,0.3)', borderRadius: '2px', fontSize: '11px', color: '#c8a46a' }}>
+                            ⚡ <strong>Size-Based Custom Pricing:</strong> Some variants use custom price overrides.
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
 

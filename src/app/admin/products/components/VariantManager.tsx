@@ -331,9 +331,28 @@ export function VariantManager({
 
       {/* STEP 3C: Responsive Matrix list */}
       <div>
-        <span style={{ fontSize: '11px', color: 'var(--admin-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', display: 'block' }}>
-          Variant SKU Matrix ({variants.length} combinations generated)
-        </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--admin-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Variant SKU Matrix ({variants.length} combinations generated)
+          </span>
+          {globalSellingPrice > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                const updated = variants.map(v => ({
+                  ...v,
+                  price: globalSellingPrice,
+                  comparePrice: globalComparePrice || null,
+                }));
+                onChange(updated);
+              }}
+              className="btn-secondary"
+              style={{ fontSize: '10px', padding: '6px 12px', color: '#c8a46a', borderColor: 'rgba(200,164,106,0.3)' }}
+            >
+              Reset All to Product MRP (₹{globalSellingPrice.toLocaleString('en-IN')})
+            </button>
+          )}
+        </div>
 
         {/* Desktop Table View */}
         <div className="v-table-container">
@@ -342,17 +361,27 @@ export function VariantManager({
               <tr style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--admin-muted)' }}>
                 <th style={{ width: '80px' }}>Status</th>
                 <th>SKU Code</th>
-                <th style={{ width: '90px' }}>Size</th>
-                <th style={{ width: '100px' }}>Colour</th>
-                <th style={{ width: '140px' }}>Inherited Selling Price</th>
-                <th style={{ width: '90px' }}>Stock</th>
-                <th style={{ width: '180px' }}>Taxes & Margins</th>
+                <th style={{ width: '70px' }}>Size</th>
+                <th style={{ width: '80px' }}>Colour</th>
+                <th style={{ width: '120px' }}>Selling Price</th>
+                <th style={{ width: '120px' }}>Compare Price</th>
+                <th style={{ width: '80px' }}>Stock</th>
+                <th style={{ width: '170px' }}>Taxes & Margins</th>
                 <th style={{ width: '50px', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {variants.map((v, idx) => {
-                const splits = calculatePricing(globalSellingPrice, globalCostPrice, globalGstPercentage);
+                const effectivePrice = v.price !== undefined && v.price !== null && Number(v.price) > 0
+                  ? Number(v.price)
+                  : globalSellingPrice;
+                const effectiveComparePrice = v.comparePrice !== undefined && v.comparePrice !== null
+                  ? v.comparePrice
+                  : (globalComparePrice || null);
+
+                const isOverridden = effectivePrice !== globalSellingPrice || effectiveComparePrice !== (globalComparePrice || null);
+                const splits = calculatePricing(effectivePrice, globalCostPrice, globalGstPercentage);
+
                 return (
                   <tr key={idx} style={{ opacity: v.isActive ? 1 : 0.4 }}>
                     <td>
@@ -367,7 +396,7 @@ export function VariantManager({
                           value={v.sku}
                           onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
                           className="admin-input"
-                          style={{ fontSize: '12px', padding: '6px 8px', maxWidth: '140px', textOverflow: 'ellipsis' }}
+                          style={{ fontSize: '12px', padding: '6px 8px', maxWidth: '130px', textOverflow: 'ellipsis' }}
                           placeholder="SKU"
                         />
                         <button type="button" onClick={() => generateSingleSku(idx)} className="btn-secondary" style={{ padding: '6px', minWidth: '0' }}>
@@ -382,17 +411,26 @@ export function VariantManager({
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#c8a46a' }}>
-                        ₹{globalSellingPrice.toLocaleString('en-IN')}
-                        {globalComparePrice ? (
-                          <span style={{ fontSize: '10px', color: '#9ca3af', textDecoration: 'line-through', marginLeft: '6px' }}>
-                            ₹{globalComparePrice.toLocaleString('en-IN')}
-                          </span>
-                        ) : null}
-                      </div>
-                      <span style={{ fontSize: '9px', color: '#8c857b', display: 'block', marginTop: '2px' }}>
-                        Inherited from Product
-                      </span>
+                      <input
+                        type="number"
+                        value={v.price !== undefined && v.price !== null ? v.price : (globalSellingPrice || '')}
+                        onChange={(e) => updateVariant(idx, 'price', e.target.value ? parseFloat(e.target.value) : globalSellingPrice)}
+                        className="admin-input"
+                        style={{ padding: '6px 8px', fontSize: '12px', borderColor: isOverridden ? 'rgba(200,164,106,0.6)' : undefined }}
+                        placeholder={`₹ ${globalSellingPrice || 'Price'}`}
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={v.comparePrice !== undefined && v.comparePrice !== null ? v.comparePrice : (globalComparePrice || '')}
+                        onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
+                        className="admin-input"
+                        style={{ padding: '6px 8px', fontSize: '12px' }}
+                        placeholder={`₹ ${globalComparePrice || 'MRP'}`}
+                        min="0"
+                      />
                     </td>
                     <td>
                       <input
@@ -411,6 +449,9 @@ export function VariantManager({
                         <span style={{ color: splits.profit >= 0 ? '#22c55e' : '#ef4444' }}>
                           Profit: ₹{splits.profit} ({splits.margin}%)
                         </span>
+                        {isOverridden && (
+                          <span style={{ color: '#c8a46a', fontWeight: 600 }}>Custom Price Override</span>
+                        )}
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -494,16 +535,28 @@ export function VariantManager({
                     </div>
                   </div>
 
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Inherited Price (Product MRP)</label>
-                    <div style={{ background: 'rgba(200,164,106,0.06)', border: '1px solid rgba(200,164,106,0.2)', padding: '8px 12px', fontSize: '12px', fontWeight: 600, color: '#c8a46a', borderRadius: '2px' }}>
-                      ₹{globalSellingPrice.toLocaleString('en-IN')}
-                      {globalComparePrice ? (
-                        <span style={{ fontSize: '10px', color: '#9ca3af', textDecoration: 'line-through', marginLeft: '6px' }}>
-                          ₹{globalComparePrice.toLocaleString('en-IN')}
-                        </span>
-                      ) : null}
-                    </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Selling Price</label>
+                    <input
+                      type="number"
+                      value={v.price !== undefined && v.price !== null ? v.price : (globalSellingPrice || '')}
+                      onChange={(e) => updateVariant(idx, 'price', e.target.value ? parseFloat(e.target.value) : globalSellingPrice)}
+                      className="admin-input"
+                      style={{ padding: '6px 8px', fontSize: '12px' }}
+                      placeholder={`₹ ${globalSellingPrice || 'Price'}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Compare Price</label>
+                    <input
+                      type="number"
+                      value={v.comparePrice !== undefined && v.comparePrice !== null ? v.comparePrice : (globalComparePrice || '')}
+                      onChange={(e) => updateVariant(idx, 'comparePrice', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="admin-input"
+                      style={{ padding: '6px 8px', fontSize: '12px' }}
+                      placeholder={`₹ ${globalComparePrice || 'MRP'}`}
+                    />
                   </div>
 
                   <div>
