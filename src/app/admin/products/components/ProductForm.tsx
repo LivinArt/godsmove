@@ -500,9 +500,11 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    console.log('===> [CLIENT] STEP 0: Initiating handleSubmit');
 
     const activeCritical = performValidationAudit().filter(x => x.severity === 'ERROR');
     if (activeCritical.length > 0) {
+      console.warn('===> [CLIENT] Audit validation failed with critical errors');
       setError(`Cannot publish. Please resolve the ${activeCritical.length} critical errors listed in Review & Publish.`);
       setActiveStep('audit');
       return;
@@ -511,6 +513,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     setIsPending(true);
 
     try {
+      console.log('===> [CLIENT] STEP 1: Preparing payload');
       const parsedFrom = formData.featuredFrom ? new Date(formData.featuredFrom) : null;
       const parsedUntil = formData.featuredUntil ? new Date(formData.featuredUntil) : null;
 
@@ -528,20 +531,27 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         images,
         variants: variants.map((v, idx) => ({
           ...v,
-          price: productSellingPrice,
-          comparePrice: productComparePrice,
+          price: (v.price !== undefined && v.price !== null && Number(v.price) > 0) ? Number(v.price) : productSellingPrice,
+          comparePrice: (v.comparePrice !== undefined && v.comparePrice !== null) ? Number(v.comparePrice) : productComparePrice,
           position: idx,
         })),
         garmentLifeCycle: JSON.stringify(stages),
       };
 
+      console.log('===> [CLIENT] STEP 2: Running UpsertProductSchema.parse');
       const validated = UpsertProductSchema.parse(payload);
-      const savedProduct = await upsertProductRecord(validated);
 
-      // Open Preview by redirecting to product slug resolved from database
+      console.log('===> [CLIENT] STEP 3: Invoking upsertProductRecord server action');
+      const savedProduct = await upsertProductRecord(validated);
+      console.log('===> [CLIENT] STEP 4: Server action returned successfully:', savedProduct?.slug);
+
+      console.log('===> [CLIENT] STEP 5: Executing router.push and router.refresh');
       router.push(`/product/${savedProduct.slug}`);
       router.refresh();
     } catch (err: any) {
+      console.error('❌ [CLIENT] CATCH IN HANDLESUBMIT:', err);
+      console.error('❌ [CLIENT] ERROR STACK:', err?.stack);
+      console.error('❌ [CLIENT] ERROR DIGEST:', err?.digest);
       if (err instanceof z.ZodError) {
         setError(err.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(' | '));
       } else {

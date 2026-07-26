@@ -25,8 +25,8 @@ export const CreateProductSchema = z.object({
   symbolism: z.string().optional(),
   status: ProductStatusEnum.default('DRAFT'),
   isFeatured: z.boolean().default(false),
-  categoryId: z.string().cuid('Invalid category'),
-  dropId: z.string().cuid().optional().nullable(),
+  categoryId: z.string().min(1, 'Invalid category'),
+  dropId: z.string().optional().nullable(),
   channel: ProductChannelEnum.default('DROP'),
   unlockTeaser: z.string().max(500).optional().nullable(),
   exclusiveStory: z.string().max(5000).optional().nullable(),
@@ -154,22 +154,21 @@ export const UpdateProductSchema = CreateProductSchema.partial().extend({
 
 // Used for the standalone createVariant action — productId is required here.
 export const CreateVariantSchema = z.object({
-  productId: z.string().cuid(),
+  productId: z.string().optional(),
   sku: z.string().min(1, 'SKU is required').max(60),
   size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'ONE_SIZE']),
-  color: z.string().optional().nullable(),
-  colorHex: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
-    .optional()
-    .nullable(),
-  price: z.coerce
-    .number()
-    .positive('Price must be positive')
-    .max(100000, 'Price seems unrealistic'),
+  color: z.preprocess(emptyStringToNull, z.string().optional().nullable()),
+  colorHex: z.preprocess(
+    emptyStringToNull,
+    z.string().optional().nullable()
+  ),
+  price: z.preprocess(
+    emptyStringToNull,
+    z.coerce.number().min(0, 'Price must be non-negative').max(100000).optional().nullable()
+  ),
   comparePrice: z.preprocess(
     emptyStringToNull,
-    z.coerce.number().positive().max(100000).optional().nullable()
+    z.coerce.number().min(0).max(100000).optional().nullable()
   ),
   position: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),

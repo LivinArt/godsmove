@@ -248,167 +248,205 @@ export async function deleteProduct(id: string) {
 
 
 export async function upsertProductRecord(input: UpsertProductInput) {
-  await requireAdmin();
-  const parsedData = UpsertProductSchema.parse(input);
-  const { id, variants, images, comparePrice, ...scalarFields } = parsedData;
+  console.log('===> [SERVER] STEP 1: Entering upsertProductRecord');
+  try {
+    await requireAdmin();
+    console.log('===> [SERVER] STEP 2: Passed requireAdmin');
 
-  // Sync visibility flags and channels
-  if (scalarFields.channel === 'DROP') {
-    scalarFields.isFeatured = scalarFields.showOnHomepage;
-    scalarFields.isExclusiveRack = false;
-    scalarFields.showOnExclusivePage = false;
-  } else if (scalarFields.channel === 'EXCLUSIVE_RACK') {
-    scalarFields.isExclusiveRack = true;
-    scalarFields.showOnExclusivePage = true;
-    scalarFields.isFeatured = false;
-  } else if (scalarFields.channel === 'EXCLUSIVE_UNLOCK') {
-    scalarFields.isFeatured = false;
-    scalarFields.isExclusiveRack = false;
-    scalarFields.showOnExclusivePage = false;
-    scalarFields.showOnHomepage = false;
-  }
+    const parsedData = UpsertProductSchema.parse(input);
+    console.log('===> [SERVER] STEP 3: Passed UpsertProductSchema.parse');
 
-  // Media Reuse Banner/Hero
-  if (scalarFields.useCoverImage && scalarFields.frontImageUrl) {
-    scalarFields.collectionBanner = scalarFields.frontImageUrl;
-    scalarFields.collectionHeroImage = scalarFields.frontImageUrl;
-  }
+    const { id, variants, images, comparePrice, ...scalarFields } = parsedData;
 
-  let existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
-  if (!existing && scalarFields.slug) {
-    existing = await prisma.product.findFirst({ where: { slug: scalarFields.slug } });
-  }
-
-  const targetId = existing?.id || id;
-  const becomingActive = existing?.status !== 'ACTIVE' && scalarFields.status === 'ACTIVE';
-
-  const productWrite = {
-    ...scalarFields,
-    domain: domainFromChannel(scalarFields.channel),
-  };
-
-  const product = await prisma.$transaction(async (tx) => {
-    // 1. Resolve Product record update or creation
-    let p;
-    if (targetId) {
-      p = await tx.product.update({
-        where: { id: targetId },
-        data: {
-          ...productWrite,
-          ...(becomingActive && { publishedAt: new Date() }),
-        },
-      });
-    } else {
-      p = await tx.product.create({
-        data: {
-          ...productWrite,
-          publishedAt: scalarFields.status === 'ACTIVE' ? new Date() : null,
-        },
-      });
+    // Sync visibility flags and channels
+    if (scalarFields.channel === 'DROP') {
+      scalarFields.isFeatured = scalarFields.showOnHomepage;
+      scalarFields.isExclusiveRack = false;
+      scalarFields.showOnExclusivePage = false;
+    } else if (scalarFields.channel === 'EXCLUSIVE_RACK') {
+      scalarFields.isExclusiveRack = true;
+      scalarFields.showOnExclusivePage = true;
+      scalarFields.isFeatured = false;
+    } else if (scalarFields.channel === 'EXCLUSIVE_UNLOCK') {
+      scalarFields.isFeatured = false;
+      scalarFields.isExclusiveRack = false;
+      scalarFields.showOnExclusivePage = false;
+      scalarFields.showOnHomepage = false;
     }
 
-    // 2. Manage Images (Delete removed, Upsert active)
-    if (images) {
-      const incomingImageUrls = images.map((img) => img.url);
-      await tx.productImage.deleteMany({
-        where: { productId: p.id, url: { notIn: incomingImageUrls } },
+    // Media Reuse Banner/Hero
+    if (scalarFields.useCoverImage && scalarFields.frontImageUrl) {
+      scalarFields.collectionBanner = scalarFields.frontImageUrl;
+      scalarFields.collectionHeroImage = scalarFields.frontImageUrl;
+    }
+
+    console.log('===> [SERVER] STEP 4: Querying existing product in DB, id:', id, 'slug:', scalarFields.slug);
+    let existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
+    if (!existing && scalarFields.slug) {
+      existing = await prisma.product.findFirst({ where: { slug: scalarFields.slug } });
+    }
+
+    const targetId = existing?.id || id;
+    const becomingActive = existing?.status !== 'ACTIVE' && scalarFields.status === 'ACTIVE';
+
+    const productWrite = {
+      ...scalarFields,
+      domain: domainFromChannel(scalarFields.channel),
+    };
+
+    console.log('===> [SERVER] STEP 5: Starting $transaction, targetId:', targetId);
+    const product = await prisma.$transaction(async (tx) => {
+      // 1. Resolve Product record update or creation
+      let p;
+      if (targetId) {
+        console.log('===> [SERVER] STEP 5A: tx.product.update for targetId:', targetId);
+        p = await tx.product.update({
+          where: { id: targetId },
+          data: {
+            ...productWrite,
+            ...(becomingActive && { publishedAt: new Date() }),
+          },
+        });
+      } else {
+        console.log('===> [SERVER] STEP 5A: tx.product.create');
+        p = await tx.product.create({
+          data: {
+            ...productWrite,
+            publishedAt: scalarFields.status === 'ACTIVE' ? new Date() : null,
+          },
+        });
+      }
+
+      // 2. Manage Images (Delete removed, Upsert active)
+      console.log('===> [SERVER] STEP 5B: Managing product images, count:', images?.length);
+      if (images) {
+        const incomingImageUrls = images.map((img) => img.url);
+        await tx.productImage.deleteMany({
+          where: { productId: p.id, url: { notIn: incomingImageUrls } },
+        });
+
+        for (const img of images) {
+          if (img.id) {
+            await tx.productImage.update({
+              where: { id: img.id },
+              data: { position: img.position, isCover: img.isCover, alt: img.alt },
+            });
+          } else {
+            await tx.productImage.create({
+              data: {
+                productId: p.id,
+                url: img.url,
+                position: img.position,
+                isCover: img.isCover,
+                alt: img.alt,
+              },
+            });
+          }
+        }
+      }
+
+      // 3. Manage Variants & Inventory (Archive removed, Upsert active)
+      console.log('===> [SERVER] STEP 5C: Managing variants, count:', variants.length);
+      const incomingSkus = variants.map((v) => v.sku);
+
+      // Archive variants that are not in the incoming payload
+      await tx.productVariant.updateMany({
+        where: { productId: p.id, sku: { notIn: incomingSkus } },
+        data: { isActive: false },
       });
 
-      for (const img of images) {
-        if (img.id) {
-          await tx.productImage.update({
-            where: { id: img.id },
-            data: { position: img.position, isCover: img.isCover, alt: img.alt },
+      // Variant price override logic: use variant-specific price if edited; otherwise fallback to product default MRP
+      const defaultPrice = Number(scalarFields.mrp || 0);
+      const defaultComparePrice = comparePrice ? Number(comparePrice) : null;
+
+      for (const v of variants) {
+        const { initialStock, ...variantData } = v;
+        const variantPrice = (v.price !== undefined && v.price !== null && Number(v.price) > 0)
+          ? Number(v.price)
+          : defaultPrice;
+        const variantComparePrice = (v.comparePrice !== undefined && v.comparePrice !== null)
+          ? Number(v.comparePrice)
+          : defaultComparePrice;
+
+        const syncVariantData = {
+          ...variantData,
+          price: variantPrice,
+          comparePrice: variantComparePrice,
+        };
+
+        const existingVariant = await tx.productVariant.findUnique({ where: { sku: v.sku } });
+        let variantId = existingVariant?.id;
+
+        if (existingVariant) {
+          await tx.productVariant.update({
+            where: { id: existingVariant.id },
+            data: { ...syncVariantData, isActive: true }, // reactivate if archived
           });
+          
+          // Update stock if initialStock is provided during edit
+          if (initialStock !== undefined) {
+            await tx.inventory.update({
+               where: { variantId: existingVariant.id },
+               data: { totalStock: initialStock }
+            });
+          }
         } else {
-          await tx.productImage.create({
+          const newV = await tx.productVariant.create({
+            data: { ...syncVariantData, productId: p.id },
+          });
+          variantId = newV.id;
+
+          // Create initial inventory for new variant
+          await tx.inventory.create({
             data: {
-              productId: p.id,
-              url: img.url,
-              position: img.position,
-              isCover: img.isCover,
-              alt: img.alt,
+              variantId: variantId,
+              totalStock: initialStock || 0,
+              type: 'PERMANENT',
             },
           });
         }
       }
-    }
-
-    // 3. Manage Variants & Inventory (Archive removed, Upsert active)
-    const incomingSkus = variants.map((v) => v.sku);
-
-    // Archive variants that are not in the incoming payload
-    await tx.productVariant.updateMany({
-      where: { productId: p.id, sku: { notIn: incomingSkus } },
-      data: { isActive: false },
+      return p;
     });
 
-    // Variant price override logic: use variant-specific price if edited; otherwise fallback to product default MRP
-    const defaultPrice = Number(scalarFields.mrp || 0);
-    const defaultComparePrice = comparePrice ? Number(comparePrice) : null;
+    console.log('===> [SERVER] STEP 6: Transaction finished successfully for product:', product.id);
 
-    for (const v of variants) {
-      const { initialStock, ...variantData } = v;
-      const variantPrice = (v.price !== undefined && v.price !== null && Number(v.price) > 0)
-        ? Number(v.price)
-        : defaultPrice;
-      const variantComparePrice = (v.comparePrice !== undefined && v.comparePrice !== null)
-        ? Number(v.comparePrice)
-        : defaultComparePrice;
-
-      const syncVariantData = {
-        ...variantData,
-        price: variantPrice,
-        comparePrice: variantComparePrice,
-      };
-
-      const existingVariant = await tx.productVariant.findUnique({ where: { sku: v.sku } });
-      let variantId = existingVariant?.id;
-
-      if (existingVariant) {
-        await tx.productVariant.update({
-          where: { id: existingVariant.id },
-          data: { ...syncVariantData, isActive: true }, // reactivate if archived
-        });
-        
-        // Update stock if initialStock is provided during edit
-        if (initialStock !== undefined) {
-          await tx.inventory.update({
-             where: { variantId: existingVariant.id },
-             data: { totalStock: initialStock }
-          });
-        }
-      } else {
-        const newV = await tx.productVariant.create({
-          data: { ...syncVariantData, productId: p.id },
-        });
-        variantId = newV.id;
-
-        // Create initial inventory for new variant
-        await tx.inventory.create({
-          data: {
-            variantId: variantId,
-            totalStock: initialStock || 0,
-            type: 'PERMANENT',
-          },
-        });
-      }
+    if (product.channel === 'EXCLUSIVE_UNLOCK' && product.status === 'ACTIVE') {
+      console.log('===> [SERVER] STEP 7: Syncing exclusive draw');
+      const { syncExclusiveDrawForProduct } = await import('@/actions/exclusive.actions');
+      await syncExclusiveDrawForProduct(product.id);
     }
-    return p;
-  });
 
-  if (product.channel === 'EXCLUSIVE_UNLOCK' && product.status === 'ACTIVE') {
-    const { syncExclusiveDrawForProduct } = await import('@/actions/exclusive.actions');
-    await syncExclusiveDrawForProduct(product.id);
+    console.log('===> [SERVER] STEP 8: Revalidating paths');
+    revalidatePath('/admin/products');
+    if (product.slug) revalidatePath(`/product/${product.slug}`);
+    revalidatePath('/drops');
+    revalidatePath('/exclusive-rack');
+    revalidatePath('/admin/exclusive-draws');
+    revalidatePath('/');
+
+    console.log('===> [SERVER] STEP 9: Serializing return data');
+    const fullProduct = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: {
+        category: true,
+        images: { orderBy: { position: 'asc' } },
+        variants: { include: { inventory: true }, orderBy: { position: 'asc' } },
+      },
+    });
+
+    const res = serializePrisma(fullProduct || product);
+    console.log('===> [SERVER] STEP 10: Finished upsertProductRecord successfully!');
+    return res;
+  } catch (err: any) {
+    console.error('❌❌❌ [SERVER] FATAL ERROR IN upsertProductRecord ❌❌❌');
+    console.error('❌ ERROR MESSAGE:', err?.message);
+    console.error('❌ ERROR STACK:', err?.stack);
+    console.error('❌ PRISMA CODE:', err?.code);
+    console.error('❌ DIGEST:', err?.digest);
+    console.error('❌ CAUSE:', err?.cause);
+    throw err;
   }
-
-  revalidatePath('/admin/products');
-  if (product.slug) revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/drops');
-  revalidatePath('/exclusive-rack');
-  revalidatePath('/admin/exclusive-draws');
-  revalidatePath('/');
-  return serializePrisma(product);
 }
 
 // ── VARIANTS ─────────────────────────────────────────────────────────────────
@@ -420,12 +458,12 @@ export async function createVariant(input: CreateVariantInput) {
   const variant = await prisma.$transaction(async (tx) => {
     const v = await tx.productVariant.create({
       data: {
-        productId: data.productId,
+        productId: data.productId!,
         sku: data.sku,
         size: data.size,
         color: data.color,
         colorHex: data.colorHex,
-        price: data.price,
+        price: data.price || 0,
         comparePrice: data.comparePrice,
         position: data.position,
       },
