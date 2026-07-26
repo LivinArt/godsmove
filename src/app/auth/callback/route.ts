@@ -40,9 +40,12 @@ export async function GET(request: Request) {
 
         try {
           const email = user.email || '';
+          let isNewRegistration = false;
+
           await prisma.$transaction(async (tx) => {
             const profile = await tx.profile.findUnique({ where: { id: user.id } });
             if (!profile) {
+              isNewRegistration = true;
               await tx.profile.create({
                 data: {
                   id: user.id,
@@ -70,6 +73,24 @@ export async function GET(request: Request) {
               });
             }
           });
+
+          // Trigger WELCOME transactional email only for first-time registration
+          if (isNewRegistration && email) {
+            const fullName = user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0] || 'Valued Collector';
+            const { NotificationService } = await import('@/notifications/notification.service');
+            NotificationService.dispatch({
+              event: 'WELCOME',
+              recipient: {
+                email,
+                name: fullName,
+                userId: user.id,
+              },
+              payload: {
+                customerName: fullName,
+                email,
+              },
+            }).catch((err) => console.error('❌ [WELCOME EMAIL DISPATCH ERROR]:', err));
+          }
         } catch (e) {
           console.error('[auth/callback] Profile sync failed:', e);
         }
