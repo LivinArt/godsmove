@@ -224,6 +224,9 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   },
 };
 
+import DynamicHtmlTemplate from './DynamicHtmlTemplate';
+import { prisma } from '@/lib/prisma';
+
 export class TemplateResolver {
   static resolve(event: NotificationEvent): EmailTemplateDefinition {
     const definition = TEMPLATE_REGISTRY[event];
@@ -231,5 +234,31 @@ export class TemplateResolver {
       throw new Error(`[TEMPLATE RESOLVER ERROR] No template definition registered for event: ${event}`);
     }
     return definition;
+  }
+
+  static async resolveAsync(event: NotificationEvent): Promise<EmailTemplateDefinition> {
+    const defaultDef = this.resolve(event);
+    try {
+      const activeVersion = await prisma.templateVersion.findFirst({
+        where: { templateId: event, isActive: true },
+        orderBy: { version: 'desc' },
+      });
+
+      if (activeVersion && activeVersion.bodyHtml) {
+        return {
+          component: (props: any) =>
+            React.createElement(DynamicHtmlTemplate, {
+              htmlContent: activeVersion.bodyHtml!,
+              payload: props,
+            }),
+          subjectBuilder: (p: any) => activeVersion.subject || defaultDef.subjectBuilder(p),
+          senderConfig: defaultDef.senderConfig,
+        };
+      }
+    } catch {
+      // Fallback silently to default compiled React Email component
+    }
+
+    return defaultDef;
   }
 }

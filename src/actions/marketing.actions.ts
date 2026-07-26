@@ -93,7 +93,162 @@ export async function getMarketingDashboardStats() {
 }
 
 // ─────────────────────────────────────────────
-// 2. CAMPAIGNS MANAGEMENT
+// 2. TEMPLATE LIFECYCLE & VERSIONING
+// ─────────────────────────────────────────────
+
+export async function uploadHtmlTemplate(data: {
+  templateId: string;
+  htmlContent: string;
+  name?: string;
+  subject?: string;
+  category?: string;
+  createdBy?: string;
+}) {
+  await requireMarketingAuth();
+
+  if (!data.htmlContent || typeof data.htmlContent !== 'string') {
+    throw new Error('Invalid HTML content provided.');
+  }
+
+  // Basic HTML Sanitization — Strip dangerous script tags while keeping styles & markup
+  const sanitizedHtml = data.htmlContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+  // 1. Fetch current highest version for this templateId
+  const existingVersions = await prisma.templateVersion.findMany({
+    where: { templateId: data.templateId },
+    orderBy: { version: 'desc' },
+  });
+
+  const nextVersion = existingVersions.length > 0 ? existingVersions[0].version + 1 : 1;
+
+  // 2. Deactivate previous active version for this templateId (Strict single active constraint)
+  await prisma.templateVersion.updateMany({
+    where: { templateId: data.templateId, isActive: true },
+    data: { isActive: false },
+  });
+
+  // 3. Create new active TemplateVersion
+  const newTemplateVersion = await prisma.templateVersion.create({
+    data: {
+      templateId: data.templateId,
+      name: data.name || `${data.templateId} Custom Template`,
+      category: data.category || (data.templateId.startsWith('CAMPAIGN_') ? 'MARKETING' : 'TRANSACTIONAL'),
+      subject: data.subject || `Notification: ${data.templateId}`,
+      bodyHtml: sanitizedHtml,
+      version: nextVersion,
+      isActive: true,
+      createdBy: data.createdBy || 'ADMIN',
+    },
+  });
+
+  try {
+    revalidatePath('/admin/marketing/templates');
+    revalidatePath('/admin/marketing/templates/preview');
+  } catch {}
+
+  return newTemplateVersion;
+}
+
+export async function getTemplateVersionHistory(templateId: string) {
+  await requireMarketingAuth();
+
+  try {
+    return await prisma.templateVersion.findMany({
+      where: { templateId },
+      orderBy: { version: 'desc' },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function rollbackTemplateVersion(versionId: string) {
+  await requireMarketingAuth();
+
+  const targetVersion = await prisma.templateVersion.findUnique({
+    where: { id: versionId },
+  });
+
+  if (!targetVersion) throw new Error('Target template version not found.');
+
+  // Deactivate all versions for this templateId
+  await prisma.templateVersion.updateMany({
+    where: { templateId: targetVersion.templateId, isActive: true },
+    data: { isActive: false },
+  });
+
+  // Activate target version
+  const activated = await prisma.templateVersion.update({
+    where: { id: versionId },
+    data: { isActive: true },
+  });
+
+  try {
+    revalidatePath('/admin/marketing/templates');
+    revalidatePath('/admin/marketing/templates/preview');
+  } catch {}
+
+  return activated;
+}
+
+export async function sendTestEmail(data: {
+  templateId: string;
+  recipientEmail?: string;
+  customPayload?: Record<string, any>;
+}) {
+  await requireMarketingAuth();
+
+  const targetEmail = data.recipientEmail || 'support@godsmove.in';
+  const event = (data.templateId as NotificationEvent) || 'ORDER_CREATED';
+
+  const recipient = {
+    email: targetEmail,
+    name: 'Test Administrator',
+  };
+
+  const payload = data.customPayload || {
+    customerName: 'Test Administrator',
+    orderNumber: 'GM-TEST-9901',
+    orderDate: new Date().toLocaleDateString('en-IN'),
+    items: [
+      {
+        id: 'var_1',
+        title: 'GODSMOVE Heavyweight Statement Tee',
+        size: 'L',
+        color: 'Ivory Wash',
+        quantity: 1,
+        price: 2999,
+      },
+    ],
+    subtotal: 2999,
+    shipping: 0,
+    total: 2999,
+    shippingAddress: {
+      name: 'Test Administrator',
+      line1: '101 Quality Way',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400050',
+    },
+    trackOrderUrl: 'https://godsmove.in/profile',
+  };
+
+  const dispatchResult = await NotificationService.dispatch({
+    event,
+    recipient,
+    payload,
+  });
+
+  return {
+    success: true,
+    recipient: targetEmail,
+    providerMessageId: dispatchResult?.email?.id || 'N/A',
+    dispatchResult,
+  };
+}
+
+// ─────────────────────────────────────────────
+// 3. CAMPAIGNS MANAGEMENT
 // ─────────────────────────────────────────────
 
 export async function getCampaigns(statusFilter?: string) {
@@ -241,7 +396,7 @@ export async function dispatchCampaign(campaignId: string) {
 }
 
 // ─────────────────────────────────────────────
-// 3. SEGMENTS & CUSTOMER ENGAGEMENT
+// 4. SEGMENTS & CUSTOMER ENGAGEMENT
 // ─────────────────────────────────────────────
 
 export async function getSegments() {

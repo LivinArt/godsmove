@@ -20,8 +20,8 @@ export class EmailService {
     const startTime = new Date();
 
     try {
-      // 1. Resolve template definition from registry
-      const definition = TemplateResolver.resolve(event);
+      // 1. Resolve active template definition from registry (supporting custom DB HTML overrides)
+      const definition = await TemplateResolver.resolveAsync(event);
       const subject = definition.subjectBuilder(payload);
       const reactElement = React.createElement(definition.component, payload);
 
