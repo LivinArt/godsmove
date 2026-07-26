@@ -29,6 +29,7 @@ const navGroups = [
     label: 'People',
     items: [
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
+      { href: '/admin/marketing', label: 'Marketing & CRM', icon: MegaphoneIcon },
     ],
   },
   {
@@ -45,7 +46,7 @@ const ROLE_RESTRICTIONS: Record<string, string[]> = {
   CONTENT_EDITOR: ['/admin/editorial', '/admin/hero-slides', '/admin/collections', '/admin/categories'],
   OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/care', '/admin/exclusive-draws', '/admin/categories', '/admin/collections'],
   SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/care', '/admin/customers'],
-  MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides', '/admin/collections'],
+  MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides', '/admin/collections', '/admin/marketing'],
 };
 
 interface Props {
@@ -233,6 +234,15 @@ function CollectionIcon() {
       <rect x="2" y="3" width="20" height="14" rx="2" />
       <line x1="8" y1="21" x2="16" y2="21" />
       <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
+function MegaphoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 11l18-5v12L3 13v-2z" />
+      <path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
     </svg>
   );
 }

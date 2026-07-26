@@ -1139,3 +1139,176 @@ model CareRequest {
   @@map("care_requests")
 }
 
+// ─────────────────────────────────────────────
+// DOMAIN 10: MARKETING & CUSTOMER ENGAGEMENT
+// ─────────────────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  CANCELLED
+}
+
+model Campaign {
+  id            String         @id @default(cuid())
+  name          String
+  subject       String
+  previewText   String?
+  senderName    String         @default("GODSMOVE")
+  senderEmail   String         @default("support@godsmove.in")
+  replyTo       String         @default("support@godsmove.in")
+  templateId    String
+  segmentId     String?
+  segment       Segment?       @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  status        CampaignStatus @default(DRAFT)
+  scheduledAt   DateTime?
+  sentAt        DateTime?
+  completedAt   DateTime?
+  tags          String[]       @default([])
+  utmSource     String?        @default("godsmove_crm")
+  utmMedium     String?        @default("email")
+  utmCampaign   String?
+  internalNotes String?
+  
+  // Analytics counters
+  totalRecipients Int          @default(0)
+  sentCount       Int          @default(0)
+  deliveredCount  Int          @default(0)
+  openedCount     Int          @default(0)
+  clickedCount    Int          @default(0)
+  failedCount     Int          @default(0)
+  revenue         Decimal      @default(0) @db.Decimal(10, 2)
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  recipients    CampaignRecipient[]
+  notifications NotificationHistory[]
+
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  profileId   String?
+  email       String
+  status      NotificationStatus @default(QUEUED)
+  sentAt      DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  error       String?
+
+  @@index([campaignId])
+  @@index([profileId])
+  @@index([email])
+  @@map("campaign_recipients")
+}
+
+model Segment {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  isSystem    Boolean    @default(false)
+  rulesJson   String     // Filter JSON config
+  memberCount Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  campaigns   Campaign[]
+
+  @@map("segments")
+}
+
+model CustomerTag {
+  id        String   @id @default(cuid())
+  profileId String
+  tagName   String
+  createdAt DateTime @default(now())
+
+  @@unique([profileId, tagName])
+  @@index([profileId])
+  @@map("customer_tags")
+}
+
+model NotificationHistory {
+  id                String             @id @default(cuid())
+  profileId         String?
+  email             String
+  phone             String?
+  channel           String             @default("EMAIL") // EMAIL, WHATSAPP, SMS, PUSH
+  eventType         String             // e.g. ORDER_CREATED, CAMPAIGN_DISPATCH
+  campaignId        String?
+  campaign          Campaign?          @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  templateId        String?
+  provider          String             @default("RESEND")
+  providerMessageId String?
+  status            NotificationStatus @default(SENT)
+  subject           String?
+  payloadJson       String?            @db.Text
+  error             String?
+  createdAt         DateTime           @default(now())
+
+  @@index([profileId])
+  @@index([email])
+  @@index([campaignId])
+  @@index([eventType])
+  @@map("notification_history")
+}
+
+model TemplateVersion {
+  id          String   @id @default(cuid())
+  templateId  String
+  name        String
+  category    String   // TRANSACTIONAL, MARKETING
+  subject     String
+  previewText String?
+  bodyHtml    String?  @db.Text
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdBy   String?  @default("SYSTEM")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("template_versions")
+}
+
+model DraftCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  step        Int      @default(1)
+  draftData   String   @db.Text // Complete form draft state JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("draft_campaigns")
+}
+
+model MarketingAsset {
+  id          String   @id @default(cuid())
+  title       String
+  assetUrl    String
+  fileType    String   // IMAGE, BANNER, LOGO
+  fileSize    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("marketing_assets")
+}
+
+
