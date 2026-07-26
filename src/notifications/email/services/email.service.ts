@@ -1,100 +1,95 @@
 import React from 'react';
 import { sendEmail, SendEmailResponse } from './resend.service';
-import { OrderConfirmationEmail, OrderConfirmationEmailProps } from '../templates/OrderConfirmation';
-import { InvoiceEmail, InvoiceEmailProps } from '../templates/Invoice';
-import { WalletCreditEmail, WalletCreditEmailProps } from '../templates/WalletCredit';
-import { ReturnUpdateEmail, ReturnUpdateEmailProps } from '../templates/ReturnUpdate';
-import { OrderShippedEmail, OrderShippedEmailProps } from '../templates/OrderShipped';
-import { OrderDeliveredEmail, OrderDeliveredEmailProps } from '../templates/OrderDelivered';
+import { NotificationEvent, NotificationRecipient } from '../../types/notification.types';
+import { TemplateResolver } from '../templates/registry';
+import { NotificationLogger } from '../../logging/notification-logger.service';
 
 export class EmailService {
   /**
-   * Send Order Confirmation Email
+   * Template-Driven Email Dispatcher
+   *
+   * Automatically resolves the template, subject line, and sender identity from the
+   * central Template Registry based on the event type.
+   * Business logic NEVER imports individual templates directly.
    */
-  static async sendOrderConfirmation(
-    to: string,
-    data: OrderConfirmationEmailProps
+  static async sendNotification(
+    event: NotificationEvent,
+    recipient: NotificationRecipient,
+    payload: Record<string, any>
   ): Promise<SendEmailResponse> {
-    const subject = `Allocation Confirmed: Order ${data.orderNumber} | GODSMOVE`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(OrderConfirmationEmail, data),
-    });
+    const startTime = new Date();
+
+    try {
+      // 1. Resolve template definition from registry
+      const definition = TemplateResolver.resolve(event);
+      const subject = definition.subjectBuilder(payload);
+      const reactElement = React.createElement(definition.component, payload);
+
+      // 2. Dispatch via Resend API with configured sender identity
+      const result = await sendEmail({
+        to: recipient.email,
+        subject,
+        react: reactElement,
+        from: definition.senderConfig.from,
+        replyTo: definition.senderConfig.replyTo,
+      });
+
+      // 3. Log persistent audit entry
+      await NotificationLogger.log({
+        event,
+        channel: 'EMAIL',
+        recipient: recipient.email,
+        provider: 'RESEND',
+        providerMessageId: result.id,
+        status: result.success ? 'SUCCESS' : 'FAILED',
+        timestamp: startTime,
+        error: result.error,
+      });
+
+      return result;
+    } catch (err: any) {
+      console.error(`❌ [EMAIL SERVICE ERROR] Failed to process notification for event ${event}:`, err);
+      
+      await NotificationLogger.log({
+        event,
+        channel: 'EMAIL',
+        recipient: recipient.email,
+        provider: 'RESEND',
+        status: 'FAILED',
+        timestamp: startTime,
+        error: err?.message || 'Uncaught template resolution or send error',
+      });
+
+      return {
+        success: false,
+        error: err?.message || 'Email dispatch failed',
+      };
+    }
   }
 
-  /**
-   * Send Official Tax Invoice Email
-   */
-  static async sendInvoice(
-    to: string,
-    data: InvoiceEmailProps
-  ): Promise<SendEmailResponse> {
-    const subject = `Tax Invoice ${data.invoiceNumber} | GODSMOVE`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(InvoiceEmail, data),
-    });
+  // ── BACKWARD COMPATIBILITY CONVENIENCE WRAPPERS ─────────────────────────────
+
+  static async sendOrderConfirmation(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('ORDER_CREATED', { email: to, name: data.customerName }, data);
   }
 
-  /**
-   * Send Wallet Privilege Credit Email
-   */
-  static async sendWalletCredit(
-    to: string,
-    data: WalletCreditEmailProps
-  ): Promise<SendEmailResponse> {
-    const subject = `₹${data.amount.toLocaleString('en-IN')} GODSMOVE Privilege Credits Added`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(WalletCreditEmail, data),
-    });
+  static async sendInvoice(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('ORDER_CREATED', { email: to, name: data.customerName }, data);
   }
 
-  /**
-   * Send Return Status Update Email
-   */
-  static async sendReturnUpdate(
-    to: string,
-    data: ReturnUpdateEmailProps
-  ): Promise<SendEmailResponse> {
-    const subject = `Return Update ${data.returnId}: ${data.status} | GODSMOVE`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(ReturnUpdateEmail, data),
-    });
+  static async sendWalletCredit(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('WALLET_CREDITED', { email: to, name: data.customerName }, data);
   }
 
-  /**
-   * Send Order Shipped / Dispatch Email
-   */
-  static async sendOrderShipped(
-    to: string,
-    data: OrderShippedEmailProps
-  ): Promise<SendEmailResponse> {
-    const subject = `Allocation Dispatched: Order ${data.orderNumber} | GODSMOVE`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(OrderShippedEmail, data),
-    });
+  static async sendReturnUpdate(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('RETURN_REQUESTED', { email: to, name: data.customerName }, data);
   }
 
-  /**
-   * Send Order Delivered Email
-   */
-  static async sendOrderDelivered(
-    to: string,
-    data: OrderDeliveredEmailProps
-  ): Promise<SendEmailResponse> {
-    const subject = `Allocation Delivered: Order ${data.orderNumber} | GODSMOVE`;
-    return sendEmail({
-      to,
-      subject,
-      react: React.createElement(OrderDeliveredEmail, data),
-    });
+  static async sendOrderShipped(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('ORDER_SHIPPED', { email: to, name: data.customerName }, data);
+  }
+
+  static async sendOrderDelivered(to: string, data: any): Promise<SendEmailResponse> {
+    return this.sendNotification('ORDER_DELIVERED', { email: to, name: data.customerName }, data);
   }
 }

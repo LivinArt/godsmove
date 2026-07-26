@@ -1,44 +1,52 @@
 import { EmailService } from './email/services/email.service';
-import { OrderConfirmationEmailProps } from './email/templates/OrderConfirmation';
-import { InvoiceEmailProps } from './email/templates/Invoice';
-import { WalletCreditEmailProps } from './email/templates/WalletCredit';
-import { ReturnUpdateEmailProps } from './email/templates/ReturnUpdate';
-import { OrderShippedEmailProps } from './email/templates/OrderShipped';
-import { OrderDeliveredEmailProps } from './email/templates/OrderDelivered';
-
-export interface NotificationUserRecipient {
-  email: string;
-  phone?: string;
-  name: string;
-}
+import {
+  NotificationDispatchPayload,
+  NotificationRecipient,
+  NotificationEvent,
+} from './types/notification.types';
 
 /**
- * Unified Notification Architecture Orchestrator
+ * PRODUCTION NOTIFICATION SERVICE ORCHESTRATOR
  *
- * Dispatches notifications across multi-channel adapters (Email, WhatsApp, Push).
- * Future services (e.g. WhatsAppService) plug into this class without altering core business logic.
+ * Enterprise event-driven notification manager.
+ * Receives business event dispatches and routes to appropriate channel adapters
+ * (Email, WhatsApp, Push) using central Template Registry.
+ *
+ * Fully stateless & compatible with Vercel Serverless Functions.
  */
 export class NotificationService {
-  private static sentOrderIds = new Set<string>();
+  /**
+   * Unified Entry Point for All Business Event Dispatches
+   */
+  static async dispatch(params: NotificationDispatchPayload) {
+    const { event, recipient, payload, channels = ['EMAIL'] } = params;
+    console.log(`[NOTIFICATION SERVICE] Dispatching event "${event}" to ${recipient.email}`);
+
+    const results: Record<string, any> = {};
+
+    if (channels.includes('EMAIL')) {
+      results.email = await EmailService.sendNotification(event, recipient, payload);
+    }
+
+    // Future Multi-Channel Expansion Slots:
+    // if (channels.includes('WHATSAPP') && recipient.phone) {
+    //   results.whatsapp = await WhatsAppService.sendNotification(event, recipient, payload);
+    // }
+    // if (channels.includes('PUSH') && recipient.userId) {
+    //   results.push = await PushNotificationService.sendNotification(event, recipient, payload);
+    // }
+
+    return results;
+  }
 
   /**
-   * Helper method to map a Prisma Order database record and dispatch Order Confirmation email cleanly.
-   * Includes idempotency guard to prevent duplicate dispatches for the same order ID.
+   * Helper method to map a Prisma Order database record and dispatch ORDER_CREATED event.
    */
   static async sendOrderConfirmationForOrder(order: any) {
     if (!order || !order.id) {
       console.warn('⚠️ [NOTIFICATION SERVICE] Attempted to send order confirmation for invalid order record.');
       return { success: false, error: 'Invalid order object' };
     }
-
-    // Idempotency check: prevent duplicate emails for the same order
-    if (NotificationService.sentOrderIds.has(order.id)) {
-      console.log(`ℹ️ [NOTIFICATION SERVICE] Order confirmation email already sent for order ${order.id} (${order.orderNumber}). Skipping duplicate dispatch.`);
-      return { success: true, duplicate: true };
-    }
-
-    // Mark order as processed for email dispatch
-    NotificationService.sentOrderIds.add(order.id);
 
     const addr = typeof order.shippingAddress === 'string'
       ? JSON.parse(order.shippingAddress)
@@ -74,7 +82,7 @@ export class NotificationService {
         }))
       : [];
 
-    const emailPayload: OrderConfirmationEmailProps = {
+    const payload = {
       customerName: recipientName,
       orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
       orderDate: formattedDate,
@@ -98,94 +106,47 @@ export class NotificationService {
     };
 
     try {
-      console.log(`[NOTIFICATION SERVICE] Dispatching Order Confirmation Email for Order #${order.orderNumber} to ${targetEmail}`);
-      const emailResult = await EmailService.sendOrderConfirmation(targetEmail, emailPayload);
-      console.log(`✅ [NOTIFICATION SERVICE] Order Confirmation Email sent successfully for #${order.orderNumber}. Resend ID: ${emailResult.id || 'N/A'}`);
-      return { success: true, email: emailResult };
+      const recipient: NotificationRecipient = {
+        email: targetEmail,
+        name: recipientName,
+        phone: addr.phone || undefined,
+      };
+
+      const dispatchResult = await NotificationService.dispatch({
+        event: 'ORDER_CREATED',
+        recipient,
+        payload,
+      });
+
+      return { success: true, ...dispatchResult };
     } catch (err: any) {
-      console.error(`❌ [NOTIFICATION SERVICE] Non-critical email dispatch failure for order ${order.id}:`, err?.message || err);
-      // Return error result without throwing so database order creation/verification NEVER fails
+      console.error(`❌ [NOTIFICATION SERVICE] Non-critical error dispatching ORDER_CREATED for order ${order.id}:`, err?.message || err);
       return { success: false, error: err?.message || 'Email dispatch failed' };
     }
   }
 
-  /**
-   * Dispatch Order Confirmation across configured channels
-   */
-  static async notifyOrderConfirmation(
-    recipient: NotificationUserRecipient,
-    data: OrderConfirmationEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Order Confirmation for ${recipient.email}`);
-
-    // 1. Dispatch Email
-    const emailResult = await EmailService.sendOrderConfirmation(recipient.email, data);
-
-    // 2. Future WhatsApp Integration Slot
-    // if (recipient.phone) {
-    //   await WhatsAppService.sendOrderConfirmation(recipient.phone, data);
-    // }
-
-    return { email: emailResult };
+  // Convenience methods for specific business triggers
+  static async notifyOrderConfirmation(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'ORDER_CREATED', recipient, payload });
   }
 
-  /**
-   * Dispatch Tax Invoice
-   */
-  static async notifyInvoice(
-    recipient: NotificationUserRecipient,
-    data: InvoiceEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Tax Invoice for ${recipient.email}`);
-    const emailResult = await EmailService.sendInvoice(recipient.email, data);
-    return { email: emailResult };
+  static async notifyInvoice(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'ORDER_CREATED', recipient, payload });
   }
 
-  /**
-   * Dispatch Wallet Credit Notification
-   */
-  static async notifyWalletCredit(
-    recipient: NotificationUserRecipient,
-    data: WalletCreditEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Wallet Credit Notification for ${recipient.email}`);
-    const emailResult = await EmailService.sendWalletCredit(recipient.email, data);
-    return { email: emailResult };
+  static async notifyWalletCredit(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'WALLET_CREDITED', recipient, payload });
   }
 
-  /**
-   * Dispatch Return Request Update
-   */
-  static async notifyReturnUpdate(
-    recipient: NotificationUserRecipient,
-    data: ReturnUpdateEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Return Update for ${recipient.email}`);
-    const emailResult = await EmailService.sendReturnUpdate(recipient.email, data);
-    return { email: emailResult };
+  static async notifyReturnUpdate(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'RETURN_REQUESTED', recipient, payload });
   }
 
-  /**
-   * Dispatch Order Shipped Notification
-   */
-  static async notifyOrderShipped(
-    recipient: NotificationUserRecipient,
-    data: OrderShippedEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Order Shipped Notification for ${recipient.email}`);
-    const emailResult = await EmailService.sendOrderShipped(recipient.email, data);
-    return { email: emailResult };
+  static async notifyOrderShipped(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'ORDER_SHIPPED', recipient, payload });
   }
 
-  /**
-   * Dispatch Order Delivered Notification
-   */
-  static async notifyOrderDelivered(
-    recipient: NotificationUserRecipient,
-    data: OrderDeliveredEmailProps
-  ) {
-    console.log(`[NOTIFICATION SERVICE] Triggering Order Delivered Notification for ${recipient.email}`);
-    const emailResult = await EmailService.sendOrderDelivered(recipient.email, data);
-    return { email: emailResult };
+  static async notifyOrderDelivered(recipient: NotificationRecipient, payload: any) {
+    return this.dispatch({ event: 'ORDER_DELIVERED', recipient, payload });
   }
 }
