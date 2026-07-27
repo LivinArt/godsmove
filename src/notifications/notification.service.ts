@@ -4,15 +4,14 @@ import {
   NotificationRecipient,
   NotificationEvent,
 } from './types/notification.types';
+import { InvoiceService } from '@/lib/invoice';
 
 /**
  * PRODUCTION NOTIFICATION SERVICE ORCHESTRATOR
  *
  * Enterprise event-driven notification manager.
- * Receives business event dispatches and routes to appropriate channel adapters
+ * Routes business event dispatches to appropriate channel adapters
  * (Email, WhatsApp, Push) using central Template Registry.
- *
- * Fully stateless & compatible with Vercel Serverless Functions.
  */
 export class NotificationService {
   /**
@@ -28,23 +27,37 @@ export class NotificationService {
       results.email = await EmailService.sendNotification(event, recipient, payload);
     }
 
-    // Future Multi-Channel Expansion Slots:
-    // if (channels.includes('WHATSAPP') && recipient.phone) {
-    //   results.whatsapp = await WhatsAppService.sendNotification(event, recipient, payload);
-    // }
-    // if (channels.includes('PUSH') && recipient.userId) {
-    //   results.push = await PushNotificationService.sendNotification(event, recipient, payload);
-    // }
-
     return results;
   }
 
   /**
-   * Helper method to map a Prisma Order database record and dispatch ORDER_CREATED event.
+   * Legacy alias for order confirmation test dispatches
    */
-  static async sendOrderConfirmationForOrder(order: any) {
+  static async notifyOrderConfirmation(recipient: NotificationRecipient, payload: Record<string, any>) {
+    return this.dispatch({
+      event: 'ORDER_CREATED',
+      recipient,
+      payload,
+    });
+  }
+
+  /**
+   * Legacy alias for wallet credit test dispatches
+   */
+  static async notifyWalletCredit(recipient: NotificationRecipient, payload: Record<string, any>) {
+    return this.dispatch({
+      event: 'WALLET_CREDITED',
+      recipient,
+      payload,
+    });
+  }
+
+  /**
+   * Helper method to map an Order record and dispatch ORDER_CREATED / ORDER_CONFIRMED with optional PDF invoice attachment
+   */
+  static async sendOrderConfirmationForOrder(order: any, attachPdf: boolean = true) {
     if (!order || !order.id) {
-      console.warn('⚠️ [NOTIFICATION SERVICE] Attempted to send order confirmation for invalid order record.');
+      console.warn('⚠️ [NOTIFICATION SERVICE] Invalid order record for confirmation email.');
       return { success: false, error: 'Invalid order object' };
     }
 
@@ -78,13 +91,13 @@ export class NotificationService {
           color: item.color || null,
           quantity: Number(item.quantity || 1),
           price: Number(item.price || 0),
-          imageUrl: item.variant?.product?.frontImageUrl || item.variant?.product?.images?.[0]?.url || 'https://godsmove.in/images/hero-1.jpg',
         }))
       : [];
 
     const payload = {
       customerName: recipientName,
       orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
+      orderId: order.id,
       orderDate: formattedDate,
       items,
       subtotal: Number(order.subtotal || 0),
@@ -101,8 +114,7 @@ export class NotificationService {
         pincode: addr.pincode || '400050',
         phone: addr.phone || '',
       },
-      trackOrderUrl: 'https://godsmove.in/profile',
-      continueShoppingUrl: 'https://godsmove.in/drops',
+      invoiceUrl: `https://godsmove.in/api/invoice/${order.id}`,
     };
 
     try {
@@ -112,41 +124,101 @@ export class NotificationService {
         phone: addr.phone || undefined,
       };
 
+      const invoiceData = {
+        invoiceNumber: `INV-${order.orderNumber}`,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt || new Date(),
+        email: targetEmail,
+        customerName: recipientName,
+        shippingAddress: {
+          firstName: addr.firstName || 'Valued',
+          lastName: addr.lastName || 'Collector',
+          line1: addr.line1 || '',
+          line2: addr.line2 || '',
+          city: addr.city || '',
+          state: addr.state || '',
+          pincode: addr.pincode || '',
+          phone: addr.phone || '',
+        },
+        items: items.map((i: any) => ({
+          productName: i.title,
+          size: i.size,
+          quantity: i.quantity,
+          unitPrice: i.price,
+          totalPrice: i.price * i.quantity,
+        })),
+        subtotal: Number(order.subtotal || 0),
+        discountAmount: Number(order.discountAmount || 0),
+        walletCredit: Number(order.walletCredit || 0),
+        shippingCost: Number(order.shippingCost || 0),
+        total: Number(order.total || 0),
+        paymentMethod: order.paymentMethod || 'PREPAID',
+        paymentStatus: order.paymentStatus || 'PAID',
+      };
+
+      await InvoiceService.saveInvoiceFile(invoiceData);
+
+      const eventKey = order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CREATED';
+
       const dispatchResult = await NotificationService.dispatch({
-        event: 'ORDER_CREATED',
+        event: eventKey,
         recipient,
         payload,
       });
 
-      return { success: true, ...dispatchResult };
+      return dispatchResult;
     } catch (err: any) {
-      console.error(`❌ [NOTIFICATION SERVICE] Non-critical error dispatching ORDER_CREATED for order ${order.id}:`, err?.message || err);
-      return { success: false, error: err?.message || 'Email dispatch failed' };
+      console.error(`❌ [NOTIFICATION SERVICE] Order confirmation dispatch failed:`, err);
+      return { success: false, error: err.message };
     }
   }
 
-  // Convenience methods for specific business triggers
-  static async notifyOrderConfirmation(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'ORDER_CREATED', recipient, payload });
+  static async sendOrderShipped(order: any, carrier: string, trackingNumber: string) {
+    const recipient: NotificationRecipient = {
+      email: order.email,
+      name: order.email.split('@')[0] || 'Collector',
+    };
+    return this.dispatch({
+      event: 'ORDER_SHIPPED',
+      recipient,
+      payload: {
+        orderNumber: order.orderNumber,
+        carrier,
+        trackingNumber,
+        trackingUrl: 'https://godsmove.in/profile',
+      },
+    });
   }
 
-  static async notifyInvoice(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'ORDER_CREATED', recipient, payload });
+  static async sendOrderDelivered(order: any) {
+    const recipient: NotificationRecipient = {
+      email: order.email,
+      name: order.email.split('@')[0] || 'Collector',
+    };
+    return this.dispatch({
+      event: 'ORDER_DELIVERED',
+      recipient,
+      payload: { orderNumber: order.orderNumber },
+    });
   }
 
-  static async notifyWalletCredit(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'WALLET_CREDITED', recipient, payload });
+  static async sendOrderCancelled(order: any, reason?: string) {
+    const recipient: NotificationRecipient = {
+      email: order.email,
+      name: order.email.split('@')[0] || 'Collector',
+    };
+    return this.dispatch({
+      event: 'ORDER_CANCELLED',
+      recipient,
+      payload: { orderNumber: order.orderNumber, reason: reason || 'Requested by customer' },
+    });
   }
 
-  static async notifyReturnUpdate(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'RETURN_REQUESTED', recipient, payload });
-  }
-
-  static async notifyOrderShipped(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'ORDER_SHIPPED', recipient, payload });
-  }
-
-  static async notifyOrderDelivered(recipient: NotificationRecipient, payload: any) {
-    return this.dispatch({ event: 'ORDER_DELIVERED', recipient, payload });
+  static async sendWalletCredited(email: string, name: string, amount: number, newBalance: number) {
+    return this.dispatch({
+      event: 'WALLET_CREDITED',
+      recipient: { email, name },
+      payload: { amount, newBalance, customerName: name },
+    });
   }
 }

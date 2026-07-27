@@ -36,9 +36,24 @@ export async function requireMarketingAuth() {
   return { id: user.id, role: profile.role };
 }
 
-// ─────────────────────────────────────────────
-// 1. SAMPLE PAYLOAD HELPER FOR PREVIEWS & TESTS
-// ─────────────────────────────────────────────
+export async function getRegisteredTemplates() {
+  await requireMarketingAuth();
+  const events = Object.keys(TEMPLATE_REGISTRY);
+
+  return events.map((eventKey) => {
+    const readable = eventKey
+      .toLowerCase()
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    return {
+      id: eventKey,
+      name: readable,
+      category: eventKey.startsWith('CAMPAIGN_') ? 'CAMPAIGN' : 'TRANSACTIONAL',
+    };
+  });
+}
 
 export async function getSamplePayloadForEvent(templateId: string): Promise<Record<string, any>> {
   const common = {

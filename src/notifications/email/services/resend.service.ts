@@ -8,6 +8,12 @@ export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 export const DEFAULT_SENDER = 'GODSMOVE <support@godsmove.in>';
 export const DEFAULT_REPLY_TO = 'support@godsmove.in';
 
+export interface EmailAttachment {
+  filename: string;
+  content?: Buffer | string;
+  path?: string;
+}
+
 export interface SendEmailPayload {
   to: string | string[];
   subject: string;
@@ -15,6 +21,7 @@ export interface SendEmailPayload {
   html?: string;
   from?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface SendEmailResponse {
@@ -55,13 +62,19 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
 
     console.log(`✉️ [RESEND DISPATCHING] To: ${payload.to} | Subject: "${payload.subject}" | From: ${from}`);
 
-    const { data, error } = await client.emails.send({
+    const dispatchParams: any = {
       from,
       to: payload.to,
       replyTo,
       subject: payload.subject,
       html: htmlString,
-    });
+    };
+
+    if (payload.attachments && payload.attachments.length > 0) {
+      dispatchParams.attachments = payload.attachments;
+    }
+
+    const { data, error } = await client.emails.send(dispatchParams);
 
     if (error) {
       console.error('❌ [RESEND API REJECTION]:', error);

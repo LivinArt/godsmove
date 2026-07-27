@@ -560,6 +560,17 @@ export async function updateOrderStatus(input: {
     },
   });
 
+  // Trigger event notification
+  try {
+    if (data.status === 'SHIPPED') {
+      NotificationService.sendOrderShipped(order, 'Express Courier', 'AWB-PENDING').catch(() => {});
+    } else if (data.status === 'DELIVERED') {
+      NotificationService.sendOrderDelivered(order).catch(() => {});
+    } else if (data.status === 'CANCELLED') {
+      NotificationService.sendOrderCancelled(order, data.adminNotes).catch(() => {});
+    }
+  } catch {}
+
   revalidatePath('/admin/orders');
   return order;
 }

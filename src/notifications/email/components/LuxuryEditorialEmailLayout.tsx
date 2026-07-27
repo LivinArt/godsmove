@@ -8,6 +8,7 @@ import {
   Text,
   Link,
   Hr,
+  Img,
 } from '@react-email/components';
 
 export interface LuxuryEditorialEmailLayoutProps {
@@ -19,6 +20,8 @@ export interface LuxuryEditorialEmailLayoutProps {
   children: React.ReactNode;
   ctaText?: string;
   ctaUrl?: string;
+  invoiceUrl?: string;
+  theme?: 'dark' | 'light';
 }
 
 export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProps> = ({
@@ -30,7 +33,23 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
   children,
   ctaText,
   ctaUrl,
+  invoiceUrl,
+  theme = 'light',
 }) => {
+  const isDark = theme === 'dark';
+
+  // Base background & text colors
+  const bodyBg = isDark ? '#09090B' : '#F7F5F0';
+  const containerBg = isDark ? '#121215' : '#FBF9F5';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : '#EAE5DB';
+  const primaryText = isDark ? '#FFFFFF' : '#1A1918';
+  const cardBg = isDark ? '#18181C' : '#F4F0E8';
+  const bodyText = isDark ? '#A1A1AA' : '#4A4742';
+
+  // SVG Brand Logo Visual Anchor (Crisp rendering across all clients)
+  const logoColor = isDark ? '%23FFFFFF' : '%231A1918';
+  const logoDataUri = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 60" fill="${logoColor}"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, sans-serif" font-weight="900" font-size="34" letter-spacing="10">GODSMOV%C6%BE</text></svg>`;
+
   return (
     <Html lang="en">
       <Head>
@@ -44,55 +63,70 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
         </div>
       )}
 
-      <Body style={mainBodyStyle}>
-        <Container style={containerStyle}>
-          {/* LUXURY EDITORIAL HEADER */}
+      <Body style={{ ...mainBodyStyle, backgroundColor: bodyBg, color: primaryText }}>
+        <Container style={{ ...containerStyle, backgroundColor: containerBg, borderColor }}>
+          {/* BRAND LOGO HEADER (SCROLL LOGO ON DARK, BANNER LOGO ON LIGHT) */}
           <Section style={headerSectionStyle}>
-            <Text style={logoStyle}>G O D S M O V E</Text>
+            <Img
+              src={logoDataUri}
+              alt="GODSMOVE"
+              width="240"
+              height="34"
+              style={logoImgStyle}
+            />
             <Text style={issueTagStyle}>{issueTag}</Text>
           </Section>
 
-          <Hr style={dividerStyle} />
+          <Hr style={{ ...dividerStyle, borderColor }} />
 
-          {/* MAIN EDITORIAL HERO SECTION */}
+          {/* EDITORIAL HERO SECTION */}
           <Section style={heroSectionStyle}>
-            <Text style={headlineStyle}>{headline}</Text>
+            <Text style={{ ...headlineStyle, color: primaryText }}>{headline}</Text>
 
-            {/* PERSONALISED LETTER / EDITORIAL NOTE */}
-            <div style={editorialNoteCardStyle}>
+            {/* PERSONALISED EDITORIAL LETTER BLOCK */}
+            <div style={{ ...editorialNoteCardStyle, backgroundColor: cardBg }}>
               {customerName && (
-                <Text style={salutationStyle}>Dear {customerName},</Text>
+                <Text style={{ ...salutationStyle, color: primaryText }}>Dear {customerName},</Text>
               )}
-              <Text style={editorialBodyStyle}>{editorialNote}</Text>
+              <Text style={{ ...editorialBodyStyle, color: bodyText }}>{editorialNote}</Text>
               <Text style={signoffStyle}>— The GODSMOVE Archival Team</Text>
             </div>
           </Section>
 
-          {/* DYNAMIC EVENT BODY CONTENT */}
+          {/* EVENT BODY CONTENT */}
           <Section style={contentSectionStyle}>{children}</Section>
 
-          {/* CALL TO ACTION BUTTON */}
-          {ctaText && ctaUrl && (
+          {/* PRIMARY CTAS (ACTION + INVOICE) */}
+          {(ctaText || invoiceUrl) && (
             <Section style={ctaSectionStyle}>
-              <Link href={ctaUrl} style={ctaButtonStyle}>
-                {ctaText.toUpperCase()}
-              </Link>
+              {ctaText && ctaUrl && (
+                <Link href={ctaUrl} style={{ ...ctaButtonStyle, backgroundColor: isDark ? '#C8A46A' : '#1A1918', color: isDark ? '#000000' : '#FBF9F5' }}>
+                  {ctaText.toUpperCase()}
+                </Link>
+              )}
+              {invoiceUrl && (
+                <div style={{ marginTop: '12px' }}>
+                  <Link href={invoiceUrl} style={invoiceLinkStyle}>
+                    📄 VIEW & DOWNLOAD TAX INVOICE
+                  </Link>
+                </div>
+              )}
             </Section>
           )}
 
-          <Hr style={dividerStyle} />
+          <Hr style={{ ...dividerStyle, borderColor }} />
 
-          {/* LUXURY BRAND FOOTER */}
+          {/* BRAND FOOTER */}
           <Section style={footerSectionStyle}>
-            <Text style={footerLogoStyle}>GODSMOVE ARCHIVAL DIVISION</Text>
-            <Text style={footerSubStyle}>
+            <Text style={{ ...footerLogoStyle, color: primaryText }}>GODSMOVE ARCHIVAL DIVISION</Text>
+            <Text style={{ ...footerSubStyle, color: bodyText }}>
               Built around craftsmanship, permanence and intentional design.
             </Text>
             <Text style={footerAddressStyle}>
               Mumbai • Tokyo • London | Concierge Support: support@godsmove.in
             </Text>
             <Text style={footerCopyrightStyle}>
-              © {new Date().getFullYear()} GODSMOVE. All rights reserved.
+              © {new Date().getFullYear()} GODSMOVE CLOTHING PRIVATE LIMITED. All rights reserved.
             </Text>
           </Section>
         </Container>
@@ -101,41 +135,31 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
   );
 };
 
-// ─────────────────────────────────────────────
-// LUXURY EDITORIAL STYLES (WARM IVORY & CHARCOAL PALETTE)
-// ─────────────────────────────────────────────
-
 const mainBodyStyle: React.CSSProperties = {
-  backgroundColor: '#F7F5F0',
-  fontFamily:
-    'Helvetica Neue, Helvetica, Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontFamily: 'Helvetica Neue, Helvetica, Arial, -apple-system, sans-serif',
   margin: 0,
   padding: '40px 12px',
-  color: '#1A1918',
 };
 
 const containerStyle: React.CSSProperties = {
-  backgroundColor: '#FBF9F5',
   border: '1px solid #EAE5DB',
   borderRadius: '8px',
   maxWidth: '620px',
   margin: '0 auto',
   padding: '40px 36px',
-  boxShadow: '0 10px 30px rgba(26, 25, 24, 0.04)',
+  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
 };
 
 const headerSectionStyle: React.CSSProperties = {
   textAlign: 'center',
-  paddingBottom: '20px',
+  paddingBottom: '16px',
 };
 
-const logoStyle: React.CSSProperties = {
-  fontSize: '22px',
-  fontWeight: 800,
-  letterSpacing: '0.3em',
-  color: '#1A1918',
-  margin: '0 0 6px 0',
-  textTransform: 'uppercase',
+const logoImgStyle: React.CSSProperties = {
+  margin: '0 auto 8px auto',
+  display: 'block',
+  maxWidth: '240px',
+  height: 'auto',
 };
 
 const issueTagStyle: React.CSSProperties = {
@@ -148,7 +172,6 @@ const issueTagStyle: React.CSSProperties = {
 };
 
 const dividerStyle: React.CSSProperties = {
-  borderColor: '#EAE5DB',
   margin: '24px 0',
 };
 
@@ -160,13 +183,11 @@ const headlineStyle: React.CSSProperties = {
   fontSize: '26px',
   fontWeight: 800,
   lineHeight: '34px',
-  color: '#1A1918',
   margin: '0 0 20px 0',
   letterSpacing: '-0.01em',
 };
 
 const editorialNoteCardStyle: React.CSSProperties = {
-  backgroundColor: '#F4F0E8',
   borderLeft: '3px solid #C8A46A',
   borderRadius: '4px',
   padding: '24px',
@@ -176,14 +197,12 @@ const editorialNoteCardStyle: React.CSSProperties = {
 const salutationStyle: React.CSSProperties = {
   fontSize: '14px',
   fontWeight: 700,
-  color: '#1A1918',
   margin: '0 0 10px 0',
 };
 
 const editorialBodyStyle: React.CSSProperties = {
   fontSize: '13px',
   lineHeight: '22px',
-  color: '#4A4742',
   margin: '0 0 14px 0',
 };
 
@@ -206,15 +225,21 @@ const ctaSectionStyle: React.CSSProperties = {
 
 const ctaButtonStyle: React.CSSProperties = {
   display: 'inline-block',
-  backgroundColor: '#1A1918',
-  color: '#FBF9F5',
   fontSize: '11px',
   fontWeight: 800,
   letterSpacing: '0.2em',
   textDecoration: 'none',
   padding: '16px 32px',
   borderRadius: '4px',
-  boxShadow: '0 4px 12px rgba(26, 25, 24, 0.15)',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+};
+
+const invoiceLinkStyle: React.CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 800,
+  color: '#C8A46A',
+  textDecoration: 'underline',
+  letterSpacing: '0.1em',
 };
 
 const footerSectionStyle: React.CSSProperties = {
@@ -226,13 +251,11 @@ const footerLogoStyle: React.CSSProperties = {
   fontSize: '10px',
   fontWeight: 800,
   letterSpacing: '0.2em',
-  color: '#1A1918',
   margin: '0 0 6px 0',
 };
 
 const footerSubStyle: React.CSSProperties = {
   fontSize: '11px',
-  color: '#6E6B65',
   margin: '0 0 12px 0',
 };
 

@@ -271,14 +271,23 @@ class PaymentService {
     }
 
     // Update order status
-    await prisma.order.update({
+    const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
         paymentStatus: 'PAID',
         status: 'CONFIRMED',
         razorpayPaymentId: gatewayPaymentId,
       },
+      include: { items: true },
     });
+
+    // Trigger ORDER_CONFIRMED notification & tax invoice generation
+    try {
+      const { NotificationService } = await import('@/notifications/notification.service');
+      NotificationService.sendOrderConfirmationForOrder(updatedOrder).catch((err) =>
+        console.error('❌ [PAYMENT SERVICE] Confirmation email dispatch error:', err)
+      );
+    } catch {}
 
     return { success: true };
   }

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getActiveTemplatePreview, sendTestEmail } from '@/actions/marketing.actions';
+import { getActiveTemplatePreview, getRegisteredTemplates, sendTestEmail } from '@/actions/marketing.actions';
 
 export default function StandaloneTemplatePreviewerPage() {
+  const [templatesList, setTemplatesList] = useState<any[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('ORDER_CREATED');
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
@@ -16,22 +17,27 @@ export default function StandaloneTemplatePreviewerPage() {
   const [testStatus, setTestStatus] = useState<string>('');
   const [providerMsgId, setProviderMsgId] = useState<string>('');
 
-  const templatesList = [
-    { id: 'ORDER_CREATED', name: 'Order Confirmation' },
-    { id: 'ORDER_CONFIRMED', name: 'Order Confirmed' },
-    { id: 'ORDER_SHIPPED', name: 'Order Shipped' },
-    { id: 'ORDER_DELIVERED', name: 'Order Delivered' },
-    { id: 'ORDER_CANCELLED', name: 'Order Cancelled' },
-    { id: 'RETURN_REQUESTED', name: 'Return Requested' },
-    { id: 'RETURN_APPROVED', name: 'Return Approved' },
-    { id: 'RETURN_REJECTED', name: 'Return Rejected' },
-    { id: 'REFUND_COMPLETED', name: 'Refund Settlement Completed' },
-    { id: 'WALLET_CREDITED', name: 'Wallet Balance Credited' },
-    { id: 'WALLET_DEBITED', name: 'Wallet Balance Applied' },
-    { id: 'PASSWORD_RESET', name: 'Password Reset' },
-    { id: 'EMAIL_VERIFICATION', name: 'Email Verification' },
-    { id: 'WELCOME', name: 'Welcome Collector' },
-  ];
+  // Dynamically load registered templates from backend database & registry
+  useEffect(() => {
+    async function loadTemplates() {
+      try {
+        const list = await getRegisteredTemplates();
+        setTemplatesList(list);
+        if (list.length > 0 && !list.find((t: any) => t.id === selectedTemplateId)) {
+          setSelectedTemplateId(list[0].id);
+        }
+      } catch {
+        setTemplatesList([
+          { id: 'FIRST_TIME_REGISTRATION', name: 'First Time Registration' },
+          { id: 'WELCOME', name: 'Welcome' },
+          { id: 'ORDER_CREATED', name: 'Order Created' },
+          { id: 'ORDER_CONFIRMED', name: 'Order Confirmed' },
+          { id: 'PASSWORD_RESET', name: 'Password Reset' },
+        ]);
+      }
+    }
+    loadTemplates();
+  }, []);
 
   const loadActivePreview = async (templateId: string) => {
     setLoading(true);
@@ -47,7 +53,9 @@ export default function StandaloneTemplatePreviewerPage() {
   };
 
   useEffect(() => {
-    loadActivePreview(selectedTemplateId);
+    if (selectedTemplateId) {
+      loadActivePreview(selectedTemplateId);
+    }
   }, [selectedTemplateId]);
 
   const handleSendTest = async () => {
@@ -141,8 +149,8 @@ export default function StandaloneTemplatePreviewerPage() {
           <div
             style={{
               width: previewDevice === 'mobile' ? '375px' : '650px',
-              backgroundColor: themeMode === 'dark' ? '#09090b' : '#ffffff',
-              color: themeMode === 'dark' ? '#ffffff' : '#000000',
+              backgroundColor: themeMode === 'dark' ? '#09090b' : '#FBF9F5',
+              color: themeMode === 'dark' ? '#ffffff' : '#1A1918',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '6px',
               boxShadow: '0 20px 40px rgba(0,0,0,0.8)',

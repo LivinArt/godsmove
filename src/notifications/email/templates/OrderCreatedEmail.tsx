@@ -15,6 +15,7 @@ export interface OrderItem {
 export interface OrderCreatedEmailProps {
   customerName?: string;
   orderNumber?: string;
+  orderId?: string;
   orderDate?: string;
   items?: OrderItem[];
   subtotal?: number;
@@ -34,6 +35,7 @@ export interface OrderCreatedEmailProps {
 export const OrderCreatedEmail: React.FC<OrderCreatedEmailProps> = ({
   customerName = 'Valued Collector',
   orderNumber = 'GM-88192',
+  orderId = 'ord_sample_88192',
   orderDate = new Date().toLocaleDateString('en-IN'),
   items = [
     {
@@ -55,7 +57,6 @@ export const OrderCreatedEmail: React.FC<OrderCreatedEmailProps> = ({
   ],
   subtotal = 7998,
   shipping = 0,
-  tax = 0,
   discount = 0,
   total = 7998,
   shippingAddress = {
@@ -66,7 +67,9 @@ export const OrderCreatedEmail: React.FC<OrderCreatedEmailProps> = ({
     pincode: '400050',
   },
 }) => {
-  const editorialNote = `Thank you for trusting GODSMOVE. Every order represents more than a purchase—it becomes part of a carefully documented archive. Your order #${orderNumber} has now entered production and our team has begun preparing it with technical precision and care.`;
+  const editorialNote = `Thank you for trusting GODSMOVE. Every order represents more than a purchase—it becomes part of a carefully documented archive. Your order #${orderNumber} has entered production and our team has begun preparing it with technical precision and care.`;
+
+  const invoiceUrl = `https://godsmove.in/api/invoice/${orderId || orderNumber}`;
 
   return (
     <LuxuryEditorialEmailLayout
@@ -75,8 +78,9 @@ export const OrderCreatedEmail: React.FC<OrderCreatedEmailProps> = ({
       headline={`Order #${orderNumber} Allocation Confirmed`}
       customerName={customerName}
       editorialNote={editorialNote}
-      ctaText="TRACK ARCHIVAL DISPATCH"
+      ctaText="TRACK MY ORDER"
       ctaUrl="https://godsmove.in/profile"
+      invoiceUrl={invoiceUrl}
     >
       {/* ORDER METADATA BAR */}
       <Section style={cardSectionStyle}>
@@ -86,7 +90,7 @@ export const OrderCreatedEmail: React.FC<OrderCreatedEmailProps> = ({
         </div>
       </Section>
 
-      {/* ITEMS LIST TABLE */}
+      {/* ALLOCATION PIECES TABLE */}
       <Section style={{ marginBottom: '24px' }}>
         <Text style={sectionHeaderStyle}>ALLOCATION PIECES</Text>
         {items.map((item, idx) => (
