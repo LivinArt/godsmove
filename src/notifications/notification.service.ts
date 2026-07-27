@@ -156,14 +156,27 @@ export class NotificationService {
         paymentStatus: order.paymentStatus || 'PAID',
       };
 
+      const invoiceHtmlContent = InvoiceService.generateInvoiceHtml(invoiceData);
       await InvoiceService.saveInvoiceFile(invoiceData);
 
+      const fullPayload = {
+        ...payload,
+        attachments: [
+          {
+            filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.html`,
+            content: Buffer.from(invoiceHtmlContent, 'utf-8'),
+          },
+        ],
+      };
+
       const eventKey = order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CREATED';
+
+      console.log(`[ORDER_CONFIRMED] Dispatching event "${eventKey}" for Order ${order.orderNumber} with Tax Invoice attachment...`);
 
       const dispatchResult = await NotificationService.dispatch({
         event: eventKey,
         recipient,
-        payload,
+        payload: fullPayload,
       });
 
       return dispatchResult;

@@ -74,12 +74,22 @@ export async function GET(request: Request) {
             }
           });
 
-          // Trigger WELCOME transactional email only for first-time registration
-          if (isNewRegistration && email) {
+          // Check if Welcome email has ever been dispatched for this recipient
+          const existingWelcome = await prisma.notificationHistory.findFirst({
+            where: {
+              email: email.toLowerCase(),
+              eventType: { in: ['WELCOME', 'FIRST_TIME_REGISTRATION'] },
+            },
+          });
+
+          if (!existingWelcome && email) {
+            console.log(`[FIRST_TIME_REGISTRATION] New customer auth detected for: ${email}`);
             const fullName = user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0] || 'Valued Collector';
             const { NotificationService } = await import('@/notifications/notification.service');
-            NotificationService.dispatch({
-              event: 'WELCOME',
+
+            console.log(`[FIRST_TIME_REGISTRATION] Dispatching WELCOME notification for ${email}...`);
+            const dispatchRes = await NotificationService.dispatch({
+              event: 'FIRST_TIME_REGISTRATION',
               recipient: {
                 email,
                 name: fullName,
@@ -89,7 +99,8 @@ export async function GET(request: Request) {
                 customerName: fullName,
                 email,
               },
-            }).catch((err) => console.error('❌ [WELCOME EMAIL DISPATCH ERROR]:', err));
+            });
+            console.log(`[FIRST_TIME_REGISTRATION] Dispatch complete:`, dispatchRes);
           }
         } catch (e) {
           console.error('[auth/callback] Profile sync failed:', e);

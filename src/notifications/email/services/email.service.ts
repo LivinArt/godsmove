@@ -25,13 +25,17 @@ export class EmailService {
       const subject = definition.subjectBuilder(payload);
       const reactElement = React.createElement(definition.component, payload);
 
-      // 2. Dispatch via Resend API with configured sender identity
+      // 2. Extract attachments if present in payload
+      const attachments = payload.attachments || [];
+
+      // 3. Dispatch via Resend API with configured sender identity & attachments
       const result = await sendEmail({
         to: recipient.email,
         subject,
         react: reactElement,
         from: definition.senderConfig.from,
         replyTo: definition.senderConfig.replyTo,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
 
       // 3. Log persistent audit entry
