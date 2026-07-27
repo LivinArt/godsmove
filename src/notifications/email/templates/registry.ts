@@ -60,6 +60,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     subjectBuilder: (p) => `Allocation Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
+  ORDER_CONFIRMED: {
+    component: OrderConfirmationTemplate,
+    subjectBuilder: (p) => `Order Confirmed: ${p.orderNumber || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
   ORDER_SHIPPED: {
     component: OrderShippedTemplate,
     subjectBuilder: (p) => `Allocation Dispatched: Order ${p.orderNumber || ''} | GODSMOVE`,
@@ -73,6 +78,16 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   ORDER_CANCELLED: {
     component: OrderCancelledTemplate,
     subjectBuilder: (p) => `Order Cancellation Notice: ${p.orderNumber || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  PAYMENT_SUCCESSFUL: {
+    component: OrderConfirmationTemplate,
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  PAYMENT_FAILED: {
+    component: OrderCancelledTemplate,
+    subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REQUESTED: {
@@ -95,6 +110,16 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     subjectBuilder: (p) => `Return Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
+  REFUND_INITIATED: {
+    component: ReturnCompletedTemplate,
+    subjectBuilder: (p) => `Refund Settlement Initiated: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  REFUND_COMPLETED: {
+    component: ReturnCompletedTemplate,
+    subjectBuilder: (p) => `Refund Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
   WALLET_CREDITED: {
     component: WalletCreditedTemplate,
     subjectBuilder: (p) => `₹${Number(p.amount || 0).toLocaleString('en-IN')} Privilege Credits Credited | GODSMOVE`,
@@ -110,9 +135,24 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     subjectBuilder: () => `Password Reset Instructions | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
+  EMAIL_VERIFICATION: {
+    component: PasswordResetTemplate,
+    subjectBuilder: () => `Verify Your Email Address | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
   WELCOME: {
     component: WelcomeTemplate,
-    subjectBuilder: () => `Welcome to the GODSMOVE Archival Movement`,
+    subjectBuilder: () => `Welcome to the GODSMOVE Archival Circle`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  FIRST_TIME_REGISTRATION: {
+    component: WelcomeTemplate,
+    subjectBuilder: () => `Welcome to the GODSMOVE Archival Circle`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  ACCOUNT_UPDATED: {
+    component: WelcomeTemplate,
+    subjectBuilder: () => `Account Security & Profile Updated | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
   NEWSLETTER: {

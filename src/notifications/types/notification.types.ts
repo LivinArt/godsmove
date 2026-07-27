@@ -1,16 +1,24 @@
 export type NotificationEvent =
   | 'ORDER_CREATED'
+  | 'ORDER_CONFIRMED'
   | 'ORDER_SHIPPED'
   | 'ORDER_DELIVERED'
   | 'ORDER_CANCELLED'
+  | 'PAYMENT_SUCCESSFUL'
+  | 'PAYMENT_FAILED'
   | 'RETURN_REQUESTED'
   | 'RETURN_APPROVED'
   | 'RETURN_REJECTED'
   | 'RETURN_COMPLETED'
+  | 'REFUND_INITIATED'
+  | 'REFUND_COMPLETED'
   | 'WALLET_CREDITED'
   | 'WALLET_DEBITED'
   | 'PASSWORD_RESET'
+  | 'EMAIL_VERIFICATION'
   | 'WELCOME'
+  | 'FIRST_TIME_REGISTRATION'
+  | 'ACCOUNT_UPDATED'
   | 'NEWSLETTER'
   | 'NEW_DROP'
   | 'COUPON'
@@ -35,6 +43,11 @@ export type NotificationEvent =
 
 export type NotificationChannel = 'EMAIL' | 'WHATSAPP' | 'PUSH';
 
+export interface EmailSenderConfig {
+  from: string;
+  replyTo?: string;
+}
+
 export interface NotificationRecipient {
   email: string;
   phone?: string;
@@ -58,9 +71,4 @@ export interface NotificationLogEntry {
   status: 'SUCCESS' | 'FAILED' | 'SIMULATED';
   timestamp: Date;
   error?: string;
-}
-
-export interface EmailSenderConfig {
-  from: string;
-  replyTo: string;
 }
