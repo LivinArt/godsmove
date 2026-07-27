@@ -48,7 +48,7 @@ export interface SystemTemplateCardDef {
   variables: string[];
 }
 
-export const SYSTEM_TEMPLATE_CARDS: SystemTemplateCardDef[] = [
+const SYSTEM_TEMPLATE_CARDS: SystemTemplateCardDef[] = [
   { id: 'WELCOME', name: 'Welcome Email', trigger: 'First successful Google or Email registration', category: 'ONBOARDING', variables: ['customerName', 'email'] },
   { id: 'PROFILE_UPDATED', name: 'Profile Updated', trigger: 'Customer updates profile details', category: 'ACCOUNT', variables: ['customerName', 'email'] },
   { id: 'ORDER_CONFIRMED', name: 'Order Confirmation', trigger: 'Order confirmed (COD immediately, Razorpay/Wallet post payment)', category: 'ORDER', variables: ['customerName', 'orderNumber', 'orderDate', 'total', 'items', 'shippingAddress', 'viewInvoiceUrl'] },
