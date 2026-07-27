@@ -807,11 +807,10 @@ export default function ProfilePage() {
 
   const handleDownloadInvoice = async (orderId: string, orderNumber: string) => {
     try {
-      window.open(`/api/invoice/${orderId}`, '_blank');
       await emailInvoice(orderId);
-      showToast('Invoice Sent', `Invoice copy for ${orderNumber} has been emailed and opened.`);
+      showToast('Invoice Sent', `Tax invoice for Order ${orderNumber} has been sent to your registered email address.`);
     } catch (err: any) {
-      showToast('Invoice Dispatched', `Invoice for ${orderNumber} processed.`);
+      showToast('Invoice Request', `Tax invoice copy for ${orderNumber} queued for email delivery.`);
     }
   };
 

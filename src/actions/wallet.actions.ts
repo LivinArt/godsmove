@@ -66,9 +66,20 @@ export async function getMyWallet() {
 
   // Auto-create wallet if it doesn't exist
   if (!wallet) {
-    wallet = await prisma.wallet.create({
-      data: { profileId: user.id, balance: 500 },
-      include: { transactions: true },
+    const { WalletService } = await import('@/lib/wallet-service');
+    await WalletService.adjustBalanceDirect({
+      profileId: user.id,
+      amount: 500,
+      type: 'CREDIT_PROMOTIONAL',
+      description: 'Welcome Archival Privilege Credits',
+      source: 'Welcome Bonus',
+    });
+
+    wallet = await prisma.wallet.findUnique({
+      where: { profileId: user.id },
+      include: {
+        transactions: { orderBy: { createdAt: 'desc' } },
+      },
     });
   }
 
@@ -95,39 +106,19 @@ export async function issueWalletCredit(input: IssueWalletCreditInput) {
   await requireAdmin();
   const data = IssueWalletCreditSchema.parse(input);
 
-  return prisma.$transaction(async (tx) => {
-    // Get or create wallet
-    let wallet = await tx.wallet.findUnique({
-      where: { profileId: data.profileId },
-    });
-    if (!wallet) {
-      wallet = await tx.wallet.create({
-        data: { profileId: data.profileId },
-      });
-    }
-
-    // Add credit to wallet
-    const updated = await tx.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: data.amount } },
-    });
-
-    // Record the transaction
-    await tx.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        amount: data.amount,
-        type: data.type as any,
-        description: data.description,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-        orderId: data.orderId ?? null,
-        returnId: data.returnId ?? null,
-      },
-    });
-
-    revalidatePath('/admin/customers');
-    return JSON.parse(JSON.stringify(updated));
+  const { WalletService } = await import('@/lib/wallet-service');
+  const res = await WalletService.adjustBalanceDirect({
+    profileId: data.profileId,
+    amount: data.amount,
+    type: data.type as any,
+    description: data.description,
+    expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+    orderId: data.orderId ?? null,
+    returnId: data.returnId ?? null,
   });
+
+  revalidatePath('/admin/customers');
+  return JSON.parse(JSON.stringify(res.wallet));
 }
 
 // ── EXPIRE PROMOTIONAL CREDITS ───────────────────────────────────────────────

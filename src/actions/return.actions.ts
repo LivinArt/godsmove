@@ -11,7 +11,7 @@ import {
   type ProcessReturnInput,
 } from '@/lib/validations/return';
 import { issueWalletCredit } from './wallet.actions';
-import { NotificationService } from '@/lib/notification';
+import { NotificationService } from '@/notifications/notification.service';
 
 async function getCurrentUser() {
   const supabase = await createClient();

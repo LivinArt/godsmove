@@ -29,7 +29,7 @@ const navGroups = [
     label: 'People',
     items: [
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
-      { href: '/admin/marketing', label: 'Marketing & CRM', icon: MegaphoneIcon },
+      { href: '/admin/communication', label: 'Communication', icon: MegaphoneIcon },
     ],
   },
   {
@@ -46,7 +46,7 @@ const ROLE_RESTRICTIONS: Record<string, string[]> = {
   CONTENT_EDITOR: ['/admin/editorial', '/admin/hero-slides', '/admin/collections', '/admin/categories'],
   OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/care', '/admin/exclusive-draws', '/admin/categories', '/admin/collections'],
   SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/care', '/admin/customers'],
-  MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides', '/admin/collections', '/admin/marketing'],
+  MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides', '/admin/collections', '/admin/communication', '/admin/marketing'],
 };
 
 interface Props {

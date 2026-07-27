@@ -36,6 +36,8 @@ import VipEarlyAccessMarketingTemplate from './marketing/VipEarlyAccessMarketing
 import MembershipInvitationMarketingTemplate from './marketing/MembershipInvitationMarketingTemplate';
 import SeasonalMarketingTemplate from './marketing/SeasonalMarketingTemplate';
 
+import InvoiceRequestTemplate from './InvoiceRequestTemplate';
+
 export interface EmailTemplateDefinition {
   component: React.ComponentType<any>;
   subjectBuilder: (payload: any) => string;
@@ -80,6 +82,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     subjectBuilder: (p) => `Order Cancellation Notice: ${p.orderNumber || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
+  PAYMENT_CONFIRMED: {
+    component: OrderConfirmationTemplate,
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
   PAYMENT_SUCCESSFUL: {
     component: OrderConfirmationTemplate,
     subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
@@ -88,6 +95,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   PAYMENT_FAILED: {
     component: OrderCancelledTemplate,
     subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  PROFILE_UPDATED: {
+    component: WelcomeTemplate,
+    subjectBuilder: () => `Profile Updated Successfully | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REQUESTED: {
@@ -105,6 +117,21 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     subjectBuilder: (p) => `Return Request Notice: ${p.returnId || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
+  RETURN_PICKUP_SCHEDULED: {
+    component: ReturnApprovedTemplate,
+    subjectBuilder: (p) => `Return Pickup Scheduled for ${p.pickupDate || 'Soon'}: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  RETURN_PICKUP_COMPLETED: {
+    component: ReturnCompletedTemplate,
+    subjectBuilder: (p) => `Return Pickup Completed: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  RETURN_REFUND_COMPLETED: {
+    component: ReturnCompletedTemplate,
+    subjectBuilder: (p) => `Return Refund Completed: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
   RETURN_COMPLETED: {
     component: ReturnCompletedTemplate,
     subjectBuilder: (p) => `Return Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
@@ -118,6 +145,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   REFUND_COMPLETED: {
     component: ReturnCompletedTemplate,
     subjectBuilder: (p) => `Refund Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  INACTIVE_USER: {
+    component: WelcomeTemplate,
+    subjectBuilder: () => `Explore the Archival Collection | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
   WALLET_CREDITED: {
@@ -153,6 +185,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   ACCOUNT_UPDATED: {
     component: WelcomeTemplate,
     subjectBuilder: () => `Account Security & Profile Updated | GODSMOVE`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  INVOICE_REQUEST: {
+    component: InvoiceRequestTemplate,
+    subjectBuilder: () => `Your GODSMOVE Tax Invoice`,
     senderConfig: DEFAULT_SENDER,
   },
   NEWSLETTER: {

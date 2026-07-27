@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 768 >>
+stream
+BT
+/F1 10 Tf
+36 750 Td
+14 TL
+(GODSMOVE CLOTHING PRIVATE LIMITED - TAX INVOICE) Tj T*
+(================================================) Tj T*
+(Invoice Number: INV-TEST-026420) Tj T*
+(Order Number: TEST-026420) Tj T*
+(Date: 2026-07-27) Tj T*
+(Customer: Test Collector support@godsmove.in) Tj T*
+(Payment Method: COD | Payment Status: PAID) Tj T*
+(------------------------------------------------) Tj T*
+(ITEMS:) Tj T*
+( - PRIMAL OVERSIZED TEE [L] x1 @ Rs.3999 = Rs.3999) Tj T*
+(------------------------------------------------) Tj T*
+(Subtotal: Rs.3999) Tj T*
+(Discount: -Rs.500) Tj T*
+(Wallet Credits: -Rs.200) Tj T*
+(Shipping: Rs.0) Tj T*
+(Grand Total: Rs.3299) Tj T*
+(================================================) Tj T*
+(Official GODSMOVE Tax Document) Tj T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000246 00000 n 
+0000000305 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1129
+%%EOF

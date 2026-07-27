@@ -29,6 +29,20 @@ export async function updateMyProfile(data: {
     },
   });
 
+  (async () => {
+    try {
+      const { NotificationService } = await import('@/notifications/notification.service');
+      const fullName = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || 'Collector';
+      await NotificationService.dispatch({
+        event: 'ACCOUNT_UPDATED',
+        recipient: { email: updated.email, name: fullName, userId: user.id },
+        payload: { customerName: fullName, email: updated.email },
+      });
+    } catch (err) {
+      console.error('Non-critical notification error on profile update:', err);
+    }
+  })();
+
   revalidatePath('/profile');
   return updated;
 }

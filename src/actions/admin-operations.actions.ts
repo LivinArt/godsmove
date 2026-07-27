@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { NotificationService } from '@/lib/notification';
+import { NotificationService } from '@/notifications/notification.service';
 import { LogisticsService, calculateETA } from '@/lib/logistics';
 
 // Helper to verify admin permissions

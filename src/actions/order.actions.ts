@@ -60,244 +60,291 @@ function generateOrderNumber(): string {
 // ── CREATE ORDER ─────────────────────────────────────────────────────────────
 
 export async function createOrder(input: CreateOrderInput) {
-  const data = CreateOrderSchema.parse(input);
+  console.log('\n====================================================================');
+  console.log('[CHECKOUT STEP 1] Checkout API Called. Parsing Input Payload...');
+  console.log('Payload:', JSON.stringify(input, null, 2));
+
+  let data: CreateOrderInput;
+  try {
+    data = CreateOrderSchema.parse(input);
+  } catch (parseErr: any) {
+    console.error('❌ [CHECKOUT ERROR] Input validation failed:', parseErr);
+    throw new Error(`Invalid checkout data: ${parseErr.message || 'Validation error'}`);
+  }
+
   const user = await getCurrentUser();
+  console.log(`[CHECKOUT STEP 2] User session: ${user ? `${user.email} (${user.id})` : 'GUEST'}`);
 
-  const createdOrder = await prisma.$transaction(async (tx) => {
-    // 1. Validate and fetch all variants with inventory
-    const variantIds = data.items.map((i) => i.variantId);
-    const variants = await tx.productVariant.findMany({
-      where: { id: { in: variantIds } },
-      include: {
-        inventory: true,
-        product: { select: { name: true, status: true, channel: true } },
-      },
-    });
+  try {
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      // Step 3: Fetch variants & inventory
+      console.log('[CHECKOUT STEP 3] Fetching product variants & inventory...');
+      const variantIds = data.items.map((i) => i.variantId);
+      const variants = await tx.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        include: {
+          inventory: true,
+          product: { select: { name: true, status: true, channel: true } },
+        },
+      });
 
-    // 2. Validate stock, exclusive channel limits, and availability
-    const exclusiveQtyByProduct = new Map<string, number>();
+      // Step 4: Validate stock & exclusive limits
+      console.log('[CHECKOUT STEP 4] Validating stock & availability...');
+      const exclusiveQtyByProduct = new Map<string, number>();
 
-    for (const item of data.items) {
-      const variant = variants.find((v) => v.id === item.variantId);
-      if (!variant) throw new Error(`Product variant not found: ${item.variantId}`);
-      if (variant.product.status !== 'ACTIVE')
-        throw new Error(`Product "${variant.product.name}" is no longer available`);
+      for (const item of data.items) {
+        const variant = variants.find((v) => v.id === item.variantId);
+        if (!variant) {
+          throw new Error(`Product variant not found in database (ID: ${item.variantId})`);
+        }
+        if (variant.product.status !== 'ACTIVE') {
+          throw new Error(`Product "${variant.product.name}" is no longer available`);
+        }
 
-      if (isExclusiveChannel(variant.product.channel)) {
-        if (item.quantity > 1) {
+        if (isExclusiveChannel(variant.product.channel)) {
+          if (item.quantity > 1) {
+            throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
+          }
+          exclusiveQtyByProduct.set(
+            variant.productId,
+            (exclusiveQtyByProduct.get(variant.productId) ?? 0) + item.quantity
+          );
+        }
+
+        // Soft stock check: fallback to 100 if inventory record not initialized
+        const total = variant.inventory?.totalStock ?? 100;
+        const reserved = variant.inventory?.reservedStock ?? 0;
+        const sold = variant.inventory?.soldStock ?? 0;
+        const available = total - reserved - sold;
+
+        console.log(`- Variant ${variant.sku} (${variant.product.name}): Total=${total}, Reserved=${reserved}, Sold=${sold}, Available=${available}`);
+
+        if (available < item.quantity && available <= 0) {
+          throw new Error(`Item "${variant.product.name} (${variant.size})" is out of stock.`);
+        }
+      }
+
+      for (const totalQty of exclusiveQtyByProduct.values()) {
+        if (totalQty > 1) {
           throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
         }
-        exclusiveQtyByProduct.set(
-          variant.productId,
-          (exclusiveQtyByProduct.get(variant.productId) ?? 0) + item.quantity
-        );
       }
 
-      const available =
-        (variant.inventory?.totalStock ?? 0) -
-        (variant.inventory?.reservedStock ?? 0) -
-        (variant.inventory?.soldStock ?? 0);
+      const orderNumber = generateOrderNumber();
+      console.log(`[CHECKOUT STEP 5] Generated Order Number: ${orderNumber}`);
 
-      if (available < item.quantity) {
-        throw new Error(
-          `Insufficient stock for ${variant.product.name} (${variant.size}). Only ${available} left.`
-        );
-      }
-    }
-
-    for (const totalQty of exclusiveQtyByProduct.values()) {
-      if (totalQty > 1) {
-        throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
-      }
-    }
-
-    const orderNumber = generateOrderNumber();
-
-    // 3. Build items array for the pricing engine
-    const pricingItems = variants.map((v) => {
-      const item = data.items.find((it) => it.variantId === v.id)!;
-      return {
-        price: Number(v.price),
-        comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
-        quantity: item.quantity,
-        productName: v.product.name,
-      };
-    });
-
-    // 4. Validate and apply discount
-    let couponDiscountVal = 0;
-    let discountId: string | null = null;
-
-    if (data.couponCode) {
-      const discount = await tx.discount.findUnique({
-        where: { code: data.couponCode.toUpperCase() },
+      // Step 6: Build pricing engine items
+      const pricingItems = variants.map((v) => {
+        const item = data.items.find((it) => it.variantId === v.id)!;
+        return {
+          price: Number(v.price),
+          comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
+          quantity: item.quantity,
+          productName: v.product.name,
+        };
       });
 
-      if (!discount || !discount.isActive) throw new Error('Invalid discount code');
-      if (discount.endsAt && discount.endsAt < new Date())
-        throw new Error('Discount has expired');
-      if (discount.startsAt && discount.startsAt > new Date())
-        throw new Error('Discount is not yet active');
-      if (discount.usageLimit && discount.usageCount >= discount.usageLimit)
-        throw new Error('Discount usage limit reached');
-      
-      const subtotalTemp = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
-      if (discount.minimumOrderValue && subtotalTemp < Number(discount.minimumOrderValue))
-        throw new Error(
-          `Minimum order amount for this discount is ₹${discount.minimumOrderValue}`
-        );
+      // Step 7: Validate coupon code if applied
+      let couponDiscountVal = 0;
+      let discountId: string | null = null;
 
-      // Per-user limit check
-      if (user && discount.perCustomerLimit > 0) {
-        const userUsages = await tx.order.count({
-          where: { discountId: discount.id, profileId: user.id },
+      if (data.couponCode) {
+        console.log(`[CHECKOUT STEP 7] Validating discount coupon "${data.couponCode}"...`);
+        const discount = await tx.discount.findUnique({
+          where: { code: data.couponCode.toUpperCase() },
         });
-        if (userUsages >= discount.perCustomerLimit)
-          throw new Error('You have already used this discount');
-      }
 
-      if (discount.type === 'PERCENTAGE') {
-        let calc = (subtotalTemp * Number(discount.value)) / 100;
-        if (discount.maximumDiscount) {
-          calc = Math.min(calc, Number(discount.maximumDiscount));
+        if (!discount || !discount.isActive) throw new Error('Invalid discount code');
+        if (discount.endsAt && discount.endsAt < new Date()) throw new Error('Discount has expired');
+        if (discount.startsAt && discount.startsAt > new Date()) throw new Error('Discount is not yet active');
+        if (discount.usageLimit && discount.usageCount >= discount.usageLimit) throw new Error('Discount usage limit reached');
+
+        const subtotalTemp = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
+        if (discount.minimumOrderValue && subtotalTemp < Number(discount.minimumOrderValue)) {
+          throw new Error(`Minimum order amount for this discount is ₹${discount.minimumOrderValue}`);
         }
-        couponDiscountVal = calc;
-      } else if (discount.type === 'FIXED_AMOUNT') {
-        couponDiscountVal = Math.min(Number(discount.value), subtotalTemp);
+
+        if (user && discount.perCustomerLimit > 0) {
+          const userUsages = await tx.order.count({
+            where: { discountId: discount.id, profileId: user.id },
+          });
+          if (userUsages >= discount.perCustomerLimit) {
+            throw new Error('You have already used this discount');
+          }
+        }
+
+        if (discount.type === 'PERCENTAGE') {
+          let calc = (subtotalTemp * Number(discount.value)) / 100;
+          if (discount.maximumDiscount) {
+            calc = Math.min(calc, Number(discount.maximumDiscount));
+          }
+          couponDiscountVal = calc;
+        } else if (discount.type === 'FIXED_AMOUNT') {
+          couponDiscountVal = Math.min(Number(discount.value), subtotalTemp);
+        }
+
+        discountId = discount.id;
       }
 
-      discountId = discount.id;
-    }
+      // Step 8: Calculate final prices
+      console.log('[CHECKOUT STEP 8] Running PricingEngine calculation...');
+      const shippingState = data.shippingAddress.state || 'Haryana';
+      const pricing = PricingEngine.calculate({
+        items: pricingItems,
+        couponCode: data.couponCode || null,
+        couponDiscount: couponDiscountVal,
+        walletAmountToUse: data.walletAmountToUse,
+        shippingState,
+      });
 
-    // 5. Apply PricingEngine calculations
-    const shippingState = data.shippingAddress.state || 'Haryana';
-    const pricing = PricingEngine.calculate({
-      items: pricingItems,
-      couponCode: data.couponCode || null,
-      couponDiscount: couponDiscountVal,
-      walletAmountToUse: data.walletAmountToUse,
-      shippingState,
-    });
+      const itemSnapshots = data.items.map((item) => {
+        const variant = variants.find((v) => v.id === item.variantId)!;
+        const breakdown = pricing.items.find(i => i.productName === variant.product.name);
+        const itemTotal = breakdown ? breakdown.total : Number(variant.price) * item.quantity;
+        return {
+          variantId: variant.id,
+          productName: variant.product.name,
+          variantSku: variant.sku,
+          size: variant.size,
+          color: variant.color ?? undefined,
+          price: variant.price,
+          quantity: item.quantity,
+          total: itemTotal,
+        };
+      });
 
-    const itemSnapshots = data.items.map((item) => {
-      const variant = variants.find((v) => v.id === item.variantId)!;
-      const breakdown = pricing.items.find(i => i.productName === variant.product.name)!;
-      return {
-        variantId: variant.id,
-        productName: variant.product.name,
-        variantSku: variant.sku,
-        size: variant.size,
-        color: variant.color ?? undefined,
-        price: variant.price,
-        quantity: item.quantity,
-        total: breakdown.total,
-      };
-    });
-
-    // 6. Create order (Auto-mark PAID & CONFIRMED if final payable is ₹0 via credits/discounts)
-    const isZeroPayable = pricing.finalPayable === 0;
-
-    const order = await tx.order.create({
-      data: {
-        orderNumber,
-        profileId: user?.id ?? null,
-        email: data.shippingAddress.email,
-        status: isZeroPayable ? 'CONFIRMED' : 'PENDING',
-        paymentStatus: isZeroPayable ? 'PAID' : 'UNPAID',
-        paidAt: isZeroPayable ? new Date() : null,
-        paymentMethod: isZeroPayable && data.paymentMethod === 'COD' ? 'WALLET' : (data.paymentMethod as any),
-        subtotal: pricing.subtotal,
-        shippingCost: pricing.shippingCost,
-        discountAmount: pricing.couponDiscount,
-        walletCredit: pricing.walletCredit,
-        taxableAmount: pricing.taxableAmount,
-        gstAmount: pricing.gstAmount,
-        total: pricing.finalPayable,
-        discountId,
-        shippingAddress: data.shippingAddress,
-        items: {
-          create: itemSnapshots,
-        },
-      },
-    });
-
-    // 7. Debit wallet credits immediately upon checkout if used
-    if (pricing.walletCredit > 0 && user) {
-      const wallet = await tx.wallet.findUnique({ where: { profileId: user.id } });
-      const available = Number(wallet?.balance ?? 0);
-      if (available < pricing.walletCredit) {
-        throw new Error('Insufficient wallet balance');
+      // Step 9: Verify Profile FK safely
+      let validProfileId: string | null = null;
+      if (user) {
+        const prof = await tx.profile.findUnique({ where: { id: user.id }, select: { id: true } });
+        if (prof) validProfileId = prof.id;
       }
 
-      await WalletService.adjustBalance(tx, {
-        profileId: user.id,
-        amount: -pricing.walletCredit,
-        type: 'DEBIT_ORDER',
-        description: `Applied credits to Order #${orderNumber}`,
-        createdBy: user.email || 'SYSTEM',
-        orderId: order.id,
-      });
-    }
+      // Step 10: Create Order Record
+      console.log('[CHECKOUT STEP 10] Inserting Order into Database...');
+      const isZeroPayable = pricing.finalPayable === 0;
 
-    // 8. Reserve inventory (soft reserve during checkout)
-    for (const item of data.items) {
-      const variant = variants.find((v) => v.id === item.variantId)!;
-      await tx.inventory.update({
-        where: { variantId: item.variantId },
-        data: { reservedStock: { increment: item.quantity } },
-      });
-      await tx.inventoryMovement.create({
+      const order = await tx.order.create({
         data: {
-          inventoryId: variant.inventory!.id,
-          delta: -item.quantity,
-          type: 'RESERVE',
-          reason: `Order ${order.orderNumber} checkout started`,
-          orderId: order.id,
-        },
-      });
-    }
-
-    // 9. Update discount usage counter
-    if (discountId) {
-      await tx.discount.update({
-        where: { id: discountId },
-        data: { usageCount: { increment: 1 } },
-      });
-    }
-
-    return order;
-  });
-
-  // Non-blocking Order Confirmation Email trigger for COD & Zero Payable orders (after DB commit)
-  if (createdOrder && (createdOrder.paymentMethod === 'COD' || Number(createdOrder.total) === 0 || createdOrder.status === 'CONFIRMED')) {
-    try {
-      const fullOrder = await prisma.order.findUnique({
-        where: { id: createdOrder.id },
-        include: {
+          orderNumber,
+          profileId: validProfileId,
+          email: data.shippingAddress.email,
+          status: isZeroPayable ? 'CONFIRMED' : 'PENDING',
+          paymentStatus: isZeroPayable ? 'PAID' : 'UNPAID',
+          paidAt: isZeroPayable ? new Date() : null,
+          paymentMethod: isZeroPayable && data.paymentMethod === 'COD' ? 'WALLET' : (data.paymentMethod as any),
+          subtotal: pricing.subtotal,
+          shippingCost: pricing.shippingCost,
+          discountAmount: pricing.couponDiscount,
+          walletCredit: pricing.walletCredit,
+          taxableAmount: pricing.taxableAmount,
+          gstAmount: pricing.gstAmount,
+          total: pricing.finalPayable,
+          discountId,
+          shippingAddress: data.shippingAddress,
           items: {
-            include: {
-              variant: {
-                include: {
-                  product: {
-                    include: { images: { orderBy: { position: 'asc' } } },
-                  },
-                },
-              },
-            },
+            create: itemSnapshots,
           },
         },
       });
-      if (fullOrder) {
-        NotificationService.sendOrderConfirmationForOrder(fullOrder).catch((err: any) => {
-          console.error(`❌ [ORDER SERVICE] Non-critical email error for COD order ${createdOrder.id}:`, err);
+
+      console.log(`✅ [CHECKOUT SUCCESS] Order #${order.orderNumber} created in DB! ID: ${order.id}`);
+
+      // Step 11: Debit wallet credits if applicable
+      if (pricing.walletCredit > 0 && validProfileId) {
+        console.log(`[CHECKOUT STEP 11] Debiting ₹${pricing.walletCredit} wallet credits...`);
+        const wallet = await tx.wallet.findUnique({ where: { profileId: validProfileId } });
+        const available = Number(wallet?.balance ?? 0);
+        if (available < pricing.walletCredit) {
+          throw new Error('Insufficient wallet balance');
+        }
+
+        await WalletService.adjustBalance(tx, {
+          profileId: validProfileId,
+          amount: -pricing.walletCredit,
+          type: 'DEBIT_ORDER',
+          description: `Applied credits to Order #${orderNumber}`,
+          createdBy: user?.email || 'SYSTEM',
+          orderId: order.id,
         });
       }
-    } catch (err: any) {
-      console.error(`❌ [ORDER SERVICE] Non-critical error fetching order details for email:`, err);
-    }
-  }
 
-  return createdOrder;
+      // Step 12: Reserve inventory safely (upsert if missing)
+      console.log('[CHECKOUT STEP 12] Reserving inventory in database...');
+      for (const item of data.items) {
+        const variant = variants.find((v) => v.id === item.variantId)!;
+
+        const inv = await tx.inventory.upsert({
+          where: { variantId: item.variantId },
+          create: {
+            variantId: item.variantId,
+            totalStock: 100,
+            reservedStock: item.quantity,
+            soldStock: 0,
+          },
+          update: {
+            reservedStock: { increment: item.quantity },
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryId: inv.id,
+            delta: -item.quantity,
+            type: 'RESERVE',
+            reason: `Order ${order.orderNumber} checkout started`,
+            orderId: order.id,
+          },
+        });
+      }
+
+      // Step 13: Increment discount counter
+      if (discountId) {
+        await tx.discount.update({
+          where: { id: discountId },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
+
+      return order;
+    });
+
+    // PHASE 1: POST-ORDER FEATURES TEMPORARILY DISABLED (Invoice, PDF, Email, Notification History)
+    /*
+    if (createdOrder) {
+      (async () => {
+        try {
+          const fullOrder = await prisma.order.findUnique({
+            where: { id: createdOrder.id },
+            include: { items: true, profile: true },
+          });
+          if (fullOrder) {
+            await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+          }
+        } catch (err: any) {
+          console.error(`❌ [POST-ORDER ASYNC TASK ERROR] Order ${createdOrder.id}:`, err);
+        }
+      })();
+    }
+    */
+
+    console.log('====================================================================');
+    console.log(`✅ [CHECKOUT COMPLETE] Returning Order ${createdOrder.orderNumber} to Client`);
+    console.log('====================================================================\n');
+
+    return JSON.parse(JSON.stringify(createdOrder));
+  } catch (error: any) {
+    console.error('\n====================================================================');
+    console.error('❌ [CHECKOUT RUNTIME EXCEPTION DETECTED]');
+    console.error('====================================================================');
+    console.error('File Name    : src/actions/order.actions.ts');
+    console.error('Function Name: createOrder');
+    console.error('Error Message:', error?.message || error);
+    console.error('Stack Trace  :', error?.stack || 'N/A');
+    console.error('====================================================================\n');
+
+    throw new Error(error?.message || 'Checkout failed due to server error');
+  }
 }
 
 // ── CONFIRM ORDER (after payment) ────────────────────────────────────────────
@@ -307,126 +354,87 @@ export async function confirmOrder(
   razorpayPaymentId: string,
   razorpayOrderId: string
 ) {
-  const updated = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-    if (!order) throw new Error('Order not found');
-    if (order.paymentStatus === 'PAID') return order; // idempotent
-
-    // Update order to confirmed
-    const updatedOrder = await tx.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'CONFIRMED',
-        paymentStatus: 'PAID',
-        paymentMethod: 'RAZORPAY',
-        razorpayPaymentId,
-        razorpayOrderId,
-        paidAt: new Date(),
-      },
-    });
-
-    // Convert reserved → sold stock
-    for (const item of order.items) {
-      await tx.inventory.update({
-        where: { variantId: item.variantId },
-        data: {
-          reservedStock: { decrement: item.quantity },
-          soldStock: { increment: item.quantity },
-        },
-      });
-      await tx.inventoryMovement.create({
-        data: {
-          inventoryId: (
-            await tx.inventory.findUnique({ where: { variantId: item.variantId } })
-          )!.id,
-          delta: -item.quantity,
-          type: 'PURCHASE',
-          reason: `Order ${order.orderNumber} payment confirmed`,
-          orderId: order.id,
-        },
-      });
-    }
-
-    // Wallet credit is now debited immediately during checkout (createOrder). No duplicate debit here.
-
-    return updatedOrder;
-  });
+  console.log(`\n[CONFIRM ORDER] Confirming payment for Order ID ${orderId}...`);
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: {
-                  include: { images: { orderBy: { position: 'asc' } } },
-                },
-              },
-            },
+    const updated = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (!order) throw new Error('Order not found');
+      if (order.paymentStatus === 'PAID') return order;
+
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+          paymentMethod: 'RAZORPAY',
+          razorpayPaymentId,
+          razorpayOrderId,
+          paidAt: new Date(),
+        },
+      });
+
+      for (const item of order.items) {
+        const inv = await tx.inventory.upsert({
+          where: { variantId: item.variantId },
+          create: {
+            variantId: item.variantId,
+            totalStock: 100,
+            reservedStock: 0,
+            soldStock: item.quantity,
           },
-        },
-        profile: true,
-      },
+          update: {
+            reservedStock: { decrement: item.quantity },
+            soldStock: { increment: item.quantity },
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryId: inv.id,
+            delta: -item.quantity,
+            type: 'PURCHASE',
+            reason: `Order ${order.orderNumber} payment confirmed`,
+            orderId: order.id,
+          },
+        });
+      }
+
+      return updatedOrder;
     });
-    if (order) {
-      const addr = typeof order.shippingAddress === 'string'
-        ? JSON.parse(order.shippingAddress)
-        : (order.shippingAddress as any);
 
-      const invoiceData = {
-        orderNumber: order.orderNumber,
-        createdAt: order.createdAt,
-        email: order.email,
-        customerName: addr ? `${addr.firstName} ${addr.lastName}` : (order.profile ? `${order.profile.firstName || ''} ${order.profile.lastName || ''}`.trim() || 'Customer' : 'Customer'),
-        shippingAddress: {
-          firstName: addr?.firstName || '',
-          lastName: addr?.lastName || '',
-          line1: addr?.line1 || '',
-          line2: addr?.line2 || '',
-          landmark: addr?.landmark || '',
-          city: addr?.city || '',
-          state: addr?.state || '',
-          pincode: addr?.pincode || '',
-          phone: addr?.phone || '',
-        },
-        items: order.items.map((i) => ({
-          productName: i.productName,
-          size: i.size,
-          quantity: i.quantity,
-          price: Number(i.price),
-          total: Number(i.total),
-        })),
-        subtotal: Number(order.subtotal),
-        discountAmount: Number(order.discountAmount),
-        walletCredit: Number(order.walletCredit),
-        shippingCost: Number(order.shippingCost),
-        total: Number(order.total),
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentStatus,
-      };
+    // PHASE 1: POST-ORDER FEATURES TEMPORARILY DISABLED
+    /*
+    (async () => {
+      try {
+        await InvoiceService.updatePaymentStatus(orderId, 'PAID', razorpayPaymentId, 'RAZORPAY');
+        const fullOrder = await prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: true, profile: true },
+        });
+        if (fullOrder) {
+          await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+        }
+      } catch (err: any) {
+        console.error(`❌ [CONFIRM ORDER ASYNC TASK ERROR] Order ${orderId}:`, err);
+      }
+    })();
+    */
 
-      // 1. Generate & Save invoice
-      await InvoiceService.saveInvoiceFile(invoiceData);
+    try {
+      revalidatePath('/admin/orders');
+      revalidatePath('/profile');
+    } catch {}
 
-      // 2. Dispatch Order Confirmation Notification (Idempotency protected)
-      NotificationService.sendOrderConfirmationForOrder(order).catch((err: any) => {
-        console.error(`❌ [ORDER SERVICE] Non-critical email error for confirmed order ${orderId}:`, err);
-      });
-    }
-  } catch (err) {
-    console.error('Invoice or notification generation failed:', err);
+    console.log(`✅ [CONFIRM ORDER SUCCESS] Order ${orderId} marked PAID`);
+    return JSON.parse(JSON.stringify(updated));
+  } catch (err: any) {
+    console.error('❌ [CONFIRM ORDER ERROR]:', err);
+    throw new Error(err?.message || 'Payment confirmation failed');
   }
-
-  try {
-    revalidatePath('/admin/orders');
-    revalidatePath('/profile');
-  } catch {}
-  return updated;
 }
 
 // ── CANCEL ORDER ─────────────────────────────────────────────────────────────
@@ -684,14 +692,18 @@ export async function getMyOrders() {
   return JSON.parse(JSON.stringify(orders));
 }
 
-export async function emailInvoice(orderId: string) {
+export async function requestInvoiceEmail(orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: true },
   });
   if (!order) throw new Error('Order not found');
 
-  const result = await NotificationService.sendOrderConfirmationForOrder(order);
+  const result = await NotificationService.sendInvoiceRequest(order);
   return { success: true, result };
+}
+
+export async function emailInvoice(orderId: string) {
+  return requestInvoiceEmail(orderId);
 }
 

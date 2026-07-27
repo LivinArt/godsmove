@@ -405,36 +405,17 @@ export async function adjustCustomerWallet(
 ) {
   await requireAdmin();
 
-  return prisma.$transaction(async (tx) => {
-    let wallet = await tx.wallet.findUnique({
-      where: { profileId },
-    });
-
-    if (!wallet) {
-      wallet = await tx.wallet.create({
-        data: { profileId },
-      });
-    }
-
-    const updated = await tx.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        balance: { increment: amount },
-      },
-    });
-
-    await tx.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        amount,
-        type: type as any,
-        description,
-      },
-    });
-
-    revalidatePath(`/admin/customers/${profileId}`);
-    return { success: true, balance: Number(updated.balance) };
+  const { WalletService } = await import('@/lib/wallet-service');
+  const res = await WalletService.adjustBalanceDirect({
+    profileId,
+    amount,
+    type: type as any,
+    description,
+    createdBy: 'ADMIN',
   });
+
+  revalidatePath(`/admin/customers/${profileId}`);
+  return { success: true, balance: Number(res.wallet.balance) };
 }
 
 export async function updateCustomerSecurity(id: string, action: 'block' | 'unblock' | 'logout' | 'delete') {

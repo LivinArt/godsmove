@@ -545,12 +545,31 @@ model Order {
   shipments      Shipment[]
   returnRequests ReturnRequest[]
   walletTxns     WalletTransaction[]
+  invoice        Invoice?
 
   @@index([profileId])
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
   @@map("orders")
+}
+
+model Invoice {
+  id               String        @id @default(cuid())
+  orderId          String        @unique
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  invoiceNumber    String        @unique
+  invoiceVersion   Int           @default(1)
+  htmlPath         String
+  pdfPath          String
+  paymentStatus    PaymentStatus @default(UNPAID)
+  paymentMethod    PaymentMethod @default(RAZORPAY)
+  transactionId    String?
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("invoices")
 }
 
 model OrderItem {
@@ -1248,6 +1267,7 @@ model CustomerTag {
 
 model NotificationHistory {
   id                String             @id @default(cuid())
+  idempotencyKey    String?            @unique
   profileId         String?
   email             String
   phone             String?
@@ -1261,13 +1281,18 @@ model NotificationHistory {
   status            NotificationStatus @default(SENT)
   subject           String?
   payloadJson       String?            @db.Text
+  attachmentNames   String[]           @default([])
+  retryCount        Int                @default(0)
   error             String?
   createdAt         DateTime           @default(now())
+  sentAt            DateTime?
+  failedAt          DateTime?
 
   @@index([profileId])
   @@index([email])
   @@index([campaignId])
   @@index([eventType])
+  @@index([idempotencyKey])
   @@map("notification_history")
 }
 

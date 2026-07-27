@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { prisma } from './prisma';
 
 export interface InvoiceItemData {
   productCode?: string;
@@ -20,6 +21,7 @@ export interface InvoiceData {
   invoiceNumber?: string;
   invoiceDate?: Date;
   orderNumber: string;
+  orderId?: string;
   createdAt: Date;
   email: string;
   customerName: string;
@@ -44,9 +46,21 @@ export interface InvoiceData {
   total: number;
   paymentMethod: string;
   paymentStatus: string;
+  transactionId?: string | null;
 }
 
 export const InvoiceService = {
+  /**
+   * Secure private storage directory (OUTSIDE public web root)
+   */
+  getStorageDir(): string {
+    const storageDir = path.join(process.cwd(), 'storage', 'invoices');
+    if (!fs.existsSync(storageDir)) {
+      fs.mkdirSync(storageDir, { recursive: true });
+    }
+    return storageDir;
+  },
+
   /**
    * Generate official GODSMOVE Tax Invoice HTML with itemized GST splits
    */
@@ -63,7 +77,6 @@ export const InvoiceService = {
       }).format(dt || new Date());
     };
 
-    // Calculate GST splits per item
     let calculatedTaxableSubtotal = 0;
     let calculatedTotalGst = 0;
 
@@ -95,7 +108,7 @@ export const InvoiceService = {
             <td style="padding: 12px; text-align: right; font-size: 11px;">${formatINR(unitPrice)}</td>
             <td style="padding: 12px; text-align: right; font-size: 11px;">${formatINR(taxable)}</td>
             <td style="padding: 12px; text-align: right; font-size: 10px; color: #6E6B65;">
-              ${gstRate}%<br/>(CGST ${cgst} + SGST ${sgst})
+              ${gstRate}%<br/>(CGST ${formatINR(cgst)} + SGST ${formatINR(sgst)})
             </td>
             <td style="padding: 12px; text-align: right; font-size: 12px; font-weight: 700; color: #1A1918;">${formatINR(total)}</td>
           </tr>
@@ -105,6 +118,20 @@ export const InvoiceService = {
 
     const invoiceNum = data.invoiceNumber || `INV-${data.orderNumber}`;
     const invDate = data.invoiceDate || data.createdAt || new Date();
+
+    const discountRow = data.discountAmount > 0 ? `
+      <tr class="totals-row">
+        <td class="totals-label">COUPON DISCOUNT</td>
+        <td class="totals-val" style="color: #22C55E;">-${formatINR(data.discountAmount)}</td>
+      </tr>
+    ` : '';
+
+    const walletRow = data.walletCredit > 0 ? `
+      <tr class="totals-row">
+        <td class="totals-label">VAULT CREDITS APPLIED</td>
+        <td class="totals-val" style="color: #22C55E;">-${formatINR(data.walletCredit)}</td>
+      </tr>
+    ` : '';
 
     return `
       <!DOCTYPE html>
@@ -140,7 +167,7 @@ export const InvoiceService = {
             .inv-meta { font-size: 11px; color: #6E6B65; text-align: right; margin-top: 4px; line-height: 16px; }
             .divider { border-bottom: 1px solid #EAE5DB; margin: 20px 0; }
             .address-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
-            .address-cell { vertical-align: top; width: 33%; padding: 12px; backgroundColor: #FBF9F5; border-radius: 4px; border: 1px solid #F0ECE4; }
+            .address-cell { vertical-align: top; width: 48%; padding: 12px; background-color: #FBF9F5; border-radius: 4px; border: 1px solid #F0ECE4; }
             .address-title { font-size: 10px; font-weight: 800; letter-spacing: 0.15em; color: #C8A46A; text-transform: uppercase; margin-bottom: 8px; }
             .items-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 11px; }
             .items-table th { background-color: #F8F6F1; color: #1A1918; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 12px; border-bottom: 2px solid #EAE5DB; }
@@ -173,6 +200,7 @@ export const InvoiceService = {
                     <strong>DATE:</strong> ${formatDate(invDate)}<br/>
                     <strong>ORDER NO:</strong> ${data.orderNumber}<br/>
                     <strong>PAYMENT METHOD:</strong> ${data.paymentMethod} (${data.paymentStatus})
+                    ${data.transactionId ? `<br/><strong>TXN ID:</strong> ${data.transactionId}` : ''}
                   </div>
                 </td>
               </tr>
@@ -189,7 +217,7 @@ export const InvoiceService = {
                   Email: ${data.email}<br/>
                   ${data.customerPhone ? `Phone: ${data.customerPhone}` : ''}
                 </td>
-                <td style="width: 2%;"></td>
+                <td style="width: 4%;"></td>
                 <td class="address-cell">
                   <div class="address-title">SHIPPING DESTINATION</div>
                   <strong>${data.shippingAddress.firstName} ${data.shippingAddress.lastName}</strong><br/>
@@ -230,18 +258,8 @@ export const InvoiceService = {
                 <td class="totals-label">TOTAL GST (12% INCLUSIVE)</td>
                 <td class="totals-val">${formatINR(calculatedTotalGst)}</td>
               </tr>
-              {data.discountAmount > 0 && (
-                <tr class="totals-row">
-                  <td class="totals-label">COUPON DISCOUNT</td>
-                  <td class="totals-val" style="color: #22C55E;">-${formatINR(data.discountAmount)}</td>
-                </tr>
-              )}
-              {data.walletCredit > 0 && (
-                <tr class="totals-row">
-                  <td class="totals-label">VAULT CREDITS APPLIED</td>
-                  <td class="totals-val" style="color: #22C55E;">-${formatINR(data.walletCredit)}</td>
-                </tr>
-              )}
+              ${discountRow}
+              ${walletRow}
               <tr class="totals-row">
                 <td class="totals-label">SHIPPING (CONCIERGE)</td>
                 <td class="totals-val">${data.shippingCost === 0 ? 'COMPLIMENTARY' : formatINR(data.shippingCost)}</td>
@@ -254,7 +272,7 @@ export const InvoiceService = {
 
             <!-- FOOTER -->
             <div class="footer-info">
-              This is a computer-generated tax invoice issued by GODSMOVE CLOTHING PRIVATE LIMITED.<br/>
+              This is an official computer-generated tax invoice issued by GODSMOVE CLOTHING PRIVATE LIMITED.<br/>
               For concierge support, inquiries, or returns, contact support@godsmove.in | www.godsmove.in
             </div>
           </div>
@@ -264,17 +282,209 @@ export const InvoiceService = {
   },
 
   /**
-   * Save compiled Invoice HTML to filesystem for static hosting / download
+   * Generate a valid PDF binary buffer from Tax Invoice Data
+   */
+  generateInvoicePdfBuffer(data: InvoiceData, htmlContent: string): Buffer {
+    // Generate clean PDF document buffer for email attachments
+    const invoiceNum = data.invoiceNumber || `INV-${data.orderNumber}`;
+    const dateStr = new Date(data.createdAt || new Date()).toISOString().split('T')[0];
+    
+    // We construct a valid PDF 1.4 binary structure wrapping the Tax Invoice
+    const header = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
+    const pageObj = `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`;
+    const fontObj = `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`;
+    
+    const textLines = [
+      `GODSMOVE CLOTHING PRIVATE LIMITED - TAX INVOICE`,
+      `================================================`,
+      `Invoice Number: ${invoiceNum}`,
+      `Order Number: ${data.orderNumber}`,
+      `Date: ${dateStr}`,
+      `Customer: ${data.customerName} (${data.email})`,
+      `Payment Method: ${data.paymentMethod} | Payment Status: ${data.paymentStatus}`,
+      `------------------------------------------------`,
+      `ITEMS:`,
+      ...data.items.map(i => ` - ${i.productName} [${i.size}] x${i.quantity} @ Rs.${i.unitPrice || i.price || 0} = Rs.${i.totalPrice || i.total || 0}`),
+      `------------------------------------------------`,
+      `Subtotal: Rs.${data.subtotal}`,
+      `Discount: -Rs.${data.discountAmount}`,
+      `Wallet Credits: -Rs.${data.walletCredit}`,
+      `Shipping: Rs.${data.shippingCost}`,
+      `Grand Total: Rs.${data.total}`,
+      `================================================`,
+      `Official GODSMOVE Tax Document`
+    ];
+
+    let contentStream = `BT\n/F1 10 Tf\n36 750 Td\n14 TL\n`;
+    for (const line of textLines) {
+      const sanitized = line.replace(/[()]/g, '');
+      contentStream += `(${sanitized}) Tj T*\n`;
+    }
+    contentStream += `ET\n`;
+
+    const streamLength = contentStream.length;
+    const streamObj = `5 0 obj\n<< /Length ${streamLength} >>\nstream\n${contentStream}endstream\nendobj\n`;
+    
+    const pdfString = `${header}${pageObj}${fontObj}${streamObj}xref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000246 00000 n \n0000000305 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${(header + pageObj + fontObj + streamObj).length}\n%%EOF`;
+    
+    return Buffer.from(pdfString, 'utf-8');
+  },
+
+  /**
+   * Main Invoice Lifecycle Handler: Generate, store, and persist ONE invoice per order.
+   * If an invoice already exists for the order, updates it without duplication.
+   */
+  async generateAndStoreInvoice(order: any): Promise<{
+    invoiceRecord: any;
+    htmlContent: string;
+    pdfBuffer: Buffer;
+    htmlPath: string;
+    pdfPath: string;
+  }> {
+    const storageDir = this.getStorageDir();
+    const invoiceNumber = `INV-${order.orderNumber}`;
+
+    const addr = typeof order.shippingAddress === 'string'
+      ? JSON.parse(order.shippingAddress)
+      : (order.shippingAddress || {});
+
+    const customerName = addr.firstName
+      ? `${addr.firstName} ${addr.lastName || ''}`.trim()
+      : 'Valued Collector';
+
+    const items: InvoiceItemData[] = Array.isArray(order.items)
+      ? order.items.map((item: any, idx: number) => ({
+          productCode: item.productCode || `GM-ART-${(item.id || '').slice(-6).toUpperCase()}`,
+          productName: item.productName || item.name || 'GODSMOVE Statement Piece',
+          variantSku: item.variantSku || `GM-SKU-${idx + 1}`,
+          size: item.size || 'L',
+          color: item.color || undefined,
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price || 0),
+          total: Number(item.total || Number(item.price || 0) * Number(item.quantity || 1)),
+          unitPrice: Number(item.price || 0),
+          totalPrice: Number(item.total || Number(item.price || 0) * Number(item.quantity || 1)),
+        }))
+      : [];
+
+    const invoiceData: InvoiceData = {
+      invoiceNumber,
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      createdAt: order.createdAt || new Date(),
+      email: order.email,
+      customerName,
+      shippingAddress: {
+        firstName: addr.firstName || '',
+        lastName: addr.lastName || '',
+        line1: addr.line1 || '',
+        line2: addr.line2 || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        pincode: addr.pincode || '',
+        phone: addr.phone || '',
+      },
+      items,
+      subtotal: Number(order.subtotal || 0),
+      discountAmount: Number(order.discountAmount || 0),
+      walletCredit: Number(order.walletCredit || 0),
+      shippingCost: Number(order.shippingCost || 0),
+      total: Number(order.total || 0),
+      paymentMethod: order.paymentMethod || 'RAZORPAY',
+      paymentStatus: order.paymentStatus || 'UNPAID',
+      transactionId: order.razorpayPaymentId || null,
+    };
+
+    const htmlContent = this.generateInvoiceHtml(invoiceData);
+    const pdfBuffer = this.generateInvoicePdfBuffer(invoiceData, htmlContent);
+
+    const htmlFilename = `${invoiceNumber}.html`;
+    const pdfFilename = `${invoiceNumber}.pdf`;
+
+    const htmlPath = path.join(storageDir, htmlFilename);
+    const pdfPath = path.join(storageDir, pdfFilename);
+
+    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    fs.writeFileSync(pdfPath, pdfBuffer);
+
+    // Persist or Update database record permanently (Idempotent single invoice per order)
+    const existing = await prisma.invoice.findUnique({
+      where: { orderId: order.id },
+    });
+
+    let invoiceRecord;
+    if (existing) {
+      invoiceRecord = await prisma.invoice.update({
+        where: { id: existing.id },
+        data: {
+          invoiceVersion: { increment: 1 },
+          paymentStatus: order.paymentStatus || existing.paymentStatus,
+          paymentMethod: order.paymentMethod || existing.paymentMethod,
+          transactionId: order.razorpayPaymentId || existing.transactionId,
+          paidAt: order.paidAt || (order.paymentStatus === 'PAID' ? new Date() : existing.paidAt),
+          htmlPath,
+          pdfPath,
+        },
+      });
+    } else {
+      invoiceRecord = await prisma.invoice.create({
+        data: {
+          orderId: order.id,
+          invoiceNumber,
+          invoiceVersion: 1,
+          htmlPath,
+          pdfPath,
+          paymentStatus: order.paymentStatus || 'UNPAID',
+          paymentMethod: order.paymentMethod || 'RAZORPAY',
+          transactionId: order.razorpayPaymentId || null,
+          paidAt: order.paidAt || (order.paymentStatus === 'PAID' ? new Date() : null),
+        },
+      });
+    }
+
+    return {
+      invoiceRecord,
+      htmlContent,
+      pdfBuffer,
+      htmlPath,
+      pdfPath,
+    };
+  },
+
+  /**
+   * Update existing invoice upon Payment Confirmation (Razorpay / COD)
+   */
+  async updatePaymentStatus(
+    orderId: string,
+    paymentStatus: any,
+    transactionId?: string,
+    paymentMethod?: any
+  ) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) throw new Error(`Order ${orderId} not found`);
+
+    return this.generateAndStoreInvoice({
+      ...order,
+      paymentStatus: paymentStatus || 'PAID',
+      paymentMethod: paymentMethod || order.paymentMethod,
+      razorpayPaymentId: transactionId || order.razorpayPaymentId,
+      paidAt: new Date(),
+    });
+  },
+
+  /**
+   * Legacy helper alias
    */
   async saveInvoiceFile(data: InvoiceData): Promise<string> {
-    const html = this.generateInvoiceHtml(data);
-    const invoicesDir = path.join(process.cwd(), 'public', 'invoices');
-    if (!fs.existsSync(invoicesDir)) {
-      fs.mkdirSync(invoicesDir, { recursive: true });
-    }
+    const storageDir = this.getStorageDir();
     const filename = `invoice_${data.orderNumber}.html`;
-    const filePath = path.join(invoicesDir, filename);
+    const filePath = path.join(storageDir, filename);
+    const html = this.generateInvoiceHtml(data);
     fs.writeFileSync(filePath, html, 'utf8');
-    return `/invoices/${filename}`;
+    return filePath;
   },
 };

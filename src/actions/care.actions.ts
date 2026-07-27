@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import { NotificationService } from '@/lib/notification';
+import { NotificationService } from '@/notifications/notification.service';
 
 // Assert user is logged in
 async function getAuthedUser() {

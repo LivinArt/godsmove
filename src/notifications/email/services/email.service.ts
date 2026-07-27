@@ -7,10 +7,6 @@ import { NotificationLogger } from '../../logging/notification-logger.service';
 export class EmailService {
   /**
    * Template-Driven Email Dispatcher
-   *
-   * Automatically resolves the template, subject line, and sender identity from the
-   * central Template Registry based on the event type.
-   * Business logic NEVER imports individual templates directly.
    */
   static async sendNotification(
     event: NotificationEvent,
@@ -18,17 +14,30 @@ export class EmailService {
     payload: Record<string, any>
   ): Promise<SendEmailResponse> {
     const startTime = new Date();
+    const entityId = payload.orderId || payload.orderNumber || payload.returnId || payload.id || 'GENERIC';
+    const templateVersion = payload.templateVersion || 1;
+    const idempotencyKey = `${event}_${entityId}_${recipient.email}_v${templateVersion}`;
+
+    // Priority 6: Idempotency protection check
+    const isDuplicate = await NotificationLogger.checkIdempotent(idempotencyKey);
+    if (isDuplicate && !payload.forceResend) {
+      console.log(`ℹ️ [IDEMPOTENCY PROTECTION] Skipping duplicate dispatch for key: ${idempotencyKey}`);
+      return {
+        success: true,
+        id: `idempotent_skipped_${idempotencyKey}`,
+      };
+    }
+
+    const attachments = payload.attachments || [];
+    const attachmentNames = attachments.map((a: any) => a.filename || 'attachment.pdf');
 
     try {
-      // 1. Resolve active template definition from registry (supporting custom DB HTML overrides)
+      // 1. Resolve active template definition from registry
       const definition = await TemplateResolver.resolveAsync(event);
       const subject = definition.subjectBuilder(payload);
       const reactElement = React.createElement(definition.component, payload);
 
-      // 2. Extract attachments if present in payload
-      const attachments = payload.attachments || [];
-
-      // 3. Dispatch via Resend API with configured sender identity & attachments
+      // 2. Dispatch via Resend API with configured sender identity & attachments
       const result = await sendEmail({
         to: recipient.email,
         subject,
@@ -38,16 +47,23 @@ export class EmailService {
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
-      // 3. Log persistent audit entry
+      // 3. Write complete Delivery Log Record to database
       await NotificationLogger.log({
         event,
         channel: 'EMAIL',
         recipient: recipient.email,
+        profileId: recipient.userId,
         provider: 'RESEND',
         providerMessageId: result.id,
         status: result.success ? 'SUCCESS' : 'FAILED',
         timestamp: startTime,
         error: result.error,
+        idempotencyKey,
+        subject,
+        payloadJson: JSON.stringify({ event, recipient: recipient.email, entityId }),
+        attachmentNames,
+        templateId: event,
+        retryCount: payload.retryCount || 0,
       });
 
       return result;
@@ -58,10 +74,15 @@ export class EmailService {
         event,
         channel: 'EMAIL',
         recipient: recipient.email,
+        profileId: recipient.userId,
         provider: 'RESEND',
         status: 'FAILED',
         timestamp: startTime,
         error: err?.message || 'Uncaught template resolution or send error',
+        idempotencyKey,
+        attachmentNames,
+        templateId: event,
+        retryCount: payload.retryCount || 0,
       });
 
       return {
@@ -71,14 +92,14 @@ export class EmailService {
     }
   }
 
-  // ── BACKWARD COMPATIBILITY CONVENIENCE WRAPPERS ─────────────────────────────
+  // ── CONVENIENCE DISPATCH WRAPPERS ──────────────────────────────────────────
 
   static async sendOrderConfirmation(to: string, data: any): Promise<SendEmailResponse> {
     return this.sendNotification('ORDER_CREATED', { email: to, name: data.customerName }, data);
   }
 
   static async sendInvoice(to: string, data: any): Promise<SendEmailResponse> {
-    return this.sendNotification('ORDER_CREATED', { email: to, name: data.customerName }, data);
+    return this.sendNotification('INVOICE_REQUEST', { email: to, name: data.customerName }, data);
   }
 
   static async sendWalletCredit(to: string, data: any): Promise<SendEmailResponse> {

@@ -6,13 +6,6 @@ import {
 } from './types/notification.types';
 import { InvoiceService } from '@/lib/invoice';
 
-/**
- * PRODUCTION NOTIFICATION SERVICE ORCHESTRATOR
- *
- * Enterprise event-driven notification manager.
- * Routes business event dispatches to appropriate channel adapters
- * (Email, WhatsApp, Push) using central Template Registry.
- */
 export class NotificationService {
   /**
    * Unified Entry Point for All Business Event Dispatches
@@ -30,30 +23,16 @@ export class NotificationService {
     return results;
   }
 
-  /**
-   * Legacy alias for order confirmation test dispatches
-   */
   static async notifyOrderConfirmation(recipient: NotificationRecipient, payload: Record<string, any>) {
-    return this.dispatch({
-      event: 'ORDER_CREATED',
-      recipient,
-      payload,
-    });
+    return this.dispatch({ event: 'ORDER_CREATED', recipient, payload });
   }
 
-  /**
-   * Legacy alias for wallet credit test dispatches
-   */
   static async notifyWalletCredit(recipient: NotificationRecipient, payload: Record<string, any>) {
-    return this.dispatch({
-      event: 'WALLET_CREDITED',
-      recipient,
-      payload,
-    });
+    return this.dispatch({ event: 'WALLET_CREDITED', recipient, payload });
   }
 
   /**
-   * Helper method to map an Order record and dispatch ORDER_CREATED / ORDER_CONFIRMED with optional PDF invoice attachment
+   * Helper method to map an Order record and dispatch ORDER_CREATED / ORDER_CONFIRMED with stored PDF invoice attachment
    */
   static async sendOrderConfirmationForOrder(order: any, attachPdf: boolean = true) {
     if (!order || !order.id) {
@@ -94,103 +73,124 @@ export class NotificationService {
         }))
       : [];
 
-    const payload = {
-      customerName: recipientName,
-      orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
-      orderId: order.id,
-      orderDate: formattedDate,
-      items,
-      subtotal: Number(order.subtotal || 0),
-      shipping: Number(order.shippingCost || 0),
-      walletDiscount: Number(order.walletCredit || 0),
-      couponDiscount: Number(order.discountAmount || 0),
-      total: Number(order.total || 0),
-      shippingAddress: {
-        name: recipientName,
-        line1: addr.line1 || 'Address Line 1',
-        line2: addr.line2 || null,
-        city: addr.city || 'Mumbai',
-        state: addr.state || 'Maharashtra',
-        pincode: addr.pincode || '400050',
-        phone: addr.phone || '',
-      },
-      invoiceUrl: `https://godsmove.in/api/invoice/${order.id}`,
-    };
-
     try {
+      const invoiceResult = await InvoiceService.generateAndStoreInvoice(order);
+
+      const payload = {
+        customerName: recipientName,
+        orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
+        orderId: order.id,
+        orderDate: formattedDate,
+        items,
+        subtotal: Number(order.subtotal || 0),
+        shipping: Number(order.shippingCost || 0),
+        walletDiscount: Number(order.walletCredit || 0),
+        couponDiscount: Number(order.discountAmount || 0),
+        total: Number(order.total || 0),
+        shippingAddress: {
+          name: recipientName,
+          line1: addr.line1 || 'Address Line 1',
+          line2: addr.line2 || null,
+          city: addr.city || 'Mumbai',
+          state: addr.state || 'Maharashtra',
+          pincode: addr.pincode || '400050',
+          phone: addr.phone || '',
+        },
+        viewInvoiceUrl: `/api/invoice/view/${order.id}`,
+        downloadInvoiceUrl: `/api/invoice/download/${order.id}`,
+        attachments: attachPdf
+          ? [
+              {
+                filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`,
+                content: invoiceResult.pdfBuffer,
+              },
+            ]
+          : [],
+      };
+
       const recipient: NotificationRecipient = {
         email: targetEmail,
         name: recipientName,
         phone: addr.phone || undefined,
-      };
-
-      const invoiceData = {
-        invoiceNumber: `INV-${order.orderNumber}`,
-        orderNumber: order.orderNumber,
-        createdAt: order.createdAt || new Date(),
-        email: targetEmail,
-        customerName: recipientName,
-        shippingAddress: {
-          firstName: addr.firstName || 'Valued',
-          lastName: addr.lastName || 'Collector',
-          line1: addr.line1 || '',
-          line2: addr.line2 || '',
-          city: addr.city || '',
-          state: addr.state || '',
-          pincode: addr.pincode || '',
-          phone: addr.phone || '',
-        },
-        items: items.map((i: any) => ({
-          productName: i.title,
-          size: i.size,
-          quantity: i.quantity,
-          unitPrice: i.price,
-          totalPrice: i.price * i.quantity,
-        })),
-        subtotal: Number(order.subtotal || 0),
-        discountAmount: Number(order.discountAmount || 0),
-        walletCredit: Number(order.walletCredit || 0),
-        shippingCost: Number(order.shippingCost || 0),
-        total: Number(order.total || 0),
-        paymentMethod: order.paymentMethod || 'PREPAID',
-        paymentStatus: order.paymentStatus || 'PAID',
-      };
-
-      const invoiceHtmlContent = InvoiceService.generateInvoiceHtml(invoiceData);
-      await InvoiceService.saveInvoiceFile(invoiceData);
-
-      const fullPayload = {
-        ...payload,
-        attachments: [
-          {
-            filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.html`,
-            content: Buffer.from(invoiceHtmlContent, 'utf-8'),
-          },
-        ],
+        userId: order.profileId || undefined,
       };
 
       const eventKey = order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CREATED';
 
-      console.log(`[ORDER_CONFIRMED] Dispatching event "${eventKey}" for Order ${order.orderNumber} with Tax Invoice attachment...`);
+      console.log(`[ORDER_DISPATCH] Dispatching "${eventKey}" for Order ${order.orderNumber} with stored PDF invoice attachment...`);
 
-      const dispatchResult = await NotificationService.dispatch({
+      return await NotificationService.dispatch({
         event: eventKey,
         recipient,
-        payload: fullPayload,
+        payload,
       });
-
-      return dispatchResult;
     } catch (err: any) {
       console.error(`❌ [NOTIFICATION SERVICE] Order confirmation dispatch failed:`, err);
       return { success: false, error: err.message };
     }
   }
 
+  static async sendInvoiceRequest(order: any) {
+    if (!order || !order.id) {
+      throw new Error('Invalid order object');
+    }
+
+    const addr = typeof order.shippingAddress === 'string'
+      ? JSON.parse(order.shippingAddress)
+      : (order.shippingAddress || {});
+
+    const recipientName = addr.firstName
+      ? `${addr.firstName} ${addr.lastName || ''}`.trim()
+      : 'Valued Collector';
+
+    const targetEmail = order.email || addr.email;
+
+    const invoiceResult = await InvoiceService.generateAndStoreInvoice(order);
+
+    const payload = {
+      customerName: recipientName,
+      orderNumber: order.orderNumber,
+      invoiceNumber: invoiceResult.invoiceRecord.invoiceNumber,
+      orderDate: new Date(order.createdAt).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      total: Number(order.total || 0),
+      viewInvoiceUrl: `/api/invoice/view/${order.id}`,
+      downloadInvoiceUrl: `/api/invoice/download/${order.id}`,
+      attachments: [
+        {
+          filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`,
+          content: invoiceResult.pdfBuffer,
+        },
+      ],
+    };
+
+    return this.dispatch({
+      event: 'INVOICE_REQUEST',
+      recipient: {
+        email: targetEmail,
+        name: recipientName,
+        userId: order.profileId || undefined,
+      },
+      payload,
+    });
+  }
+
   static async sendOrderShipped(order: any, carrier: string, trackingNumber: string) {
     const recipient: NotificationRecipient = {
       email: order.email,
       name: order.email.split('@')[0] || 'Collector',
+      userId: order.profileId || undefined,
     };
+    
+    let attachments: any[] = [];
+    try {
+      const inv = await InvoiceService.generateAndStoreInvoice(order);
+      attachments = [{ filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`, content: inv.pdfBuffer }];
+    } catch {}
+
     return this.dispatch({
       event: 'ORDER_SHIPPED',
       recipient,
@@ -198,8 +198,25 @@ export class NotificationService {
         orderNumber: order.orderNumber,
         carrier,
         trackingNumber,
-        trackingUrl: 'https://godsmove.in/profile',
+        trackingUrl: '/profile?tab=collection',
+        attachments,
       },
+    });
+  }
+
+  static async sendShipmentCreated(to: string, orderNumber: string, carrier: string, trackingNumber: string, trackingUrl: string, estimatedDelivery: string) {
+    return this.dispatch({
+      event: 'ORDER_SHIPPED',
+      recipient: { email: to },
+      payload: { orderNumber, carrier, trackingNumber, trackingUrl, estimatedDelivery },
+    });
+  }
+
+  static async sendShipmentStatusUpdate(to: string, orderNumber: string, trackingNumber: string, status: string, location: string, description: string) {
+    return this.dispatch({
+      event: status === 'DELIVERED' ? 'ORDER_DELIVERED' : 'ORDER_SHIPPED',
+      recipient: { email: to },
+      payload: { orderNumber, trackingNumber, status, location, description },
     });
   }
 
@@ -207,11 +224,24 @@ export class NotificationService {
     const recipient: NotificationRecipient = {
       email: order.email,
       name: order.email.split('@')[0] || 'Collector',
+      userId: order.profileId || undefined,
     };
+
+    let attachments: any[] = [];
+    try {
+      const inv = await InvoiceService.generateAndStoreInvoice(order);
+      attachments = [{ filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`, content: inv.pdfBuffer }];
+    } catch {}
+
     return this.dispatch({
       event: 'ORDER_DELIVERED',
       recipient,
-      payload: { orderNumber: order.orderNumber },
+      payload: {
+        orderNumber: order.orderNumber,
+        attachments,
+        viewInvoiceUrl: `/api/invoice/view/${order.id}`,
+        downloadInvoiceUrl: `/api/invoice/download/${order.id}`,
+      },
     });
   }
 
@@ -219,6 +249,7 @@ export class NotificationService {
     const recipient: NotificationRecipient = {
       email: order.email,
       name: order.email.split('@')[0] || 'Collector',
+      userId: order.profileId || undefined,
     };
     return this.dispatch({
       event: 'ORDER_CANCELLED',
@@ -227,9 +258,176 @@ export class NotificationService {
     });
   }
 
+  static async sendReturnRequested(to: string, returnId: string, orderNumber: string) {
+    return this.dispatch({
+      event: 'RETURN_REQUESTED',
+      recipient: { email: to },
+      payload: { returnId, orderNumber },
+    });
+  }
+
+  static async sendReturnApproved(to: string, returnId: string, carrier?: string, trackingNumber?: string) {
+    return this.dispatch({
+      event: 'RETURN_APPROVED',
+      recipient: { email: to },
+      payload: { returnId, carrier, trackingNumber },
+    });
+  }
+
+  static async sendReturnReceived(to: string, returnId: string) {
+    return this.dispatch({
+      event: 'RETURN_APPROVED',
+      recipient: { email: to },
+      payload: { returnId },
+    });
+  }
+
+  static async sendReturnRefunded(to: string, returnId: string, amount: string, deductionHtml?: string) {
+    return this.dispatch({
+      event: 'REFUND_COMPLETED',
+      recipient: { email: to },
+      payload: { returnId, amount, deductionHtml },
+    });
+  }
+
+  static async sendReturnRejected(to: string, returnId: string, reason: string) {
+    return this.dispatch({
+      event: 'RETURN_REJECTED',
+      recipient: { email: to },
+      payload: { returnId, reason },
+    });
+  }
+
+  static async sendReturnPickupScheduled(to: string, returnId: string, pickupDate: string, carrier?: string) {
+    return this.dispatch({
+      event: 'RETURN_PICKUP_SCHEDULED',
+      recipient: { email: to },
+      payload: { returnId, pickupDate, carrier: carrier || 'Logistics Partner' },
+    });
+  }
+
+  static async sendReturnPickupCompleted(to: string, returnId: string) {
+    return this.dispatch({
+      event: 'RETURN_PICKUP_COMPLETED',
+      recipient: { email: to },
+      payload: { returnId },
+    });
+  }
+
+  static async sendReturnRefundCompleted(to: string, returnId: string, amount: number) {
+    return this.dispatch({
+      event: 'RETURN_REFUND_COMPLETED',
+      recipient: { email: to },
+      payload: { returnId, amount },
+    });
+  }
+
+  static async sendReturnClosed(to: string, returnId: string) {
+    return this.dispatch({
+      event: 'RETURN_REFUND_COMPLETED',
+      recipient: { email: to },
+      payload: { returnId },
+    });
+  }
+
+  static async sendProfileUpdated(email: string, name: string) {
+    return this.dispatch({
+      event: 'PROFILE_UPDATED',
+      recipient: { email, name },
+      payload: { customerName: name },
+    });
+  }
+
+  static async sendPaymentConfirmed(email: string, name: string, orderNumber: string, total: number, transactionId: string, orderId: string) {
+    return this.dispatch({
+      event: 'PAYMENT_CONFIRMED',
+      recipient: { email, name },
+      payload: {
+        customerName: name,
+        orderNumber,
+        total,
+        transactionId,
+        viewInvoiceUrl: `/api/invoice/view/${orderId}`,
+        downloadInvoiceUrl: `/api/invoice/download/${orderId}`,
+      },
+    });
+  }
+
+  static async sendPaymentFailed(email: string, name: string, orderNumber: string, reason?: string) {
+    return this.dispatch({
+      event: 'PAYMENT_FAILED',
+      recipient: { email, name },
+      payload: { customerName: name, orderNumber, reason: reason || 'Payment transaction was declined or interrupted.' },
+    });
+  }
+
+  static async sendInactiveUserNotice(email: string, name: string) {
+    return this.dispatch({
+      event: 'INACTIVE_USER',
+      recipient: { email, name },
+      payload: { customerName: name },
+    });
+  }
+
+  static async sendCareRequestSubmitted(to: string, requestId: string, productName: string, category: string) {
+    return this.dispatch({
+      event: 'ACCOUNT_UPDATED',
+      recipient: { email: to },
+      payload: { requestId, productName, category },
+    });
+  }
+
+  static async sendCareRequestApproved(to: string, requestId: string, totalCharge: string) {
+    return this.dispatch({
+      event: 'ACCOUNT_UPDATED',
+      recipient: { email: to },
+      payload: { requestId, totalCharge },
+    });
+  }
+
+  static async sendCareRequestRejected(to: string, requestId: string, reason: string) {
+    return this.dispatch({
+      event: 'ACCOUNT_UPDATED',
+      recipient: { email: to },
+      payload: { requestId, reason },
+    });
+  }
+
+  static async sendCarePaymentReceived(to: string, requestId: string, amount: string) {
+    return this.dispatch({
+      event: 'ACCOUNT_UPDATED',
+      recipient: { email: to },
+      payload: { requestId, amount },
+    });
+  }
+
+  static async sendCareStatusUpdate(to: string, requestId: string, status: string, description: string) {
+    return this.dispatch({
+      event: 'ACCOUNT_UPDATED',
+      recipient: { email: to },
+      payload: { requestId, status, description },
+    });
+  }
+
+  static async sendCustomEmail(to: string, subject: string, message: string) {
+    return this.dispatch({
+      event: 'NEWSLETTER',
+      recipient: { email: to },
+      payload: { headline: subject, message },
+    });
+  }
+
   static async sendWalletCredited(email: string, name: string, amount: number, newBalance: number) {
     return this.dispatch({
       event: 'WALLET_CREDITED',
+      recipient: { email, name },
+      payload: { amount, newBalance, customerName: name },
+    });
+  }
+
+  static async sendWalletDebited(email: string, name: string, amount: number, newBalance: number) {
+    return this.dispatch({
+      event: 'WALLET_DEBITED',
       recipient: { email, name },
       payload: { amount, newBalance, customerName: name },
     });
