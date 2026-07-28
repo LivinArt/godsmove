@@ -1333,6 +1333,14 @@ export async function approveAdminReturnRequest(
   });
   if (!ret) throw new Error('Return request not found');
 
+  const validPrecursor = ['APPROVED', 'REFUND_PROCESSED'].includes(ret.status);
+  if (!validPrecursor) {
+    throw new Error(
+      `Cannot schedule pickup: Current status is "${ret.status}". ` +
+      `Refund must be processed before scheduling pickup.`
+    );
+  }
+
   const provider = LogisticsService.getProvider(carrierName);
   const addr = typeof ret.order.shippingAddress === 'string'
     ? JSON.parse(ret.order.shippingAddress)
@@ -1351,11 +1359,11 @@ export async function approveAdminReturnRequest(
   });
 
   const updatedReturn = await prisma.$transaction(async (tx) => {
-    // 1. Update ReturnRequest Status to APPROVED
+    // 1. Update ReturnRequest Status to PICKUP_SCHEDULED
     const updated = await tx.returnRequest.update({
       where: { id: returnId },
       data: {
-        status: 'APPROVED',
+        status: 'PICKUP_SCHEDULED',
       },
     });
 
@@ -1370,21 +1378,21 @@ export async function approveAdminReturnRequest(
       },
     });
 
-    // 3. Create ReturnEvent for APPROVED
+    // 3. Create ReturnEvent for PICKUP_SCHEDULED
     await tx.returnEvent.create({
       data: {
         returnReqId: returnId,
-        status: 'APPROVED',
-        description: `Return request approved. Scheduled reverse pickup via carrier ${reversePickupResult.carrier}.`,
+        status: 'PICKUP_SCHEDULED',
+        description: `Reverse pickup scheduled via carrier ${reversePickupResult.carrier}. Tracking AWB: ${reversePickupResult.awb}.`,
       },
     });
 
-    // 4. Update returnStatus for order_items to APPROVED
+    // 4. Update returnStatus for order_items to PICKUP_SCHEDULED
     for (const item of ret.items) {
       await tx.orderItem.update({
         where: { id: item.orderItemId },
         data: {
-          returnStatus: 'APPROVED',
+          returnStatus: 'PICKUP_SCHEDULED',
         },
       });
     }
@@ -1392,16 +1400,16 @@ export async function approveAdminReturnRequest(
     return updated;
   });
 
-  // Dispatch return approval and reverse logistics notification email
+  // Dispatch reverse logistics pickup scheduled notification email
   try {
-    await NotificationService.sendReturnApproved(
+    await NotificationService.sendReturnPickupScheduled(
       ret.order.email,
       returnId,
-      reversePickupResult.carrier,
-      reversePickupResult.awb
+      'Tomorrow 10 AM - 2 PM',
+      reversePickupResult.carrier
     );
   } catch (err) {
-    console.error('Return approval notification failed:', err);
+    console.error('Return pickup notification failed:', err);
   }
 
   safeRevalidate(`/admin/returns/${returnId}`);

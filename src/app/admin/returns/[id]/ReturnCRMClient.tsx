@@ -340,12 +340,11 @@ export default function ReturnCRMClient({
             {(ret.status === 'PENDING' || ret.status === 'REQUESTED') && (
               <>
                 <div style={{ padding: '10px 14px', background: 'rgba(200,164,106,0.06)', border: '1px solid rgba(200,164,106,0.2)', borderRadius: 8, fontSize: 11, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-                  <strong style={{ color: 'var(--admin-accent)', display: 'block', marginBottom: 4 }}>New Workflow</strong>
-                  Approving will immediately present the Wallet Refund Calculator.
-                  Reverse pickup is scheduled <em>after</em> the refund is issued.
+                  <strong style={{ color: 'var(--admin-accent)', display: 'block', marginBottom: 4 }}>Workflow Order</strong>
+                  Approving will present the Wallet Refund Calculator. Pickup is scheduled after refund completion.
                 </div>
                 <button onClick={handleApproveReturn} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Approve Return Case
+                  Approve Return
                 </button>
                 <button onClick={() => handleStateUpdate('REQUESTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-accent)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   Request More Information
@@ -360,12 +359,12 @@ export default function ReturnCRMClient({
             {isPickupStage && (
               <>
                 <div style={{ padding: '10px 14px', background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 8, fontSize: 11, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-                  <strong style={{ color: '#22c55e', display: 'block', marginBottom: 4 }}>✓ Wallet Refund Issued</strong>
-                  Customer has been credited {formatINR(ret.creditAmount)}. Now schedule the reverse courier pickup.
+                  <strong style={{ color: '#22c55e', display: 'block', marginBottom: 4 }}>✓ Refund Processed</strong>
+                  Customer credited {formatINR(ret.creditAmount)}. Select courier partner to schedule reverse pickup.
                 </div>
                 <div style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '10px', background: 'var(--admin-surface-2)' }}>
                   <label style={{ fontSize: 10, color: 'var(--admin-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>
-                    Select Courier
+                    Select Courier Partner
                   </label>
                   <select
                     value={selectedCarrier}
@@ -378,7 +377,7 @@ export default function ReturnCRMClient({
                   </select>
                 </div>
                 <button onClick={handleSchedulePickup} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Schedule Courier Pickup
+                  Schedule Pickup
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
                   Cancel / Reject Case
@@ -390,7 +389,7 @@ export default function ReturnCRMClient({
             {ret.status === 'PICKUP_SCHEDULED' && (
               <>
                 <button onClick={() => handleStateUpdate('COLLECTED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Mark Package Collected
+                  Collected from Customer
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
                   Cancel / Reject Case
@@ -402,7 +401,7 @@ export default function ReturnCRMClient({
             {ret.status === 'COLLECTED' && (
               <>
                 <button onClick={() => handleQCUpdate('RECEIVED')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Mark Package Received at Warehouse
+                  Received at Warehouse
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
                   Cancel / Reject Case
@@ -414,7 +413,7 @@ export default function ReturnCRMClient({
             {ret.status === 'RECEIVED' && (
               <>
                 <button onClick={() => handleQCUpdate('INSPECTION')} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Initiate QC Quality Check
+                  QC Quality Check Initiated
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
                   Cancel / Reject Case
@@ -426,7 +425,7 @@ export default function ReturnCRMClient({
             {ret.status === 'INSPECTION' && (
               <>
                 <button onClick={handleCompleteCase} disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Complete Quality Check (QC Pass)
+                  Return Completed
                 </button>
                 <button onClick={() => handleQCUpdate('REJECTED')} disabled={loading} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--admin-danger)', border: '1px solid rgba(255,107,107,0.2)' }}>
                   Reject / Fail QC Check
