@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { NotificationService } from '@/notifications/notification.service';
 
 async function getCurrentUser() {
   const supabase = await createClient();
@@ -31,13 +32,8 @@ export async function updateMyProfile(data: {
 
   (async () => {
     try {
-      const { NotificationService } = await import('@/notifications/notification.service');
       const fullName = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || 'Collector';
-      await NotificationService.dispatch({
-        event: 'ACCOUNT_UPDATED',
-        recipient: { email: updated.email, name: fullName, userId: user.id },
-        payload: { customerName: fullName, email: updated.email },
-      });
+      await NotificationService.sendProfileUpdated(updated.email, fullName);
     } catch (err) {
       console.error('Non-critical notification error on profile update:', err);
     }

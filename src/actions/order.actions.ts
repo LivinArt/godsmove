@@ -309,8 +309,6 @@ export async function createOrder(input: CreateOrderInput) {
       return order;
     });
 
-    // PHASE 1: POST-ORDER FEATURES TEMPORARILY DISABLED (Invoice, PDF, Email, Notification History)
-    /*
     if (createdOrder) {
       (async () => {
         try {
@@ -320,13 +318,18 @@ export async function createOrder(input: CreateOrderInput) {
           });
           if (fullOrder) {
             await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+            if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
+              const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
+              const remBalance = Number(wallet?.balance || 0);
+              const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
+              await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
+            }
           }
         } catch (err: any) {
           console.error(`❌ [POST-ORDER ASYNC TASK ERROR] Order ${createdOrder.id}:`, err);
         }
       })();
     }
-    */
 
     console.log('====================================================================');
     console.log(`✅ [CHECKOUT COMPLETE] Returning Order ${createdOrder.orderNumber} to Client`);
@@ -406,8 +409,6 @@ export async function confirmOrder(
       return updatedOrder;
     });
 
-    // PHASE 1: POST-ORDER FEATURES TEMPORARILY DISABLED
-    /*
     (async () => {
       try {
         await InvoiceService.updatePaymentStatus(orderId, 'PAID', razorpayPaymentId, 'RAZORPAY');
@@ -417,12 +418,19 @@ export async function confirmOrder(
         });
         if (fullOrder) {
           await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+          await NotificationService.sendPaymentConfirmed(
+            fullOrder.email,
+            fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector',
+            fullOrder.orderNumber,
+            Number(fullOrder.total),
+            razorpayPaymentId,
+            fullOrder.id
+          );
         }
       } catch (err: any) {
         console.error(`❌ [CONFIRM ORDER ASYNC TASK ERROR] Order ${orderId}:`, err);
       }
     })();
-    */
 
     try {
       revalidatePath('/admin/orders');
@@ -442,7 +450,7 @@ export async function confirmOrder(
 export async function cancelOrder(orderId: string, reason?: string) {
   const user = await getCurrentUser();
 
-  return prisma.$transaction(async (tx) => {
+  const updatedOrder = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { items: true, profile: { select: { id: true } } },
@@ -499,6 +507,17 @@ export async function cancelOrder(orderId: string, reason?: string) {
     revalidatePath('/admin/orders');
     return updated;
   });
+
+  // Async dispatch order cancelled notification email
+  (async () => {
+    try {
+      await NotificationService.sendOrderCancelled(updatedOrder, reason);
+    } catch (err: any) {
+      console.error('Order cancellation notification error:', err);
+    }
+  })();
+
+  return updatedOrder;
 }
 
 // ── ADMIN: GET ORDERS ────────────────────────────────────────────────────────

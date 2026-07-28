@@ -48,3 +48,4 @@ next-env.d.ts
 *.log
 
 /src/generated/prisma
+/storage/invoices/

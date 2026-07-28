@@ -79,6 +79,18 @@ export async function POST(request: NextRequest) {
               data: { reservedStock: { decrement: item.quantity } },
             });
           }
+
+          try {
+            const { NotificationService } = await import('@/notifications/notification.service');
+            const addr = typeof order.shippingAddress === 'string'
+              ? JSON.parse(order.shippingAddress)
+              : (order.shippingAddress || {});
+            const customerName = addr.firstName ? `${addr.firstName} ${addr.lastName || ''}`.trim() : 'Collector';
+            const reason = payment.error_description || 'Payment transaction was declined or interrupted.';
+            await NotificationService.sendPaymentFailed(order.email, customerName, order.orderNumber, reason);
+          } catch (notifErr) {
+            console.error('Payment failed notification error:', notifErr);
+          }
         }
 
         console.log(`❌ Payment failed for order ${internalOrderId} — inventory released`);
