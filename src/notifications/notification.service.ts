@@ -343,11 +343,14 @@ export class NotificationService {
     });
   }
 
-  static async sendProfileUpdated(email: string, name: string) {
+  static async sendProfileUpdated(email: string, name: string, userId?: string) {
     return this.dispatch({
       event: 'PROFILE_UPDATED',
-      recipient: { email, name },
-      payload: { customerName: name, entityId: `PRF_${Date.now()}` },
+      recipient: { email, name, userId },
+      payload: {
+        customerName: name,
+        entityId: `PRF_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      },
     });
   }
 

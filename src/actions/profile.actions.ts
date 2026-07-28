@@ -32,7 +32,7 @@ export async function updateMyProfile(data: {
 
   try {
     const fullName = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || 'Collector';
-    await NotificationService.sendProfileUpdated(updated.email, fullName);
+    await NotificationService.sendProfileUpdated(updated.email, fullName, user.id);
   } catch (err) {
     console.error('Non-critical notification error on profile update:', err);
   }
