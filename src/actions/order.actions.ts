@@ -335,7 +335,10 @@ export async function createOrder(input: CreateOrderInput) {
     console.log(`✅ [CHECKOUT COMPLETE] Returning Order ${createdOrder.orderNumber} to Client`);
     console.log('====================================================================\n');
 
-    return JSON.parse(JSON.stringify(createdOrder));
+    return {
+      success: true,
+      order: JSON.parse(JSON.stringify(createdOrder)),
+    };
   } catch (error: any) {
     console.error('\n====================================================================');
     console.error('❌ [CHECKOUT RUNTIME EXCEPTION DETECTED]');
@@ -346,7 +349,10 @@ export async function createOrder(input: CreateOrderInput) {
     console.error('Stack Trace  :', error?.stack || 'N/A');
     console.error('====================================================================\n');
 
-    throw new Error(error?.message || 'Checkout failed due to server error');
+    return {
+      success: false,
+      error: error?.message || 'Checkout failed due to server error',
+    };
   }
 }
 
@@ -438,10 +444,16 @@ export async function confirmOrder(
     } catch {}
 
     console.log(`✅ [CONFIRM ORDER SUCCESS] Order ${orderId} marked PAID`);
-    return JSON.parse(JSON.stringify(updated));
+    return {
+      success: true,
+      order: JSON.parse(JSON.stringify(updated)),
+    };
   } catch (err: any) {
     console.error('❌ [CONFIRM ORDER ERROR]:', err);
-    throw new Error(err?.message || 'Payment confirmation failed');
+    return {
+      success: false,
+      error: err?.message || 'Payment confirmation failed',
+    };
   }
 }
 

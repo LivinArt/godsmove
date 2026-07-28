@@ -142,7 +142,7 @@ export default function CheckoutPage() {
               firstName: defaultAddr.firstName || '',
               lastName: defaultAddr.lastName || '',
               email: userEmail,
-              phone: (defaultAddr.phone || '').replace(/\D/g, '').slice(0, 10),
+              phone: (defaultAddr.phone || '').replace(/\D/g, '').slice(-10),
               address: defaultAddr.line1 || '',
               city: defaultAddr.city || '',
               state: defaultAddr.state || '',
@@ -155,7 +155,7 @@ export default function CheckoutPage() {
               firstName: addrList[0].firstName || '',
               lastName: addrList[0].lastName || '',
               email: userEmail,
-              phone: (addrList[0].phone || '').replace(/\D/g, '').slice(0, 10),
+              phone: (addrList[0].phone || '').replace(/\D/g, '').slice(-10),
               address: addrList[0].line1 || '',
               city: addrList[0].city || '',
               state: addrList[0].state || '',
@@ -186,7 +186,7 @@ export default function CheckoutPage() {
       firstName: addr.firstName || '',
       lastName: addr.lastName || '',
       email: defaultEmail,
-      phone: (addr.phone || '').replace(/\D/g, '').slice(0, 10),
+      phone: (addr.phone || '').replace(/\D/g, '').slice(-10),
       address: addr.line1 || '',
       city: addr.city || '',
       state: addr.state || '',
@@ -376,13 +376,21 @@ export default function CheckoutPage() {
       }
 
       // 2. Call createOrder server action
-      const order = await createOrder({
+      const orderRes = await createOrder({
         items: orderItems,
         shippingAddress,
         paymentMethod: actualPaymentMethod,
         couponCode: appliedCoupon || undefined,
         walletAmountToUse: walletCreditsToUse,
       });
+
+      if (!orderRes.success || !orderRes.order) {
+        showToast('Checkout Failed', orderRes.error || 'An error occurred during order creation.');
+        setIsSubmitLoading(false);
+        return;
+      }
+
+      const order = orderRes.order;
 
       // Save address for future orders if checked and using new address
       if (isLoggedIn && saveAddress && selectedAddressId === 'new') {
@@ -433,7 +441,10 @@ export default function CheckoutPage() {
               // Call confirmOrder server action
               const payId = 'pay_mock_' + Math.random().toString(36).substring(7);
               const ordId = 'ord_mock_' + Math.random().toString(36).substring(7);
-              await confirmOrder(order.id, payId, ordId);
+              const confirmRes = await confirmOrder(order.id, payId, ordId);
+              if (!confirmRes.success) {
+                throw new Error(confirmRes.error || 'Failed to confirm transaction.');
+              }
 
               try {
                 const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
