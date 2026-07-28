@@ -5,6 +5,7 @@ import {
   NotificationEvent,
 } from './types/notification.types';
 import { InvoiceService } from '@/lib/invoice';
+import { prisma } from '@/lib/prisma';
 
 export class NotificationService {
   /**
@@ -229,9 +230,21 @@ export class NotificationService {
 
     let attachments: any[] = [];
     try {
-      const inv = await InvoiceService.generateAndStoreInvoice(order);
-      attachments = [{ filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`, content: inv.pdfBuffer }];
-    } catch {}
+      let fullOrder = order;
+      if (!Array.isArray(order.items) || order.items.length === 0) {
+        const fetched = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: { items: true, profile: true },
+        });
+        if (fetched) fullOrder = fetched;
+      }
+      const inv = await InvoiceService.generateAndStoreInvoice(fullOrder);
+      if (inv && inv.pdfBuffer) {
+        attachments = [{ filename: `GODSMOVE_Tax_Invoice_${fullOrder.orderNumber}.pdf`, content: inv.pdfBuffer }];
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [ORDER DELIVERED] Invoice attachment failed:', err?.message);
+    }
 
     return this.dispatch({
       event: 'ORDER_DELIVERED',
@@ -262,7 +275,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_REQUESTED',
       recipient: { email: to },
-      payload: { returnId, orderNumber },
+      payload: { returnId, orderNumber, entityId: returnId || `RET_${Date.now()}` },
     });
   }
 
@@ -270,7 +283,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_APPROVED',
       recipient: { email: to },
-      payload: { returnId, carrier, trackingNumber },
+      payload: { returnId, carrier, trackingNumber, entityId: `RET_APP_${returnId}` },
     });
   }
 
@@ -278,7 +291,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_APPROVED',
       recipient: { email: to },
-      payload: { returnId },
+      payload: { returnId, entityId: `RET_REC_${returnId}` },
     });
   }
 
@@ -286,7 +299,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'REFUND_COMPLETED',
       recipient: { email: to },
-      payload: { returnId, amount, deductionHtml },
+      payload: { returnId, amount, deductionHtml, entityId: `RET_REF_${returnId}` },
     });
   }
 
@@ -294,7 +307,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_REJECTED',
       recipient: { email: to },
-      payload: { returnId, reason },
+      payload: { returnId, reason, entityId: `RET_REJ_${returnId}` },
     });
   }
 
@@ -302,7 +315,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_PICKUP_SCHEDULED',
       recipient: { email: to },
-      payload: { returnId, pickupDate, carrier: carrier || 'Logistics Partner' },
+      payload: { returnId, pickupDate, carrier: carrier || 'Logistics Partner', entityId: `RET_PU_${returnId}` },
     });
   }
 
@@ -310,7 +323,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_PICKUP_COMPLETED',
       recipient: { email: to },
-      payload: { returnId },
+      payload: { returnId, entityId: `RET_PUC_${returnId}` },
     });
   }
 
@@ -318,7 +331,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_REFUND_COMPLETED',
       recipient: { email: to },
-      payload: { returnId, amount },
+      payload: { returnId, amount, entityId: `RET_RFC_${returnId}` },
     });
   }
 
@@ -326,7 +339,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'RETURN_REFUND_COMPLETED',
       recipient: { email: to },
-      payload: { returnId },
+      payload: { returnId, entityId: `RET_CLS_${returnId}` },
     });
   }
 
@@ -334,7 +347,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'PROFILE_UPDATED',
       recipient: { email, name },
-      payload: { customerName: name },
+      payload: { customerName: name, entityId: `PRF_${Date.now()}` },
     });
   }
 

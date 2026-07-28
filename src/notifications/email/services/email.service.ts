@@ -14,7 +14,7 @@ export class EmailService {
     payload: Record<string, any>
   ): Promise<SendEmailResponse> {
     const startTime = new Date();
-    const entityId = payload.orderId || payload.orderNumber || payload.returnId || payload.id || 'GENERIC';
+    const entityId = payload.entityId || payload.returnId || payload.orderId || payload.orderNumber || payload.id || 'GENERIC';
     const templateVersion = payload.templateVersion || 1;
     const idempotencyKey = `${event}_${entityId}_${recipient.email}_v${templateVersion}`;
 
