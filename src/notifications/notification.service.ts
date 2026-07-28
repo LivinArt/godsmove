@@ -421,7 +421,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'WALLET_CREDITED',
       recipient: { email, name },
-      payload: { amount, newBalance, customerName: name },
+      payload: { amount, newBalance, customerName: name, entityId: `WLT_CR_${Date.now()}` },
     });
   }
 
@@ -429,7 +429,7 @@ export class NotificationService {
     return this.dispatch({
       event: 'WALLET_DEBITED',
       recipient: { email, name },
-      payload: { amount, newBalance, customerName: name },
+      payload: { amount, newBalance, customerName: name, entityId: `WLT_DR_${Date.now()}` },
     });
   }
 }

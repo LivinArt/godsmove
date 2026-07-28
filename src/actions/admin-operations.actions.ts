@@ -505,6 +505,25 @@ export async function updateOrderStatus(orderId: string, status: string) {
       data:  updateData,
     });
 
+    // ── NOTIFICATION DISPATCH (AWAITED FOR SERVERLESS SAFETY) ───────────
+    try {
+      const fullOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, profile: true },
+      });
+      if (fullOrder) {
+        if (to === 'SHIPPED' || to === 'IN_TRANSIT') {
+          await NotificationService.sendOrderShipped(fullOrder, fullOrder.fulfillmentProvider || 'Shiprocket', fullOrder.fulfillmentRef || 'AWB-PENDING');
+        } else if (to === 'DELIVERED' || to === 'COMPLETED') {
+          await NotificationService.sendOrderDelivered(fullOrder);
+        } else if (to === 'CANCELLED') {
+          await NotificationService.sendOrderCancelled(fullOrder, 'Order status updated by admin');
+        }
+      }
+    } catch (err: any) {
+      console.error(`❌ [ADMIN UPDATE ORDER STATUS NOTIFICATION ERROR] Order ${orderId}:`, err);
+    }
+
     revalidatePath(`/admin/orders/${orderId}`);
     revalidatePath('/admin/orders');
     revalidatePath('/admin');
@@ -557,6 +576,18 @@ export async function assignOrderCourier(
       status: 'IN_TRANSIT',
     },
   });
+
+  try {
+    const fullOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, profile: true },
+    });
+    if (fullOrder) {
+      await NotificationService.sendOrderShipped(fullOrder, carrier, trackingNumber);
+    }
+  } catch (err: any) {
+    console.error(`❌ [ASSIGN COURIER NOTIFICATION ERROR] Order ${orderId}:`, err);
+  }
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath('/admin/orders');
@@ -817,6 +848,27 @@ export async function updateReturnStatus(returnId: string, status: string, notes
 
     return updatedReq;
   });
+
+  try {
+    const retFull = await prisma.returnRequest.findUnique({
+      where: { id: returnId },
+      include: { order: true },
+    });
+    if (retFull && retFull.order) {
+      const returnNumber = `RET-${retFull.id.substring(0, 8).toUpperCase()}`;
+      if (status === 'APPROVED') {
+        await NotificationService.sendReturnApproved(retFull.order.email, returnNumber, retFull.order.orderNumber);
+      } else if (status === 'REJECTED') {
+        await NotificationService.sendReturnRejected(retFull.order.email, returnNumber, notes || 'Does not meet return criteria');
+      } else if (status === 'PICKUP_SCHEDULED') {
+        await NotificationService.sendReturnPickupScheduled(retFull.order.email, returnNumber, 'Tomorrow 10 AM - 2 PM', 'Blue Dart Reverse Priority');
+      } else if (status === 'PICKUP_COMPLETED') {
+        await NotificationService.sendReturnPickupCompleted(retFull.order.email, returnNumber);
+      }
+    }
+  } catch (err: any) {
+    console.error(`❌ [RETURN STATUS NOTIFICATION ERROR] Return ${returnId}:`, err);
+  }
 
   revalidatePath(`/admin/returns/${returnId}`);
   revalidatePath('/admin/returns');

@@ -30,14 +30,12 @@ export async function updateMyProfile(data: {
     },
   });
 
-  (async () => {
-    try {
-      const fullName = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || 'Collector';
-      await NotificationService.sendProfileUpdated(updated.email, fullName);
-    } catch (err) {
-      console.error('Non-critical notification error on profile update:', err);
-    }
-  })();
+  try {
+    const fullName = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || 'Collector';
+    await NotificationService.sendProfileUpdated(updated.email, fullName);
+  } catch (err) {
+    console.error('Non-critical notification error on profile update:', err);
+  }
 
   revalidatePath('/profile');
   return updated;

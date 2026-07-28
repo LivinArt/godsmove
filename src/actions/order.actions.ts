@@ -310,25 +310,23 @@ export async function createOrder(input: CreateOrderInput) {
     });
 
     if (createdOrder) {
-      (async () => {
-        try {
-          const fullOrder = await prisma.order.findUnique({
-            where: { id: createdOrder.id },
-            include: { items: true, profile: true },
-          });
-          if (fullOrder) {
-            await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
-            if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
-              const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
-              const remBalance = Number(wallet?.balance || 0);
-              const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
-              await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
-            }
+      try {
+        const fullOrder = await prisma.order.findUnique({
+          where: { id: createdOrder.id },
+          include: { items: true, profile: true },
+        });
+        if (fullOrder) {
+          await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+          if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
+            const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
+            const remBalance = Number(wallet?.balance || 0);
+            const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
+            await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
           }
-        } catch (err: any) {
-          console.error(`❌ [POST-ORDER ASYNC TASK ERROR] Order ${createdOrder.id}:`, err);
         }
-      })();
+      } catch (err: any) {
+        console.error(`❌ [POST-ORDER NOTIFICATION TASK ERROR] Order ${createdOrder.id}:`, err);
+      }
     }
 
     console.log('====================================================================');
@@ -415,28 +413,26 @@ export async function confirmOrder(
       return updatedOrder;
     });
 
-    (async () => {
-      try {
-        await InvoiceService.updatePaymentStatus(orderId, 'PAID', razorpayPaymentId, 'RAZORPAY');
-        const fullOrder = await prisma.order.findUnique({
-          where: { id: orderId },
-          include: { items: true, profile: true },
-        });
-        if (fullOrder) {
-          await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
-          await NotificationService.sendPaymentConfirmed(
-            fullOrder.email,
-            fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector',
-            fullOrder.orderNumber,
-            Number(fullOrder.total),
-            razorpayPaymentId,
-            fullOrder.id
-          );
-        }
-      } catch (err: any) {
-        console.error(`❌ [CONFIRM ORDER ASYNC TASK ERROR] Order ${orderId}:`, err);
+    try {
+      await InvoiceService.updatePaymentStatus(orderId, 'PAID', razorpayPaymentId, 'RAZORPAY');
+      const fullOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, profile: true },
+      });
+      if (fullOrder) {
+        await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+        await NotificationService.sendPaymentConfirmed(
+          fullOrder.email,
+          fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector',
+          fullOrder.orderNumber,
+          Number(fullOrder.total),
+          razorpayPaymentId,
+          fullOrder.id
+        );
       }
-    })();
+    } catch (err: any) {
+      console.error(`❌ [CONFIRM ORDER NOTIFICATION ERROR] Order ${orderId}:`, err);
+    }
 
     try {
       revalidatePath('/admin/orders');
@@ -601,14 +597,22 @@ export async function updateOrderStatus(input: {
 
   // Trigger event notification
   try {
-    if (data.status === 'SHIPPED') {
-      NotificationService.sendOrderShipped(order, 'Express Courier', 'AWB-PENDING').catch(() => {});
-    } else if (data.status === 'DELIVERED') {
-      NotificationService.sendOrderDelivered(order).catch(() => {});
-    } else if (data.status === 'CANCELLED') {
-      NotificationService.sendOrderCancelled(order, data.adminNotes).catch(() => {});
+    const fullOrder = await prisma.order.findUnique({
+      where: { id: data.orderId },
+      include: { items: true, profile: true },
+    });
+    if (fullOrder) {
+      if (data.status === 'SHIPPED') {
+        await NotificationService.sendOrderShipped(fullOrder, 'Express Courier', 'AWB-PENDING');
+      } else if (data.status === 'DELIVERED') {
+        await NotificationService.sendOrderDelivered(fullOrder);
+      } else if (data.status === 'CANCELLED') {
+        await NotificationService.sendOrderCancelled(fullOrder, data.adminNotes);
+      }
     }
-  } catch {}
+  } catch (err: any) {
+    console.error(`❌ [UPDATE ORDER STATUS NOTIFICATION ERROR] Order ${data.orderId}:`, err);
+  }
 
   revalidatePath('/admin/orders');
   return order;
