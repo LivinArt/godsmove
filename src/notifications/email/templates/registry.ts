@@ -37,6 +37,10 @@ import MembershipInvitationMarketingTemplate from './marketing/MembershipInvitat
 import SeasonalMarketingTemplate from './marketing/SeasonalMarketingTemplate';
 
 import InvoiceRequestTemplate from './InvoiceRequestTemplate';
+import ProfileUpdatedTemplate from './ProfileUpdatedTemplate';
+import PaymentConfirmationTemplate from './PaymentConfirmationTemplate';
+import ReturnPickupScheduledTemplate from './ReturnPickupScheduledTemplate';
+import ReturnRefundCompletedTemplate from './ReturnRefundCompletedTemplate';
 
 export interface EmailTemplateDefinition {
   component: React.ComponentType<any>;
@@ -83,12 +87,12 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_CONFIRMED: {
-    component: OrderConfirmationTemplate,
+    component: PaymentConfirmationTemplate,
     subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_SUCCESSFUL: {
-    component: OrderConfirmationTemplate,
+    component: PaymentConfirmationTemplate,
     subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
@@ -98,7 +102,7 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     senderConfig: DEFAULT_SENDER,
   },
   PROFILE_UPDATED: {
-    component: WelcomeTemplate,
+    component: ProfileUpdatedTemplate,
     subjectBuilder: () => `Profile Updated Successfully | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
@@ -118,7 +122,7 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_PICKUP_SCHEDULED: {
-    component: ReturnApprovedTemplate,
+    component: ReturnPickupScheduledTemplate,
     subjectBuilder: (p) => `Return Pickup Scheduled for ${p.pickupDate || 'Soon'}: ${p.returnId || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },
@@ -128,7 +132,7 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REFUND_COMPLETED: {
-    component: ReturnCompletedTemplate,
+    component: ReturnRefundCompletedTemplate,
     subjectBuilder: (p) => `Return Refund Completed: ${p.returnId || ''} | GODSMOVE`,
     senderConfig: DEFAULT_SENDER,
   },

@@ -156,7 +156,7 @@ async function main() {
     event: 'PROFILE_UPDATED',
     resendId: e2.resendId,
     success: e2.success,
-    template: 'WelcomeTemplate',
+    template: 'ProfileUpdatedTemplate',
     invoiceAttached: 'NO',
     logged: !!t2Log,
   });
@@ -245,7 +245,7 @@ async function main() {
     event: 'PAYMENT_CONFIRMED',
     resendId: e4.resendId,
     success: e4.success,
-    template: 'OrderConfirmationTemplate',
+    template: 'PaymentConfirmationTemplate',
     invoiceAttached: 'YES',
     logged: !!t4Log,
   });
@@ -431,7 +431,7 @@ async function main() {
     event: 'RETURN_PICKUP_SCHEDULED',
     resendId: e14.resendId,
     success: e14.success,
-    template: 'ReturnApprovedTemplate',
+    template: 'ReturnPickupScheduledTemplate',
     invoiceAttached: 'NO',
     logged: !!t14Log,
   });
@@ -467,7 +467,7 @@ async function main() {
     event: 'RETURN_REFUND_COMPLETED',
     resendId: e16.resendId,
     success: e16.success,
-    template: 'ReturnCompletedTemplate',
+    template: 'ReturnRefundCompletedTemplate',
     invoiceAttached: 'NO',
     logged: !!t16Log,
   });

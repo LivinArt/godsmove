@@ -17,8 +17,12 @@ export interface OrderConfirmationTemplateProps {
   couponDiscount?: number;
   total: number;
   shippingAddress: EmailShippingAddress;
+  paymentMethod?: string;
+  paymentStatus?: string;
   trackOrderUrl?: string;
   continueShoppingUrl?: string;
+  viewOrderUrl?: string;
+  viewInvoiceUrl?: string;
 }
 
 export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps> = ({
@@ -39,8 +43,12 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
     pincode: '400050',
     phone: '',
   },
-  trackOrderUrl = 'https://godsmove.in/profile',
-  continueShoppingUrl = 'https://godsmove.in/drops',
+  paymentMethod = 'Online Payment (Razorpay)',
+  paymentStatus = 'PAID',
+  trackOrderUrl = 'https://godsmove.in/profile?tab=collection',
+  continueShoppingUrl = 'https://godsmove.in',
+  viewOrderUrl = 'https://godsmove.in/profile?tab=collection',
+  viewInvoiceUrl = 'https://godsmove.in/profile?tab=collection',
 }) => {
   const previewText = `Allocation Confirmed: Order ${orderNumber}`;
 
@@ -49,15 +57,22 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
       <Section style={{ marginBottom: '24px' }}>
         <Text style={greetingStyle}>DEAR {customerName.toUpperCase()},</Text>
         <Text style={bodyStyle}>
-          Your statement piece allocation has been confirmed. Our archival artisans are preparing your order for technical inspection and dispatch.
+          Your statement piece allocation has been confirmed. Our archival artisans are preparing your order for technical inspection and dispatch. Thank you for choosing GODSMOVE.
         </Text>
       </Section>
 
       <OrderSummary
         orderNumber={orderNumber}
         orderDate={orderDate}
+        paymentMethod={`${paymentMethod} (${paymentStatus})`}
         shippingAddress={shippingAddress}
       />
+
+      <Section style={invoiceBadgeStyle}>
+        <Text style={invoiceBadgeTextStyle}>
+          ✓ TAX INVOICE ATTACHED — OFFICIAL PDF INVOICE INCLUDED
+        </Text>
+      </Section>
 
       {items.length > 0 && <ProductCard items={items} />}
 
@@ -79,6 +94,13 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
             </td>
           </tr>
           <tr>
+            <td style={{ textAlign: 'center', paddingBottom: '12px' }}>
+              <CTAButton href={viewOrderUrl} variant="secondary">
+                VIEW ORDER DETAILS
+              </CTAButton>
+            </td>
+          </tr>
+          <tr>
             <td style={{ textAlign: 'center' }}>
               <CTAButton href={continueShoppingUrl} variant="secondary">
                 EXPLORE ARCHIVAL DROPS
@@ -92,6 +114,24 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
 };
 
 export default OrderConfirmationTemplate;
+
+const invoiceBadgeStyle = {
+  backgroundColor: '#121215',
+  border: '1px solid rgba(200, 164, 106, 0.3)',
+  borderRadius: '4px',
+  padding: '12px 16px',
+  marginBottom: '28px',
+  textAlign: 'center' as const,
+};
+
+const invoiceBadgeTextStyle = {
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.15em',
+  color: '#c8a46a',
+  margin: '0',
+  textTransform: 'uppercase' as const,
+};
 
 const greetingStyle = {
   fontSize: '14px',
