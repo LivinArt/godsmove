@@ -41,18 +41,31 @@ export class NotificationService {
       return { success: false, error: 'Invalid order object' };
     }
 
-    const addr = typeof order.shippingAddress === 'string'
-      ? JSON.parse(order.shippingAddress)
-      : (order.shippingAddress || {});
+    let fullOrder = order;
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      try {
+        const fetched = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: { items: true, profile: true },
+        });
+        if (fetched) fullOrder = fetched;
+      } catch (err: any) {
+        console.warn('⚠️ [NOTIFICATION SERVICE] Could not auto-fetch full order items:', err?.message);
+      }
+    }
+
+    const addr = typeof fullOrder.shippingAddress === 'string'
+      ? JSON.parse(fullOrder.shippingAddress)
+      : (fullOrder.shippingAddress || {});
 
     const recipientName = addr.firstName
       ? `${addr.firstName} ${addr.lastName || ''}`.trim()
       : 'Valued Collector';
 
-    const targetEmail = order.email || addr.email || 'support@godsmove.in';
+    const targetEmail = fullOrder.email || addr.email || 'support@godsmove.in';
 
-    const formattedDate = order.createdAt
-      ? new Date(order.createdAt).toLocaleDateString('en-IN', {
+    const formattedDate = fullOrder.createdAt
+      ? new Date(fullOrder.createdAt).toLocaleDateString('en-IN', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -63,8 +76,8 @@ export class NotificationService {
           year: 'numeric',
         });
 
-    const items = Array.isArray(order.items)
-      ? order.items.map((item: any) => ({
+    const items = Array.isArray(fullOrder.items)
+      ? fullOrder.items.map((item: any) => ({
           id: item.id || item.variantId,
           title: item.productName || item.name || 'GODSMOVE Statement Piece',
           size: item.size || 'L',
@@ -74,61 +87,67 @@ export class NotificationService {
         }))
       : [];
 
-    try {
-      const invoiceResult = await InvoiceService.generateAndStoreInvoice(order);
-
-      const payload = {
-        customerName: recipientName,
-        orderNumber: order.orderNumber || `GM-${order.id.slice(-6)}`,
-        orderId: order.id,
-        orderDate: formattedDate,
-        items,
-        subtotal: Number(order.subtotal || 0),
-        shipping: Number(order.shippingCost || 0),
-        walletDiscount: Number(order.walletCredit || 0),
-        couponDiscount: Number(order.discountAmount || 0),
-        total: Number(order.total || 0),
-        shippingAddress: {
-          name: recipientName,
-          line1: addr.line1 || 'Address Line 1',
-          line2: addr.line2 || null,
-          city: addr.city || 'Mumbai',
-          state: addr.state || 'Maharashtra',
-          pincode: addr.pincode || '400050',
-          phone: addr.phone || '',
-        },
-        viewInvoiceUrl: `/api/invoice/view/${order.id}`,
-        downloadInvoiceUrl: `/api/invoice/download/${order.id}`,
-        attachments: attachPdf
-          ? [
-              {
-                filename: `GODSMOVE_Tax_Invoice_${order.orderNumber}.pdf`,
-                content: invoiceResult.pdfBuffer,
-              },
-            ]
-          : [],
-      };
-
-      const recipient: NotificationRecipient = {
-        email: targetEmail,
-        name: recipientName,
-        phone: addr.phone || undefined,
-        userId: order.profileId || undefined,
-      };
-
-      const eventKey = order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CREATED';
-
-      console.log(`[ORDER_DISPATCH] Dispatching "${eventKey}" for Order ${order.orderNumber} with stored PDF invoice attachment...`);
-
-      return await NotificationService.dispatch({
-        event: eventKey,
-        recipient,
-        payload,
-      });
-    } catch (err: any) {
-      console.error(`❌ [NOTIFICATION SERVICE] Order confirmation dispatch failed:`, err);
-      return { success: false, error: err.message };
+    let attachments: any[] = [];
+    if (attachPdf) {
+      try {
+        const invoiceResult = await InvoiceService.generateAndStoreInvoice(fullOrder);
+        if (invoiceResult && invoiceResult.pdfBuffer) {
+          attachments = [
+            {
+              filename: `GODSMOVE_Tax_Invoice_${fullOrder.orderNumber}.pdf`,
+              content: invoiceResult.pdfBuffer,
+            },
+          ];
+        }
+      } catch (invoiceErr: any) {
+        console.warn(`⚠️ [NOTIFICATION SERVICE] Invoice generation failed for Order ${fullOrder.orderNumber}: ${invoiceErr?.message}. Proceeding to send Order Confirmation without attachment.`);
+      }
     }
+
+    const payload = {
+      customerName: recipientName,
+      orderNumber: fullOrder.orderNumber || `GM-${fullOrder.id.slice(-6)}`,
+      orderId: fullOrder.id,
+      entityId: fullOrder.orderNumber || fullOrder.id,
+      orderDate: formattedDate,
+      items,
+      subtotal: Number(fullOrder.subtotal || 0),
+      shipping: Number(fullOrder.shippingCost || 0),
+      walletDiscount: Number(fullOrder.walletCredit || 0),
+      couponDiscount: Number(fullOrder.discountAmount || 0),
+      total: Number(fullOrder.total || 0),
+      paymentMethod: fullOrder.paymentMethod === 'COD' ? 'Cash on Delivery (COD)' : 'Online Payment (Razorpay)',
+      paymentStatus: fullOrder.paymentStatus || 'PAID',
+      shippingAddress: {
+        name: recipientName,
+        line1: addr.line1 || 'Address Line 1',
+        line2: addr.line2 || null,
+        city: addr.city || 'Mumbai',
+        state: addr.state || 'Maharashtra',
+        pincode: addr.pincode || '400050',
+        phone: addr.phone || '',
+      },
+      viewInvoiceUrl: `/api/invoice/view/${fullOrder.id}`,
+      downloadInvoiceUrl: `/api/invoice/download/${fullOrder.id}`,
+      attachments,
+    };
+
+    const recipient: NotificationRecipient = {
+      email: targetEmail,
+      name: recipientName,
+      phone: addr.phone || undefined,
+      userId: fullOrder.profileId || undefined,
+    };
+
+    const eventKey = fullOrder.status === 'CONFIRMED' || fullOrder.paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CREATED';
+
+    console.log(`[ORDER_DISPATCH] Dispatching "${eventKey}" for Order ${fullOrder.orderNumber}...`);
+
+    return await NotificationService.dispatch({
+      event: eventKey,
+      recipient,
+      payload,
+    });
   }
 
   static async sendInvoiceRequest(order: any) {
