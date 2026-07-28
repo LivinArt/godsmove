@@ -75,7 +75,7 @@ export interface NotificationLogEntry {
   recipient: string;
   provider: string;
   providerMessageId?: string;
-  status: 'SUCCESS' | 'FAILED' | 'SIMULATED';
+  status: 'SUCCESS' | 'FAILED' | 'SIMULATED' | 'SKIPPED';
   timestamp: Date;
   error?: string;
 }

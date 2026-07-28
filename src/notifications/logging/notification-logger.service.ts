@@ -32,6 +32,8 @@ export class NotificationLogger {
    */
   static async log(entry: ExtendedNotificationLogEntry): Promise<any> {
     const isSuccess = entry.status === 'SUCCESS';
+    const isSkipped = entry.status === 'SKIPPED';
+    const dbStatus: 'SENT' | 'FAILED' | 'CANCELLED' = isSuccess ? 'SENT' : isSkipped ? 'CANCELLED' : 'FAILED';
 
     const pipelineLog = `
 ====================================================================
@@ -45,7 +47,7 @@ Attachments: ${entry.attachmentNames && entry.attachmentNames.length > 0 ? entry
 ↓
 Provider: ${entry.provider} | Provider Message ID: ${entry.providerMessageId || 'N/A'}
 ↓
-Delivery Log Status: ${isSuccess ? 'SENT' : 'FAILED'} ${entry.error ? `(Error: ${entry.error})` : ''}
+Delivery Log Status: ${dbStatus} ${entry.error ? `(Error: ${entry.error})` : ''}
 ↓
 COMPLETED AT ${entry.timestamp.toISOString()}
 ====================================================================
@@ -53,6 +55,8 @@ COMPLETED AT ${entry.timestamp.toISOString()}
 
     if (isSuccess) {
       console.log(`✅ [DELIVERY LOG SUCCESS]\n${pipelineLog}`);
+    } else if (isSkipped) {
+      console.log(`ℹ️ [DELIVERY LOG SKIPPED]\n${pipelineLog}`);
     } else {
       console.error(`❌ [DELIVERY LOG FAILURE]\n${pipelineLog}`);
     }
@@ -70,24 +74,24 @@ COMPLETED AT ${entry.timestamp.toISOString()}
             templateId: entry.templateId || entry.event,
             provider: entry.provider || 'RESEND',
             providerMessageId: entry.providerMessageId || null,
-            status: isSuccess ? 'SENT' : 'FAILED',
+            status: dbStatus,
             subject: entry.subject || null,
             payloadJson: entry.payloadJson || null,
             attachmentNames: entry.attachmentNames || [],
             retryCount: entry.retryCount || 0,
             error: entry.error || null,
             sentAt: isSuccess ? entry.timestamp : null,
-            failedAt: !isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess && !isSkipped ? entry.timestamp : null,
           },
           update: {
             providerMessageId: entry.providerMessageId || null,
-            status: isSuccess ? 'SENT' : 'FAILED',
+            status: dbStatus,
             subject: entry.subject || null,
             payloadJson: entry.payloadJson || null,
             attachmentNames: entry.attachmentNames || [],
             error: entry.error || null,
             sentAt: isSuccess ? entry.timestamp : null,
-            failedAt: !isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess && !isSkipped ? entry.timestamp : null,
           },
         });
       } else {
@@ -100,19 +104,19 @@ COMPLETED AT ${entry.timestamp.toISOString()}
             templateId: entry.templateId || entry.event,
             provider: entry.provider || 'RESEND',
             providerMessageId: entry.providerMessageId || null,
-            status: isSuccess ? 'SENT' : 'FAILED',
+            status: dbStatus,
             subject: entry.subject || null,
             payloadJson: entry.payloadJson || null,
             attachmentNames: entry.attachmentNames || [],
             retryCount: entry.retryCount || 0,
             error: entry.error || null,
             sentAt: isSuccess ? entry.timestamp : null,
-            failedAt: !isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess && !isSkipped ? entry.timestamp : null,
           },
         });
       }
     } catch (dbErr: any) {
-      console.warn('⚠️ [DELIVERY LOG DB PERSIST WARNING]:', dbErr.message);
+      console.warn('⚠️ [DELIVERY LOG DB PERSIST WARNING]:', dbErr?.message);
     }
   }
 }
