@@ -46,7 +46,7 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
     };
   }
 
-  const client = resend || new Resend(apiKey);
+  const client = new Resend(apiKey);
 
   try {
     let htmlString = payload.html || '';

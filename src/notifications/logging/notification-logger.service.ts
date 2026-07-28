@@ -58,30 +58,61 @@ COMPLETED AT ${entry.timestamp.toISOString()}
     }
 
     try {
-      const record = await prisma.notificationHistory.create({
-        data: {
-          idempotencyKey: entry.idempotencyKey || null,
-          profileId: entry.profileId || null,
-          email: entry.recipient,
-          channel: entry.channel || 'EMAIL',
-          eventType: entry.event,
-          templateId: entry.templateId || entry.event,
-          provider: entry.provider || 'RESEND',
-          providerMessageId: entry.providerMessageId || null,
-          status: isSuccess ? 'SENT' : 'FAILED',
-          subject: entry.subject || null,
-          payloadJson: entry.payloadJson || null,
-          attachmentNames: entry.attachmentNames || [],
-          retryCount: entry.retryCount || 0,
-          error: entry.error || null,
-          sentAt: isSuccess ? entry.timestamp : null,
-          failedAt: !isSuccess ? entry.timestamp : null,
-        },
-      });
-      return record;
+      if (entry.idempotencyKey) {
+        await prisma.notificationHistory.upsert({
+          where: { idempotencyKey: entry.idempotencyKey },
+          create: {
+            idempotencyKey: entry.idempotencyKey,
+            profileId: entry.profileId || null,
+            email: entry.recipient,
+            channel: entry.channel || 'EMAIL',
+            eventType: entry.event,
+            templateId: entry.templateId || entry.event,
+            provider: entry.provider || 'RESEND',
+            providerMessageId: entry.providerMessageId || null,
+            status: isSuccess ? 'SENT' : 'FAILED',
+            subject: entry.subject || null,
+            payloadJson: entry.payloadJson || null,
+            attachmentNames: entry.attachmentNames || [],
+            retryCount: entry.retryCount || 0,
+            error: entry.error || null,
+            sentAt: isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess ? entry.timestamp : null,
+          },
+          update: {
+            providerMessageId: entry.providerMessageId || null,
+            status: isSuccess ? 'SENT' : 'FAILED',
+            subject: entry.subject || null,
+            payloadJson: entry.payloadJson || null,
+            attachmentNames: entry.attachmentNames || [],
+            error: entry.error || null,
+            sentAt: isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess ? entry.timestamp : null,
+          },
+        });
+      } else {
+        await prisma.notificationHistory.create({
+          data: {
+            profileId: entry.profileId || null,
+            email: entry.recipient,
+            channel: entry.channel || 'EMAIL',
+            eventType: entry.event,
+            templateId: entry.templateId || entry.event,
+            provider: entry.provider || 'RESEND',
+            providerMessageId: entry.providerMessageId || null,
+            status: isSuccess ? 'SENT' : 'FAILED',
+            subject: entry.subject || null,
+            payloadJson: entry.payloadJson || null,
+            attachmentNames: entry.attachmentNames || [],
+            retryCount: entry.retryCount || 0,
+            error: entry.error || null,
+            sentAt: isSuccess ? entry.timestamp : null,
+            failedAt: !isSuccess ? entry.timestamp : null,
+          },
+        });
+      }
     } catch (dbErr: any) {
-      console.error('⚠️ [DELIVERY LOG DB PERSIST WARNING]:', dbErr?.message);
-      return null;
+      console.warn('⚠️ [DELIVERY LOG DB PERSIST WARNING]:', dbErr.message);
     }
   }
 }

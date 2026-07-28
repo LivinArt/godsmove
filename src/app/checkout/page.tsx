@@ -114,9 +114,11 @@ export default function CheckoutPage() {
   const [profile, setProfile] = useState<any>(null);
   const [phoneWarning, setPhoneWarning] = useState(false);
   const [editingCheckoutAddressId, setEditingCheckoutAddressId] = useState<string | null>(null);
+  const [isFetchingAddresses, setIsFetchingAddresses] = useState(true);
 
   useEffect(() => {
     async function loadData() {
+      setIsFetchingAddresses(true);
       let userProf: any = null;
       try {
         userProf = await getMyProfile();
@@ -131,40 +133,29 @@ export default function CheckoutPage() {
 
       try {
         const addrList = await getMyAddresses();
-        if (Array.isArray(addrList)) {
+        if (Array.isArray(addrList) && addrList.length > 0) {
           setAddresses(addrList);
           setIsLoggedIn(true);
-          const defaultAddr = addrList.find((a: any) => a.isDefault);
-          if (defaultAddr) {
-            setSelectedAddressId(defaultAddr.id);
-            const userEmail = userProf?.email || '';
-            setForm({
-              firstName: defaultAddr.firstName || '',
-              lastName: defaultAddr.lastName || '',
-              email: userEmail,
-              phone: (defaultAddr.phone || '').replace(/\D/g, '').slice(-10),
-              address: defaultAddr.line1 || '',
-              city: defaultAddr.city || '',
-              state: defaultAddr.state || '',
-              pincode: defaultAddr.pincode || '',
-            });
-          } else if (addrList.length > 0) {
-            setSelectedAddressId(addrList[0].id);
-            const userEmail = userProf?.email || '';
-            setForm({
-              firstName: addrList[0].firstName || '',
-              lastName: addrList[0].lastName || '',
-              email: userEmail,
-              phone: (addrList[0].phone || '').replace(/\D/g, '').slice(-10),
-              address: addrList[0].line1 || '',
-              city: addrList[0].city || '',
-              state: addrList[0].state || '',
-              pincode: addrList[0].pincode || '',
-            });
-          }
+          const defaultAddr = addrList.find((a: any) => a.isDefault) || addrList[0];
+          setSelectedAddressId(defaultAddr.id);
+          const userEmail = userProf?.email || '';
+          setForm({
+            firstName: defaultAddr.firstName || '',
+            lastName: defaultAddr.lastName || '',
+            email: userEmail,
+            phone: (defaultAddr.phone || '').replace(/\D/g, '').slice(-10),
+            address: defaultAddr.line1 || '',
+            city: defaultAddr.city || '',
+            state: defaultAddr.state || '',
+            pincode: defaultAddr.pincode || '',
+          });
+        } else {
+          setSelectedAddressId('new');
         }
       } catch (err) {
-        // Address load error
+        setSelectedAddressId('new');
+      } finally {
+        setIsFetchingAddresses(false);
       }
 
       try {
@@ -476,7 +467,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (checkoutItems.length === 0 && !showSuccessModal) {
+  if (checkoutItems.length === 0 && !showSuccessModal && !confirmedOrderNumber) {
     return (
       <>
         <Navbar />
@@ -640,7 +631,7 @@ export default function CheckoutPage() {
               ) : (
                 <>
                   <button
-                    onClick={() => { setShowSuccessModal(false); router.push('/drops'); }}
+                    onClick={() => { router.push('/drops'); }}
                     style={{
                       padding: '16px 32px',
                       background: '#c8a46a',
@@ -660,7 +651,7 @@ export default function CheckoutPage() {
                     Explore Drops
                   </button>
                   <button
-                    onClick={() => { setShowSuccessModal(false); router.push('/profile?tab=collection'); }}
+                    onClick={() => { router.push('/profile?tab=collection'); }}
                     style={{
                       padding: '15px 32px',
                       background: 'transparent',
@@ -720,130 +711,157 @@ export default function CheckoutPage() {
           <form className={styles.layout} onSubmit={handleSubmit}>
             {/* Shipping Info & Address Section (Mobile Step 1) */}
             <div className={`${styles.formSection} ${mobileStep !== 1 ? styles.mobileStepHidden : ''}`}>
-              {isLoggedIn && addresses.length > 0 && (
-                <div className={styles.addressSelectorWrap}>
-                  <p className={styles.addressSelectorLabel}>Ship To</p>
-                  <div className={styles.addressCardGrid}>
-                    {addresses.map((a: any) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        className={`${styles.addressCard} ${selectedAddressId === a.id ? styles.addressCardActive : ''}`}
-                        onClick={() => handleAddressSelect(a.id)}
-                        aria-pressed={selectedAddressId === a.id}
-                      >
-                        {/* Address type badge + selected indicator row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{
-                            fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em',
-                            textTransform: 'uppercase', fontFamily: 'var(--font-heading)',
-                            color: selectedAddressId === a.id ? '#c8a46a' : 'var(--text-muted)',
-                            border: selectedAddressId === a.id ? '1px solid rgba(200,164,106,0.3)' : '1px solid var(--border-subtle)',
-                            padding: '2px 7px',
-                            transition: 'all 0.25s ease',
-                          }}>
-                            {a.label === 'Office' ? '🏢' : a.label === 'Other' ? '📍' : '🏠'} {a.label || 'Home'}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedAddressId(a.id);
-                                setEditingCheckoutAddressId(a.id);
-                                setForm({
-                                  firstName: a.firstName || '',
-                                  lastName: a.lastName || '',
-                                  email: profile?.email || form.email || '',
-                                  phone: (a.phone || '').replace(/\D/g, '').slice(0, 10),
-                                  address: a.line1 || '',
-                                  city: a.city || '',
-                                  state: a.state || '',
-                                  pincode: a.pincode || '',
-                                });
-                                showToast('Editing Address', `Updating details for ${a.firstName}'s address.`);
-                              }}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#c8a46a',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                opacity: 0.8,
-                                transition: 'opacity 0.2s ease',
-                              }}
-                              title="Edit Address"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            {selectedAddressId === a.id && (
-                              <span className={styles.addressCardCheck} />
-                            )}
-                          </div>
-                        </div>
-                        {a.isDefault && (
-                          <span className={styles.addressDefaultBadge}>Default</span>
-                        )}
-                        <span className={styles.addressCardName}>
-                          {a.firstName} {a.lastName}
-                        </span>
-                        {a.phone && (
-                          <span className={styles.addressCardPhone}>{a.phone}</span>
-                        )}
-                        <span className={styles.addressCardDetails}>
-                          {a.line1}{a.line2 ? `, ${a.line2}` : ''}
-                          <br />
-                          {a.city}, {a.state} — {a.pincode}
-                        </span>
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className={`${styles.addressCard} ${styles.addressCardNew} ${selectedAddressId === 'new' ? styles.addressCardActive : ''}`}
-                      onClick={() => handleAddressSelect('new')}
-                      aria-pressed={selectedAddressId === 'new'}
-                    >
-                      <span className={styles.addressNewIcon}>+</span>
-                      <span className={styles.addressCardName}>New Address</span>
-                      <span className={styles.addressCardDetails}>Enter a new delivery address below</span>
-                    </button>
-                  </div>
+              {isFetchingAddresses ? (
+                <div style={{
+                  padding: '24px',
+                  background: 'rgba(18, 18, 21, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '8px',
+                  marginBottom: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}>
+                  <div style={{
+                    width: '35%',
+                    height: '14px',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    borderRadius: '4px',
+                  }} />
+                  <div style={{
+                    width: '100%',
+                    height: '80px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: '6px',
+                    border: '1px dashed rgba(255, 255, 255, 0.1)',
+                  }} />
                 </div>
-              )}
-
-              {/* Task 6: Smart Saved Address vs New Address Form */}
-              {isLoggedIn && addresses.length > 0 && selectedAddressId !== 'new' ? (
-                <>
-                  <h2 className={styles.sectionTitle}>Contact & Delivery Updates</h2>
-                  <div className={styles.formGrid}>
-                    <div className={`${styles.field} ${styles.fieldFull}`}>
-                      <label htmlFor="phone" className={styles.label}>Communication Mobile Number</label>
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        required
-                        pattern="[6-9]\d{9}"
-                        title="Please enter a valid 10-digit Indian phone number starting with 6-9"
-                        className={styles.input}
-                        placeholder="10-digit mobile number for delivery updates"
-                        value={form.phone}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  </div>
-                  {/* Hidden inputs to preserve form payload when saved address is active */}
-                  <input type="hidden" name="firstName" value={form.firstName} />
-                  <input type="hidden" name="lastName" value={form.lastName} />
-                  <input type="hidden" name="email" value={form.email} />
-                  <input type="hidden" name="address" value={form.address} />
-                  <input type="hidden" name="city" value={form.city} />
-                  <input type="hidden" name="state" value={form.state} />
-                  <input type="hidden" name="pincode" value={form.pincode} />
-                </>
               ) : (
+                <>
+                  {isLoggedIn && addresses.length > 0 && (
+                    <div className={styles.addressSelectorWrap}>
+                      <p className={styles.addressSelectorLabel}>Ship To</p>
+                      <div className={styles.addressCardGrid}>
+                        {addresses.map((a: any) => (
+                          <button
+                            key={a.id}
+                            type="button"
+                            className={`${styles.addressCard} ${selectedAddressId === a.id ? styles.addressCardActive : ''}`}
+                            onClick={() => handleAddressSelect(a.id)}
+                            aria-pressed={selectedAddressId === a.id}
+                          >
+                            {/* Address type badge + selected indicator row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <span style={{
+                                fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em',
+                                textTransform: 'uppercase', fontFamily: 'var(--font-heading)',
+                                color: selectedAddressId === a.id ? '#c8a46a' : 'var(--text-muted)',
+                                border: selectedAddressId === a.id ? '1px solid rgba(200,164,106,0.3)' : '1px solid var(--border-subtle)',
+                                padding: '2px 7px',
+                                transition: 'all 0.25s ease',
+                              }}>
+                                {a.label === 'Office' ? '🏢' : a.label === 'Other' ? '📍' : '🏠'} {a.label || 'Home'}
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedAddressId(a.id);
+                                    setEditingCheckoutAddressId(a.id);
+                                    setForm({
+                                      firstName: a.firstName || '',
+                                      lastName: a.lastName || '',
+                                      email: profile?.email || form.email || '',
+                                      phone: (a.phone || '').replace(/\D/g, '').slice(0, 10),
+                                      address: a.line1 || '',
+                                      city: a.city || '',
+                                      state: a.state || '',
+                                      pincode: a.pincode || '',
+                                    });
+                                    showToast('Editing Address', `Updating details for ${a.firstName}'s address.`);
+                                  }}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#c8a46a',
+                                    cursor: 'pointer',
+                                    padding: '2px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    opacity: 0.8,
+                                    transition: 'opacity 0.2s ease',
+                                  }}
+                                  title="Edit Address"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                                {selectedAddressId === a.id && (
+                                  <span className={styles.addressCardCheck} />
+                                )}
+                              </div>
+                            </div>
+                            {a.isDefault && (
+                              <span className={styles.addressDefaultBadge}>Default</span>
+                            )}
+                            <span className={styles.addressCardName}>
+                              {a.firstName} {a.lastName}
+                            </span>
+                            {a.phone && (
+                              <span className={styles.addressCardPhone}>{a.phone}</span>
+                            )}
+                            <span className={styles.addressCardDetails}>
+                              {a.line1}{a.line2 ? `, ${a.line2}` : ''}
+                              <br />
+                              {a.city}, {a.state} — {a.pincode}
+                            </span>
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className={`${styles.addressCard} ${styles.addressCardNew} ${selectedAddressId === 'new' ? styles.addressCardActive : ''}`}
+                          onClick={() => handleAddressSelect('new')}
+                          aria-pressed={selectedAddressId === 'new'}
+                        >
+                          <span className={styles.addressNewIcon}>+</span>
+                          <span className={styles.addressCardName}>New Address</span>
+                          <span className={styles.addressCardDetails}>Enter a new delivery address below</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Smart Saved Address vs New Address Form */}
+                  {isLoggedIn && addresses.length > 0 && selectedAddressId !== 'new' ? (
+                    <>
+                      <h2 className={styles.sectionTitle}>Contact & Delivery Updates</h2>
+                      <div className={styles.formGrid}>
+                        <div className={`${styles.field} ${styles.fieldFull}`}>
+                          <label htmlFor="phone" className={styles.label}>Communication Mobile Number</label>
+                          <input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            required
+                            pattern="[6-9]\d{9}"
+                            title="Please enter a valid 10-digit Indian phone number starting with 6-9"
+                            className={styles.input}
+                            placeholder="10-digit mobile number for delivery updates"
+                            value={form.phone}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+                      {/* Hidden inputs to preserve form payload when saved address is active */}
+                      <input type="hidden" name="firstName" value={form.firstName} />
+                      <input type="hidden" name="lastName" value={form.lastName} />
+                      <input type="hidden" name="email" value={form.email} />
+                      <input type="hidden" name="address" value={form.address} />
+                      <input type="hidden" name="city" value={form.city} />
+                      <input type="hidden" name="state" value={form.state} />
+                      <input type="hidden" name="pincode" value={form.pincode} />
+                    </>
+                  ) : (
                 <>
                   <h2 className={styles.sectionTitle}>Delivery Information</h2>
                   <div className={styles.formGrid}>
@@ -934,6 +952,8 @@ export default function CheckoutPage() {
                   </div>
                 </>
               )}
+            </>
+          )}
 
               {/* Step 1 Mobile Navigation CTA */}
               <div className={styles.mobileStepCtaWrap}>
