@@ -17,7 +17,7 @@ export const OrderShippedTemplate: React.FC<OrderShippedTemplateProps> = ({
   orderNumber = 'GM-2026-8801',
   courierName = 'Blue Dart Express Archival Priority',
   trackingNumber = 'BD778899001',
-  trackingUrl = 'https://godsmove.in/profile',
+  trackingUrl = 'https://godsmove.in/profile?tab=collection',
   estimatedDelivery = '3 Business Days',
 }) => {
   const previewText = `Allocation Dispatched: Order ${orderNumber}`;

@@ -14,7 +14,7 @@ export const OrderDeliveredTemplate: React.FC<OrderDeliveredTemplateProps> = ({
   customerName = 'Valued Collector',
   orderNumber = 'GM-2026-8801',
   deliveredAt = 'Today',
-  reviewUrl = 'https://godsmove.in/profile',
+  reviewUrl = 'https://godsmove.in/profile?tab=collection',
 }) => {
   const previewText = `Delivered: Your GODSMOVE Allocation ${orderNumber}`;
 
