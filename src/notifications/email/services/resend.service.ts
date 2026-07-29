@@ -19,9 +19,12 @@ export interface SendEmailPayload {
   subject: string;
   react?: React.ReactElement;
   html?: string;
+  text?: string;
   from?: string;
   replyTo?: string;
+  entityId?: string;
   attachments?: EmailAttachment[];
+  headers?: Record<string, string>;
 }
 
 export interface SendEmailResponse {
@@ -31,7 +34,7 @@ export interface SendEmailResponse {
 }
 
 /**
- * Low-level Resend Client Dispatcher
+ * Low-level Resend Client Dispatcher with Standalone MIME & Anti-Threading Safeguards
  */
 export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailResponse> {
   const from = payload.from || DEFAULT_SENDER;
@@ -50,17 +53,45 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
 
   try {
     let htmlString = payload.html || '';
+    let textString = payload.text || '';
 
-    if (!htmlString && payload.react) {
-      try {
-        htmlString = await render(payload.react);
-      } catch (renderErr: any) {
-        console.error('❌ [@REACT-EMAIL/RENDER ERROR]:', renderErr);
-        htmlString = `<div><h1>${payload.subject}</h1><p>GODSMOVE Archival Dispatch</p></div>`;
+    if (payload.react) {
+      if (!htmlString) {
+        try {
+          htmlString = await render(payload.react);
+        } catch (renderErr: any) {
+          console.error('❌ [@REACT-EMAIL/RENDER HTML ERROR]:', renderErr);
+          htmlString = `<div><h1>${payload.subject}</h1><p>GODSMOVE Archival Dispatch</p></div>`;
+        }
+      }
+      if (!textString) {
+        try {
+          textString = await render(payload.react, { plainText: true });
+        } catch (textErr: any) {
+          console.warn('⚠️ [@REACT-EMAIL/RENDER TEXT WARN]:', textErr?.message);
+        }
       }
     }
 
-    console.log(`✉️ [RESEND DISPATCHING] To: ${payload.to} | Subject: "${payload.subject}" | From: ${from}`);
+    // Generate unique standalone message identity and anti-threading headers
+    const uniqueRef = payload.entityId || `ref_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const uniqueMessageId = `<msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}@godsmove.in>`;
+
+    const customHeaders: Record<string, string> = {
+      'X-Entity-Ref-ID': uniqueRef,
+      'Message-ID': uniqueMessageId,
+      'X-Auto-Response-Suppress': 'OOF, AutoReply',
+      'X-GM-STANDALONE': 'true',
+      ...(payload.headers || {}),
+    };
+
+    // Ensure threading headers are explicitly removed to guarantee standalone email placement
+    delete customHeaders['In-Reply-To'];
+    delete customHeaders['in-reply-to'];
+    delete customHeaders['References'];
+    delete customHeaders['references'];
+
+    console.log(`✉️ [RESEND DISPATCHING] To: ${payload.to} | Subject: "${payload.subject}" | Ref: ${uniqueRef}`);
 
     const dispatchParams: any = {
       from,
@@ -68,6 +99,8 @@ export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailRes
       replyTo,
       subject: payload.subject,
       html: htmlString,
+      text: textString || undefined,
+      headers: customHeaders,
     };
 
     if (payload.attachments && payload.attachments.length > 0) {

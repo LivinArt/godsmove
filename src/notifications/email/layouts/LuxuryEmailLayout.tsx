@@ -15,18 +15,38 @@ interface LuxuryEmailLayoutProps {
   children: React.ReactNode;
 }
 
+// Non-breaking spaces and zero-width joiner characters to prevent email clients (Gmail/Apple Mail/Outlook)
+// from pulling in attachment text or body content into the inbox snippet preview
+const PREVIEW_PADDING = '\xa0\u200C\u200B\xa0\u200C\u200B\xa0\u200C\u200B\xa0\u200C\u200B\xa0\u200C\u200B'.repeat(30);
+
 export const LuxuryEmailLayout: React.FC<LuxuryEmailLayoutProps> = ({
   previewText,
   children,
 }) => {
+  const fullPreviewText = (previewText || 'GODSMOVE Archival Notification') + PREVIEW_PADDING;
+
   return (
     <Html lang="en">
       <Head>
         <meta name="color-scheme" content="dark" />
         <meta name="supported-color-schemes" content="dark" />
       </Head>
-      <Preview>{previewText}</Preview>
+      <Preview>{fullPreviewText}</Preview>
       <Body style={mainStyle}>
+        <div
+          style={{
+            display: 'none',
+            maxHeight: '0px',
+            overflow: 'hidden',
+            opacity: 0,
+            fontSize: '1px',
+            lineHeight: '1px',
+            color: '#000000',
+          }}
+        >
+          {previewText}
+          {PREVIEW_PADDING}
+        </div>
         <Container style={containerStyle}>
           <Header />
           <Section style={contentStyle}>{children}</Section>

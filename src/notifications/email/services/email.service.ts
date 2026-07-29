@@ -44,6 +44,7 @@ export class EmailService {
         react: reactElement,
         from: definition.senderConfig.from,
         replyTo: definition.senderConfig.replyTo,
+        entityId,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 

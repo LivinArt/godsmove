@@ -63,92 +63,92 @@ const DEFAULT_SENDER: EmailSenderConfig = {
 export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinition> = {
   ORDER_CREATED: {
     component: OrderConfirmationTemplate,
-    subjectBuilder: (p) => `Allocation Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_CONFIRMED: {
     component: OrderConfirmationTemplate,
-    subjectBuilder: (p) => `Order Confirmed: ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_SHIPPED: {
     component: OrderShippedTemplate,
-    subjectBuilder: (p) => `Allocation Dispatched: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Shipped`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_DELIVERED: {
     component: OrderDeliveredTemplate,
-    subjectBuilder: (p) => `Allocation Delivered: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Delivered`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_CANCELLED: {
     component: OrderCancelledTemplate,
-    subjectBuilder: (p) => `Order Cancellation Notice: ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} Cancellation Notice`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_CONFIRMED: {
     component: PaymentConfirmationTemplate,
-    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_SUCCESSFUL: {
     component: PaymentConfirmationTemplate,
-    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_FAILED: {
     component: OrderCancelledTemplate,
-    subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PROFILE_UPDATED: {
     component: ProfileUpdatedTemplate,
-    subjectBuilder: () => `Profile Updated Successfully | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Profile was Updated ${p.entityId ? `(#${String(p.entityId).slice(-7).toUpperCase()})` : ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REQUESTED: {
     component: ReturnRequestedTemplate,
-    subjectBuilder: (p) => `Return Request Received: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Request ${p.returnId ? `#${p.returnId}` : ''} Received`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_APPROVED: {
     component: ReturnApprovedTemplate,
-    subjectBuilder: (p) => `Return Request Approved: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return ${p.returnId ? `#${p.returnId}` : ''} has been Approved`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REJECTED: {
     component: ReturnRejectedTemplate,
-    subjectBuilder: (p) => `Return Request Notice: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Request Notice: ${p.returnId || ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_PICKUP_SCHEDULED: {
     component: ReturnPickupScheduledTemplate,
-    subjectBuilder: (p) => `Return Pickup Scheduled for ${p.pickupDate || 'Soon'}: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Pickup Scheduled for ${p.pickupDate || 'Soon'} (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_PICKUP_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Return Pickup Completed: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Package Received at Warehouse (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REFUND_COMPLETED: {
     component: ReturnRefundCompletedTemplate,
-    subjectBuilder: (p) => `Return Refund Completed: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Refund Settlement Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Return Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Return Case Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   REFUND_INITIATED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Refund Settlement Initiated: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Refund Settlement Initiated (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   REFUND_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Refund Settlement Completed: ${p.returnId || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Your GODSMOVE Refund Settlement Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   INACTIVE_USER: {
@@ -158,12 +158,12 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   },
   WALLET_CREDITED: {
     component: WalletCreditedTemplate,
-    subjectBuilder: (p) => `₹${Number(p.amount || 0).toLocaleString('en-IN')} Privilege Credits Credited | GODSMOVE`,
+    subjectBuilder: (p) => `₹${Number(p.amount || 0).toLocaleString('en-IN')} Privilege Credits Credited ${p.entityId ? `(#${String(p.entityId).slice(-7).toUpperCase()})` : ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   WALLET_DEBITED: {
     component: WalletDebitedTemplate,
-    subjectBuilder: (p) => `₹${Number(p.amount || 0).toLocaleString('en-IN')} Vault Credits Applied | GODSMOVE`,
+    subjectBuilder: (p) => `₹${Number(p.amount || 0).toLocaleString('en-IN')} Vault Credits Applied ${p.orderNumber ? `to Order #${p.orderNumber}` : ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PASSWORD_RESET: {
@@ -332,7 +332,15 @@ export class TemplateResolver {
               htmlContent: activeVersion.bodyHtml!,
               payload: props,
             }),
-          subjectBuilder: (p: any) => activeVersion.subject || defaultDef.subjectBuilder(p),
+          subjectBuilder: (p: any) => {
+            if (!activeVersion.subject || activeVersion.subject.startsWith('Notification:')) {
+              return defaultDef.subjectBuilder(p);
+            }
+            let sub = activeVersion.subject;
+            if (p.orderNumber) sub = sub.replace(/\{\{\s*orderNumber\s*\}\}/gi, p.orderNumber);
+            if (p.returnId) sub = sub.replace(/\{\{\s*returnId\s*\}\}/gi, p.returnId);
+            return sub;
+          },
           senderConfig: defaultDef.senderConfig,
         };
       }
