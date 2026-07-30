@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { X, Ruler } from 'lucide-react';
 
 export interface SizeChartEntry {
-  size: string;             // Combined size e.g. "L-38" or "L"
+  size: string; // Combined size e.g. "L-38" or "L" or "Black - M"
   alphaSize?: string | null;
   numericSize?: string | null;
+  color?: string | null;
   measurements?: Record<string, string> | null;
 }
 
@@ -15,6 +16,19 @@ interface SizeChartModalProps {
   onClose: () => void;
   productName: string;
   entries: SizeChartEntry[];
+}
+
+/**
+ * Checks whether a stored measurement value is meaningful (> 0 and not empty/zero/placeholder).
+ * ZERO (0, "0", "0\"", "0.0", "0in", etc.) is NOT displayed on the Storefront.
+ */
+export function isNonZeroValue(val?: string | number | null): boolean {
+  if (val === null || val === undefined) return false;
+  const str = String(val).trim();
+  if (str === '' || str === '0' || str === '0"' || str === '0in' || str === '0.0' || str === '0.00' || str === '—' || str === '-') return false;
+  const num = parseFloat(str);
+  if (!isNaN(num) && num === 0) return false;
+  return true;
 }
 
 export default function SizeChartModal({
@@ -28,26 +42,32 @@ export default function SizeChartModal({
   if (!isOpen || !entries || entries.length === 0) return null;
 
   // Extract all unique measurement keys across all entries
-  const allKeysSet = new Set<string>();
-  entries.forEach(e => {
+  const rawKeysSet = new Set<string>();
+  entries.forEach((e) => {
     if (e.measurements) {
-      Object.keys(e.measurements).forEach(k => {
-        if (e.measurements![k]) allKeysSet.add(k);
+      Object.keys(e.measurements).forEach((k) => {
+        if (e.measurements![k] !== undefined) rawKeysSet.add(k);
       });
     }
   });
-  const measurementKeys = Array.from(allKeysSet);
 
-  // Helper to convert inches to cm if unit === 'CM'
+  // Filter keys: include ONLY keys where AT LEAST ONE entry has a non-zero value (> 0)
+  // This guarantees that zero-valued measurement headings (e.g. Shoulder = 0) DO NOT appear!
+  const measurementKeys = Array.from(rawKeysSet).filter((k) =>
+    entries.some((e) => isNonZeroValue(e.measurements?.[k]))
+  );
+
+  // Helper to format values (> 0) with unit conversion
   const formatVal = (val?: string | null) => {
-    if (!val) return '—';
+    if (!isNonZeroValue(val)) return '—';
+    const cleanStr = String(val!).trim();
     if (unit === 'CM') {
-      const num = parseFloat(val);
+      const num = parseFloat(cleanStr);
       if (!isNaN(num)) {
         return `${(num * 2.54).toFixed(1)} cm`;
       }
     }
-    return val.includes('"') || val.includes('in') ? val : `${val}"`;
+    return cleanStr.includes('"') || cleanStr.includes('in') || cleanStr.includes('cm') ? cleanStr : `${cleanStr}"`;
   };
 
   return (
@@ -71,7 +91,7 @@ export default function SizeChartModal({
           background: '#0f172a',
           border: '1px solid rgba(200, 164, 106, 0.3)',
           borderRadius: '16px',
-          maxWidth: '720px',
+          maxWidth: '780px',
           width: '100%',
           maxHeight: '90vh',
           display: 'flex',
@@ -81,16 +101,30 @@ export default function SizeChartModal({
         }}
       >
         {/* Header */}
-        <div style={{
-          padding: '24px 28px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, rgba(200, 164, 106, 0.1) 0%, transparent 100%)',
-        }}>
+        <div
+          style={{
+            padding: '24px 28px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, rgba(200, 164, 106, 0.1) 0%, transparent 100%)',
+          }}
+        >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c8a46a', fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#c8a46a',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                marginBottom: '4px',
+              }}
+            >
               <Ruler size={14} />
               GARMENT SPECIFICATION CHART
             </div>
@@ -119,14 +153,16 @@ export default function SizeChartModal({
         </div>
 
         {/* Unit Selector Toggle Bar */}
-        <div style={{
-          padding: '12px 28px',
-          background: '#1e293b',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+        <div
+          style={{
+            padding: '12px 28px',
+            background: '#1e293b',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <span style={{ fontSize: '12px', color: '#9ca3af' }}>
             All measurements shown in <strong>{unit === 'INCHES' ? 'Inches (in)' : 'Centimeters (cm)'}</strong>
           </span>
@@ -166,51 +202,71 @@ export default function SizeChartModal({
 
         {/* Scrollable Table Content */}
         <div style={{ padding: '24px 28px', overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(200, 164, 106, 0.3)' }}>
-                <th style={{ padding: '12px', color: '#c8a46a', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  SIZE
-                </th>
-                {measurementKeys.map(k => (
-                  <th key={k} style={{ padding: '12px', color: '#9ca3af', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    {k}
+          {measurementKeys.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af', fontSize: '14px' }}>
+              No measurements available for this product.
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(200, 164, 106, 0.3)' }}>
+                  <th style={{ padding: '12px', color: '#c8a46a', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    SIZE / VARIANT
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, idx) => (
-                <tr
-                  key={idx}
-                  style={{
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                    background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.02)',
-                  }}
-                >
-                  <td style={{ padding: '14px 12px', color: '#ffffff', fontWeight: 700, fontSize: '14px' }}>
-                    {entry.size}
-                  </td>
-                  {measurementKeys.map(k => (
-                    <td key={k} style={{ padding: '14px 12px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
-                      {formatVal(entry.measurements?.[k])}
-                    </td>
+                  {measurementKeys.map((k) => (
+                    <th key={k} style={{ padding: '12px', color: '#9ca3af', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      {k}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {entries.map((entry, idx) => {
+                  const hasAnyValidMeas = measurementKeys.some((k) => isNonZeroValue(entry.measurements?.[k]));
+                  return (
+                    <tr
+                      key={idx}
+                      style={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                        background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.02)',
+                      }}
+                    >
+                      <td style={{ padding: '14px 12px', color: '#ffffff', fontWeight: 700, fontSize: '14px' }}>
+                        {entry.size}
+                      </td>
+                      {!hasAnyValidMeas ? (
+                        <td
+                          colSpan={measurementKeys.length}
+                          style={{ padding: '14px 12px', color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}
+                        >
+                          No measurements available for this variant.
+                        </td>
+                      ) : (
+                        measurementKeys.map((k) => (
+                          <td key={k} style={{ padding: '14px 12px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                            {formatVal(entry.measurements?.[k])}
+                          </td>
+                        ))
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Footer Guidance Note */}
-        <div style={{
-          padding: '16px 28px',
-          background: 'rgba(255, 255, 255, 0.02)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-          fontSize: '12px',
-          color: '#9ca3af',
-          textAlign: 'center',
-        }}>
+        <div
+          style={{
+            padding: '16px 28px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+            fontSize: '12px',
+            color: '#9ca3af',
+            textAlign: 'center',
+          }}
+        >
           💡 <strong>Fitting Note:</strong> Measure around the fullest part of your chest and waist. For relaxed fits, choose your true size.
         </div>
       </div>

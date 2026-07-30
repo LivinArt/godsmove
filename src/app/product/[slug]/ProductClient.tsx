@@ -50,33 +50,29 @@ export default function ProductClient({
 
   // Extract size chart entries ONLY from database records entered by Admin
   const sizeChartEntries: SizeChartEntry[] = (() => {
-    // 1. Explicit size chart entries on product (product.sizeChart.entries)
-    const productEntries = (product.sizeChart as any)?.entries;
-    if (Array.isArray(productEntries) && productEntries.length > 0) {
-      const validEntries = productEntries.filter(
-        (e: any) => e.measurements && Object.keys(e.measurements).length > 0
-      );
-      if (validEntries.length > 0) return validEntries;
-    }
-
-    // 2. Explicit measurements stored on variants (variant.measurements)
-    const variantEntries = product.variants
-      ?.filter((v: any) => v.measurements && typeof v.measurements === 'object' && Object.keys(v.measurements).length > 0)
-      ?.map((v: any) => ({
-        size: v.size,
+    // 1. Explicit measurements stored on variants (variant.measurements)
+    if (Array.isArray(product.variants) && product.variants.length > 0) {
+      return product.variants.map((v: any) => ({
+        size: v.color ? `${v.color} - ${v.size}` : v.size,
         alphaSize: v.alphaSize,
         numericSize: v.numericSize,
-        measurements: v.measurements,
+        color: v.color,
+        measurements: v.measurements || null,
       }));
+    }
 
-    if (variantEntries && variantEntries.length > 0) {
-      return variantEntries;
+    // 2. Explicit size chart entries on product (product.sizeChart.entries) fallback
+    const productEntries = (product.sizeChart as any)?.entries;
+    if (Array.isArray(productEntries) && productEntries.length > 0) {
+      return productEntries;
     }
 
     return [];
   })();
 
-  const hasSizeChart = sizeChartEntries.length > 0;
+  const hasSizeChart = sizeChartEntries.some(
+    (e: any) => e.measurements && typeof e.measurements === 'object' && Object.keys(e.measurements).length > 0
+  );
 
   useEffect(() => {
     try {

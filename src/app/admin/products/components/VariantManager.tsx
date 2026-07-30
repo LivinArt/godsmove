@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Archive, ArchiveRestore, Trash2, Ruler, Palette } from 'lucide-react';
+import { Plus, RefreshCw, Archive, ArchiveRestore, Trash2, Ruler, Palette, Check, Layers } from 'lucide-react';
 import type { FormVariantInput } from '@/lib/validations/product';
 import { calculatePricing } from '@/lib/PricingEngine';
 
@@ -15,6 +15,12 @@ interface VariantManagerProps {
   globalGstPercentage: number;
 }
 
+interface ColorConfig {
+  colorName: string;
+  colorHex: string;
+  sizes: string[];
+}
+
 const STANDARD_MEASUREMENT_FIELDS = [
   'Chest',
   'Shoulder',
@@ -22,10 +28,10 @@ const STANDARD_MEASUREMENT_FIELDS = [
   'Sleeve Length',
   'Garment Length',
   'Hip',
-  'Inseam',
-  'Rise',
-  'Neck',
   'Bottom Opening',
+  'Neck',
+  'Rise',
+  'Inseam',
 ];
 
 const PRESET_LUXURY_COLORS = [
@@ -39,6 +45,19 @@ const PRESET_LUXURY_COLORS = [
   { name: 'Burgundy', hex: '#800020' },
 ];
 
+const PRESET_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+
+const PRESET_CUSTOM_MEASUREMENTS = [
+  'Arm Hole',
+  'Pocket Width',
+  'Pocket Length',
+  'Bicep',
+  'Cuff',
+  'Hem',
+  'Thigh',
+  'Calf',
+];
+
 export function VariantManager({
   variants,
   onChange,
@@ -48,55 +67,123 @@ export function VariantManager({
   globalComparePrice,
   globalGstPercentage,
 }: VariantManagerProps) {
-  // Option matrix setup state
-  const hasInitialColors = variants.some((v) => v.color && v.color.trim().length > 0) ?? false;
-  const hasInitialSizes = variants.some((v) => v.size && v.size !== 'ONE_SIZE') ?? false;
+  // Option Toggles
+  const hasInitialColors = variants.some((v) => v.color && v.color.trim().length > 0);
+  const hasInitialSizes = variants.some((v) => v.size && v.size !== 'ONE_SIZE') || variants.length === 0;
 
   const [hasColorVariants, setHasColorVariants] = useState(hasInitialColors);
-  const [hasSizeVariants, setHasSizeVariants] = useState(hasInitialSizes || variants.length === 0);
+  const [hasSizeVariants, setHasSizeVariants] = useState(hasInitialSizes);
 
-  // Custom measurement inputs per variant index
-  const [customFieldInputs, setCustomFieldInputs] = useState<Record<number, { name: string; value: string }>>({});
+  // Active matrix tab filter: 'ALL' or variant key (e.g. '0', '1')
+  const [activeTab, setActiveTab] = useState<string>('ALL');
 
-  // Wizard list colors
-  const [wizardColors, setWizardColors] = useState<{ name: string; hex: string }[]>(() => {
-    const existing = variants.map((v) => ({ name: v.color || '', hex: v.colorHex || '#000000' })).filter((c) => c.name);
-    const unique: { name: string; hex: string }[] = [];
-    existing.forEach((item) => {
-      if (!unique.some((x) => x.name.toLowerCase() === item.name.toLowerCase())) {
-        unique.push(item);
-      }
-    });
-    return unique.length > 0 ? unique : [{ name: 'Black', hex: '#000000' }];
+  // Color-wise size state structure
+  const [colorConfigs, setColorConfigs] = useState<ColorConfig[]>(() => {
+    if (hasInitialColors) {
+      const colorMap = new Map<string, { hex: string; sizes: string[] }>();
+      variants.forEach((v) => {
+        if (!v.color) return;
+        const colorKey = v.color.trim();
+        if (!colorMap.has(colorKey)) {
+          colorMap.set(colorKey, { hex: v.colorHex || '#000000', sizes: [] });
+        }
+        const existing = colorMap.get(colorKey)!;
+        if (v.size && v.size !== 'ONE_SIZE' && !existing.sizes.includes(v.size)) {
+          existing.sizes.push(v.size);
+        }
+      });
+      const result: ColorConfig[] = [];
+      colorMap.forEach((val, key) => {
+        result.push({ colorName: key, colorHex: val.hex, sizes: val.sizes });
+      });
+      return result.length > 0 ? result : [{ colorName: 'Black', colorHex: '#000000', sizes: ['S', 'M', 'L', 'XL'] }];
+    }
+    return [{ colorName: 'Black', colorHex: '#000000', sizes: ['S', 'M', 'L', 'XL'] }];
   });
 
-  // Wizard list sizes
-  const [wizardSizes, setWizardSizes] = useState<string[]>(() => {
+  // Size-only state structure (when Color variants disabled)
+  const [sizeOnlyList, setSizeOnlyList] = useState<string[]>(() => {
     const existing = variants.map((v) => v.size).filter((s) => s && s !== 'ONE_SIZE');
     return existing.length > 0 ? Array.from(new Set(existing)) : ['S', 'M', 'L', 'XL'];
   });
 
-  const [customSizeInput, setCustomSizeInput] = useState('');
+  // Color & Size Input states
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#000000');
+  const [customSizeInputPerColor, setCustomSizeInputPerColor] = useState<Record<string, string>>({});
+  const [customSizeInputGlobal, setCustomSizeInputGlobal] = useState('');
 
-  const addCustomSize = () => {
-    if (!customSizeInput) return;
-    const clean = customSizeInput.trim().toUpperCase();
-    if (!wizardSizes.includes(clean)) {
-      setWizardSizes([...wizardSizes, clean]);
+  // Custom measurement inputs per variant index
+  const [customFieldInputs, setCustomFieldInputs] = useState<Record<number, { name: string; value: string }>>({});
+
+  // Matrix Auto-Sync Helper
+  const syncMatrix = (colorsEnabled: boolean, sizesEnabled: boolean, colors: ColorConfig[], sizesOnly: string[]) => {
+    const targetCombos: { color: string | null; colorHex: string | null; size: string }[] = [];
+
+    if (!sizesEnabled && !colorsEnabled) {
+      targetCombos.push({ color: null, colorHex: null, size: 'ONE_SIZE' });
+    } else if (!colorsEnabled) {
+      const activeSizes = sizesOnly.length > 0 ? sizesOnly : ['ONE_SIZE'];
+      activeSizes.forEach((s) => {
+        targetCombos.push({ color: null, colorHex: null, size: s });
+      });
+    } else {
+      colors.forEach((c) => {
+        const activeSizes = sizesEnabled && c.sizes.length > 0 ? c.sizes : ['ONE_SIZE'];
+        activeSizes.forEach((s) => {
+          targetCombos.push({ color: c.colorName, colorHex: c.colorHex, size: s });
+        });
+      });
     }
-    setCustomSizeInput('');
+
+    const updatedVariants: FormVariantInput[] = targetCombos.map((combo, idx) => {
+      const existing = variants.find(
+        (v) =>
+          v.size === combo.size &&
+          ((v.color?.toLowerCase() === combo.color?.toLowerCase()) || (!v.color && !combo.color))
+      );
+
+      if (existing) {
+        return {
+          ...existing,
+          position: idx,
+          colorHex: combo.colorHex || existing.colorHex || null,
+        };
+      }
+
+      const baseSku = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
+      const colorCode = combo.color ? combo.color.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3) : '';
+      const generatedSku = [baseSku, colorCode, combo.size].filter(Boolean).join('-');
+
+      return {
+        sku: generatedSku,
+        size: combo.size as any,
+        alphaSize: combo.size.includes('-') ? combo.size.split('-')[0] : (isNaN(Number(combo.size)) && combo.size !== 'ONE_SIZE' ? combo.size : null),
+        numericSize: combo.size.includes('-') ? combo.size.split('-')[1] : (!isNaN(Number(combo.size)) ? combo.size : null),
+        measurements: {},
+        color: combo.color,
+        colorHex: combo.colorHex,
+        price: globalSellingPrice,
+        comparePrice: globalComparePrice || null,
+        position: idx,
+        isActive: true,
+        initialStock: 0,
+      };
+    });
+
+    onChange(updatedVariants);
   };
 
-  const addCustomColor = (name?: string, hex?: string) => {
-    const targetName = name || newColorName;
+  // Color Management Handlers
+  const addColorChoice = (name?: string, hex?: string) => {
+    const targetName = (name || newColorName).trim();
     const targetHex = hex || newColorHex;
-    if (!targetName.trim()) return;
+    if (!targetName) return;
 
-    const cleanName = targetName.trim();
-    if (!wizardColors.some((c) => c.name.toLowerCase() === cleanName.toLowerCase())) {
-      setWizardColors([...wizardColors, { name: cleanName, hex: targetHex }]);
+    if (!colorConfigs.some((c) => c.colorName.toLowerCase() === targetName.toLowerCase())) {
+      const updated = [...colorConfigs, { colorName: targetName, colorHex: targetHex, sizes: ['S', 'M', 'L', 'XL'] }];
+      setColorConfigs(updated);
+      syncMatrix(hasColorVariants, hasSizeVariants, updated, sizeOnlyList);
     }
     if (!name) {
       setNewColorName('');
@@ -104,103 +191,77 @@ export function VariantManager({
     }
   };
 
-  const removeWizardColor = (index: number) => {
-    const remaining = wizardColors.filter((_, i) => i !== index);
-    setWizardColors(remaining);
+  const removeColorChoice = (colorIndex: number) => {
+    const updated = colorConfigs.filter((_, idx) => idx !== colorIndex);
+    setColorConfigs(updated);
+    syncMatrix(hasColorVariants, hasSizeVariants, updated, sizeOnlyList);
   };
 
-  const removeWizardSize = (size: string) => {
-    setWizardSizes(wizardSizes.filter((s) => s !== size));
+  const toggleSizeForColor = (colorIndex: number, size: string) => {
+    const updated = [...colorConfigs];
+    const target = updated[colorIndex];
+    if (target.sizes.includes(size)) {
+      target.sizes = target.sizes.filter((s) => s !== size);
+    } else {
+      target.sizes = [...target.sizes, size];
+    }
+    setColorConfigs(updated);
+    syncMatrix(hasColorVariants, hasSizeVariants, updated, sizeOnlyList);
   };
 
-  // Compile wizard matrix combinations
-  const compileWizardMatrix = () => {
-    const activeColors = hasColorVariants ? wizardColors : [{ name: '', hex: '' }];
-    const activeSizes = hasSizeVariants ? wizardSizes : ['ONE_SIZE'];
+  const addCustomSizeToColor = (colorIndex: number) => {
+    const colorName = colorConfigs[colorIndex].colorName;
+    const val = (customSizeInputPerColor[colorName] || '').trim().toUpperCase();
+    if (!val) return;
 
-    const newMatrix: FormVariantInput[] = [];
-    let pos = 0;
-
-    activeColors.forEach((color) => {
-      activeSizes.forEach((size) => {
-        const colorName = color.name || null;
-        const colorHex = color.hex || null;
-
-        const matched = variants.find(
-          (v) => v.size === size && (v.color?.toLowerCase() === colorName?.toLowerCase() || (!v.color && !colorName))
-        );
-
-        const baseSku = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
-        const colorSuffix = colorName ? colorName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3) : '';
-        const generatedSku = [baseSku, colorSuffix, size].filter(Boolean).join('-');
-
-        newMatrix.push({
-          sku: matched?.sku || generatedSku,
-          size: size as any,
-          alphaSize: matched?.alphaSize || (size.includes('-') ? size.split('-')[0] : (isNaN(Number(size)) && size !== 'ONE_SIZE' ? size : null)),
-          numericSize: matched?.numericSize || (size.includes('-') ? size.split('-')[1] : (!isNaN(Number(size)) ? size : null)),
-          measurements: matched?.measurements || null,
-          color: colorName,
-          colorHex,
-          price: matched?.price !== undefined ? Number(matched.price) : globalSellingPrice,
-          comparePrice: matched?.comparePrice ? Number(matched.comparePrice) : (globalComparePrice || null),
-          position: pos++,
-          isActive: matched ? matched.isActive : true,
-          initialStock: matched?.initialStock || 0,
-        });
-      });
-    });
-
-    onChange(newMatrix);
+    const updated = [...colorConfigs];
+    const target = updated[colorIndex];
+    if (!target.sizes.includes(val)) {
+      target.sizes = [...target.sizes, val];
+      setColorConfigs(updated);
+      syncMatrix(hasColorVariants, hasSizeVariants, updated, sizeOnlyList);
+    }
+    setCustomSizeInputPerColor({ ...customSizeInputPerColor, [colorName]: '' });
   };
 
-  const addManualVariant = () => {
-    const nextIdx = variants.length + 1;
-    const baseSku = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
-    const newVar: FormVariantInput = {
-      sku: `${baseSku}-VAR-${nextIdx}`,
-      size: 'L-38',
-      alphaSize: 'L',
-      numericSize: '38',
-      color: hasColorVariants && wizardColors.length > 0 ? wizardColors[0].name : null,
-      colorHex: hasColorVariants && wizardColors.length > 0 ? wizardColors[0].hex : null,
-      price: globalSellingPrice,
-      comparePrice: globalComparePrice || null,
-      position: variants.length,
-      isActive: true,
-      initialStock: 25,
-      measurements: {},
-    };
-    onChange([...variants, newVar]);
+  // Size-Only Mode Handlers
+  const toggleGlobalSize = (size: string) => {
+    let updated: string[];
+    if (sizeOnlyList.includes(size)) {
+      updated = sizeOnlyList.filter((s) => s !== size);
+    } else {
+      updated = [...sizeOnlyList, size];
+    }
+    setSizeOnlyList(updated);
+    syncMatrix(hasColorVariants, hasSizeVariants, colorConfigs, updated);
   };
 
+  const addCustomGlobalSize = () => {
+    const val = customSizeInputGlobal.trim().toUpperCase();
+    if (!val) return;
+    if (!sizeOnlyList.includes(val)) {
+      const updated = [...sizeOnlyList, val];
+      setSizeOnlyList(updated);
+      syncMatrix(hasColorVariants, hasSizeVariants, colorConfigs, updated);
+    }
+    setCustomSizeInputGlobal('');
+  };
+
+  // Toggle Color/Size Modes
+  const handleToggleColorVariants = (enabled: boolean) => {
+    setHasColorVariants(enabled);
+    syncMatrix(enabled, hasSizeVariants, colorConfigs, sizeOnlyList);
+  };
+
+  const handleToggleSizeVariants = (enabled: boolean) => {
+    setHasSizeVariants(enabled);
+    syncMatrix(hasColorVariants, enabled, colorConfigs, sizeOnlyList);
+  };
+
+  // Variant Data Mutation Functions
   const updateVariant = (index: number, field: keyof FormVariantInput, value: any) => {
     const newVariants = [...variants];
     newVariants[index] = { ...newVariants[index], [field]: value };
-    onChange(newVariants);
-  };
-
-  const updateVariantSizeDetails = (index: number, alpha?: string, numeric?: string) => {
-    const newVariants = [...variants];
-    const target = newVariants[index];
-    const newAlpha = alpha !== undefined ? alpha : (target.alphaSize || '');
-    const newNumeric = numeric !== undefined ? numeric : (target.numericSize || '');
-
-    let combined = target.size;
-    if (newAlpha && newNumeric) {
-      combined = `${newAlpha.trim()}-${newNumeric.trim()}`;
-    } else if (newAlpha) {
-      combined = newAlpha.trim();
-    } else if (newNumeric) {
-      combined = newNumeric.trim();
-    }
-
-    newVariants[index] = {
-      ...target,
-      alphaSize: newAlpha || null,
-      numericSize: newNumeric || null,
-      size: combined,
-    };
     onChange(newVariants);
   };
 
@@ -209,7 +270,7 @@ export function VariantManager({
     const target = newVariants[variantIdx];
     const currentMeasurements = { ...(target.measurements as Record<string, string> || {}) };
 
-    if (value.trim() === '') {
+    if (value === '') {
       delete currentMeasurements[measName];
     } else {
       currentMeasurements[measName] = value;
@@ -222,18 +283,21 @@ export function VariantManager({
     onChange(newVariants);
   };
 
-  const addCustomMeasurement = (variantIdx: number) => {
-    const input = customFieldInputs[variantIdx];
-    if (!input || !input.name.trim()) return;
+  const addCustomMeasurement = (variantIdx: number, presetName?: string) => {
+    const inputName = presetName || customFieldInputs[variantIdx]?.name;
+    const inputValue = presetName ? '' : customFieldInputs[variantIdx]?.value;
+    if (!inputName || !inputName.trim()) return;
 
-    const nameClean = input.name.trim();
-    const valClean = input.value.trim() || '—';
+    const nameClean = inputName.trim();
+    const valClean = (inputValue || '').trim();
 
     updateMeasurementValue(variantIdx, nameClean, valClean);
-    setCustomFieldInputs({
-      ...customFieldInputs,
-      [variantIdx]: { name: '', value: '' },
-    });
+    if (!presetName) {
+      setCustomFieldInputs({
+        ...customFieldInputs,
+        [variantIdx]: { name: '', value: '' },
+      });
+    }
   };
 
   const removeMeasurement = (variantIdx: number, measName: string) => {
@@ -241,22 +305,29 @@ export function VariantManager({
   };
 
   const removeVariant = (index: number) => {
+    const target = variants[index];
     const newVariants = variants.filter((_, idx) => idx !== index);
     onChange(newVariants);
+
+    // Also update color/size states to stay in sync
+    if (target.color && hasColorVariants) {
+      setColorConfigs((prev) =>
+        prev.map((c) => {
+          if (c.colorName.toLowerCase() === target.color!.toLowerCase()) {
+            return { ...c, sizes: c.sizes.filter((s) => s !== target.size) };
+          }
+          return c;
+        })
+      );
+    } else if (!hasColorVariants) {
+      setSizeOnlyList((prev) => prev.filter((s) => s !== target.size));
+    }
   };
 
   const toggleVariantStatus = (index: number) => {
     const newVariants = [...variants];
     newVariants[index].isActive = !newVariants[index].isActive;
     onChange(newVariants);
-  };
-
-  const generateSingleSku = (index: number) => {
-    const v = variants[index];
-    const baseSlug = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
-    const colorCode = v.color ? v.color.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3) : '';
-    const skuParts = [baseSlug, colorCode, v.size].filter(Boolean);
-    updateVariant(index, 'sku', skuParts.join('-'));
   };
 
   return (
@@ -280,30 +351,28 @@ export function VariantManager({
           color: #000;
           border-color: #c8a46a;
         }
-        .tag-pill {
+        .size-pill {
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 700;
+          border: 1px solid var(--admin-border);
+          background: rgba(255,255,255,0.03);
+          color: var(--admin-muted);
+          cursor: pointer;
+          transition: all 0.15s ease;
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid var(--admin-border);
-          padding: 4px 10px;
-          border-radius: 4px;
-          font-size: 11px;
-          color: #fff;
         }
-        .tag-pill button {
-          background: transparent;
-          border: none;
-          color: var(--admin-muted);
-          cursor: pointer;
-          font-size: 13px;
-        }
-        .tag-pill button:hover {
-          color: #ef4444;
+        .size-pill.selected {
+          background: rgba(200, 164, 106, 0.15);
+          color: #c8a46a;
+          border-color: #c8a46a;
         }
         .var-card {
           background: #0f172a;
-          border: 1px solid rgba(200, 164, 106, 0.2);
+          border: 1px solid rgba(200, 164, 106, 0.25);
           border-radius: 8px;
           padding: 20px;
           display: flex;
@@ -313,59 +382,58 @@ export function VariantManager({
         }
         .meas-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 10px;
+        }
+        .matrix-tab {
+          padding: 8px 14px;
+          font-size: 11px;
+          font-weight: 700;
+          border: 1px solid var(--admin-border);
+          background: transparent;
+          color: var(--admin-muted);
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .matrix-tab.active {
+          background: #c8a46a;
+          color: #000;
+          border-color: #c8a46a;
         }
       `}</style>
 
-      {/* Option Matrix Configuration Header */}
+      {/* Control Header & Option Toggles */}
       <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', padding: '20px', borderRadius: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Ruler size={16} color="#c8a46a" />
-              Advanced Product Variant & Size Chart Manager
+              Advanced Apparel Variant & Size Chart Management
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--admin-muted)', margin: 0 }}>
-              Define colors, sizes, and independent measurement profiles for every variant.
+              Color-wise size configuration with independent variant measurement profiles.
             </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={addManualVariant}
-              className="btn-secondary"
-              style={{ fontSize: '11px', padding: '8px 14px', color: '#c8a46a', borderColor: 'rgba(200, 164, 106, 0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Plus size={14} /> Add Single Variant
-            </button>
-
-            <button
-              type="button"
-              onClick={compileWizardMatrix}
-              className="btn-secondary"
-              style={{ fontSize: '11px', padding: '8px 14px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <RefreshCw size={14} /> Recompile Matrix
-            </button>
           </div>
         </div>
 
-        {/* Color & Size Toggles */}
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        {/* Variant Mode Selectors */}
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '12px', color: 'var(--admin-muted)', fontWeight: 600 }}>Size Variants:</span>
             <button
               type="button"
-              onClick={() => setHasSizeVariants(true)}
+              onClick={() => handleToggleSizeVariants(true)}
               className={`choice-btn ${hasSizeVariants ? 'active' : ''}`}
             >
               Enabled
             </button>
             <button
               type="button"
-              onClick={() => setHasSizeVariants(false)}
+              onClick={() => handleToggleSizeVariants(false)}
               className={`choice-btn ${!hasSizeVariants ? 'active' : ''}`}
             >
               One Size (None)
@@ -376,14 +444,14 @@ export function VariantManager({
             <span style={{ fontSize: '12px', color: 'var(--admin-muted)', fontWeight: 600 }}>Color Variants:</span>
             <button
               type="button"
-              onClick={() => setHasColorVariants(true)}
+              onClick={() => handleToggleColorVariants(true)}
               className={`choice-btn ${hasColorVariants ? 'active' : ''}`}
             >
               Enabled
             </button>
             <button
               type="button"
-              onClick={() => setHasColorVariants(false)}
+              onClick={() => handleToggleColorVariants(false)}
               className={`choice-btn ${!hasColorVariants ? 'active' : ''}`}
             >
               Disabled
@@ -391,101 +459,166 @@ export function VariantManager({
           </div>
         </div>
 
-        {/* Color Management Control Panel */}
+        {/* SCENARIO 2: COLOR + SIZE VARIANTS setup */}
         {hasColorVariants && (
-          <div style={{ background: 'rgba(200, 164, 106, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(200, 164, 106, 0.3)', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <Palette size={15} color="#c8a46a" />
-              <label className="form-label" style={{ fontSize: '12px', fontWeight: 700, color: '#c8a46a', margin: 0 }}>
-                Active Color Choices Matrix ({wizardColors.length} Colors):
-              </label>
-            </div>
-
-            {/* Active Color Pills */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
-              {wizardColors.map((c, idx) => (
-                <span key={idx} className="tag-pill">
-                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: c.hex, border: '1px solid rgba(255,255,255,0.3)', display: 'inline-block' }} />
-                  {c.name}
-                  <button type="button" onClick={() => removeWizardColor(idx)}>×</button>
-                </span>
-              ))}
-            </div>
-
-            {/* Quick Luxury Presets */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Presets:</span>
-              {PRESET_LUXURY_COLORS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => addCustomColor(preset.name, preset.hex)}
-                  className="btn-secondary"
-                  style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.03)' }}
-                >
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: preset.hex, display: 'inline-block' }} />
-                  + {preset.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Color Creator Input */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="Color Name (e.g. Onyx Black)"
-                value={newColorName}
-                onChange={(e) => setNewColorName(e.target.value)}
-                className="admin-input"
-                style={{ fontSize: '11px', padding: '6px 10px', width: '180px' }}
-              />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--admin-surface-1)', border: '1px solid var(--admin-border)', padding: '2px 8px', borderRadius: '4px' }}>
-                <input
-                  type="color"
-                  value={newColorHex}
-                  onChange={(e) => setNewColorHex(e.target.value)}
-                  style={{ width: '24px', height: '24px', border: 'none', background: 'none', cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '11px', color: '#fff', fontFamily: 'monospace' }}>{newColorHex}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ background: 'rgba(200, 164, 106, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(200, 164, 106, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Palette size={15} color="#c8a46a" />
+                <label className="form-label" style={{ fontSize: '12px', fontWeight: 700, color: '#c8a46a', margin: 0 }}>
+                  Add Color Choice ({colorConfigs.length} Active Colors):
+                </label>
               </div>
 
-              <button
-                type="button"
-                onClick={() => addCustomColor()}
-                className="btn-secondary"
-                style={{ fontSize: '11px', padding: '6px 12px', color: '#c8a46a', borderColor: 'rgba(200,164,106,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <Plus size={12} /> Add Color Choice
-              </button>
+              {/* Quick Luxury Presets */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Quick Presets:</span>
+                {PRESET_LUXURY_COLORS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => addColorChoice(preset.name, preset.hex)}
+                    className="btn-secondary"
+                    style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.03)' }}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: preset.hex, display: 'inline-block' }} />
+                    + {preset.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Color Creator Input */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Color Name (e.g. Onyx Black)"
+                  value={newColorName}
+                  onChange={(e) => setNewColorName(e.target.value)}
+                  className="admin-input"
+                  style={{ fontSize: '11px', padding: '6px 10px', width: '180px' }}
+                />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--admin-surface-1)', border: '1px solid var(--admin-border)', padding: '2px 8px', borderRadius: '4px' }}>
+                  <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    style={{ width: '24px', height: '24px', border: 'none', background: 'none', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#fff', fontFamily: 'monospace' }}>{newColorHex}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => addColorChoice()}
+                  className="btn-secondary"
+                  style={{ fontSize: '11px', padding: '6px 12px', color: '#c8a46a', borderColor: 'rgba(200,164,106,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus size={12} /> Add Color Choice
+                </button>
+              </div>
+            </div>
+
+            {/* COLOR-WISE SIZE CARDS LIST */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#c8a46a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Independent Size Configuration Per Color:
+              </span>
+
+              {colorConfigs.map((colorCfg, cIdx) => (
+                <div key={cIdx} style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(255,255,255,0.08)', padding: '14px 18px', borderRadius: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: colorCfg.colorHex, border: '1px solid rgba(255,255,255,0.4)', display: 'inline-block' }} />
+                      <strong style={{ fontSize: '13px', color: '#ffffff' }}>{colorCfg.colorName}</strong>
+                      <span style={{ fontSize: '11px', color: 'var(--admin-muted)' }}>({colorCfg.sizes.length} Sizes Selected)</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeColorChoice(cIdx)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Trash2 size={12} /> Remove Color
+                    </button>
+                  </div>
+
+                  {/* Quick Add Sizes for THIS Color */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--admin-muted)', fontWeight: 600 }}>Quick Add Sizes:</span>
+                    {PRESET_SIZES.map((sz) => {
+                      const isSel = colorCfg.sizes.includes(sz);
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => toggleSizeForColor(cIdx, sz)}
+                          className={`size-pill ${isSel ? 'selected' : ''}`}
+                        >
+                          {isSel ? <Check size={12} /> : null}
+                          {sz}
+                        </button>
+                      );
+                    })}
+
+                    <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
+                      <input
+                        type="text"
+                        placeholder="Custom (e.g. L-38)"
+                        value={customSizeInputPerColor[colorCfg.colorName] || ''}
+                        onChange={(e) => setCustomSizeInputPerColor({ ...customSizeInputPerColor, [colorCfg.colorName]: e.target.value })}
+                        className="admin-input"
+                        style={{ width: '110px', padding: '4px 8px', fontSize: '11px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustomSizeToColor(cIdx)}
+                        className="btn-secondary"
+                        style={{ padding: '4px 8px', fontSize: '10px', color: '#c8a46a' }}
+                      >
+                        + Add Size
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Wizard Sizing Quick Setup Pills */}
-        {hasSizeVariants && (
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '6px', border: '1px solid var(--admin-border)', marginBottom: '16px' }}>
-            <label className="form-label" style={{ fontSize: '11px', marginBottom: '8px', color: '#c8a46a' }}>
+        {/* SCENARIO 1: SIZE-ONLY VARIANTS setup */}
+        {!hasColorVariants && hasSizeVariants && (
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px 18px', borderRadius: '6px', border: '1px solid var(--admin-border)', marginBottom: '16px' }}>
+            <label className="form-label" style={{ fontSize: '11px', marginBottom: '10px', color: '#c8a46a', display: 'block', fontWeight: 700 }}>
               Quick Add Sizes to Matrix:
             </label>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              {wizardSizes.map((s) => (
-                <span key={s} className="tag-pill">
-                  {s}
-                  <button type="button" onClick={() => removeWizardSize(s)}>×</button>
-                </span>
-              ))}
-              <div style={{ display: 'flex', gap: '4px' }}>
+              {PRESET_SIZES.map((sz) => {
+                const isSel = sizeOnlyList.includes(sz);
+                return (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => toggleGlobalSize(sz)}
+                    className={`size-pill ${isSel ? 'selected' : ''}`}
+                  >
+                    {isSel ? <Check size={12} /> : null}
+                    {sz}
+                  </button>
+                );
+              })}
+
+              <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
                 <input
                   type="text"
-                  value={customSizeInput}
-                  onChange={(e) => setCustomSizeInput(e.target.value)}
+                  value={customSizeInputGlobal}
+                  onChange={(e) => setCustomSizeInputGlobal(e.target.value)}
                   className="admin-input"
                   placeholder="e.g. L-38"
-                  style={{ width: '80px', padding: '4px 8px', fontSize: '11px' }}
+                  style={{ width: '100px', padding: '4px 8px', fontSize: '11px' }}
                 />
-                <button type="button" onClick={addCustomSize} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '10px' }}>
-                  + Add
+                <button type="button" onClick={addCustomGlobalSize} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '10px', color: '#c8a46a' }}>
+                  + Add Size
                 </button>
               </div>
             </div>
@@ -493,16 +626,23 @@ export function VariantManager({
         )}
       </div>
 
-      {/* Structured Variant Cards List */}
+      {/* MATRIX & MEASUREMENT PROFILES VIEW */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Product Variant & Measurement Matrix ({variants.length} Variants)
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers size={15} color="#c8a46a" />
+              Product Variant & Measurement Matrix ({variants.length} Variants)
+            </span>
+            <p style={{ fontSize: '11px', color: 'var(--admin-muted)', margin: '2px 0 0 0' }}>
+              Automatically generated. Click a variant tab to edit its measurement profile.
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={() => {
-              const updated = variants.map(v => ({
+              const updated = variants.map((v) => ({
                 ...v,
                 price: globalSellingPrice,
                 comparePrice: globalComparePrice || null,
@@ -516,11 +656,43 @@ export function VariantManager({
           </button>
         </div>
 
+        {/* VARIANT TABS BAR */}
+        {variants.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ALL')}
+              className={`matrix-tab ${activeTab === 'ALL' ? 'active' : ''}`}
+            >
+              All Variants ({variants.length})
+            </button>
+            {variants.map((v, idx) => {
+              const label = v.color ? `${v.color} - ${v.size}` : v.size;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveTab(String(idx))}
+                  className={`matrix-tab ${activeTab === String(idx) ? 'active' : ''}`}
+                >
+                  {v.colorHex && (
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: v.colorHex, display: 'inline-block' }} />
+                  )}
+                  TAB {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* VARIANT CARDS RENDERING */}
         {variants.map((v, idx) => {
+          // If a specific tab is active, hide other variant cards
+          if (activeTab !== 'ALL' && activeTab !== String(idx)) return null;
+
           const measMap = (v.measurements as Record<string, string>) || {};
-          const customKeys = Object.keys(measMap).filter(k => !STANDARD_MEASUREMENT_FIELDS.includes(k));
-          const effectivePrice = v.price !== undefined && v.price !== null && Number(v.price) > 0 ? Number(v.price) : globalSellingPrice;
-          const splits = calculatePricing(effectivePrice, globalCostPrice, globalGstPercentage);
+          const customKeys = Object.keys(measMap).filter((k) => !STANDARD_MEASUREMENT_FIELDS.includes(k));
+          const labelName = v.color ? `${v.color} - ${v.size}` : v.size;
 
           return (
             <div key={idx} className="var-card" style={{ opacity: v.isActive ? 1 : 0.6 }}>
@@ -534,7 +706,7 @@ export function VariantManager({
                     <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: v.colorHex, border: '1px solid rgba(255,255,255,0.4)', display: 'inline-block' }} />
                   )}
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
-                    Variant #{idx + 1}: <strong style={{ color: '#c8a46a' }}>{v.size || 'ONE_SIZE'}</strong> {v.color ? `(${v.color})` : ''}
+                    Variant Tab: <strong style={{ color: '#c8a46a' }}>{labelName}</strong>
                   </span>
                 </div>
 
@@ -561,85 +733,17 @@ export function VariantManager({
                 </div>
               </div>
 
-              {/* Grid 1: Color, Sizing & Commercial Details */}
+              {/* Commercial Details Row */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Color Name</label>
-                  <input
-                    type="text"
-                    value={v.color || ''}
-                    onChange={(e) => updateVariant(idx, 'color', e.target.value)}
-                    className="admin-input"
-                    placeholder="e.g. Black"
-                    style={{ fontSize: '12px', padding: '6px 8px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Color Hex</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input
-                      type="color"
-                      value={v.colorHex || '#000000'}
-                      onChange={(e) => updateVariant(idx, 'colorHex', e.target.value)}
-                      style={{ width: '28px', height: '28px', border: 'none', background: 'none', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={v.colorHex || ''}
-                      onChange={(e) => updateVariant(idx, 'colorHex', e.target.value)}
-                      className="admin-input"
-                      placeholder="#000000"
-                      style={{ fontSize: '11px', padding: '6px 6px', flex: 1, fontFamily: 'monospace' }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Alphabetic Size</label>
-                  <input
-                    type="text"
-                    value={v.alphaSize || ''}
-                    onChange={(e) => updateVariantSizeDetails(idx, e.target.value, undefined)}
-                    className="admin-input"
-                    placeholder="e.g. L"
-                    style={{ fontSize: '12px', padding: '6px 8px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Numeric Size</label>
-                  <input
-                    type="text"
-                    value={v.numericSize || ''}
-                    onChange={(e) => updateVariantSizeDetails(idx, undefined, e.target.value)}
-                    className="admin-input"
-                    placeholder="e.g. 38"
-                    style={{ fontSize: '12px', padding: '6px 8px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Combined Size</label>
-                  <div style={{ background: 'rgba(200,164,106,0.15)', border: '1px solid rgba(200,164,106,0.3)', color: '#c8a46a', padding: '6px 10px', borderRadius: '4px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>
-                    {v.size || 'ONE_SIZE'}
-                  </div>
-                </div>
-
-                <div>
                   <label className="form-label" style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>SKU Code</label>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <input
-                      type="text"
-                      value={v.sku}
-                      onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
-                      className="admin-input"
-                      style={{ fontSize: '12px', padding: '6px 8px', flex: 1 }}
-                    />
-                    <button type="button" onClick={() => generateSingleSku(idx)} className="btn-secondary" style={{ padding: '6px' }}>
-                      <RefreshCw size={12} />
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={v.sku}
+                    onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
+                    className="admin-input"
+                    style={{ fontSize: '12px', padding: '6px 8px' }}
+                  />
                 </div>
 
                 <div>
@@ -665,12 +769,12 @@ export function VariantManager({
                 </div>
               </div>
 
-              {/* Grid 2: Structured Garment Measurements Form */}
+              {/* Structured Garment Measurements Form for THIS Variant */}
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#c8a46a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Ruler size={13} />
-                    Per-Variant Garment Measurements (Size Guide)
+                    Independent Garment Measurements for {labelName}
                   </span>
                 </div>
 
@@ -683,10 +787,10 @@ export function VariantManager({
                       </label>
                       <input
                         type="text"
-                        value={measMap[fieldName] || ''}
+                        value={measMap[fieldName] !== undefined ? measMap[fieldName] : ''}
                         onChange={(e) => updateMeasurementValue(idx, fieldName, e.target.value)}
                         className="admin-input"
-                        placeholder='e.g. 40"'
+                        placeholder='e.g. 42'
                         style={{ fontSize: '11px', padding: '4px 8px' }}
                       />
                     </div>
@@ -717,28 +821,48 @@ export function VariantManager({
                     </div>
                   )}
 
+                  {/* Quick Custom Field Presets */}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Presets:</span>
+                    {PRESET_CUSTOM_MEASUREMENTS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => addCustomMeasurement(idx, preset)}
+                        className="btn-secondary"
+                        style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.03)' }}
+                      >
+                        + {preset}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Add Custom Field Inputs */}
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <input
                       type="text"
                       placeholder="Name (e.g. Arm Hole)"
                       value={customFieldInputs[idx]?.name || ''}
-                      onChange={(e) => setCustomFieldInputs({
-                        ...customFieldInputs,
-                        [idx]: { ...(customFieldInputs[idx] || { name: '', value: '' }), name: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setCustomFieldInputs({
+                          ...customFieldInputs,
+                          [idx]: { ...(customFieldInputs[idx] || { name: '', value: '' }), name: e.target.value },
+                        })
+                      }
                       className="admin-input"
                       style={{ fontSize: '11px', padding: '4px 8px', width: '150px' }}
                     />
 
                     <input
                       type="text"
-                      placeholder='Value (e.g. 9.5")'
+                      placeholder='Value (e.g. 18)'
                       value={customFieldInputs[idx]?.value || ''}
-                      onChange={(e) => setCustomFieldInputs({
-                        ...customFieldInputs,
-                        [idx]: { ...(customFieldInputs[idx] || { name: '', value: '' }), value: e.target.value }
-                      })}
+                      onChange={(e) =>
+                        setCustomFieldInputs({
+                          ...customFieldInputs,
+                          [idx]: { ...(customFieldInputs[idx] || { name: '', value: '' }), value: e.target.value },
+                        })
+                      }
                       className="admin-input"
                       style={{ fontSize: '11px', padding: '4px 8px', width: '120px' }}
                     />
