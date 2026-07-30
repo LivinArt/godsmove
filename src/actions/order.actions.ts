@@ -19,6 +19,7 @@ import { NotificationService } from '@/notifications/notification.service';
 import { calculateETA } from '@/lib/logistics';
 import { PricingEngine } from '@/lib/pricing-engine';
 import { WalletService } from '@/lib/wallet-service';
+import { getCodSettings } from '@/actions/cod.actions';
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,8 @@ export async function createOrder(input: CreateOrderInput) {
         };
       });
 
+      const rawSubtotal = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
+
       // Step 7: Validate coupon code if applied
       let couponDiscountVal = 0;
       let discountId: string | null = null;
@@ -159,8 +162,7 @@ export async function createOrder(input: CreateOrderInput) {
         if (discount.startsAt && discount.startsAt > new Date()) throw new Error('Discount is not yet active');
         if (discount.usageLimit && discount.usageCount >= discount.usageLimit) throw new Error('Discount usage limit reached');
 
-        const subtotalTemp = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
-        if (discount.minimumOrderValue && subtotalTemp < Number(discount.minimumOrderValue)) {
+        if (discount.minimumOrderValue && rawSubtotal < Number(discount.minimumOrderValue)) {
           throw new Error(`Minimum order amount for this discount is ₹${discount.minimumOrderValue}`);
         }
 
@@ -174,20 +176,37 @@ export async function createOrder(input: CreateOrderInput) {
         }
 
         if (discount.type === 'PERCENTAGE') {
-          let calc = (subtotalTemp * Number(discount.value)) / 100;
+          let calc = (rawSubtotal * Number(discount.value)) / 100;
           if (discount.maximumDiscount) {
             calc = Math.min(calc, Number(discount.maximumDiscount));
           }
           couponDiscountVal = calc;
         } else if (discount.type === 'FIXED_AMOUNT') {
-          couponDiscountVal = Math.min(Number(discount.value), subtotalTemp);
+          couponDiscountVal = Math.min(Number(discount.value), rawSubtotal);
         }
 
         discountId = discount.id;
       }
 
-      // Step 8: Calculate final prices
-      console.log('[CHECKOUT STEP 8] Running PricingEngine calculation...');
+      // Step 8: Fetch COD Settings & Calculate final prices
+      console.log('[CHECKOUT STEP 8] Fetching COD Settings & Running PricingEngine calculation...');
+      const codConfig = await getCodSettings();
+
+      if (data.paymentMethod === 'COD' && !codConfig.isEnabled) {
+        throw new Error('Cash on Delivery is currently disabled by store administration.');
+      }
+
+      let calculatedCodFee = 0;
+      if (data.paymentMethod === 'COD' && codConfig.isEnabled) {
+        const subtotalAfterCouponTemp = Math.max(0, rawSubtotal - couponDiscountVal);
+        const shippingTemp = subtotalAfterCouponTemp >= 1999 || rawSubtotal === 0 ? 0 : 149;
+        if (codConfig.chargeType === 'PERCENTAGE') {
+          calculatedCodFee = Math.round((subtotalAfterCouponTemp + shippingTemp) * (codConfig.chargeValue / 100));
+        } else {
+          calculatedCodFee = Math.round(codConfig.chargeValue);
+        }
+      }
+
       const shippingState = data.shippingAddress.state || 'Haryana';
       const pricing = PricingEngine.calculate({
         items: pricingItems,
@@ -195,6 +214,7 @@ export async function createOrder(input: CreateOrderInput) {
         couponDiscount: couponDiscountVal,
         walletAmountToUse: data.walletAmountToUse,
         shippingState,
+        codFee: calculatedCodFee,
       });
 
       // Flow 6 Validation: Partial Wallet + COD is strictly forbidden
@@ -240,6 +260,7 @@ export async function createOrder(input: CreateOrderInput) {
           paymentMethod: isZeroPayable && data.paymentMethod === 'COD' ? 'WALLET' : (data.paymentMethod as any),
           subtotal: pricing.subtotal,
           shippingCost: pricing.shippingCost,
+          codFee: pricing.codFee,
           discountAmount: pricing.couponDiscount,
           walletCredit: pricing.walletCredit,
           taxableAmount: pricing.taxableAmount,

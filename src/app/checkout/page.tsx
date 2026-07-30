@@ -12,6 +12,7 @@ import { getMyAddresses, createAddress, updateAddress } from '@/actions/address.
 import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/wallet.actions';
 import { getMyProfile } from '@/actions/profile.actions';
 import { createOrder, confirmOrder, notifyPaymentFailed } from '@/actions/order.actions';
+import { getCodSettings, type CodConfigData } from '@/actions/cod.actions';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { formatGA4Item, trackAddShippingInfo, trackAddPaymentInfo, trackPurchase } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
@@ -54,6 +55,28 @@ export default function CheckoutPage() {
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [bestCouponDetected, setBestCouponDetected] = useState<any>(null);
+  const [codConfig, setCodConfig] = useState<CodConfigData>({
+    isEnabled: true,
+    chargeType: 'FIXED',
+    chargeValue: 0,
+    displayLabel: 'Cash on Delivery',
+  });
+
+  // Load COD configuration live
+  useEffect(() => {
+    async function loadCodSettings() {
+      try {
+        const cfg = await getCodSettings();
+        setCodConfig(cfg);
+        if (!cfg.isEnabled && paymentMethod === 'cod') {
+          setPaymentMethod('razorpay');
+        }
+      } catch (err) {
+        // Continue
+      }
+    }
+    loadCodSettings();
+  }, []);
 
   // Load active discounts and auto-apply best fit
   useEffect(() => {
@@ -251,7 +274,12 @@ export default function CheckoutPage() {
   // Calculate pricing (MRP Inclusive GST Model - No separate GST added)
   const subtotalAfterCoupon = Math.max(0, subtotal - discountAmount);
   const shipping = subtotalAfterCoupon > 1999 ? 0 : 149;
-  const totalBeforeCredits = subtotalAfterCoupon + shipping;
+  const codFee = (paymentMethod === 'cod' && codConfig.isEnabled)
+    ? (codConfig.chargeType === 'PERCENTAGE'
+        ? Math.round((subtotalAfterCoupon + shipping) * (codConfig.chargeValue / 100))
+        : Math.round(codConfig.chargeValue))
+    : 0;
+  const totalBeforeCredits = subtotalAfterCoupon + shipping + codFee;
   const walletCreditsToUse = useCredits ? Math.min(walletBalance, totalBeforeCredits) : 0;
   const finalPayable = Math.max(0, totalBeforeCredits - walletCreditsToUse);
 
@@ -980,32 +1008,36 @@ export default function CheckoutPage() {
                           <span className={styles.paymentDesc}>UPI, Cards, Net Banking, Wallets</span>
                         </div>
                       </label>
-                      <label
-                        className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
-                        style={{
-                          opacity: isCodDisabled ? 0.45 : 1,
-                          cursor: isCodDisabled ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="cod"
-                          disabled={isCodDisabled}
-                          checked={paymentMethod === 'cod'}
-                          onChange={() => {
-                            if (!isCodDisabled) setPaymentMethod('cod');
+                      
+                      {/* Global Admin COD Management Control: Hide COD entirely if disabled */}
+                      {codConfig.isEnabled && (
+                        <label
+                          className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
+                          style={{
+                            opacity: isCodDisabled ? 0.45 : 1,
+                            cursor: isCodDisabled ? 'not-allowed' : 'pointer',
                           }}
-                        />
-                        <div>
-                          <span className={styles.paymentName}>Cash on Delivery</span>
-                          <span className={styles.paymentDesc}>
-                            {isCodDisabled
-                              ? 'Unavailable when GODSMOVE Credits are partially applied'
-                              : 'Verify order details and pay when you receive'}
-                          </span>
-                        </div>
-                      </label>
+                        >
+                          <input
+                            type="radio"
+                            name="payment"
+                            value="cod"
+                            disabled={isCodDisabled}
+                            checked={paymentMethod === 'cod'}
+                            onChange={() => {
+                              if (!isCodDisabled) setPaymentMethod('cod');
+                            }}
+                          />
+                          <div>
+                            <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash on Delivery'}</span>
+                            <span className={styles.paymentDesc}>
+                              {isCodDisabled
+                                ? 'Unavailable when GODSMOVE Credits are partially applied'
+                                : 'Verify order details and pay when you receive'}
+                            </span>
+                          </div>
+                        </label>
+                      )}
                     </div>
                   </div>
                 );
@@ -1125,13 +1157,15 @@ export default function CheckoutPage() {
               <div className={`${styles.mobileStep2PaymentSection} ${finalPayable === 0 ? styles.zeroPayFaded : ''}`}>
                 <p className={styles.paymentSectionLabel}>Select Payment Method</p>
                 <div className={styles.paymentOptions}>
-                  <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
-                    <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
-                    <div>
-                      <span className={styles.paymentName}>Cash On Delivery</span>
-                      <span className={styles.paymentDesc}>Pay when you receive your order</span>
-                    </div>
-                  </label>
+                  {codConfig.isEnabled && (
+                    <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
+                      <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
+                      <div>
+                        <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash On Delivery'}</span>
+                        <span className={styles.paymentDesc}>Pay when you receive your order</span>
+                      </div>
+                    </label>
+                  )}
                   <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
                     <input type="radio" name="mobileStep2Payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} disabled={finalPayable === 0} />
                     <div>
@@ -1166,6 +1200,12 @@ export default function CheckoutPage() {
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                 </div>
+                {codFee > 0 && (
+                  <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
+                    <span>COD Handling Fee</span>
+                    <span>+₹{codFee.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 {walletCreditsToUse > 0 && (
                   <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
                     <span>Credits Applied</span>

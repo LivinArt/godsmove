@@ -20,6 +20,7 @@ export interface PricingResult {
   couponDiscount: number;     // discount from applied coupon
   walletCredit: number;       // credits applied
   shippingCost: number;       // shipping charges
+  codFee: number;             // Cash on Delivery extra charge
   taxableAmount: number;      // taxable base (excluding GST)
   gstAmount: number;          // total GST amount
   cgstAmount: number;         // Central GST
@@ -47,12 +48,14 @@ export const PricingEngine = {
     couponDiscount = 0,
     walletAmountToUse = 0,
     shippingState = 'Haryana',
+    codFee = 0,
   }: {
     items: PricingItem[];
     couponCode?: string | null;
     couponDiscount?: number;
     walletAmountToUse?: number;
     shippingState?: string;
+    codFee?: number;
   }): PricingResult {
     // 1. Catalog calculations
     let productTotal = 0;
@@ -76,8 +79,8 @@ export const PricingEngine = {
     // 3. Wallet Credit limit checking (cannot exceed subtotal - couponDiscount)
     const actualWalletCredit = Math.min(walletAmountToUse, afterCoupon);
     
-    // Net amount inclusive of tax (before wallet application, but after coupon + shipping)
-    const netBase = afterCoupon + shippingCost;
+    // Net amount inclusive of tax (before wallet application, but after coupon + shipping + COD fee)
+    const netBase = afterCoupon + shippingCost + codFee;
 
     // 4. Tax Calculation (GST calculated on value after coupon discount, inclusive)
     let totalTaxableAmount = 0;
@@ -127,7 +130,7 @@ export const PricingEngine = {
 
     // 5. Final Payable and Round Off
     const rawPayable = netBase - actualWalletCredit;
-    const finalPayable = Math.round(rawPayable);
+    const finalPayable = Math.max(0, Math.round(rawPayable));
     const roundOff = Number((finalPayable - rawPayable).toFixed(2));
 
     return {
@@ -138,6 +141,7 @@ export const PricingEngine = {
       couponDiscount: actualCouponDiscount,
       walletCredit: actualWalletCredit,
       shippingCost,
+      codFee,
       taxableAmount: Number(totalTaxableAmount.toFixed(2)),
       gstAmount: Number(totalGstAmount.toFixed(2)),
       cgstAmount: Number(totalCgst.toFixed(2)),

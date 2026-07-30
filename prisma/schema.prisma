@@ -507,6 +507,7 @@ model Order {
   // Financials (stored in paise-equivalent Decimal for accuracy)
   subtotal       Decimal @db.Decimal(10, 2)
   shippingCost   Decimal @db.Decimal(10, 2) @default(0)
+  codFee         Decimal @db.Decimal(10, 2) @default(0)
   discountAmount Decimal @db.Decimal(10, 2) @default(0)
   walletCredit   Decimal @db.Decimal(10, 2) @default(0) // wallet applied at checkout
   taxableAmount  Decimal @db.Decimal(10, 2) @default(0)
@@ -1336,6 +1337,18 @@ model MarketingAsset {
   createdAt   DateTime @default(now())
 
   @@map("marketing_assets")
+}
+
+model CodConfig {
+  id           String   @id @default("default_cod_config")
+  isEnabled    Boolean  @default(true)
+  chargeType   String   @default("FIXED") // "PERCENTAGE" | "FIXED"
+  chargeValue  Float    @default(0)
+  displayLabel String   @default("Cash on Delivery")
+  updatedBy    String?  @default("SYSTEM")
+  updatedAt    DateTime @updatedAt
+
+  @@map("cod_configs")
 }
 
 

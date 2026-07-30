@@ -12,6 +12,7 @@ const navGroups = [
       { href: '/admin/inventory', label: 'Inventory', icon: LayersIcon },
       { href: '/admin/returns', label: 'Returns', icon: ArrowLeftIcon },
       { href: '/admin/care', label: 'GODSMOVE Care', icon: HeartIcon },
+      { href: '/admin/settings/cod', label: 'COD Control', icon: TagIcon },
     ],
   },
   {
