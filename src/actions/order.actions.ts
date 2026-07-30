@@ -774,6 +774,7 @@ export async function getMyOrders() {
       },
     },
     orderBy: { createdAt: 'desc' },
+    take: 20,
   });
 
   // Serialize Prisma Decimal fields to plain JS numbers for Client Components

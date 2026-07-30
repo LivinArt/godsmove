@@ -15,11 +15,7 @@ import {
   getActiveDrop, 
   getStorefrontCategories 
 } from '@/actions/storefront.actions';
-import { getMyProfile } from '@/actions/profile.actions';
-import { getMyOrders } from '@/actions/order.actions';
-import { getMyWallet } from '@/actions/wallet.actions';
-import { getMyReturns } from '@/actions/return.actions';
-import { getCustomerCareRequests } from '@/actions/care.actions';
+import { getProfileSummary } from '@/actions/profile.actions';
 import HomepageGreeting from '@/components/HomepageGreeting';
 import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
@@ -73,60 +69,15 @@ export default async function Home() {
   };
 
   // 2. Retrieve User Credentials for Personalized Curation
-  let profile: any = null;
-  let orderedProductIds: string[] = [];
-  let walletBalance = 0;
-  let hasRecentlyDelivered = false;
-  let hasApprovedReturn = false;
-  let hasActiveCare = false;
+  // Single lightweight query — replaces 5 separate heavy fetches
+  const summary = await getProfileSummary();
 
-  try {
-    profile = await getMyProfile();
-    if (profile) {
-      const [orders, wallet, returnsList, cares] = await Promise.all([
-        getMyOrders(),
-        getMyWallet(),
-        getMyReturns(),
-        getCustomerCareRequests()
-      ]);
-
-      if (orders && orders.length > 0) {
-        orderedProductIds = (orders as any[]).flatMap((o: any) => (o.items as any[]).map((i: any) => i.productId));
-        const recentDelivery = (orders as any[]).find(o => 
-          ['DELIVERED', 'COMPLETED'].includes(o.status) &&
-          (Date.now() - new Date(o.updatedAt).getTime() < 7 * 24 * 60 * 60 * 1000)
-        );
-        if (recentDelivery) {
-          hasRecentlyDelivered = true;
-        }
-      }
-
-      if (wallet && Number(wallet.balance) > 0) {
-        walletBalance = Number(wallet.balance);
-      }
-
-      if (returnsList && returnsList.length > 0) {
-        const approved = (returnsList as any[]).find(r => 
-          ['APPROVED', 'WALLET_CREDITED', 'COMPLETED'].includes(r.status) &&
-          (Date.now() - new Date(r.updatedAt).getTime() < 3 * 24 * 60 * 60 * 1000)
-        );
-        if (approved) {
-          hasApprovedReturn = true;
-        }
-      }
-
-      if (cares && cares.length > 0) {
-        const activeCare = (cares as any[]).find(c => 
-          !['COMPLETED', 'REJECTED'].includes(c.status)
-        );
-        if (activeCare) {
-          hasActiveCare = true;
-        }
-      }
-    }
-  } catch (error) {
-    // Guest session
-  }
+  const profile = summary ? { firstName: summary.firstName, lastName: summary.lastName, email: summary.email } : null;
+  const walletBalance = summary?.walletBalance ?? 0;
+  const hasRecentlyDelivered = summary?.hasRecentlyDelivered ?? false;
+  const hasApprovedReturn = summary?.hasApprovedReturn ?? false;
+  const hasActiveCare = summary?.hasActiveCare ?? false;
+  const orderedProductIds = summary?.orderedProductIds ?? [];
 
   // Filter recommendations based on purchase ledger
   const recommendedProducts = editorSelection

@@ -174,12 +174,16 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCareModalOpen, setIsCareModalOpen] = useState(false);
 
-  // Data States
   const [profile, setProfile] = useState<any>(null);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [collection, setCollection] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
   const [wallet, setWallet] = useState<any>(null);
+
+  // Track which tabs have already had their data loaded to avoid re-fetching
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+  // Per-tab loading states for inline skeletons
+  const [tabLoading, setTabLoading] = useState<Record<string, boolean>>({});
 
   // Form States
   const [personalForm, setPersonalForm] = useState({ firstName: '', lastName: '', phone: '', dob: '' });
@@ -561,28 +565,24 @@ export default function ProfilePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadDashboardData() {
+    // ── CRITICAL PATH: load only profile + wallet so the dashboard shell appears immediately
+    async function loadCriticalData() {
       setIsLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
         if (!user) {
           router.push('/');
           return;
         }
 
-        const [prof, addrs, orders, retRequests, w, cares, careProds, gstPercent] = await Promise.all([
+        // Only 2 actions on mount — fastest possible first paint
+        const [prof, w] = await Promise.all([
           getMyProfile(),
-          getMyAddresses(),
-          getMyOrders(),
-          getMyReturns(),
           getMyWallet(),
-          getCustomerCareRequests(),
-          getPurchasedProducts(),
-          getCareGstPercentage()
         ]);
 
         setProfile(prof);
+        setWallet(w);
         const formattedDob = prof?.dob ? new Date(prof.dob).toISOString().split('T')[0] : '';
         setPersonalForm({
           firstName: prof?.firstName || '',
@@ -590,14 +590,6 @@ export default function ProfilePage() {
           phone: prof?.phone || '',
           dob: formattedDob
         });
-
-        setAddresses(addrs);
-        setCollection(orders);
-        setReturns(retRequests);
-        setWallet(w);
-        setCareRequests(cares);
-        setCareProducts(careProds);
-        setGstRate(gstPercent);
 
         const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
         const params = new URLSearchParams(window.location.search);
@@ -610,6 +602,7 @@ export default function ProfilePage() {
                        tabParam === 'wallet' ? 'wallet' :
                        tabParam === 'settings' ? 'settings' : null;
 
+        const initialTab = mapped || (isMobile ? null : 'personal');
         if (mapped) {
           setActiveTab(mapped);
           setMobileView('detail');
@@ -622,6 +615,11 @@ export default function ProfilePage() {
             setMobileView('detail');
           }
         }
+
+        // If landing on a data-heavy tab directly, pre-load its data
+        if (initialTab && initialTab !== 'personal' && initialTab !== 'settings') {
+          loadTabData(initialTab);
+        }
       } catch (err: any) {
         router.push('/');
       } finally {
@@ -629,7 +627,7 @@ export default function ProfilePage() {
       }
     }
 
-    loadDashboardData();
+    loadCriticalData();
 
     const handlePopState = () => {
       const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
@@ -659,6 +657,63 @@ export default function ProfilePage() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [router]);
+
+  // ── DEFERRED TAB LOADER: called on first visit to each data-heavy tab
+  const loadTabData = async (tab: string) => {
+    // Wallet is always pre-loaded in critical path; personal + settings need no extra data
+    if (tab === 'personal' || tab === 'settings' || tab === 'wallet') return;
+
+    // Skip if already loaded
+    if (loadedTabs.has(tab)) return;
+
+    setTabLoading(prev => ({ ...prev, [tab]: true }));
+    try {
+      if (tab === 'addresses') {
+        const addrs = await getMyAddresses();
+        setAddresses(addrs);
+      } else if (tab === 'collection') {
+        const orders = await getMyOrders();
+        setCollection(orders);
+      } else if (tab === 'returns') {
+        const retRequests = await getMyReturns();
+        setReturns(retRequests);
+      } else if (tab === 'passport') {
+        // Care tab: load care requests + gst rate; derive products from collection
+        const [cares, gstPercent, orders] = await Promise.all([
+          getCustomerCareRequests(),
+          getCareGstPercentage(),
+          // Only fetch orders if not already loaded (for care product picker)
+          collection.length === 0 ? getMyOrders() : Promise.resolve(collection),
+        ]);
+        setCareRequests(cares);
+        setGstRate(gstPercent);
+        // Derive care products from order items — no extra DB query needed
+        const derivedOrders = collection.length === 0 ? orders : collection;
+        if (collection.length === 0 && Array.isArray(orders)) {
+          setCollection(orders);
+        }
+        const products = (derivedOrders as any[]).flatMap((order: any) =>
+          (order.items as any[]).map((item: any) => ({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            orderItemId: item.id,
+            productName: item.productName,
+            size: item.size,
+            price: Number(item.price),
+            purchaseDate: order.createdAt,
+            productCode: `GM-ART-${item.id.toUpperCase()}`
+          }))
+        );
+        setCareProducts(products);
+      }
+      setLoadedTabs(prev => new Set([...prev, tab]));
+    } catch (err: any) {
+      // Silent — tab shows empty state
+    } finally {
+      setTabLoading(prev => ({ ...prev, [tab]: false }));
+    }
+  };
+
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -877,6 +932,8 @@ export default function ProfilePage() {
     const t = (tab || '').toLowerCase().trim();
     if (t === 'passport' || t === 'care') {
       setIsCareModalOpen(true);
+      // Pre-load care tab data on modal open
+      loadTabData('passport');
       return;
     }
 
@@ -893,6 +950,9 @@ export default function ProfilePage() {
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', `/profile?tab=${mapped}`);
     }
+
+    // Trigger deferred data load for this tab if not yet loaded
+    loadTabData(mapped);
   };
 
   const getStatusClass = (status: string) => {
@@ -1135,6 +1195,8 @@ export default function ProfilePage() {
               {/* Tab 2: Saved Addresses */}
               {!returnFormOpen && currentTab === 'addresses' && (
                 <div className={styles.panel}>
+                  {tabLoading['addresses'] && <RenderSkeleton tab="addresses" />}
+                  {!tabLoading['addresses'] && (<>
                   <div className={styles.panelHeader}>
                     <div>
                       <h2 className="h3">Addresses</h2>
@@ -1289,12 +1351,15 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   )}
+                  </>)}
                 </div>
               )}
 
               {/* Tab 3: Your Collection (Luxury Order Archive) */}
               {currentTab === 'collection' && (
                 <div className={styles.panel}>
+                  {tabLoading['collection'] && <RenderSkeleton tab="collection" />}
+                  {!tabLoading['collection'] && (<>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
                     <div>
                       <h2 className="h3">Your Orders</h2>
@@ -1462,12 +1527,15 @@ export default function ProfilePage() {
                       })}
                     </div>
                   )}
+                  </>)}
                 </div>
               )}
 
               {/* Tab 4: Returns & Exchanges ledger */}
               {currentTab === 'returns' && (
                 <div className={styles.panel}>
+                  {tabLoading['returns'] && <RenderSkeleton tab="returns" />}
+                  {!tabLoading['returns'] && (<>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
                     <div>
                       <h2 className="h3">Returns & Exchanges</h2>
@@ -1547,6 +1615,7 @@ export default function ProfilePage() {
                       })}
                     </div>
                   )}
+                  </>)}
                 </div>
               )}
 

@@ -37,10 +37,19 @@ export async function getMyWallet() {
   const user = await getCurrentUser();
   if (!user) throw new Error('UNAUTHORIZED');
 
-  // Ensure Profile exists in Prisma to satisfy FK constraint
-  let profile = await prisma.profile.findUnique({
-    where: { id: user.id },
-  });
+  // Run profile existence check and wallet lookup in parallel to avoid sequential round-trips
+  let [profile, wallet] = await Promise.all([
+    prisma.profile.findUnique({ where: { id: user.id } }),
+    prisma.wallet.findUnique({
+      where: { profileId: user.id },
+      include: {
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    }),
+  ]);
 
   if (!profile) {
     profile = await prisma.profile.create({
@@ -53,16 +62,6 @@ export async function getMyWallet() {
       },
     });
   }
-
-  let wallet = await prisma.wallet.findUnique({
-    where: { profileId: user.id },
-    include: {
-      transactions: {
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      },
-    },
-  });
 
   // Auto-create wallet if it doesn't exist
   if (!wallet) {

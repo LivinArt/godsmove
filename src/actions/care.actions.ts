@@ -400,11 +400,22 @@ export async function payCareRequestWithCredits(id: string) {
 }
 
 // 9. Get Configured GST Percentage
+// Simple in-memory cache for GST percentage — avoids DB hit on every profile load.
+// Invalidated when admin saves a new value via saveCareGstPercentage().
+let _cachedGstPercent: number | null = null;
+let _gstCacheExpiry = 0;
+
 export async function getCareGstPercentage() {
+  const now = Date.now();
+  if (_cachedGstPercent !== null && now < _gstCacheExpiry) {
+    return _cachedGstPercent;
+  }
   const content = await prisma.homepageContent.findUnique({
-    where: { key: 'care_gst_percentage' }
+    where: { key: 'care_gst_percentage' },
   });
-  return content ? Number(content.value) : 18; // default to 18% if not configured
+  _cachedGstPercent = content ? Number(content.value) : 18;
+  _gstCacheExpiry = now + 60 * 60 * 1000; // 1 hour
+  return _cachedGstPercent;
 }
 
 // 10. Save Configured GST Percentage
@@ -416,6 +427,9 @@ export async function saveCareGstPercentage(percentage: number) {
     update: { value: val },
     create: { key: 'care_gst_percentage', value: val }
   });
+  // Bust the in-memory cache so next read fetches fresh value
+  _cachedGstPercent = null;
+  _gstCacheExpiry = 0;
   revalidatePath('/admin/care');
   revalidatePath('/profile');
   return Number(content.value);
