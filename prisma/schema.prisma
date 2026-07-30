@@ -227,6 +227,9 @@ model Product {
   images           ProductImage[]
   tags             ProductTag[]
   wishlistItems    WishlistItem[]
+  // Per-product Size Chart Configuration
+  sizeChart Json?
+
   discounts        Discount[]
   productUnlocks   ProductUnlock[]
   exclusiveDraws   ExclusiveDraw[]
@@ -246,7 +249,10 @@ model ProductVariant {
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   sku          String   @unique
-  size         String // "S", "M", "L", "XL", "XXL"
+  size         String // "S", "M", "L", "XL", "XXL" or combined "L-38"
+  alphaSize    String? // "L", "XL"
+  numericSize  String? // "38", "40"
+  measurements Json?   // per-size measurements map { "Chest": "40\"", "Shoulder": "18\"", ... }
   color        String?
   colorHex     String?
   price        Decimal  @db.Decimal(10, 2)

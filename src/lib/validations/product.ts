@@ -144,8 +144,8 @@ export const CreateProductSchema = z.object({
   // Style curation & association
   styleWithIds: z.array(z.string()).default([]),
 
-  // Future-Proof Extensibility JSON metadata
-  metadata: z.any().optional(),
+  // Size Chart Configuration
+  sizeChart: z.any().optional().nullable(),
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({
@@ -156,7 +156,10 @@ export const UpdateProductSchema = CreateProductSchema.partial().extend({
 export const CreateVariantSchema = z.object({
   productId: z.string().optional(),
   sku: z.string().min(1, 'SKU is required').max(60),
-  size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'ONE_SIZE']),
+  size: z.string().min(1, 'Size is required'),
+  alphaSize: z.preprocess(emptyStringToNull, z.string().optional().nullable()),
+  numericSize: z.preprocess(emptyStringToNull, z.string().optional().nullable()),
+  measurements: z.record(z.string(), z.string()).optional().nullable(),
   color: z.preprocess(emptyStringToNull, z.string().optional().nullable()),
   colorHex: z.preprocess(
     emptyStringToNull,

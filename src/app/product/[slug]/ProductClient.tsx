@@ -18,6 +18,7 @@ import {
   User
 } from 'lucide-react';
 import SizeSelector from '@/components/SizeSelector';
+import SizeChartModal, { type SizeChartEntry } from '@/components/SizeChartModal';
 import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
@@ -45,6 +46,19 @@ export default function ProductClient({
   const [copiedShare, setCopiedShare] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
+  const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+
+  // Extract size chart entries dynamically
+  const sizeChartEntries: SizeChartEntry[] = (product.sizeChart as any)?.entries || product.variants
+    ?.filter((v: any) => v.measurements && Object.keys(v.measurements).length > 0)
+    ?.map((v: any) => ({
+      size: v.size,
+      alphaSize: v.alphaSize,
+      numericSize: v.numericSize,
+      measurements: v.measurements,
+    })) || [];
+
+  const hasSizeChart = sizeChartEntries.length > 0;
 
   useEffect(() => {
     try {
@@ -333,7 +347,30 @@ export default function ProductClient({
 
             {/* Size Selector */}
             <div className={styles.heroSizesWrap}>
-              <span className={styles.sectionLabel}>Select Size</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className={styles.sectionLabel} style={{ marginBottom: 0 }}>Select Size</span>
+                {hasSizeChart && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSizeChartOpen(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#c8a46a',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '3px',
+                      padding: 0,
+                    }}
+                  >
+                    Size Chart
+                  </button>
+                )}
+              </div>
               <SizeSelector
                 sizes={filteredSizes}
                 selected={selectedSize}
@@ -346,6 +383,16 @@ export default function ProductClient({
                 <p className={styles.sizeError}>Select a size to verify custody allocation</p>
               )}
             </div>
+
+            {/* Size Chart Modal Component */}
+            {hasSizeChart && (
+              <SizeChartModal
+                isOpen={isSizeChartOpen}
+                onClose={() => setIsSizeChartOpen(false)}
+                productName={product.name}
+                entries={sizeChartEntries}
+              />
+            )}
 
             {/* Quantity Selector */}
             <div className={styles.heroQuantityWrap}>
