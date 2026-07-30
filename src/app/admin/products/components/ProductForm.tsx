@@ -198,6 +198,9 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     initialData?.variants?.map((v: any) => ({
       sku: v.sku,
       size: v.size,
+      alphaSize: v.alphaSize || null,
+      numericSize: v.numericSize || null,
+      measurements: v.measurements || null,
       color: v.color,
       colorHex: v.colorHex,
       price: Number(v.price),
