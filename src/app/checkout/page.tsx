@@ -11,7 +11,7 @@ import { useStore } from '@/store/useStore';
 import { getMyAddresses, createAddress, updateAddress } from '@/actions/address.actions';
 import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/wallet.actions';
 import { getMyProfile } from '@/actions/profile.actions';
-import { createOrder, confirmOrder } from '@/actions/order.actions';
+import { createOrder, confirmOrder, notifyPaymentFailed } from '@/actions/order.actions';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { formatGA4Item, trackAddShippingInfo, trackAddPaymentInfo, trackPurchase } from '@/lib/gtag-ecommerce';
 import styles from './page.module.css';
@@ -967,25 +967,49 @@ export default function CheckoutPage() {
               </div>
 
               {/* Payment Option (Mobile Step 2 / Desktop always visible) */}
-              <div className={`${styles.paymentSectionWrap} ${mobileStep !== 2 && mobileStep !== 3 ? styles.mobileStepHidden : ''}`}>
-                <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--space-2xl)' }}>Payment Method</h2>
-                <div className={styles.paymentOptions}>
-                  <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
-                    <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
-                    <div>
-                      <span className={styles.paymentName}>Secure Online Payment</span>
-                      <span className={styles.paymentDesc}>UPI, Cards, Net Banking, Wallets</span>
+              {(() => {
+                const isCodDisabled = useCredits && walletCreditsToUse > 0 && finalPayable > 0;
+                return (
+                  <div className={`${styles.paymentSectionWrap} ${mobileStep !== 2 && mobileStep !== 3 ? styles.mobileStepHidden : ''}`}>
+                    <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--space-2xl)' }}>Payment Method</h2>
+                    <div className={styles.paymentOptions}>
+                      <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
+                        <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
+                        <div>
+                          <span className={styles.paymentName}>Secure Online Payment</span>
+                          <span className={styles.paymentDesc}>UPI, Cards, Net Banking, Wallets</span>
+                        </div>
+                      </label>
+                      <label
+                        className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
+                        style={{
+                          opacity: isCodDisabled ? 0.45 : 1,
+                          cursor: isCodDisabled ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="cod"
+                          disabled={isCodDisabled}
+                          checked={paymentMethod === 'cod'}
+                          onChange={() => {
+                            if (!isCodDisabled) setPaymentMethod('cod');
+                          }}
+                        />
+                        <div>
+                          <span className={styles.paymentName}>Cash on Delivery</span>
+                          <span className={styles.paymentDesc}>
+                            {isCodDisabled
+                              ? 'Unavailable when GODSMOVE Credits are partially applied'
+                              : 'Verify order details and pay when you receive'}
+                          </span>
+                        </div>
+                      </label>
                     </div>
-                  </label>
-                  <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
-                    <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
-                    <div>
-                      <span className={styles.paymentName}>Cash on Delivery</span>
-                      <span className={styles.paymentDesc}>Verify order details and pay when you receive</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Order Summary Sidebar (Mobile Step 2 & 3 / Desktop always visible) */}

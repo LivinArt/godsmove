@@ -388,11 +388,17 @@ export class NotificationService {
     });
   }
 
-  static async sendPaymentFailed(email: string, name: string, orderNumber: string, reason?: string) {
+  static async sendPaymentFailed(email: string, name: string, orderNumber?: string, reason?: string) {
+    const uniqueEntityId = orderNumber || `FAIL_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     return this.dispatch({
       event: 'PAYMENT_FAILED',
       recipient: { email, name },
-      payload: { customerName: name, orderNumber, reason: reason || 'Payment transaction was declined or interrupted.' },
+      payload: {
+        customerName: name,
+        orderNumber: orderNumber || 'N/A',
+        entityId: uniqueEntityId,
+        reason: reason || 'Payment transaction was declined or interrupted.',
+      },
     });
   }
 

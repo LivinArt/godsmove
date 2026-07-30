@@ -197,6 +197,11 @@ export async function createOrder(input: CreateOrderInput) {
         shippingState,
       });
 
+      // Flow 6 Validation: Partial Wallet + COD is strictly forbidden
+      if (pricing.walletCredit > 0 && pricing.finalPayable > 0 && (data.paymentMethod === 'COD' || input.paymentMethod === 'COD')) {
+        throw new Error('Cash on Delivery is not supported for partial wallet payments. Please pay the remaining amount via Secure Online Payment.');
+      }
+
       const itemSnapshots = data.items.map((item) => {
         const variant = variants.find((v) => v.id === item.variantId)!;
         const breakdown = pricing.items.find(i => i.productName === variant.product.name);
@@ -316,12 +321,28 @@ export async function createOrder(input: CreateOrderInput) {
           include: { items: true, profile: true },
         });
         if (fullOrder) {
-          await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
-          if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
-            const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
-            const remBalance = Number(wallet?.balance || 0);
-            const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
-            await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
+          const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
+
+          // Flow 4: Full Wallet Payment (Zero Payable)
+          if (fullOrder.paymentMethod === 'WALLET' || (Number(fullOrder.total) === 0 && fullOrder.paymentStatus === 'PAID')) {
+            // Sequence Requirement: 1. Payment Successful -> 2. Order Confirmation -> 3. Wallet Debit Notification
+            await NotificationService.sendPaymentConfirmed(
+              fullOrder.email,
+              custName,
+              fullOrder.orderNumber,
+              Number(fullOrder.total),
+              `WALLET_${fullOrder.orderNumber}`,
+              fullOrder.id
+            );
+            await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+            if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
+              const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
+              const remBalance = Number(wallet?.balance || 0);
+              await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
+            }
+          } else if (fullOrder.paymentMethod === 'COD') {
+            // Flow 3: Cash On Delivery (Order Confirmation at creation time)
+            await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
           }
         }
       } catch (err: any) {
@@ -420,15 +441,26 @@ export async function confirmOrder(
         include: { items: true, profile: true },
       });
       if (fullOrder) {
-        await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+        const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
+
+        // Flow 1 / Flow 5 Sequence Requirement:
+        // 1. Payment Successful Email FIRST
         await NotificationService.sendPaymentConfirmed(
           fullOrder.email,
-          fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector',
+          custName,
           fullOrder.orderNumber,
           Number(fullOrder.total),
           razorpayPaymentId,
           fullOrder.id
         );
+        // 2. Order Confirmation Email SECOND
+        await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+        // 3. Wallet Debit Email THIRD (if applicable)
+        if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
+          const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
+          const remBalance = Number(wallet?.balance || 0);
+          await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
+        }
       }
     } catch (err: any) {
       console.error(`❌ [CONFIRM ORDER NOTIFICATION ERROR] Order ${orderId}:`, err);
@@ -740,5 +772,20 @@ export async function requestInvoiceEmail(orderId: string) {
 
 export async function emailInvoice(orderId: string) {
   return requestInvoiceEmail(orderId);
+}
+
+export async function notifyPaymentFailed(email: string, customerName?: string, reason?: string) {
+  try {
+    const result = await NotificationService.sendPaymentFailed(
+      email,
+      customerName || 'Valued Collector',
+      undefined,
+      reason || 'Payment transaction was declined or interrupted.'
+    );
+    return { success: true, result };
+  } catch (err: any) {
+    console.error('❌ [NOTIFY PAYMENT FAILED ERROR]:', err);
+    return { success: false, error: err?.message || 'Failed to dispatch payment failed notice' };
+  }
 }
 
