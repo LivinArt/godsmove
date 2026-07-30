@@ -1001,43 +1001,65 @@ export default function CheckoutPage() {
                   <div className={`${styles.paymentSectionWrap} ${mobileStep !== 2 && mobileStep !== 3 ? styles.mobileStepHidden : ''}`}>
                     <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--space-2xl)' }}>Payment Method</h2>
                     <div className={styles.paymentOptions}>
-                      <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
-                        <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
-                        <div>
-                          <span className={styles.paymentName}>Secure Online Payment</span>
-                          <span className={styles.paymentDesc}>UPI, Cards, Net Banking, Wallets</span>
-                        </div>
-                      </label>
-                      
-                      {/* Global Admin COD Management Control: Hide COD entirely if disabled */}
-                      {codConfig.isEnabled && (
-                        <label
-                          className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
-                          style={{
-                            opacity: isCodDisabled ? 0.45 : 1,
-                            cursor: isCodDisabled ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name="payment"
-                            value="cod"
-                            disabled={isCodDisabled}
-                            checked={paymentMethod === 'cod'}
-                            onChange={() => {
-                              if (!isCodDisabled) setPaymentMethod('cod');
-                            }}
-                          />
-                          <div>
-                            <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash on Delivery'}</span>
-                            <span className={styles.paymentDesc}>
-                              {isCodDisabled
-                                ? 'Unavailable when GODSMOVE Credits are partially applied'
-                                : 'Verify order details and pay when you receive'}
-                            </span>
-                          </div>
-                        </label>
-                      )}
+                      {(() => {
+                        const codSurchargeLabel = codConfig.chargeType === 'PERCENTAGE'
+                          ? `+${codConfig.chargeValue}% Extra`
+                          : `+₹${codConfig.chargeValue} Extra`;
+
+                        return (
+                          <>
+                            <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
+                              <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                  <span className={styles.paymentName}>Secure Online Payment</span>
+                                  <span className={styles.recommendedBadge}>✓ Recommended</span>
+                                </div>
+                                <span className={styles.paymentDesc}>UPI, Cards, Net Banking, Wallets</span>
+                                <span className={styles.prepaidFeatureNote}>✓ Instant Order Processing • No Additional Charges</span>
+                              </div>
+                            </label>
+                            
+                            {/* Global Admin COD Management Control: Hide COD entirely if disabled */}
+                            {codConfig.isEnabled && (
+                              <label
+                                className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
+                                style={{
+                                  opacity: isCodDisabled ? 0.45 : 1,
+                                  cursor: isCodDisabled ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="payment"
+                                  value="cod"
+                                  disabled={isCodDisabled}
+                                  checked={paymentMethod === 'cod'}
+                                  onChange={() => {
+                                    if (!isCodDisabled) setPaymentMethod('cod');
+                                  }}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash on Delivery'}</span>
+                                    <span className={styles.codSurchargeBadge}>{codSurchargeLabel}</span>
+                                  </div>
+                                  <span className={styles.paymentDesc}>
+                                    {isCodDisabled
+                                      ? 'Unavailable when GODSMOVE Credits are partially applied'
+                                      : 'Verify order details and pay upon delivery'}
+                                  </span>
+                                  {!isCodDisabled && (
+                                    <span className={styles.codInfoNote}>
+                                      Additional COD handling fee applies. Choose prepaid to avoid extra charges.
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -1157,22 +1179,42 @@ export default function CheckoutPage() {
               <div className={`${styles.mobileStep2PaymentSection} ${finalPayable === 0 ? styles.zeroPayFaded : ''}`}>
                 <p className={styles.paymentSectionLabel}>Select Payment Method</p>
                 <div className={styles.paymentOptions}>
-                  {codConfig.isEnabled && (
-                    <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
-                      <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
-                      <div>
-                        <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash On Delivery'}</span>
-                        <span className={styles.paymentDesc}>Pay when you receive your order</span>
-                      </div>
-                    </label>
-                  )}
-                  <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
-                    <input type="radio" name="mobileStep2Payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} disabled={finalPayable === 0} />
-                    <div>
-                      <span className={styles.paymentName}>Pay via Razorpay</span>
-                      <span className={styles.paymentDesc}>UPI, Credit/Debit Cards, NetBanking</span>
-                    </div>
-                  </label>
+                  {(() => {
+                    const codSurchargeLabel = codConfig.chargeType === 'PERCENTAGE'
+                      ? `+${codConfig.chargeValue}% Extra`
+                      : `+₹${codConfig.chargeValue} Extra`;
+
+                    return (
+                      <>
+                        <label className={`${styles.paymentOption} ${paymentMethod === 'razorpay' ? styles.paymentActive : ''}`}>
+                          <input type="radio" name="mobileStep2Payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} disabled={finalPayable === 0} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                              <span className={styles.paymentName}>Pay via Razorpay</span>
+                              <span className={styles.recommendedBadge}>✓ Recommended</span>
+                            </div>
+                            <span className={styles.paymentDesc}>UPI, Credit/Debit Cards, NetBanking</span>
+                            <span className={styles.prepaidFeatureNote}>✓ Instant Order Processing • No Extra Fee</span>
+                          </div>
+                        </label>
+                        {codConfig.isEnabled && (
+                          <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
+                            <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash On Delivery'}</span>
+                                <span className={styles.codSurchargeBadge}>{codSurchargeLabel}</span>
+                              </div>
+                              <span className={styles.paymentDesc}>Pay when your order arrives</span>
+                              <span className={styles.codInfoNote}>
+                                Additional COD handling fee applies. Choose prepaid to avoid extra charges.
+                              </span>
+                            </div>
+                          </label>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
