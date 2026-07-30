@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Archive, ArchiveRestore, Trash2, Ruler, Sparkles } from 'lucide-react';
+import { Plus, RefreshCw, Archive, ArchiveRestore, Trash2, Ruler, Palette } from 'lucide-react';
 import type { FormVariantInput } from '@/lib/validations/product';
 import { calculatePricing } from '@/lib/PricingEngine';
 
@@ -28,6 +28,17 @@ const STANDARD_MEASUREMENT_FIELDS = [
   'Bottom Opening',
 ];
 
+const PRESET_LUXURY_COLORS = [
+  { name: 'Black', hex: '#000000' },
+  { name: 'Charcoal', hex: '#282828' },
+  { name: 'Ivory', hex: '#F5F5DC' },
+  { name: 'Olive', hex: '#556B2F' },
+  { name: 'Sand', hex: '#C2B280' },
+  { name: 'Washed Grey', hex: '#696969' },
+  { name: 'Navy', hex: '#000080' },
+  { name: 'Burgundy', hex: '#800020' },
+];
+
 export function VariantManager({
   variants,
   onChange,
@@ -38,7 +49,7 @@ export function VariantManager({
   globalGstPercentage,
 }: VariantManagerProps) {
   // Option matrix setup state
-  const hasInitialColors = variants.some((v) => v.color) ?? false;
+  const hasInitialColors = variants.some((v) => v.color && v.color.trim().length > 0) ?? false;
   const hasInitialSizes = variants.some((v) => v.size && v.size !== 'ONE_SIZE') ?? false;
 
   const [hasColorVariants, setHasColorVariants] = useState(hasInitialColors);
@@ -78,17 +89,24 @@ export function VariantManager({
     setCustomSizeInput('');
   };
 
-  const addCustomColor = () => {
-    if (!newColorName.trim()) return;
-    const cleanName = newColorName.trim();
+  const addCustomColor = (name?: string, hex?: string) => {
+    const targetName = name || newColorName;
+    const targetHex = hex || newColorHex;
+    if (!targetName.trim()) return;
+
+    const cleanName = targetName.trim();
     if (!wizardColors.some((c) => c.name.toLowerCase() === cleanName.toLowerCase())) {
-      setWizardColors([...wizardColors, { name: cleanName, hex: newColorHex }]);
+      setWizardColors([...wizardColors, { name: cleanName, hex: targetHex }]);
     }
-    setNewColorName('');
+    if (!name) {
+      setNewColorName('');
+      setNewColorHex('#000000');
+    }
   };
 
   const removeWizardColor = (index: number) => {
-    setWizardColors(wizardColors.filter((_, i) => i !== index));
+    const remaining = wizardColors.filter((_, i) => i !== index);
+    setWizardColors(remaining);
   };
 
   const removeWizardSize = (size: string) => {
@@ -113,7 +131,7 @@ export function VariantManager({
         );
 
         const baseSku = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
-        const colorSuffix = colorName ? colorName.toUpperCase().substring(0, 3) : '';
+        const colorSuffix = colorName ? colorName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3) : '';
         const generatedSku = [baseSku, colorSuffix, size].filter(Boolean).join('-');
 
         newMatrix.push({
@@ -144,8 +162,8 @@ export function VariantManager({
       size: 'L-38',
       alphaSize: 'L',
       numericSize: '38',
-      color: null,
-      colorHex: null,
+      color: hasColorVariants && wizardColors.length > 0 ? wizardColors[0].name : null,
+      colorHex: hasColorVariants && wizardColors.length > 0 ? wizardColors[0].hex : null,
       price: globalSellingPrice,
       comparePrice: globalComparePrice || null,
       position: variants.length,
@@ -236,7 +254,7 @@ export function VariantManager({
   const generateSingleSku = (index: number) => {
     const v = variants[index];
     const baseSlug = productSlug ? productSlug.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5) : 'PRD';
-    const colorCode = v.color ? v.color.toUpperCase().substring(0, 3) : '';
+    const colorCode = v.color ? v.color.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3) : '';
     const skuParts = [baseSlug, colorCode, v.size].filter(Boolean);
     updateVariant(index, 'sku', skuParts.join('-'));
   };
@@ -309,7 +327,7 @@ export function VariantManager({
               Advanced Product Variant & Size Chart Manager
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--admin-muted)', margin: 0 }}>
-              Define alphabetic/numeric sizes and independent measurement profiles for every variant.
+              Define colors, sizes, and independent measurement profiles for every variant.
             </p>
           </div>
 
@@ -321,6 +339,15 @@ export function VariantManager({
               style={{ fontSize: '11px', padding: '8px 14px', color: '#c8a46a', borderColor: 'rgba(200, 164, 106, 0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <Plus size={14} /> Add Single Variant
+            </button>
+
+            <button
+              type="button"
+              onClick={compileWizardMatrix}
+              className="btn-secondary"
+              style={{ fontSize: '11px', padding: '8px 14px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <RefreshCw size={14} /> Recompile Matrix
             </button>
           </div>
         </div>
@@ -363,6 +390,77 @@ export function VariantManager({
             </button>
           </div>
         </div>
+
+        {/* Color Management Control Panel */}
+        {hasColorVariants && (
+          <div style={{ background: 'rgba(200, 164, 106, 0.05)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(200, 164, 106, 0.3)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <Palette size={15} color="#c8a46a" />
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 700, color: '#c8a46a', margin: 0 }}>
+                Active Color Choices Matrix ({wizardColors.length} Colors):
+              </label>
+            </div>
+
+            {/* Active Color Pills */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
+              {wizardColors.map((c, idx) => (
+                <span key={idx} className="tag-pill">
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: c.hex, border: '1px solid rgba(255,255,255,0.3)', display: 'inline-block' }} />
+                  {c.name}
+                  <button type="button" onClick={() => removeWizardColor(idx)}>×</button>
+                </span>
+              ))}
+            </div>
+
+            {/* Quick Luxury Presets */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Presets:</span>
+              {PRESET_LUXURY_COLORS.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => addCustomColor(preset.name, preset.hex)}
+                  className="btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: preset.hex, display: 'inline-block' }} />
+                  + {preset.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Color Creator Input */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Color Name (e.g. Onyx Black)"
+                value={newColorName}
+                onChange={(e) => setNewColorName(e.target.value)}
+                className="admin-input"
+                style={{ fontSize: '11px', padding: '6px 10px', width: '180px' }}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--admin-surface-1)', border: '1px solid var(--admin-border)', padding: '2px 8px', borderRadius: '4px' }}>
+                <input
+                  type="color"
+                  value={newColorHex}
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  style={{ width: '24px', height: '24px', border: 'none', background: 'none', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '11px', color: '#fff', fontFamily: 'monospace' }}>{newColorHex}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => addCustomColor()}
+                className="btn-secondary"
+                style={{ fontSize: '11px', padding: '6px 12px', color: '#c8a46a', borderColor: 'rgba(200,164,106,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Plus size={12} /> Add Color Choice
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Wizard Sizing Quick Setup Pills */}
         {hasSizeVariants && (
@@ -432,6 +530,9 @@ export function VariantManager({
                   <span className={`badge ${v.isActive ? 'badge-green' : 'badge-red'}`}>
                     {v.isActive ? 'Active' : 'Archived'}
                   </span>
+                  {v.colorHex && (
+                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: v.colorHex, border: '1px solid rgba(255,255,255,0.4)', display: 'inline-block' }} />
+                  )}
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
                     Variant #{idx + 1}: <strong style={{ color: '#c8a46a' }}>{v.size || 'ONE_SIZE'}</strong> {v.color ? `(${v.color})` : ''}
                   </span>
@@ -460,8 +561,40 @@ export function VariantManager({
                 </div>
               </div>
 
-              {/* Grid 1: Dual Sizing & Commercial Details */}
+              {/* Grid 1: Color, Sizing & Commercial Details */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Color Name</label>
+                  <input
+                    type="text"
+                    value={v.color || ''}
+                    onChange={(e) => updateVariant(idx, 'color', e.target.value)}
+                    className="admin-input"
+                    placeholder="e.g. Black"
+                    style={{ fontSize: '12px', padding: '6px 8px' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Color Hex</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="color"
+                      value={v.colorHex || '#000000'}
+                      onChange={(e) => updateVariant(idx, 'colorHex', e.target.value)}
+                      style={{ width: '28px', height: '28px', border: 'none', background: 'none', cursor: 'pointer' }}
+                    />
+                    <input
+                      type="text"
+                      value={v.colorHex || ''}
+                      onChange={(e) => updateVariant(idx, 'colorHex', e.target.value)}
+                      className="admin-input"
+                      placeholder="#000000"
+                      style={{ fontSize: '11px', padding: '6px 6px', flex: 1, fontFamily: 'monospace' }}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="form-label" style={{ fontSize: '10px', color: '#c8a46a' }}>Alphabetic Size</label>
                   <input
@@ -487,7 +620,7 @@ export function VariantManager({
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Combined Preview</label>
+                  <label className="form-label" style={{ fontSize: '10px', color: 'var(--admin-muted)' }}>Combined Size</label>
                   <div style={{ background: 'rgba(200,164,106,0.15)', border: '1px solid rgba(200,164,106,0.3)', color: '#c8a46a', padding: '6px 10px', borderRadius: '4px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>
                     {v.size || 'ONE_SIZE'}
                   </div>
