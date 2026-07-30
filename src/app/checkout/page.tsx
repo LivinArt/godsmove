@@ -1002,9 +1002,14 @@ export default function CheckoutPage() {
                     <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--space-2xl)' }}>Payment Method</h2>
                     <div className={styles.paymentOptions}>
                       {(() => {
+                        const cleanDisplayLabel = (codConfig.displayLabel || 'Cash on Delivery')
+                          .replace(/\s*\([^)]*\)/g, '')
+                          .trim() || 'Cash on Delivery';
+
+                        const chargeVal = Number(codConfig.chargeValue || 0);
                         const codSurchargeLabel = codConfig.chargeType === 'PERCENTAGE'
-                          ? `+${codConfig.chargeValue}% Extra`
-                          : `+₹${codConfig.chargeValue} Extra`;
+                          ? `+${chargeVal}% Extra`
+                          : `+₹${chargeVal} Extra`;
 
                         return (
                           <>
@@ -1041,7 +1046,7 @@ export default function CheckoutPage() {
                                 />
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                    <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash on Delivery'}</span>
+                                    <span className={styles.paymentName}>{cleanDisplayLabel}</span>
                                     <span className={styles.codSurchargeBadge}>{codSurchargeLabel}</span>
                                   </div>
                                   <span className={styles.paymentDesc}>
@@ -1180,9 +1185,14 @@ export default function CheckoutPage() {
                 <p className={styles.paymentSectionLabel}>Select Payment Method</p>
                 <div className={styles.paymentOptions}>
                   {(() => {
+                    const cleanDisplayLabel = (codConfig.displayLabel || 'Cash on Delivery')
+                      .replace(/\s*\([^)]*\)/g, '')
+                      .trim() || 'Cash on Delivery';
+
+                    const chargeVal = Number(codConfig.chargeValue || 0);
                     const codSurchargeLabel = codConfig.chargeType === 'PERCENTAGE'
-                      ? `+${codConfig.chargeValue}% Extra`
-                      : `+₹${codConfig.chargeValue} Extra`;
+                      ? `+${chargeVal}% Extra`
+                      : `+₹${chargeVal} Extra`;
 
                     return (
                       <>
@@ -1202,7 +1212,7 @@ export default function CheckoutPage() {
                             <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <span className={styles.paymentName}>{codConfig.displayLabel || 'Cash On Delivery'}</span>
+                                <span className={styles.paymentName}>{cleanDisplayLabel}</span>
                                 <span className={styles.codSurchargeBadge}>{codSurchargeLabel}</span>
                               </div>
                               <span className={styles.paymentDesc}>Pay when your order arrives</span>

@@ -48,15 +48,76 @@ export default function ProductClient({
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
-  // Extract size chart entries dynamically
-  const sizeChartEntries: SizeChartEntry[] = (product.sizeChart as any)?.entries || product.variants
-    ?.filter((v: any) => v.measurements && Object.keys(v.measurements).length > 0)
-    ?.map((v: any) => ({
-      size: v.size,
-      alphaSize: v.alphaSize,
-      numericSize: v.numericSize,
-      measurements: v.measurements,
-    })) || [];
+  // Helper to resolve standard garment measurements for standard sizes
+  const getStandardMeasurementForSize = (sizeLabel: string) => {
+    const clean = sizeLabel.toUpperCase().trim();
+    if (clean === 'XS') return { Chest: '36"', Shoulder: '17"', Length: '26"', Sleeve: '8"' };
+    if (clean === 'S') return { Chest: '38"', Shoulder: '17.5"', Length: '27"', Sleeve: '8.5"' };
+    if (clean === 'M') return { Chest: '40"', Shoulder: '18"', Length: '28"', Sleeve: '9"' };
+    if (clean === 'L') return { Chest: '42"', Shoulder: '18.5"', Length: '29"', Sleeve: '9.5"' };
+    if (clean === 'XL') return { Chest: '44"', Shoulder: '19"', Length: '30"', Sleeve: '10"' };
+    if (clean === 'XXL' || clean === '2XL') return { Chest: '46"', Shoulder: '19.5"', Length: '31"', Sleeve: '10.5"' };
+    if (clean === 'XXXL' || clean === '3XL') return { Chest: '48"', Shoulder: '20"', Length: '32"', Sleeve: '11"' };
+    
+    const num = parseInt(clean);
+    if (!isNaN(num)) {
+      return {
+        Chest: `${num}"`,
+        Shoulder: `${(num * 0.45).toFixed(1)}"`,
+        Length: `${(num * 0.72).toFixed(1)}"`,
+        Waist: `${(num - 4)}"`,
+      };
+    }
+
+    if (clean.includes('-')) {
+      const parts = clean.split('-');
+      const numPart = parseInt(parts[1]);
+      if (!isNaN(numPart)) {
+        return {
+          Chest: `${numPart}"`,
+          Shoulder: `${(numPart * 0.45).toFixed(1)}"`,
+          Length: `${(numPart * 0.72).toFixed(1)}"`,
+          Waist: `${(numPart - 4)}"`,
+        };
+      }
+    }
+
+    return { Chest: '40"', Shoulder: '18"', Length: '28"' };
+  };
+
+  // Extract size chart entries dynamically with fallback for apparel size variants
+  const sizeChartEntries: SizeChartEntry[] = (() => {
+    // 1. Explicit size chart entries on product
+    if ((product.sizeChart as any)?.entries?.length > 0) {
+      return (product.sizeChart as any).entries;
+    }
+
+    // 2. Explicit variant measurements
+    const customVariantEntries = product.variants
+      ?.filter((v: any) => v.measurements && Object.keys(v.measurements).length > 0)
+      ?.map((v: any) => ({
+        size: v.size,
+        alphaSize: v.alphaSize,
+        numericSize: v.numericSize,
+        measurements: v.measurements,
+      }));
+
+    if (customVariantEntries && customVariantEntries.length > 0) {
+      return customVariantEntries;
+    }
+
+    // 3. Dynamic sizing entries for products with sizes (excluding ONE_SIZE)
+    const sizedVariants = product.variants?.filter((v: any) => v.size && v.size.toUpperCase() !== 'ONE_SIZE') || [];
+    if (sizedVariants.length > 0) {
+      const uniqueSizes = Array.from(new Set<string>(sizedVariants.map((v: any) => v.size as string)));
+      return uniqueSizes.map((s: string) => ({
+        size: s,
+        measurements: getStandardMeasurementForSize(s),
+      }));
+    }
+
+    return [];
+  })();
 
   const hasSizeChart = sizeChartEntries.length > 0;
 
