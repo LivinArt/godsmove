@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -8,10 +8,12 @@ import { ArrowLeft, Lock, Loader2, Check, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
+import { loadRazorpaySDKScript } from '@/hooks/useRazorpay';
+import { setCheckoutSessionToken, getCheckoutSessionToken, clearCheckoutSessionToken } from '@/lib/checkout-session';
 import { getMyAddresses, createAddress, updateAddress } from '@/actions/address.actions';
 import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/wallet.actions';
 import { getMyProfile } from '@/actions/profile.actions';
-import { createOrder, confirmOrder, notifyPaymentFailed } from '@/actions/order.actions';
+import { createOrder, confirmOrder, notifyPaymentFailed, getActiveCheckoutSession } from '@/actions/order.actions';
 import { getCodSettings, type CodConfigData } from '@/actions/cod.actions';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { formatGA4Item, trackAddShippingInfo, trackAddPaymentInfo, trackPurchase } from '@/lib/gtag-ecommerce';
@@ -135,9 +137,28 @@ export default function CheckoutPage() {
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<any>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [phoneWarning, setPhoneWarning] = useState(false);
   const [editingCheckoutAddressId, setEditingCheckoutAddressId] = useState<string | null>(null);
   const [isFetchingAddresses, setIsFetchingAddresses] = useState(true);
+
+  useEffect(() => {
+    async function checkRecoverySession() {
+      try {
+        const tokenOrderId = getCheckoutSessionToken() || undefined;
+        const sessionRes = await getActiveCheckoutSession(tokenOrderId);
+        if (sessionRes?.hasActiveSession && sessionRes.orderId) {
+          router.replace(`/checkout/payment-recovery?orderId=${sessionRes.orderId}`);
+          return;
+        }
+      } catch (e) {
+        // Continue to load page
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+    checkRecoverySession();
+  }, [router]);
 
   useEffect(() => {
     async function loadData() {
@@ -315,10 +336,7 @@ export default function CheckoutPage() {
     setMobileStep(2);
   };
 
-  const handleFinalPlaceOrder = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
-    await processOrderSubmission();
-  };
+  const isSubmittingRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -326,32 +344,42 @@ export default function CheckoutPage() {
   };
 
   const processOrderSubmission = async () => {
-
-    // Channel restrictions validation
-    for (const item of checkoutItems) {
-      if (isExclusiveChannel(item.product?.channel) && item.quantity > 1) {
-        showExclusiveCartToast();
-        return;
-      }
+    // Synchronous submission guard against concurrent/duplicate requests
+    if (isSubmittingRef.current) {
+      console.warn('[CHECKOUT_PIPELINE] Duplicate submission suppressed by synchronous ref lock.');
+      return;
     }
-
-    const exclusiveCounts = new Map<string, number>();
-    for (const item of checkoutItems) {
-      if (!isExclusiveChannel(item.product?.channel)) continue;
-      exclusiveCounts.set(
-        item.product.id,
-        (exclusiveCounts.get(item.product.id) ?? 0) + item.quantity
-      );
-    }
-    for (const qty of exclusiveCounts.values()) {
-      if (qty > 1) {
-        showExclusiveCartToast();
-        return;
-      }
-    }
-
+    isSubmittingRef.current = true;
     setIsSubmitLoading(true);
+
     try {
+      // Channel restrictions validation
+      for (const item of checkoutItems) {
+        if (isExclusiveChannel(item.product?.channel) && item.quantity > 1) {
+          showExclusiveCartToast();
+          isSubmittingRef.current = false;
+          setIsSubmitLoading(false);
+          return;
+        }
+      }
+
+      const exclusiveCounts = new Map<string, number>();
+      for (const item of checkoutItems) {
+        if (!isExclusiveChannel(item.product?.channel)) continue;
+        exclusiveCounts.set(
+          item.product.id,
+          (exclusiveCounts.get(item.product.id) ?? 0) + item.quantity
+        );
+      }
+      for (const qty of exclusiveCounts.values()) {
+        if (qty > 1) {
+          showExclusiveCartToast();
+          isSubmittingRef.current = false;
+          setIsSubmitLoading(false);
+          return;
+        }
+      }
+
       // 1. Compile CreateOrderInput payload
       const orderItems = checkoutItems.map(item => {
         const variant = item.product.variants?.find((v: any) => v.size === item.size);
@@ -405,11 +433,13 @@ export default function CheckoutPage() {
 
       if (!orderRes.success || !orderRes.order) {
         showToast('Checkout Failed', orderRes.error || 'An error occurred during order creation.');
+        isSubmittingRef.current = false;
         setIsSubmitLoading(false);
         return;
       }
 
       const order = orderRes.order;
+      setCheckoutSessionToken(order.id);
 
       // Save address for future orders if checked and using new address
       if (isLoggedIn && saveAddress && selectedAddressId === 'new') {
@@ -441,9 +471,11 @@ export default function CheckoutPage() {
         } catch (e) {
           // ignore
         }
-        // Instant success checkouts: Set success state first, then clear cart
+        // Instant success checkouts: Set success state first, then clear cart & session
+        clearCheckoutSessionToken();
         setConfirmedOrderNumber(order.orderNumber);
         setShowSuccessModal(true);
+        isSubmittingRef.current = false;
         setIsSubmitLoading(false);
         if (instantCheckout) {
           useStore.setState({ instantCheckout: null });
@@ -451,49 +483,115 @@ export default function CheckoutPage() {
           useStore.setState({ cart: [] });
         }
       } else {
-        // Razorpay secure checkout simulation (Dev Bypass)
-        setSimulatedPaymentStep('initiating');
-        setTimeout(() => {
-          setSimulatedPaymentStep('processing');
-          setTimeout(async () => {
-            try {
-              // Call confirmOrder server action
-              const payId = 'pay_mock_' + Math.random().toString(36).substring(7);
-              const ordId = 'ord_mock_' + Math.random().toString(36).substring(7);
-              const confirmRes = await confirmOrder(order.id, payId, ordId);
-              if (!confirmRes.success) {
-                throw new Error(confirmRes.error || 'Failed to confirm transaction.');
-              }
+        // Real Razorpay Checkout popup execution
+        try {
+          const res = await fetch('/api/payments/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: finalPayable, currency: 'INR' }),
+          });
 
+          const orderData = await res.json();
+
+          if (!res.ok || !orderData.orderId) {
+            throw new Error(orderData.error || 'Failed to initialize payment gateway.');
+          }
+
+          // Centralized SDK script loader
+          const sdkLoaded = await loadRazorpaySDKScript();
+          if (!sdkLoaded) {
+            throw new Error('Failed to load Razorpay Checkout SDK script.');
+          }
+
+          const rzpOptions = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: 'GODSMOVE',
+            description: `Order #${order.orderNumber}`,
+            order_id: orderData.orderId,
+            prefill: {
+              name: `${form.firstName} ${form.lastName}`.trim(),
+              email: form.email,
+              contact: form.phone,
+            },
+            theme: {
+              color: '#0A0A0A',
+            },
+            handler: async (response: {
+              razorpay_payment_id: string;
+              razorpay_order_id: string;
+              razorpay_signature: string;
+            }) => {
               try {
-                const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
-                trackPurchase(order.orderNumber || order.id, finalPayable, gaItems, 0, 0, appliedCoupon || undefined);
-              } catch (e) {
-                // ignore
+                // Confirm order in database upon payment success
+                const confirmRes = await confirmOrder(
+                  order.id,
+                  response.razorpay_payment_id,
+                  response.razorpay_order_id
+                );
+                if (!confirmRes.success) {
+                  throw new Error(confirmRes.error || 'Failed to confirm transaction.');
+                }
+
+                try {
+                  const gaItems = checkoutItems.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+                  trackPurchase(order.orderNumber || order.id, finalPayable, gaItems, 0, 0, appliedCoupon || undefined);
+                } catch (e) {
+                  // ignore
+                }
+
+                clearCheckoutSessionToken();
+                setConfirmedOrderNumber(order.orderNumber);
+                setShowSuccessModal(true);
+                isSubmittingRef.current = false;
+                setIsSubmitLoading(false);
+                if (instantCheckout) {
+                  useStore.setState({ instantCheckout: null });
+                } else {
+                  useStore.setState({ cart: [] });
+                }
+              } catch (confirmErr: any) {
+                showToast('Payment Confirmation Error', confirmErr.message || 'Failed to confirm transaction.');
+                isSubmittingRef.current = false;
+                setIsSubmitLoading(false);
               }
-              
-              setConfirmedOrderNumber(order.orderNumber);
-              setShowSuccessModal(true);
-              setIsSubmitLoading(false);
-              setSimulatedPaymentStep(null);
-              if (instantCheckout) {
-                useStore.setState({ instantCheckout: null });
-              } else {
-                useStore.setState({ cart: [] });
-              }
-            } catch (err: any) {
-              showToast('Payment Confirmation Error', err.message || 'Failed to confirm transaction.');
-              setSimulatedPaymentStep(null);
-              setIsSubmitLoading(false);
-            }
-          }, 1200);
-        }, 800);
+            },
+            modal: {
+              ondismiss: () => {
+                isSubmittingRef.current = false;
+                setIsSubmitLoading(false);
+                showToast('Payment Cancelled', 'You closed the payment window before completing payment.');
+                notifyPaymentFailed(order.id, 'Customer dismissed Razorpay Checkout modal').catch(() => {});
+              },
+            },
+          };
+
+          const rzp = new (window as any).Razorpay(rzpOptions);
+          rzp.open();
+        } catch (rzpErr: any) {
+          showToast('Payment Error', rzpErr.message || 'Failed to launch payment gateway.');
+          isSubmittingRef.current = false;
+          setIsSubmitLoading(false);
+        }
       }
     } catch (err: any) {
       showToast('Checkout Failed', err.message || 'An error occurred during order creation.');
+      isSubmittingRef.current = false;
       setIsSubmitLoading(false);
     }
   };
+
+  if (isCheckingSession) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#c8a46a' }}>
+          <div style={{ width: '36px', height: '36px', border: '2px solid rgba(200, 164, 106, 0.2)', borderTopColor: '#c8a46a', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ fontFamily: 'var(--font-heading)', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Securing your session...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (checkoutItems.length === 0 && !showSuccessModal && !confirmedOrderNumber) {
     return (
@@ -1273,8 +1371,7 @@ export default function CheckoutPage() {
               {/* Submit / Place Order Button (Mobile Step 2 or Desktop) */}
               <div className={`${styles.placeOrderBtnWrap} ${mobileStep === 1 ? styles.mobileStepHidden : ''}`}>
                 <button
-                  type="button"
-                  onClick={handleFinalPlaceOrder}
+                  type="submit"
                   disabled={isSubmitLoading}
                   className={`btn btn-primary ${styles.placeOrder}`}
                   id="place-order"

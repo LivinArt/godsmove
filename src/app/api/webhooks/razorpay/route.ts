@@ -42,42 +42,70 @@ export async function POST(request: NextRequest) {
       const payment = payload.payment.entity;
       const { order_id, id: paymentId, notes } = payment;
 
-      // notes.orderId is our internal order ID set during Razorpay order creation
-      const internalOrderId = notes?.orderId;
+      // Robust Multi-Fallback Order Correlation Strategy
+      let internalOrderId = notes?.orderId || notes?.internalOrderId;
+
+      if (!internalOrderId && order_id) {
+        const orderByRzp = await prisma.order.findFirst({
+          where: { razorpayOrderId: order_id },
+          select: { id: true }
+        });
+        if (orderByRzp) internalOrderId = orderByRzp.id;
+      }
+
+      if (!internalOrderId && notes?.orderNumber) {
+        const orderByNum = await prisma.order.findFirst({
+          where: { orderNumber: notes.orderNumber },
+          select: { id: true }
+        });
+        if (orderByNum) internalOrderId = orderByNum.id;
+      }
 
       if (!internalOrderId) {
-        console.error('No internal order ID in Razorpay payment notes');
-        return NextResponse.json({ error: 'Missing order reference' }, { status: 400 });
+        console.error('❌ [WEBHOOK CORRELATION FAILED]: No order reference found for payment', paymentId);
+        return NextResponse.json({ error: 'Unresolvable order reference' }, { status: 400 });
       }
 
       await confirmOrder(internalOrderId, paymentId, order_id);
-
-      console.log(`✅ Order ${internalOrderId} confirmed via webhook`);
+      console.log(`✅ Order ${internalOrderId} confirmed via webhook (Idempotent)`);
     }
 
     // ── HANDLE PAYMENT FAILED ─────────────────────────────────────────────────
     if (eventType === 'payment.failed') {
       const payment = payload.payment.entity;
-      const internalOrderId = payment.notes?.orderId;
+      const { order_id, notes } = payment;
+
+      let internalOrderId = notes?.orderId || notes?.internalOrderId;
+
+      if (!internalOrderId && order_id) {
+        const orderByRzp = await prisma.order.findFirst({
+          where: { razorpayOrderId: order_id },
+          select: { id: true }
+        });
+        if (orderByRzp) internalOrderId = orderByRzp.id;
+      }
 
       if (internalOrderId) {
-        await prisma.order.update({
-          where: { id: internalOrderId },
-          data: { paymentStatus: 'FAILED' },
-        });
-
-        // Release reserved inventory
         const order = await prisma.order.findUnique({
           where: { id: internalOrderId },
           include: { items: true },
         });
 
-        if (order) {
+        // ONLY mark failed if order is NOT already PAID
+        if (order && order.paymentStatus !== 'PAID') {
+          await prisma.order.update({
+            where: { id: internalOrderId },
+            data: { paymentStatus: 'FAILED' },
+          });
+
           for (const item of order.items) {
-            await prisma.inventory.update({
-              where: { variantId: item.variantId },
-              data: { reservedStock: { decrement: item.quantity } },
-            });
+            const inv = await prisma.inventory.findFirst({ where: { variantId: item.variantId } });
+            if (inv && inv.reservedStock > 0) {
+              await prisma.inventory.update({
+                where: { id: inv.id },
+                data: { reservedStock: { decrement: Math.min(inv.reservedStock, item.quantity) } },
+              });
+            }
           }
 
           try {
@@ -92,8 +120,6 @@ export async function POST(request: NextRequest) {
             console.error('Payment failed notification error:', notifErr);
           }
         }
-
-        console.log(`❌ Payment failed for order ${internalOrderId} — inventory released`);
       }
     }
 

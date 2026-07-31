@@ -2,17 +2,23 @@
 
 import { useCallback } from 'react';
 
-interface RazorpayOptions {
+export interface RazorpayOptions {
   amount: number;
   currency?: string;
   name?: string;
   description?: string;
   orderId?: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
   onSuccess?: (response: RazorpayResponse) => void;
   onError?: (error: unknown) => void;
+  onDismiss?: () => void;
 }
 
-interface RazorpayResponse {
+export interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_order_id: string;
   razorpay_signature: string;
@@ -26,89 +32,103 @@ declare global {
   }
 }
 
-export function useRazorpay() {
-  const loadScript = useCallback((): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (typeof window !== 'undefined' && window.Razorpay) {
-        resolve(true);
+// Module-level singleton promise guard to ensure script loads strictly once per page lifecycle
+let razorpayScriptLoadingPromise: Promise<boolean> | null = null;
+
+export function loadRazorpaySDKScript(): Promise<boolean> {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if ((window as any).Razorpay) return Promise.resolve(true);
+
+  if (!razorpayScriptLoadingPromise) {
+    razorpayScriptLoadingPromise = new Promise<boolean>((resolve) => {
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true));
+        existingScript.addEventListener('error', () => resolve(false));
         return;
       }
+
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+  }
+
+  return razorpayScriptLoadingPromise;
+}
+
+export function useRazorpay() {
+  const loadScript = useCallback((): Promise<boolean> => {
+    return loadRazorpaySDKScript();
   }, []);
 
-  const initiatePayment = useCallback(async ({
-    amount,
-    currency = 'INR',
-    name = 'GODSMOVE',
-    description = 'Fashion Purchase',
-    orderId,
-    onSuccess,
-    onError,
-  }: RazorpayOptions) => {
-    const loaded = await loadScript();
-    if (!loaded) {
-      onError?.('Failed to load Razorpay SDK');
-      return;
-    }
-
-    try {
-      // Create order on server
-      const res = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, orderId }),
-      });
-      const order = await res.json();
-
-      if (!order.id) {
-        onError?.('Failed to create order');
+  const initiatePayment = useCallback(
+    async ({
+      amount,
+      currency = 'INR',
+      name = 'GODSMOVE',
+      description = 'GODSMOVE Purchase',
+      prefill,
+      onSuccess,
+      onError,
+      onDismiss,
+    }: RazorpayOptions) => {
+      const loaded = await loadScript();
+      if (!loaded) {
+        onError?.(new Error('Failed to load Razorpay Checkout SDK script.'));
         return;
       }
 
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency,
-        name,
-        description,
-        order_id: order.id,
-        notes: { orderId },
-        handler: async (response: RazorpayResponse) => {
-          // Verify payment on server
-          const verifyRes = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(response),
-          });
-          const verification = await verifyRes.json();
+      try {
+        // Create Razorpay order via secure server API endpoint
+        const res = await fetch('/api/payments/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, currency }),
+        });
 
-          if (verification.verified) {
+        const orderData = await res.json();
+
+        if (!res.ok || !orderData.orderId) {
+          throw new Error(orderData.error || 'Failed to create payment gateway order.');
+        }
+
+        const options = {
+          key: orderData.key,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name,
+          description,
+          order_id: orderData.orderId,
+          prefill: {
+            name: prefill?.name || '',
+            email: prefill?.email || '',
+            contact: prefill?.contact || '',
+          },
+          theme: {
+            color: '#0A0A0A',
+          },
+          handler: (response: RazorpayResponse) => {
             onSuccess?.(response);
-          } else {
-            onError?.('Payment verification failed');
-          }
-        },
-        prefill: {
-          name: '',
-          email: '',
-          contact: '',
-        },
-        theme: {
-          color: '#0A0A0A',
-        },
-      };
+          },
+          modal: {
+            ondismiss: () => {
+              onDismiss?.();
+            },
+          },
+        };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      onError?.(error);
-    }
-  }, [loadScript]);
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (error) {
+        onError?.(error);
+      }
+    },
+    [loadScript]
+  );
 
-  return { initiatePayment };
+  return { initiatePayment, openRazorpayCheckout: initiatePayment, loadScript };
 }

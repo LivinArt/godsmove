@@ -18,6 +18,7 @@ import { InvoiceService } from '@/lib/invoice';
 import { NotificationService } from '@/notifications/notification.service';
 import { calculateETA } from '@/lib/logistics';
 import { PricingEngine } from '@/lib/pricing-engine';
+import { resolveProductImages } from '@/lib/image-resolver';
 import { WalletService } from '@/lib/wallet-service';
 import { getCodSettings } from '@/actions/cod.actions';
 
@@ -810,4 +811,356 @@ export async function notifyPaymentFailed(email: string, customerName?: string, 
     return { success: false, error: err?.message || 'Failed to dispatch payment failed notice' };
   }
 }
+
+/**
+ * Phase A Session Interceptor: Resolves active pending checkout session
+ * for authenticated users or via explicit token orderId.
+ */
+export async function getActiveCheckoutSession(tokenOrderId?: string) {
+  try {
+    // Run background cleanup for expired sessions
+    cleanupExpiredCheckoutSessions().catch(() => {});
+
+    const user = await getCurrentUser().catch(() => null);
+
+    // Check explicit order ID token if provided
+    if (tokenOrderId) {
+      const order = await prisma.order.findUnique({
+        where: { id: tokenOrderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          paymentStatus: true,
+          createdAt: true,
+          total: true,
+          profileId: true,
+        }
+      });
+
+      if (order && order.status === 'PENDING' && order.paymentStatus !== 'PAID') {
+        const ageMs = Date.now() - new Date(order.createdAt).getTime();
+        if (ageMs < 30 * 60 * 1000) { // 30 mins window
+          return {
+            hasActiveSession: true,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            total: Number(order.total),
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+          };
+        }
+      }
+    }
+
+    // Fallback for authenticated user: find latest PENDING order created <30m ago
+    if (user?.id) {
+      const recentOrder = await prisma.order.findFirst({
+        where: {
+          profileId: user.id,
+          status: 'PENDING',
+          paymentStatus: { not: 'PAID' },
+          createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) }
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          paymentStatus: true,
+          createdAt: true,
+          total: true,
+        }
+      });
+
+      if (recentOrder) {
+        return {
+          hasActiveSession: true,
+          orderId: recentOrder.id,
+          orderNumber: recentOrder.orderNumber,
+          total: Number(recentOrder.total),
+          status: recentOrder.status,
+          paymentStatus: recentOrder.paymentStatus,
+        };
+      }
+    }
+
+    return { hasActiveSession: false };
+  } catch (error) {
+    console.error('Failed to resolve active checkout session:', error);
+    return { hasActiveSession: false };
+  }
+}
+
+/**
+ * Phase B Server Action: Resolves full order status and recovery details for an order ID.
+ */
+export async function getOrderPaymentStatus(orderId: string) {
+  try {
+    let order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    // Active Gateway Resolution: If order is still PENDING in DB, query Razorpay REST API out-of-band
+    if (order.status === 'PENDING' && order.paymentStatus !== 'PAID' && order.razorpayOrderId) {
+      try {
+        const { PaymentService } = await import('@/lib/payments/payment-service');
+        const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
+        if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+          console.log(`[ACTIVE_GATEWAY_RECOVERY] Found captured payment ${gatewayCheck.paymentId} for Order ${order.id}. Auto-confirming...`);
+          await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+          
+          // Re-query order state after confirmation
+          order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: { items: { include: { variant: { include: { product: true } } } } }
+          }) || order;
+        }
+      } catch (gatewayErr) {
+        console.error('Active gateway verification error during recovery:', gatewayErr);
+      }
+    }
+
+    const ageMs = Date.now() - new Date(order.createdAt).getTime();
+    const isExpired = order.status === 'PENDING' && ageMs > 30 * 60 * 1000;
+
+    return {
+      success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        razorpayOrderId: order.razorpayOrderId,
+        total: Number(order.total),
+        subtotal: Number(order.subtotal),
+        discountAmount: Number(order.discountAmount),
+        walletCredit: Number(order.walletCredit),
+        shippingAddress: order.shippingAddress as any,
+        createdAt: order.createdAt,
+        isExpired,
+        items: order.items.map((item) => ({
+          id: item.id,
+          variantId: item.variantId,
+          productId: item.variant.productId,
+          productName: item.variant.product.name,
+          size: item.variant.size,
+          color: item.variant.color,
+          quantity: item.quantity,
+          price: Number(item.price),
+          image: resolveProductImages(item.variant.product).frontImage || '',
+          channel: item.variant.product.channel,
+        }))
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to fetch order status' };
+  }
+}
+
+/**
+ * Phase B Server Action: Cancels a pending order, restores reserved stock,
+ * and returns item details to re-populate the cart.
+ */
+export async function cancelAndRestoreOrder(orderId: string) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: { product: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!order) return { success: false, error: 'Order not found' };
+
+    // Active check before cancelling: ensure payment was NOT captured on gateway
+    if (order.status === 'PENDING' && order.razorpayOrderId) {
+      try {
+        const { PaymentService } = await import('@/lib/payments/payment-service');
+        const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
+        if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+          console.log(`[CANCEL_GUARD] Payment ${gatewayCheck.paymentId} was captured on Razorpay! Auto-confirming instead of cancelling.`);
+          await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+          return { success: true, restored: false, alreadyPaid: true };
+        }
+      } catch (err) {}
+    }
+
+    if (order.status === 'PENDING') {
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: 'CANCELLED', paymentStatus: 'FAILED' }
+        });
+
+        for (const item of order.items) {
+          const inv = await tx.inventory.findFirst({ where: { variantId: item.variantId } });
+          if (inv) {
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: { reservedStock: { decrement: item.quantity } }
+            });
+          }
+        }
+      });
+    }
+
+    const itemsToRestore = order.items.map((item) => ({
+      product: item.variant.product,
+      size: item.variant.size,
+      quantity: item.quantity,
+    }));
+
+    return { success: true, items: itemsToRestore };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to restore order' };
+  }
+}
+
+/**
+ * Enterprise Background Reconciliation Worker:
+ * Scans all PENDING orders, queries Razorpay REST API out-of-band,
+ * and auto-confirms any captured payments without browser involvement.
+ */
+export async function reconcilePendingPayments() {
+  try {
+    const pendingOrders = await prisma.order.findMany({
+      where: {
+        status: 'PENDING',
+        paymentStatus: { not: 'PAID' },
+        razorpayOrderId: { not: null },
+      },
+      select: { id: true, razorpayOrderId: true, orderNumber: true },
+      take: 100,
+    });
+
+    if (pendingOrders.length === 0) {
+      return { success: true, reconciledCount: 0 };
+    }
+
+    const { PaymentService } = await import('@/lib/payments/payment-service');
+    let reconciledCount = 0;
+
+    for (const order of pendingOrders) {
+      if (!order.razorpayOrderId) continue;
+      const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
+      if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+        console.log(`[BACKGROUND_RECONCILER] Auto-confirming captured Order ${order.orderNumber} (Payment ID: ${gatewayCheck.paymentId})`);
+        await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+        reconciledCount++;
+      }
+    }
+
+    console.log(`[BACKGROUND_RECONCILER] Reconciliation completed. Reconciled ${reconciledCount} orders.`);
+    return { success: true, reconciledCount };
+  } catch (error: any) {
+    console.error('Failed to reconcile pending payments:', error);
+    return { success: false, error: error.message || 'Reconciliation error' };
+  }
+}
+
+/**
+ * Phase C Server Action: Automatically cancels abandoned checkout sessions (>30m old)
+ * after verifying payment was NOT captured on Razorpay.
+ */
+export async function cleanupExpiredCheckoutSessions() {
+  try {
+    // Run active background reconciliation worker first
+    await reconcilePendingPayments().catch(() => {});
+
+    const expirationThreshold = new Date(Date.now() - 30 * 60 * 1000);
+
+    const expiredOrders = await prisma.order.findMany({
+      where: {
+        status: 'PENDING',
+        paymentStatus: { not: 'PAID' },
+        createdAt: { lt: expirationThreshold },
+      },
+      include: { items: true },
+      take: 50,
+    });
+
+    if (expiredOrders.length === 0) {
+      return { success: true, cleanedCount: 0 };
+    }
+
+    let cleanedCount = 0;
+
+    for (const expiredOrder of expiredOrders) {
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: expiredOrder.id },
+          data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        });
+
+        for (const item of expiredOrder.items) {
+          const inv = await tx.inventory.findFirst({ where: { variantId: item.variantId } });
+          if (inv && inv.reservedStock > 0) {
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: {
+                reservedStock: { decrement: Math.min(inv.reservedStock, item.quantity) }
+              }
+            });
+          }
+        }
+      });
+      cleanedCount++;
+    }
+
+    console.log(`[CLEANUP_EXPIRED_SESSIONS] Cleaned up ${cleanedCount} expired checkout sessions.`);
+    return { success: true, cleanedCount };
+  } catch (error: any) {
+    console.error('Failed to cleanup expired checkout sessions:', error);
+    return { success: false, error: error.message || 'Cleanup error' };
+  }
+}
+
+/**
+ * Phase C Verification Helper: Verifies HMAC-SHA256 Razorpay payment signature.
+ */
+export async function verifyPaymentSignature(
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  razorpaySignature: string
+): Promise<boolean> {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) return true; // Graceful fallback in local dev without secret
+
+  try {
+    const crypto = await import('crypto');
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(`${razorpayOrderId}|${razorpayPaymentId}`);
+    const generatedSignature = hmac.digest('hex');
+    return generatedSignature === razorpaySignature;
+  } catch (err) {
+    console.error('Signature verification failed:', err);
+    return false;
+  }
+}
+
+
+
 
