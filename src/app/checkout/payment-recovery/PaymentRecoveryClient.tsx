@@ -237,7 +237,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  // Ambient Loading State
+  // ── STATE 1: PAYMENT PROCESSING / VERIFYING AMBIENT LOADER ────────────────────
   if (loading || resolving) {
     return (
       <div className={styles.container}>
@@ -246,8 +246,8 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
         </div>
         <div className={styles.loadingBox}>
           <div className={styles.spinner} />
-          <h2 className={styles.loadingTitle}>Querying Razorpay Gateway...</h2>
-          <p className={styles.loadingSub}>Razorpay is the Single Source of Truth for your payment</p>
+          <h2 className={styles.loadingTitle}>Verifying Your Payment...</h2>
+          <p className={styles.loadingSub}>Please wait while we confirm your payment securely with our banking partner.</p>
         </div>
       </div>
     );
@@ -261,7 +261,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
         </div>
         <div className={styles.card}>
           <div className={styles.header}>
-            <h1 className={styles.title}>Session Closed</h1>
+            <h1 className={styles.title}>Checkout Updated</h1>
             <p className={styles.description}>
               {error || 'No active checkout session found.'}
             </p>
@@ -279,7 +279,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // ── CASE 1: LUXURY PURCHASE SUCCESS EXPERIENCE (RAZORPAY CAPTURED / PAID) ─────
+  // ── STATE 2: LUXURY PURCHASE SUCCESS EXPERIENCE (RAZORPAY CAPTURED / PAID) ─────
   if (order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' || gatewayState === 'captured') {
     return (
       <div className={styles.container}>
@@ -287,7 +287,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
           <span className={styles.brandTitle}>GODSMOVE</span>
           <div className={styles.brandBadge} style={{ color: '#c8a46a' }}>
             <CheckCircle2 size={12} style={{ marginRight: 6 }} />
-            Payment Verified & Order Confirmed
+            Payment Confirmed
           </div>
         </div>
 
@@ -295,7 +295,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
           <div className={styles.header}>
             <div className={styles.statusBadge} style={{ background: 'rgba(200, 164, 106, 0.15)', borderColor: '#c8a46a' }}>
               <CheckCircle2 size={14} style={{ marginRight: 6, color: '#c8a46a' }} />
-              PAID & CONFIRMED
+              ORDER CONFIRMED
             </div>
             <h1 className={styles.title} style={{ fontSize: '22px', letterSpacing: '0.12em' }}>Welcome to the Archive</h1>
             <p className={styles.description}>
@@ -367,7 +367,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // ── CASE 3: PENDING PAYMENT VERIFICATION VIEW (RAZORPAY AUTHORIZED / PROCESSING) ─
+  // ── STATE 1 (CONT.): PENDING VERIFICATION VIEW (RAZORPAY AUTHORIZED / PROCESSING)
   if (gatewayState === 'authorized' || gatewayState === 'processing' || gatewayState === 'pending') {
     return (
       <div className={styles.container}>
@@ -375,7 +375,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
           <span className={styles.brandTitle}>GODSMOVE</span>
           <div className={styles.brandBadge} style={{ color: '#c8a46a' }}>
             <AlertCircle size={12} style={{ marginRight: 6 }} />
-            Razorpay Verification Pending
+            Payment Verifying
           </div>
         </div>
 
@@ -383,18 +383,18 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
           <div className={styles.header}>
             <div className={styles.statusBadge} style={{ background: 'rgba(200, 164, 106, 0.12)', color: '#c8a46a' }}>
               <Clock size={13} style={{ marginRight: 6 }} />
-              PAYMENT IS BEING VERIFIED
+              VERIFYING PAYMENT
             </div>
-            <h1 className={styles.title} style={{ fontSize: '20px' }}>Payment Under Verification</h1>
+            <h1 className={styles.title} style={{ fontSize: '20px' }}>Verifying Your Payment</h1>
             <p className={styles.description} style={{ marginBottom: '12px' }}>
-              Your payment for <strong style={{ color: '#ffffff' }}>#{order.orderNumber}</strong> is currently being processed by Razorpay. Please wait while we receive confirmation from the payment network.
+              Please wait while we confirm your payment securely with our banking partner for Order <strong style={{ color: '#ffffff' }}>#{order.orderNumber}</strong>.
             </p>
             <div style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '4px', textAlign: 'left', fontSize: '11px', lineHeight: '1.6', color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
-              <p style={{ marginBottom: '6px', fontWeight: 600, color: '#c8a46a' }}>⚠️ Important Payment Instructions:</p>
+              <p style={{ marginBottom: '6px', fontWeight: 600, color: '#c8a46a' }}>⚠️ Important Notice:</p>
               <ul style={{ margin: 0, paddingLeft: '16px' }}>
-                <li>Do <strong>NOT</strong> make another payment.</li>
-                <li>If the payment has already been deducted from your account, your order will be confirmed automatically, confirmation email will be sent, and invoice generated.</li>
-                <li>If the payment ultimately fails, the amount will automatically be returned by your bank or payment provider.</li>
+                <li>Do <strong>not</strong> make another payment.</li>
+                <li>If payment has already been deducted from your account, your order will automatically be confirmed and a tax invoice will be sent to your email.</li>
+                <li>If the payment is ultimately declined, the amount will be automatically refunded by your banking partner.</li>
               </ul>
             </div>
           </div>
@@ -418,21 +418,21 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
 
           <div className={styles.securityFooter}>
             <ShieldCheck size={11} style={{ marginRight: 6 }} />
-            <span>Razorpay Payment Network Polling Active</span>
+            <span>Encrypted Bank Verification Active</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── CASE 2: RETRY PAYMENT / FAILED RECOVERY VIEW (RAZORPAY FAILED / CREATED) ─
+  // ── STATE 3: RETRY PAYMENT / FAILED VIEW (RAZORPAY FAILED / CREATED) ──────────
   return (
     <div className={styles.container}>
       <div className={styles.brandHeader}>
         <span className={styles.brandTitle}>GODSMOVE</span>
         <div className={styles.brandBadge}>
           <ShieldCheck size={12} style={{ marginRight: 6 }} />
-          Encrypted Payment Journey
+          Encrypted Checkout
         </div>
       </div>
 
@@ -440,7 +440,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
         <div className={styles.timerBox}>
           <div className={styles.timerLabel}>
             <Clock size={13} style={{ marginRight: 6 }} />
-            ORDER RESERVED FOR
+            RESERVED FOR
           </div>
           <div className={styles.timerDigits}>{formatTimer(timeLeftSeconds)}</div>
           <div className={styles.timerSub}>Minutes : Seconds</div>
@@ -448,12 +448,12 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
 
         <div className={styles.header}>
           <div className={styles.statusBadge}>
-            <CheckCircle2 size={13} style={{ marginRight: 6 }} />
-            Razorpay Verified: Uncompleted
+            <AlertCircle size={13} style={{ marginRight: 6 }} />
+            Payment Uncompleted
           </div>
-          <h1 className={styles.title}>Payment Window Continued</h1>
+          <h1 className={styles.title}>Payment Wasn't Completed</h1>
           <p className={styles.description}>
-            Razorpay confirms payment is not yet completed for <strong style={{ color: '#fff' }}>#{order.orderNumber}</strong>. You can retry payment below or edit your checkout.
+            No money has been captured for <strong style={{ color: '#fff' }}>#{order.orderNumber}</strong>. You can retry payment below or edit your checkout items.
           </p>
         </div>
 
@@ -505,7 +505,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
             {isRetrying ? (
               <>
                 <RefreshCw size={14} className={styles.spinIcon} style={{ marginRight: 8 }} />
-                Launching Razorpay...
+                Launching Gateway...
               </>
             ) : (
               <>
@@ -520,7 +520,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
             disabled={isRetrying || isRestoring}
             className={styles.secondaryBtn}
           >
-            {isRestoring ? 'Restoring Cart...' : '← Return to Checkout (Edit Items/Address)'}
+            {isRestoring ? 'Restoring Cart...' : '← Edit Checkout'}
           </button>
         </div>
 
