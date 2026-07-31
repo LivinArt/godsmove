@@ -917,10 +917,12 @@ export async function getOrderPaymentStatus(orderId: string) {
     }
 
     // Active Gateway Resolution: If order is still PENDING in DB, query Razorpay REST API out-of-band
+    let gatewayState = 'created';
     if (order.status === 'PENDING' && order.paymentStatus !== 'PAID' && order.razorpayOrderId) {
       try {
         const { PaymentService } = await import('@/lib/payments/payment-service');
         const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
+        gatewayState = gatewayCheck.status || 'created';
         if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
           console.log(`[ACTIVE_GATEWAY_RECOVERY] Found captured payment ${gatewayCheck.paymentId} for Order ${order.id}. Auto-confirming...`);
           await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
@@ -930,6 +932,7 @@ export async function getOrderPaymentStatus(orderId: string) {
             where: { id: orderId },
             include: { items: { include: { variant: { include: { product: true } } } } }
           }) || order;
+          gatewayState = 'captured';
         }
       } catch (gatewayErr) {
         console.error('Active gateway verification error during recovery:', gatewayErr);
@@ -941,6 +944,7 @@ export async function getOrderPaymentStatus(orderId: string) {
 
     return {
       success: true,
+      gatewayState: order.paymentStatus === 'PAID' ? 'captured' : gatewayState,
       order: {
         id: order.id,
         orderNumber: order.orderNumber,

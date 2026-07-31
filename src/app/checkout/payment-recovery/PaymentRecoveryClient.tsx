@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Lock, RefreshCw, ShieldCheck, Clock, CheckCircle2, ShoppingBag, Download, ArrowRight, Package } from 'lucide-react';
+import { Lock, RefreshCw, ShieldCheck, Clock, CheckCircle2, ShoppingBag, Download, ArrowRight, Package, AlertCircle } from 'lucide-react';
 import { getOrderPaymentStatus, confirmOrder, cancelAndRestoreOrder } from '@/actions/order.actions';
 import { getCheckoutSessionToken, clearCheckoutSessionToken } from '@/lib/checkout-session';
 import { loadRazorpaySDKScript } from '@/hooks/useRazorpay';
@@ -23,6 +23,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
   const [isRetrying, setIsRetrying] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [order, setOrder] = useState<any>(null);
+  const [gatewayState, setGatewayState] = useState<string>('created');
   const [error, setError] = useState<string | null>(null);
   const [timeLeftSeconds, setTimeLeftSeconds] = useState<number | null>(null);
   
@@ -33,7 +34,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     setResolving(true);
     setError(null);
     try {
-      // Active Gateway Resolution: Always queries Razorpay REST API out-of-band if DB status is PENDING!
+      // Active Gateway Resolution: Razorpay REST API is the Single Source of Truth
       const res = await getOrderPaymentStatus(orderIdToFetch);
       if (!res.success || !res.order) {
         setError(res.error || 'Unable to locate active checkout session.');
@@ -44,11 +45,11 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
 
       const fetchedOrder = res.order;
       setOrder(fetchedOrder);
+      setGatewayState(res.gatewayState || (fetchedOrder.paymentStatus === 'PAID' ? 'captured' : 'created'));
 
       if (fetchedOrder.status === 'CONFIRMED' || fetchedOrder.paymentStatus === 'PAID') {
         clearCheckoutSessionToken();
       } else {
-        // Calculate server-synchronized reservation expiration (createdAt + 30 mins)
         const createdTimeMs = new Date(fetchedOrder.createdAt).getTime();
         const expiresTimeMs = createdTimeMs + 30 * 60 * 1000;
         const remainingMs = expiresTimeMs - Date.now();
@@ -68,14 +69,12 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
   useEffect(() => {
     const targetOrderId = initialOrderId || getCheckoutSessionToken();
     if (!targetOrderId) {
-      setError('No active checkout session found.');
-      setLoading(false);
-      setResolving(false);
+      router.replace('/drops');
       return;
     }
 
     resolvePaymentStatus(targetOrderId);
-  }, [initialOrderId, resolvePaymentStatus]);
+  }, [initialOrderId, resolvePaymentStatus, router]);
 
   // Server-synchronized Reservation Countdown Timer
   useEffect(() => {
@@ -122,7 +121,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     }
   }, [timeLeftSeconds, order, handleAutoExpiration]);
 
-  // Retry Payment via Smart Order Reuse
+  // Retry Payment via Smart Order Reuse Strategy
   const handleRetryPayment = async () => {
     if (!order || isRetryingRef.current) return;
     isRetryingRef.current = true;
@@ -181,6 +180,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
 
             clearCheckoutSessionToken();
             setOrder((prev: any) => ({ ...prev, status: 'CONFIRMED', paymentStatus: 'PAID' }));
+            setGatewayState('captured');
             showToast('Payment Successful', `Order #${order.orderNumber} confirmed!`);
           } catch (confirmErr: any) {
             showToast('Payment Error', confirmErr.message || 'Failed to confirm transaction.');
@@ -206,7 +206,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     }
   };
 
-  // Full Return to Checkout with Complete Cart Reconstruction
+  // Full Return to Checkout with Complete Cart & Session Restoration
   const handleReturnToCheckout = async () => {
     if (!order) {
       router.push('/checkout');
@@ -230,7 +230,6 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     }
   };
 
-  // Format Countdown Timer Output (MM:SS)
   const formatTimer = (seconds: number | null) => {
     if (seconds === null) return '30:00';
     const m = Math.floor(seconds / 60);
@@ -254,7 +253,6 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // Session Not Found / Error View
   if (error || !order) {
     return (
       <div className={styles.container}>
@@ -263,17 +261,17 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
         </div>
         <div className={styles.card}>
           <div className={styles.header}>
-            <h1 className={styles.title}>Session Expired</h1>
+            <h1 className={styles.title}>Session Closed</h1>
             <p className={styles.description}>
-              {error || 'Your payment session is no longer active.'}
+              {error || 'No active checkout session found.'}
             </p>
           </div>
           <div className={styles.actionGroup}>
             <button
-              onClick={() => router.push('/checkout')}
+              onClick={() => router.push('/drops')}
               className={`btn btn-primary ${styles.retryBtn}`}
             >
-              Return to Checkout
+              Explore Drops
             </button>
           </div>
         </div>
@@ -281,8 +279,8 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // ── LUXURY PURCHASE SUCCESS EXPERIENCE (RAZORPAY CAPTURED) ─────────────────
-  if (order.status === 'CONFIRMED' || order.paymentStatus === 'PAID') {
+  // ── CASE 1: LUXURY PURCHASE SUCCESS EXPERIENCE (RAZORPAY CAPTURED / PAID) ─────
+  if (order.status === 'CONFIRMED' || order.paymentStatus === 'PAID' || gatewayState === 'captured') {
     return (
       <div className={styles.container}>
         <div className={styles.brandHeader}>
@@ -369,7 +367,65 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // ── UNCONFIRMED / PENDING PAYMENT RECOVERY VIEW ────────────────────────────
+  // ── CASE 3: PENDING PAYMENT VERIFICATION VIEW (RAZORPAY AUTHORIZED / PROCESSING) ─
+  if (gatewayState === 'authorized' || gatewayState === 'processing' || gatewayState === 'pending') {
+    return (
+      <div className={styles.container}>
+        <div className={styles.brandHeader}>
+          <span className={styles.brandTitle}>GODSMOVE</span>
+          <div className={styles.brandBadge} style={{ color: '#c8a46a' }}>
+            <AlertCircle size={12} style={{ marginRight: 6 }} />
+            Razorpay Verification Pending
+          </div>
+        </div>
+
+        <div className={styles.card} style={{ borderColor: 'rgba(200, 164, 106, 0.3)' }}>
+          <div className={styles.header}>
+            <div className={styles.statusBadge} style={{ background: 'rgba(200, 164, 106, 0.12)', color: '#c8a46a' }}>
+              <Clock size={13} style={{ marginRight: 6 }} />
+              PAYMENT IS BEING VERIFIED
+            </div>
+            <h1 className={styles.title} style={{ fontSize: '20px' }}>Payment Under Verification</h1>
+            <p className={styles.description} style={{ marginBottom: '12px' }}>
+              Your payment for <strong style={{ color: '#ffffff' }}>#{order.orderNumber}</strong> is currently being processed by Razorpay. Please wait while we receive confirmation from the payment network.
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '4px', textAlign: 'left', fontSize: '11px', lineHeight: '1.6', color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
+              <p style={{ marginBottom: '6px', fontWeight: 600, color: '#c8a46a' }}>⚠️ Important Payment Instructions:</p>
+              <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                <li>Do <strong>NOT</strong> make another payment.</li>
+                <li>If the payment has already been deducted from your account, your order will be confirmed automatically, confirmation email will be sent, and invoice generated.</li>
+                <li>If the payment ultimately fails, the amount will automatically be returned by your bank or payment provider.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className={styles.actionGroup}>
+            <button
+              onClick={() => router.push('/profile')}
+              className={`btn btn-primary ${styles.retryBtn}`}
+            >
+              <Package size={14} style={{ marginRight: 8 }} />
+              View Orders
+            </button>
+
+            <button
+              onClick={() => router.push('/drops')}
+              className={styles.secondaryBtn}
+            >
+              Continue Browsing
+            </button>
+          </div>
+
+          <div className={styles.securityFooter}>
+            <ShieldCheck size={11} style={{ marginRight: 6 }} />
+            <span>Razorpay Payment Network Polling Active</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── CASE 2: RETRY PAYMENT / FAILED RECOVERY VIEW (RAZORPAY FAILED / CREATED) ─
   return (
     <div className={styles.container}>
       <div className={styles.brandHeader}>
@@ -393,7 +449,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
         <div className={styles.header}>
           <div className={styles.statusBadge}>
             <CheckCircle2 size={13} style={{ marginRight: 6 }} />
-            Razorpay Verified: Pending
+            Razorpay Verified: Uncompleted
           </div>
           <h1 className={styles.title}>Payment Window Continued</h1>
           <p className={styles.description}>

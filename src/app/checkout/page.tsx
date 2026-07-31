@@ -137,28 +137,9 @@ export default function CheckoutPage() {
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<any>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [phoneWarning, setPhoneWarning] = useState(false);
   const [editingCheckoutAddressId, setEditingCheckoutAddressId] = useState<string | null>(null);
   const [isFetchingAddresses, setIsFetchingAddresses] = useState(true);
-
-  useEffect(() => {
-    async function checkRecoverySession() {
-      try {
-        const tokenOrderId = getCheckoutSessionToken() || undefined;
-        const sessionRes = await getActiveCheckoutSession(tokenOrderId);
-        if (sessionRes?.hasActiveSession && sessionRes.orderId) {
-          router.replace(`/checkout/payment-recovery?orderId=${sessionRes.orderId}`);
-          return;
-        }
-      } catch (e) {
-        // Continue to load page
-      } finally {
-        setIsCheckingSession(false);
-      }
-    }
-    checkRecoverySession();
-  }, [router]);
 
   useEffect(() => {
     async function loadData() {
@@ -581,17 +562,6 @@ export default function CheckoutPage() {
       setIsSubmitLoading(false);
     }
   };
-
-  if (isCheckingSession) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#c8a46a' }}>
-          <div style={{ width: '36px', height: '36px', border: '2px solid rgba(200, 164, 106, 0.2)', borderTopColor: '#c8a46a', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ fontFamily: 'var(--font-heading)', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Securing your session...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (checkoutItems.length === 0 && !showSuccessModal && !confirmedOrderNumber) {
     return (
