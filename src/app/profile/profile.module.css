@@ -879,74 +879,155 @@
 
 @media (max-width: 600px) {
   .expandedArticlesWrap {
-    padding: 16px 14px;
+    padding: 14px 12px;
   }
 }
 
-.articleThumb {
-  width: 60px;
-  height: 75px;
-  aspect-ratio: 4 / 5;
-  flex-shrink: 0;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.articleThumb img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
+/* Article Card — 3-column editorial grid: image | details | price+actions */
 .orderArticleRow {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  align-items: start;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 18px;
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 10px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .orderArticleRow:hover {
-  border-color: rgba(200, 164, 106, 0.3);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  border-color: rgba(200, 164, 106, 0.35);
+  box-shadow: 0 4px 18px rgba(200, 164, 106, 0.06);
 }
 
 .orderArticleRow:last-child {
   margin-bottom: 0;
 }
 
+/* Image container — always exactly 72×90, never overflows */
+.articleThumb {
+  width: 72px;
+  height: 90px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f0ede6;
+  cursor: pointer;
+  display: block;
+}
+
+.articleThumb img {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: top center;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.articleThumb:hover img {
+  transform: scale(1.04);
+}
+
+/* Details column */
+.articleDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
 .articleTitle {
   font-family: var(--font-heading);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #0f0f0f;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.articleCollectionTag {
+  font-size: 10px;
+  color: #c8a46a;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: var(--font-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.articleSku {
+  font-family: monospace;
+  font-size: 9px;
+  color: #a3a3a3;
+  letter-spacing: 0.02em;
 }
 
 .articleMeta {
-  font-size: 12px;
-  color: #525252;
+  font-size: 11px;
+  color: #737373;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.articleActionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+/* Right column — price on top, actions below */
+.articlePriceCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.articlePrice {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f0f0f;
+  white-space: nowrap;
+}
+
+.articlePriceBreakdown {
+  font-size: 10px;
+  color: #a3a3a3;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .itemReturnBtn {
-  padding: 8px 14px;
-  min-height: 44px;
+  padding: 6px 12px;
+  min-height: 36px;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #dc2626;
   background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  border-radius: 6px;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .itemReturnBtn:hover {
@@ -957,8 +1038,8 @@
 .articleStatusBadgeBtn {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 8px 14px;
+  min-height: 36px;
+  padding: 6px 12px;
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 600;
@@ -967,14 +1048,51 @@
   color: #8a6d3b;
   background: rgba(200, 164, 106, 0.1);
   border: 1px solid rgba(200, 164, 106, 0.25);
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .articleStatusBadgeBtn:hover {
   background: rgba(200, 164, 106, 0.2);
 }
+
+/* Mobile: stack to 2-row layout */
+@media (max-width: 600px) {
+  .orderArticleRow {
+    grid-template-columns: 64px 1fr;
+    grid-template-rows: auto auto;
+    gap: 12px;
+    padding: 14px 12px;
+  }
+
+  .articleThumb {
+    width: 64px;
+    height: 80px;
+    grid-row: 1 / 3;
+  }
+
+  .articleDetails {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .articlePriceCol {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .articlePrice {
+    font-size: 13px;
+  }
+}
+
 
 .orderHeader {
   display: flex;

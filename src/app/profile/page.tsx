@@ -1624,66 +1624,89 @@ export default function ProfilePage() {
                                   {order.items.map((item: any) => {
                                     const itemThumb = resolveOrderItemImageUrl(item);
                                     const isEligibleForReturn = (order.status === 'DELIVERED' || order.status === 'COMPLETED') && !item.returnStatus;
-                                    
+                                    // Derive slug from productName for product page navigation (no backend change required)
+                                    const productSlug = item.productName
+                                      ? item.productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                                      : null;
+
                                     return (
                                       <div key={item.id} className={styles.orderArticleRow}>
-                                        <div className={styles.articleThumb}>
-                                          <img 
-                                            src={itemThumb} 
-                                            alt={item.productName} 
-                                            width={56} 
-                                            height={70} 
-                                            style={{ objectFit: 'cover', borderRadius: '4px' }} 
-                                          />
-                                        </div>
+
+                                        {/* Column 1: Product Image — clickable, strictly contained */}
+                                        {productSlug ? (
+                                          <a
+                                            href={`/product/${productSlug}`}
+                                            className={styles.articleThumb}
+                                            title={`View ${item.productName}`}
+                                            aria-label={`Go to product: ${item.productName}`}
+                                          >
+                                            <img src={itemThumb} alt={item.productName} />
+                                          </a>
+                                        ) : (
+                                          <div className={styles.articleThumb}>
+                                            <img src={itemThumb} alt={item.productName} />
+                                          </div>
+                                        )}
+
+                                        {/* Column 2: Product Details */}
                                         <div className={styles.articleDetails}>
                                           <span className={styles.articleTitle}>{item.productName}</span>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', margin: '2px 0 4px' }}>
-                                            <span style={{ fontSize: '10px', color: '#c8a46a', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'var(--font-heading)' }}>
-                                              {item.collectionName || 'GODSMOVE Archive'}
-                                            </span>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: 'var(--text-muted)' }}>
-                                              GM-ART-{item.id.toUpperCase().slice(-8)}
-                                            </span>
-                                          </div>
+                                          <span className={styles.articleCollectionTag}>
+                                            {item.collectionName || 'GODSMOVE Archive'}
+                                          </span>
+                                          <span className={styles.articleSku}>
+                                            GM-ART-{item.id.toUpperCase().slice(-8)}
+                                          </span>
                                           <span className={styles.articleMeta}>
-                                            Variant: {item.color ? `${item.color} / ` : ''}{item.size} • Qty: {item.quantity}
+                                            {item.color ? `${item.color} / ` : ''}{item.size} · Qty {item.quantity}
                                           </span>
-                                          <span className={styles.articleMeta} style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
-                                            ₹{Number(item.price).toLocaleString('en-IN')} × {item.quantity} = ₹{Number(item.total).toLocaleString('en-IN')}
+
+                                          {/* Return actions inline with details on desktop */}
+                                          <div className={styles.articleActionsRow}>
+                                            {isEligibleForReturn && (
+                                              <button
+                                                type="button"
+                                                onClick={() => handleOpenReturnForm(order, item)}
+                                                className={styles.itemReturnBtn}
+                                              >
+                                                Return Item
+                                              </button>
+                                            )}
+                                            {item.returnStatus && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const matchingReturn = returns.find((r: any) =>
+                                                    r.items?.some((ri: any) => ri.orderItemId === item.id)
+                                                  );
+                                                  if (matchingReturn) {
+                                                    handleTabChange('returns');
+                                                    setActiveTrackingReturn(matchingReturn);
+                                                    setTrackReturnOpen(true);
+                                                  } else {
+                                                    handleTabChange('returns');
+                                                  }
+                                                }}
+                                                className={styles.articleStatusBadgeBtn}
+                                              >
+                                                {item.returnStatus === 'COMPLETED' ? '✓ Return Complete' : `Return: ${item.returnStatus.replace(/_/g, ' ')}`}
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Column 3: Price */}
+                                        <div className={styles.articlePriceCol}>
+                                          <span className={styles.articlePrice}>
+                                            ₹{Number(item.total).toLocaleString('en-IN')}
                                           </span>
-                                        </div>
-                                        <div className={styles.articleActions}>
-                                          {isEligibleForReturn && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleOpenReturnForm(order, item)}
-                                              className={styles.itemReturnBtn}
-                                            >
-                                              Return Item
-                                            </button>
-                                          )}
-                                          {item.returnStatus && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const matchingReturn = returns.find((r: any) => 
-                                                  r.items?.some((ri: any) => ri.orderItemId === item.id)
-                                                );
-                                                if (matchingReturn) {
-                                                  handleTabChange('returns');
-                                                  setActiveTrackingReturn(matchingReturn);
-                                                  setTrackReturnOpen(true);
-                                                } else {
-                                                  handleTabChange('returns');
-                                                }
-                                              }}
-                                              className={styles.articleStatusBadgeBtn}
-                                            >
-                                              {item.returnStatus === 'COMPLETED' ? '✓ Return Complete' : `Return: ${item.returnStatus.replace(/_/g, ' ')}`}
-                                            </button>
+                                          {item.quantity > 1 && (
+                                            <span className={styles.articlePriceBreakdown}>
+                                              ₹{Number(item.price).toLocaleString('en-IN')} × {item.quantity}
+                                            </span>
                                           )}
                                         </div>
+
                                       </div>
                                     );
                                   })}
