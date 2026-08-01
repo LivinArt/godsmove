@@ -1397,10 +1397,20 @@ export default function ProfilePage() {
 
                               <div className={styles.orderStatusCol}>
                                 <span className={`${styles.orderStatus} ${getStatusClass(order.paymentStatus)}`}>
-                                  {order.paymentStatus === 'PAID' && order.total === 0 ? 'PAID (CREDITS)' : order.paymentStatus}
+                                  {order.paymentStatus === 'PAID'
+                                    ? (order.total === 0 ? 'Welcome to the Archive' : 'PAID')
+                                    : order.paymentStatus === 'FAILED' || order.status === 'CANCELLED'
+                                    ? "Payment couldn't be completed"
+                                    : order.status === 'PENDING'
+                                    ? "We're confirming your payment"
+                                    : order.paymentStatus}
                                 </span>
                                 <span className={`${styles.orderStatus} ${getStatusClass(order.status)}`}>
-                                  {order.status.replace(/_/g, ' ')}
+                                  {order.status === 'CANCELLED'
+                                    ? "Purchase wasn't completed"
+                                    : order.status === 'PENDING'
+                                    ? "We're confirming your payment"
+                                    : order.status.replace(/_/g, ' ')}
                                 </span>
                               </div>
 

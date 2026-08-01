@@ -510,7 +510,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
             ) : (
               <>
                 <Lock size={14} style={{ marginRight: 8 }} />
-                Retry Payment (₹{order.total.toLocaleString('en-IN')})
+                Complete Your Purchase (₹{order.total.toLocaleString('en-IN')})
               </>
             )}
           </button>
