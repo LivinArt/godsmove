@@ -407,90 +407,14 @@ export async function confirmOrder(
   console.log(`\n[CONFIRM ORDER] Confirming payment for Order ID ${orderId}...`);
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({
-        where: { id: orderId },
-        include: { items: true },
-      });
-      if (!order) throw new Error('Order not found');
-      if (order.paymentStatus === 'PAID') return order;
-
-      const updatedOrder = await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'CONFIRMED',
-          paymentStatus: 'PAID',
-          paymentMethod: 'RAZORPAY',
-          razorpayPaymentId,
-          razorpayOrderId,
-          paidAt: new Date(),
-        },
-      });
-
-      for (const item of order.items) {
-        const inv = await tx.inventory.upsert({
-          where: { variantId: item.variantId },
-          create: {
-            variantId: item.variantId,
-            totalStock: 100,
-            reservedStock: 0,
-            soldStock: item.quantity,
-          },
-          update: {
-            reservedStock: { decrement: item.quantity },
-            soldStock: { increment: item.quantity },
-          },
-        });
-
-        await tx.inventoryMovement.create({
-          data: {
-            inventoryId: inv.id,
-            delta: -item.quantity,
-            type: 'PURCHASE',
-            reason: `Order ${order.orderNumber} payment confirmed`,
-            orderId: order.id,
-          },
-        });
-      }
-
-      return updatedOrder;
-    });
-
-    try {
-      await InvoiceService.updatePaymentStatus(orderId, 'PAID', razorpayPaymentId, 'RAZORPAY');
-      const fullOrder = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { items: true, profile: true },
-      });
-      if (fullOrder) {
-        const custName = fullOrder.profile ? `${fullOrder.profile.firstName || ''} ${fullOrder.profile.lastName || ''}`.trim() : 'Collector';
-
-        // Flow 1 / Flow 5 Sequence Requirement:
-        // 1. Payment Successful Email FIRST
-        await NotificationService.sendPaymentConfirmed(
-          fullOrder.email,
-          custName,
-          fullOrder.orderNumber,
-          Number(fullOrder.total),
-          razorpayPaymentId,
-          fullOrder.id
-        );
-        // 2. Order Confirmation Email SECOND
-        await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
-        // 3. Wallet Debit Email THIRD (if applicable)
-        if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
-          const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
-          const remBalance = Number(wallet?.balance || 0);
-          await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance);
-        }
-      }
-    } catch (err: any) {
-      console.error(`❌ [CONFIRM ORDER NOTIFICATION ERROR] Order ${orderId}:`, err);
-    }
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+    const updated = await PaymentStateEngine.confirmOrder(orderId, razorpayPaymentId, razorpayOrderId);
 
     try {
       revalidatePath('/admin/orders');
+      revalidatePath(`/admin/orders/${orderId}`);
       revalidatePath('/profile');
+      revalidatePath(`/orders/${updated.orderNumber}`);
     } catch {}
 
     console.log(`✅ [CONFIRM ORDER SUCCESS] Order ${orderId} marked PAID`);
@@ -1014,6 +938,8 @@ export async function cancelAndRestoreOrder(orderId: string) {
 
     if (!order) return { success: false, error: 'Order not found' };
 
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+
     // Active check before cancelling: ensure payment was NOT captured on gateway
     if (order.status === 'PENDING' && order.razorpayOrderId) {
       try {
@@ -1021,29 +947,14 @@ export async function cancelAndRestoreOrder(orderId: string) {
         const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
         if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
           console.log(`[CANCEL_GUARD] Payment ${gatewayCheck.paymentId} was captured on Razorpay! Auto-confirming instead of cancelling.`);
-          await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+          await PaymentStateEngine.confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
           return { success: true, restored: false, alreadyPaid: true };
         }
       } catch (err) {}
     }
 
     if (order.status === 'PENDING') {
-      await prisma.$transaction(async (tx) => {
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: 'CANCELLED', paymentStatus: 'FAILED' }
-        });
-
-        for (const item of order.items) {
-          const inv = await tx.inventory.findFirst({ where: { variantId: item.variantId } });
-          if (inv) {
-            await tx.inventory.update({
-              where: { id: inv.id },
-              data: { reservedStock: { decrement: item.quantity } }
-            });
-          }
-        }
-      });
+      await PaymentStateEngine.cancelOrder(orderId, 'User cancelled or payment failed');
     }
 
     const itemsToRestore = order.items.map((item) => ({
@@ -1080,6 +991,7 @@ export async function reconcilePendingPayments() {
     }
 
     const { PaymentService } = await import('@/lib/payments/payment-service');
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
     let reconciledCount = 0;
 
     for (const order of pendingOrders) {
@@ -1088,25 +1000,11 @@ export async function reconcilePendingPayments() {
         const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
         if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
           console.log(`[BACKGROUND_RECONCILER] Auto-confirming captured Order ${order.orderNumber} (Payment ID: ${gatewayCheck.paymentId})`);
-          await confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+          await PaymentStateEngine.confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
           reconciledCount++;
         } else if (gatewayCheck.status === 'failed' || gatewayCheck.status === 'cancelled') {
           console.log(`[BACKGROUND_RECONCILER] Auto-cancelling failed Order ${order.orderNumber}`);
-          await prisma.$transaction(async (tx) => {
-            await tx.order.update({
-              where: { id: order.id },
-              data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
-            });
-            for (const item of order.items) {
-              const inv = await tx.inventory.findFirst({ where: { variantId: item.variantId } });
-              if (inv && inv.reservedStock > 0) {
-                await tx.inventory.update({
-                  where: { id: inv.id },
-                  data: { reservedStock: { decrement: Math.min(inv.reservedStock, item.quantity) } }
-                });
-              }
-            }
-          });
+          await PaymentStateEngine.cancelOrder(order.id, 'Gateway payment failed or cancelled');
           reconciledCount++;
         }
       } catch (err) {

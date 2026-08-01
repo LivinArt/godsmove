@@ -37,7 +37,7 @@ class WebhookService {
   }
 
   /**
-   * Handle captured payment (ensure status is synced to PAID)
+   * Handle captured payment (ensure status is synced to PAID via PaymentStateEngine)
    */
   private async handlePaymentCaptured(payment: any) {
     const rzpOrderId = payment.order_id;
@@ -57,28 +57,19 @@ class WebhookService {
       return;
     }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: 'PAID',
-        status: 'CONFIRMED',
-        razorpayPaymentId: rzpPaymentId,
-        paidAt: new Date(),
-      },
-    });
-
-    console.log(`[WebhookService] Order ${order.id} successfully marked as PAID from webhook.`);
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+    await PaymentStateEngine.confirmOrder(order.id, rzpPaymentId, rzpOrderId);
+    console.log(`[WebhookService] Order ${order.id} successfully confirmed from webhook via PaymentStateEngine.`);
   }
 
   /**
-   * Handle failed payment (release inventory reservations and mark FAILED)
+   * Handle failed payment (release inventory reservations and mark FAILED via PaymentStateEngine)
    */
   private async handlePaymentFailed(payment: any) {
     const rzpOrderId = payment.order_id;
 
     const order = await prisma.order.findFirst({
       where: { razorpayOrderId: rzpOrderId },
-      include: { items: true },
     });
 
     if (!order) {
@@ -86,62 +77,13 @@ class WebhookService {
       return;
     }
 
-    if (order.paymentStatus === 'FAILED') {
+    if (order.paymentStatus === 'FAILED' || order.status === 'CANCELLED') {
       return;
     }
 
-    // 1. Transactional rollback of stocks (restock)
-    await prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        await tx.inventory.update({
-          where: { variantId: item.variantId },
-          data: { totalStock: { increment: item.quantity } },
-        });
-
-        const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
-        if (inv) {
-          await tx.inventoryMovement.create({
-            data: {
-              inventoryId: inv.id,
-              delta: item.quantity,
-              type: 'UNRESERVE',
-              reason: `Failed Checkout Restock #${order.id}`,
-            },
-          });
-        }
-      }
-
-      // 2. Mark order FAILED
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          paymentStatus: 'FAILED',
-          status: 'CANCELLED',
-        },
-      });
-
-      // 3. Refund used wallet credits if any were deducted during draft
-      if (Number(order.walletCredit) > 0 && order.profileId) {
-        const wallet = await tx.wallet.findUnique({ where: { profileId: order.profileId } });
-        if (wallet) {
-          await tx.wallet.update({
-            where: { profileId: order.profileId },
-            data: { balance: { increment: Number(order.walletCredit) } },
-          });
-
-          await tx.walletTransaction.create({
-            data: {
-              walletId: wallet.id,
-              amount: Number(order.walletCredit),
-              type: 'CREDIT_ADJUSTMENT',
-              description: `Restored credit from Failed checkout Order #${order.id}`,
-            },
-          });
-        }
-      }
-    });
-
-    console.log(`[WebhookService] Order ${order.id} payment FAILED. Restocked inventory.`);
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+    await PaymentStateEngine.cancelOrder(order.id, payment.error_description || 'Payment failed on Razorpay');
+    console.log(`[WebhookService] Order ${order.id} successfully cancelled from webhook via PaymentStateEngine.`);
   }
 
   /**

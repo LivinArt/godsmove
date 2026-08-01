@@ -1396,13 +1396,13 @@ export default function ProfilePage() {
                               </div>
 
                               <div className={styles.orderStatusCol}>
-                                <span className={`${styles.orderStatus} ${getStatusClass(order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentMethod === 'COD' ? 'UNPAID' : 'FAILED'))}`}>
-                                  {order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentMethod === 'COD' ? 'UNPAID' : 'FAILED')}
-                                </span>
-                                <span className={`${styles.orderStatus} ${getStatusClass(order.status === 'CANCELLED' || (order.paymentStatus !== 'PAID' && order.paymentMethod !== 'COD') ? 'CANCELLED' : order.status)}`}>
-                                  {order.status === 'CANCELLED' || (order.paymentStatus !== 'PAID' && order.paymentMethod !== 'COD') ? 'CANCELLED' : (['CONFIRMED', 'PENDING', 'PROCESSING'].includes(order.status) ? 'PROCESSING' : order.status.replace(/_/g, ' ').toUpperCase())}
-                                </span>
-                              </div>
+                                 <span className={`${styles.orderStatus} ${getStatusClass(order.paymentStatus)}`}>
+                                   {order.paymentStatus}
+                                 </span>
+                                 <span className={`${styles.orderStatus} ${getStatusClass(order.status)}`}>
+                                   {order.status.replace(/_/g, ' ').toUpperCase()}
+                                 </span>
+                               </div>
 
                               <div className={styles.orderTotalCol}>
                                 <span className={styles.orderTotalVal}>₹{Number(order.total).toLocaleString('en-IN')}</span>
