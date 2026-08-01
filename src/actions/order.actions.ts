@@ -1160,6 +1160,9 @@ export async function getActiveCheckoutSessionAction(sessionTokenOrOrderId?: str
         expiresAt: session.expiresAt.toISOString(),
         orderNumber: session.order?.orderNumber,
         total: Number(session.order?.total || 0),
+        // Required by the Payment Capability Layer to determine recovery eligibility.
+        // Prevents COD orders from entering Razorpay verification flows.
+        paymentMethod: session.order?.paymentMethod ?? null,
       }
     };
   } catch (error: any) {

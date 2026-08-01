@@ -9,6 +9,7 @@ import {
   verifyCheckoutSessionAction,
   resumePaymentSessionAction,
 } from '@/actions/order.actions';
+import { supportsPaymentRecovery } from '@/lib/payments/payment-capabilities';
 import styles from './GlobalPaymentRecoveryModal.module.css';
 
 type RecoveryState = 'IDLE' | 'VERIFYING' | 'SUCCESS' | 'FAILED' | 'STILL_PENDING' | 'NO_PAYMENT_ATTEMPT';
@@ -37,6 +38,16 @@ export default function GlobalPaymentRecoveryModal() {
     try {
       const res = await getActiveCheckoutSessionAction(token || undefined);
       if (res.success && res.hasActiveSession && res.session) {
+        // ── PAYMENT CAPABILITY ISOLATION GUARD ──────────────────────────────
+        // The Recovery Modal is exclusively for recoverable digital gateways
+        // (Razorpay, Mixed). COD, and any future non-recoverable method, must
+        // never enter verification polling or render the modal.
+        // Adding a new recoverable gateway (Stripe, PhonePe) only requires
+        // updating RECOVERABLE_PAYMENT_METHODS in payment-capabilities.ts.
+        if (!supportsPaymentRecovery({ paymentMethod: res.session.paymentMethod })) {
+          clearCheckoutSessionToken();
+          return;
+        }
         setActiveSession(res.session);
         setModalState('VERIFYING');
       } else if (!res.hasActiveSession && modalState === 'VERIFYING') {

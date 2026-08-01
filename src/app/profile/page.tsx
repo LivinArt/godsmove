@@ -1420,102 +1420,189 @@ export default function ProfilePage() {
                                    Invoice
                                  </button>
 
-                                 {['FAILED', 'CANCELLED'].includes(order.status) || order.paymentStatus === 'FAILED' ? (
-                                   <button
-                                     type="button"
-                                     onClick={async () => {
-                                       try {
-                                         showToast('Rebuilding Checkout', 'Validating current availability and stock...');
-                                         const { reorderOrderAction } = await import('@/actions/order.actions');
-                                         const res = await reorderOrderAction(order.id);
-                                         if (!res.success || !res.items || res.items.length === 0) {
-                                           showToast('Reorder Unavailable', 'Unfortunately, the products from this order are no longer available.');
-                                           return;
-                                         }
+                                 {/* ── COD ORDER CTA RENDERER ─────────────────────────────────────────
+                                   COD orders have an independent fulfilment lifecycle.
+                                   The concepts of Continue Payment, Verifying Payment,
+                                   Awaiting Verification, and Recovery do not exist for COD.
+                                   Payment status stays UNPAID until cash is physically collected
+                                   and confirmed by admin or delivery partner. That is correct.
+                                  ─────────────────────────────────────────────────────────────────── */}
+                                 {order.paymentMethod === 'COD' ? (
+                                   (() => {
+                                     const isCODCancelledOrFailed =
+                                       ['FAILED', 'CANCELLED'].includes(order.status) ||
+                                       order.paymentStatus === 'FAILED';
+                                     const isCODDelivered =
+                                       ['DELIVERED', 'COMPLETED'].includes(order.status);
+                                     const isCODInFulfilment =
+                                       ['CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(order.status);
 
-                                         if (res.allSoldOut) {
-                                           showToast('Sold Out', 'Unfortunately, all products from this order are sold out.');
-                                           return;
-                                         }
+                                     if (isCODCancelledOrFailed) {
+                                       return (
+                                         <button
+                                           type="button"
+                                           onClick={async () => {
+                                             try {
+                                               showToast('Rebuilding Checkout', 'Validating current availability and stock...');
+                                               const { reorderOrderAction } = await import('@/actions/order.actions');
+                                               const res = await reorderOrderAction(order.id);
+                                               if (!res.success || !res.items || res.items.length === 0) {
+                                                 showToast('Reorder Unavailable', 'Unfortunately, the products from this order are no longer available.');
+                                                 return;
+                                               }
+                                               if (res.allSoldOut) {
+                                                 showToast('Sold Out', 'Unfortunately, all products from this order are sold out.');
+                                                 return;
+                                               }
+                                               useStore.setState({ cart: res.items });
+                                               showToast('Cart Rebuilt', 'Rebuilding checkout with current live pricing and stock.');
+                                               router.push('/checkout');
+                                             } catch (err: any) {
+                                               showToast('Reorder Error', err.message || 'Unable to reorder at this time.');
+                                             }
+                                           }}
+                                           className={styles.reorderBtn}
+                                         >
+                                           <RotateCcw size={13} style={{ marginRight: 6 }} />
+                                           Reorder
+                                         </button>
+                                       );
+                                     }
 
-                                         useStore.setState({ cart: res.items });
-                                         showToast('Cart Rebuilt', 'Rebuilding checkout with current live pricing and stock.');
-                                         router.push('/checkout');
-                                       } catch (err: any) {
-                                         showToast('Reorder Error', err.message || 'Unable to reorder at this time.');
-                                       }
-                                     }}
-                                     className={styles.reorderBtn}
-                                   >
-                                     <RotateCcw size={13} style={{ marginRight: 6 }} />
-                                     Reorder
-                                   </button>
-                                 ) : order.paymentStatus === 'UNPAID' && ['PENDING', 'VERIFYING', 'AWAITING_PAYMENT'].includes(order.status) ? (
-                                   <button
-                                     type="button"
-                                     onClick={async () => {
-                                       try {
-                                         showToast('Resuming Payment', 'Connecting to secure payment gateway...');
-                                         const { resumePaymentSessionAction } = await import('@/actions/order.actions');
-                                         const res = await resumePaymentSessionAction(order.id);
-                                         if (!res.success || !res.razorpay) {
-                                           showToast('Payment Error', res.error || 'Unable to resume payment session.');
-                                           return;
-                                         }
+                                     if (isCODDelivered) {
+                                       return (
+                                         <span className={styles.deliveredPill}>
+                                           ✓ Delivered
+                                         </span>
+                                       );
+                                     }
 
-                                         const { loadRazorpaySDKScript } = await import('@/hooks/useRazorpay');
-                                         const loaded = await loadRazorpaySDKScript();
-                                         if (!loaded) {
-                                           showToast('SDK Error', 'Failed to load Razorpay Checkout SDK.');
-                                           return;
-                                         }
+                                     if (isCODInFulfilment) {
+                                       return (
+                                         <button
+                                           type="button"
+                                           onClick={() => {
+                                             setActiveTrackingOrder(order);
+                                             setTrackOrderOpen(true);
+                                           }}
+                                           className={styles.trackOrderBtn}
+                                         >
+                                           Track Order
+                                         </button>
+                                       );
+                                     }
 
-                                         const rzpOptions = {
-                                           key: res.razorpay.key,
-                                           amount: res.razorpay.amount,
-                                           currency: res.razorpay.currency,
-                                           name: 'GODSMOVE',
-                                           description: `Order #${order.orderNumber}`,
-                                           order_id: res.razorpay.orderId,
-                                           prefill: { email: order.email || '' },
-                                           theme: { color: '#0A0A0A' },
-                                           handler: async (response: any) => {
-                                             showToast('Payment Processing', 'Verifying transaction with Razorpay...');
-                                             window.location.reload();
-                                           },
-                                         };
-
-                                         const rzp = new (window as any).Razorpay(rzpOptions);
-                                         rzp.open();
-                                       } catch (err: any) {
-                                         showToast('Payment Error', err.message || 'Failed to launch payment checkout.');
-                                       }
-                                     }}
-                                     className={styles.reorderBtn}
-                                     style={{ backgroundColor: 'var(--accent-gold, #D4AF37)', color: '#000' }}
-                                   >
-                                     <RotateCcw size={13} style={{ marginRight: 6 }} />
-                                     Continue Payment
-                                   </button>
-                                 ) : ['DELIVERED', 'COMPLETED'].includes(order.status) ? (
-                                   <span className={styles.deliveredPill}>
-                                     ✓ Delivered
-                                   </span>
-                                 ) : order.paymentStatus === 'PAID' && ['CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) ? (
-                                   <button
-                                     type="button"
-                                     onClick={() => {
-                                       setActiveTrackingOrder(order);
-                                       setTrackOrderOpen(true);
-                                     }}
-                                     className={styles.trackOrderBtn}
-                                   >
-                                     Track Order
-                                   </button>
+                                     // PENDING / AWAITING_PAYMENT — admin approval not yet given
+                                     return (
+                                       <span className={styles.deliveredPill} style={{ color: 'var(--text-muted)' }}>
+                                         Order Placed
+                                       </span>
+                                     );
+                                   })()
                                  ) : (
-                                   <span className={styles.deliveredPill} style={{ color: 'var(--text-muted)' }}>
-                                     Awaiting Verification
-                                   </span>
+                                   /* ── PREPAID ORDER CTA RENDERER (RAZORPAY / WALLET / MIXED) ──────
+                                      This block is the canonical V8.4 Razorpay CTA tree.
+                                      It is preserved byte-for-byte — no changes.
+                                      Continue Payment, Track Order, Delivered pill, Reorder,
+                                      and Awaiting Verification all behave exactly as shipped.
+                                    ─────────────────────────────────────────────────────────────── */
+                                   ['FAILED', 'CANCELLED'].includes(order.status) || order.paymentStatus === 'FAILED' ? (
+                                     <button
+                                       type="button"
+                                       onClick={async () => {
+                                         try {
+                                           showToast('Rebuilding Checkout', 'Validating current availability and stock...');
+                                           const { reorderOrderAction } = await import('@/actions/order.actions');
+                                           const res = await reorderOrderAction(order.id);
+                                           if (!res.success || !res.items || res.items.length === 0) {
+                                             showToast('Reorder Unavailable', 'Unfortunately, the products from this order are no longer available.');
+                                             return;
+                                           }
+
+                                           if (res.allSoldOut) {
+                                             showToast('Sold Out', 'Unfortunately, all products from this order are sold out.');
+                                             return;
+                                           }
+
+                                           useStore.setState({ cart: res.items });
+                                           showToast('Cart Rebuilt', 'Rebuilding checkout with current live pricing and stock.');
+                                           router.push('/checkout');
+                                         } catch (err: any) {
+                                           showToast('Reorder Error', err.message || 'Unable to reorder at this time.');
+                                         }
+                                       }}
+                                       className={styles.reorderBtn}
+                                     >
+                                       <RotateCcw size={13} style={{ marginRight: 6 }} />
+                                       Reorder
+                                     </button>
+                                   ) : order.paymentStatus === 'UNPAID' && ['PENDING', 'VERIFYING', 'AWAITING_PAYMENT'].includes(order.status) ? (
+                                     <button
+                                       type="button"
+                                       onClick={async () => {
+                                         try {
+                                           showToast('Resuming Payment', 'Connecting to secure payment gateway...');
+                                           const { resumePaymentSessionAction } = await import('@/actions/order.actions');
+                                           const res = await resumePaymentSessionAction(order.id);
+                                           if (!res.success || !res.razorpay) {
+                                             showToast('Payment Error', res.error || 'Unable to resume payment session.');
+                                             return;
+                                           }
+
+                                           const { loadRazorpaySDKScript } = await import('@/hooks/useRazorpay');
+                                           const loaded = await loadRazorpaySDKScript();
+                                           if (!loaded) {
+                                             showToast('SDK Error', 'Failed to load Razorpay Checkout SDK.');
+                                             return;
+                                           }
+
+                                           const rzpOptions = {
+                                             key: res.razorpay.key,
+                                             amount: res.razorpay.amount,
+                                             currency: res.razorpay.currency,
+                                             name: 'GODSMOVE',
+                                             description: `Order #${order.orderNumber}`,
+                                             order_id: res.razorpay.orderId,
+                                             prefill: { email: order.email || '' },
+                                             theme: { color: '#0A0A0A' },
+                                             handler: async (response: any) => {
+                                               showToast('Payment Processing', 'Verifying transaction with Razorpay...');
+                                               window.location.reload();
+                                             },
+                                           };
+
+                                           const rzp = new (window as any).Razorpay(rzpOptions);
+                                           rzp.open();
+                                         } catch (err: any) {
+                                           showToast('Payment Error', err.message || 'Failed to launch payment checkout.');
+                                         }
+                                       }}
+                                       className={styles.reorderBtn}
+                                       style={{ backgroundColor: 'var(--accent-gold, #D4AF37)', color: '#000' }}
+                                     >
+                                       <RotateCcw size={13} style={{ marginRight: 6 }} />
+                                       Continue Payment
+                                     </button>
+                                   ) : ['DELIVERED', 'COMPLETED'].includes(order.status) ? (
+                                     <span className={styles.deliveredPill}>
+                                       ✓ Delivered
+                                     </span>
+                                   ) : order.paymentStatus === 'PAID' && ['CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) ? (
+                                     <button
+                                       type="button"
+                                       onClick={() => {
+                                         setActiveTrackingOrder(order);
+                                         setTrackOrderOpen(true);
+                                       }}
+                                       className={styles.trackOrderBtn}
+                                     >
+                                       Track Order
+                                     </button>
+                                   ) : (
+                                     <span className={styles.deliveredPill} style={{ color: 'var(--text-muted)' }}>
+                                       Awaiting Verification
+                                     </span>
+                                   )
                                  )}
 
                                 {/* Luxury Disclosure Toggle Microinteraction */}
