@@ -1217,11 +1217,67 @@ export async function verifyCheckoutSessionAction(orderId: string) {
       success: true,
       isCaptured: false,
       isPending: true,
+      hasAttempts: gatewayCheck.hasAttempts ?? false,
+      attempts: gatewayCheck.attempts ?? 0,
       gatewayStatus: gatewayCheck.status || 'created',
       order: JSON.parse(JSON.stringify(order)),
     };
   } catch (error: any) {
     return { success: false, error: error?.message || 'Verification error' };
+  }
+}
+
+/**
+ * Server Action: Resume Existing Payment Session
+ * Reuses existing Order, CheckoutSession, PaymentSession, and razorpayOrderId without duplicate creation.
+ */
+export async function resumePaymentSessionAction(orderId: string) {
+  try {
+    const { PaymentService } = await import('@/lib/payments/payment-service');
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { profile: true },
+    });
+
+    if (!order) return { success: false, error: 'Order not found' };
+
+    if (order.status === 'CONFIRMED' || order.paymentStatus === 'PAID') {
+      return { success: false, error: 'Order has already been paid and confirmed.' };
+    }
+
+    const { getRazorpayCredentials } = await import('@/lib/payments/razorpay');
+    const { keyId } = getRazorpayCredentials();
+
+    let razorpayOrderId = order.razorpayOrderId;
+
+    if (!razorpayOrderId) {
+      const rzpRes = await PaymentService.createOrder({
+        amount: Number(order.total),
+        currency: 'INR',
+        orderId: order.id,
+      });
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { razorpayOrderId: rzpRes.orderId },
+      });
+
+      razorpayOrderId = rzpRes.orderId;
+    }
+
+    return {
+      success: true,
+      order: JSON.parse(JSON.stringify(order)),
+      razorpay: {
+        orderId: razorpayOrderId,
+        amount: Math.round(Number(order.total) * 100),
+        currency: 'INR',
+        key: keyId,
+      },
+    };
+  } catch (error: any) {
+    console.error('[resumePaymentSessionAction Error]:', error);
+    return { success: false, error: error?.message || 'Failed to resume payment session' };
   }
 }
 

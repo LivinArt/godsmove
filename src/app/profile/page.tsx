@@ -1450,11 +1450,58 @@ export default function ProfilePage() {
                                      <RotateCcw size={13} style={{ marginRight: 6 }} />
                                      Reorder
                                    </button>
+                                 ) : order.paymentStatus === 'UNPAID' && ['PENDING', 'VERIFYING', 'AWAITING_PAYMENT'].includes(order.status) ? (
+                                   <button
+                                     type="button"
+                                     onClick={async () => {
+                                       try {
+                                         showToast('Resuming Payment', 'Connecting to secure payment gateway...');
+                                         const { resumePaymentSessionAction } = await import('@/actions/order.actions');
+                                         const res = await resumePaymentSessionAction(order.id);
+                                         if (!res.success || !res.razorpay) {
+                                           showToast('Payment Error', res.error || 'Unable to resume payment session.');
+                                           return;
+                                         }
+
+                                         const { loadRazorpaySDKScript } = await import('@/hooks/useRazorpay');
+                                         const loaded = await loadRazorpaySDKScript();
+                                         if (!loaded) {
+                                           showToast('SDK Error', 'Failed to load Razorpay Checkout SDK.');
+                                           return;
+                                         }
+
+                                         const rzpOptions = {
+                                           key: res.razorpay.key,
+                                           amount: res.razorpay.amount,
+                                           currency: res.razorpay.currency,
+                                           name: 'GODSMOVE',
+                                           description: `Order #${order.orderNumber}`,
+                                           order_id: res.razorpay.orderId,
+                                           prefill: { email: order.email || '' },
+                                           theme: { color: '#0A0A0A' },
+                                           handler: async (response: any) => {
+                                             showToast('Payment Processing', 'Verifying transaction with Razorpay...');
+                                             window.location.reload();
+                                           },
+                                         };
+
+                                         const rzp = new (window as any).Razorpay(rzpOptions);
+                                         rzp.open();
+                                       } catch (err: any) {
+                                         showToast('Payment Error', err.message || 'Failed to launch payment checkout.');
+                                       }
+                                     }}
+                                     className={styles.reorderBtn}
+                                     style={{ backgroundColor: 'var(--accent-gold, #D4AF37)', color: '#000' }}
+                                   >
+                                     <RotateCcw size={13} style={{ marginRight: 6 }} />
+                                     Continue Payment
+                                   </button>
                                  ) : ['DELIVERED', 'COMPLETED'].includes(order.status) ? (
                                    <span className={styles.deliveredPill}>
                                      ✓ Delivered
                                    </span>
-                                 ) : (
+                                 ) : order.paymentStatus === 'PAID' && ['CONFIRMED', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) ? (
                                    <button
                                      type="button"
                                      onClick={() => {
@@ -1465,6 +1512,10 @@ export default function ProfilePage() {
                                    >
                                      Track Order
                                    </button>
+                                 ) : (
+                                   <span className={styles.deliveredPill} style={{ color: 'var(--text-muted)' }}>
+                                     Awaiting Verification
+                                   </span>
                                  )}
 
                                 {/* Luxury Disclosure Toggle Microinteraction */}

@@ -576,7 +576,6 @@ export default function CheckoutPage() {
                 isSubmittingRef.current = false;
                 setIsSubmitLoading(false);
                 showToast('Payment Cancelled', 'You closed the payment window before completing payment.');
-                notifyPaymentFailed(order.id, 'Customer dismissed Razorpay Checkout modal').catch(() => {});
               },
             },
           };

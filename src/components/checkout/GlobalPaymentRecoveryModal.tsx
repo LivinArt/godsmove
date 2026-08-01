@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight, X } from 'lucide-react';
+import { Loader2, ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight, RotateCcw } from 'lucide-react';
 import { getCheckoutSessionToken, clearCheckoutSessionToken } from '@/lib/checkout-session';
-import { getActiveCheckoutSessionAction, verifyCheckoutSessionAction } from '@/actions/order.actions';
+import {
+  getActiveCheckoutSessionAction,
+  verifyCheckoutSessionAction,
+  resumePaymentSessionAction,
+} from '@/actions/order.actions';
 import styles from './GlobalPaymentRecoveryModal.module.css';
 
-type RecoveryState = 'IDLE' | 'VERIFYING' | 'SUCCESS' | 'FAILED' | 'STILL_PENDING';
+type RecoveryState = 'IDLE' | 'VERIFYING' | 'SUCCESS' | 'FAILED' | 'STILL_PENDING' | 'NO_PAYMENT_ATTEMPT';
 
 export default function GlobalPaymentRecoveryModal() {
   const router = useRouter();
@@ -16,12 +20,13 @@ export default function GlobalPaymentRecoveryModal() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [modalState, setModalState] = useState<RecoveryState>('IDLE');
   const [pollCount, setPollCount] = useState(0);
+  const [isResuming, setIsResuming] = useState(false);
 
   const isPollingRef = useRef(false);
+  const zeroAttemptsCountRef = useRef(0);
 
   // Check for active checkout session on initial load and route changes
   const checkActiveSession = useCallback(async () => {
-    // Don't pop modal if already on payment recovery full page
     if (pathname?.startsWith('/checkout/payment-recovery')) {
       return;
     }
@@ -35,7 +40,6 @@ export default function GlobalPaymentRecoveryModal() {
         setActiveSession(res.session);
         setModalState('VERIFYING');
       } else if (!res.hasActiveSession && modalState === 'VERIFYING') {
-        // Session completed or cleaned up
         clearCheckoutSessionToken();
         setModalState('IDLE');
       }
@@ -48,7 +52,7 @@ export default function GlobalPaymentRecoveryModal() {
     checkActiveSession();
   }, [checkActiveSession]);
 
-  // Execute 2-second REST verification polling up to 12s (6 attempts)
+  // Execute REST verification with 4-second grace window for attempts == 0
   const runVerificationPoll = useCallback(async () => {
     if (!activeSession?.orderId || isPollingRef.current) return;
     isPollingRef.current = true;
@@ -70,10 +74,22 @@ export default function GlobalPaymentRecoveryModal() {
         return;
       }
 
-      // If poll count reached 6 (12s total), show STILL_PENDING message
+      // Check for Grace Window on attempts == 0
+      if (res.success && res.hasAttempts === false) {
+        zeroAttemptsCountRef.current += 1;
+        // Check 1 (0s): Wait for 4s grace window. Check 2 (after 4s): If still false, set NO_PAYMENT_ATTEMPT
+        if (zeroAttemptsCountRef.current >= 2) {
+          setModalState('NO_PAYMENT_ATTEMPT');
+          isPollingRef.current = false;
+          return;
+        }
+      } else {
+        zeroAttemptsCountRef.current = 0;
+      }
+
       setPollCount((prev) => {
         const next = prev + 1;
-        if (next >= 6) {
+        if (next >= 7) {
           setModalState('STILL_PENDING');
         }
         return next;
@@ -88,14 +104,22 @@ export default function GlobalPaymentRecoveryModal() {
   useEffect(() => {
     if (modalState !== 'VERIFYING' || !activeSession?.orderId) return;
 
-    const interval = setInterval(() => {
-      runVerificationPoll();
-    }, 2000);
+    // Grace Window Polling: 0s, 4s, 6s, 8s, 10s, 12s
+    runVerificationPoll(); // Immediate 0s Check 1
 
-    // Run first check immediately
-    runVerificationPoll();
+    const timer1 = setTimeout(() => runVerificationPoll(), 4000); // 4s Grace Window Check 2
+    const timer2 = setTimeout(() => runVerificationPoll(), 6000);
+    const timer3 = setTimeout(() => runVerificationPoll(), 8000);
+    const timer4 = setTimeout(() => runVerificationPoll(), 10000);
+    const timer5 = setTimeout(() => runVerificationPoll(), 12000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+      clearTimeout(timer5);
+    };
   }, [modalState, activeSession?.orderId, runVerificationPoll]);
 
   const handleDismiss = () => {
@@ -107,6 +131,59 @@ export default function GlobalPaymentRecoveryModal() {
   const handleViewOrders = () => {
     handleDismiss();
     router.push('/profile?tab=orders');
+  };
+
+  // Continue Payment by reusing existing PaymentSession and Razorpay Order ID
+  const handleContinuePayment = async () => {
+    if (!activeSession?.orderId || isResuming) return;
+    setIsResuming(true);
+
+    try {
+      const res = await resumePaymentSessionAction(activeSession.orderId);
+      if (!res.success || !res.razorpay) {
+        alert(res.error || 'Failed to resume payment session.');
+        setIsResuming(false);
+        return;
+      }
+
+      const { loadRazorpaySDKScript } = await import('@/hooks/useRazorpay');
+      const loaded = await loadRazorpaySDKScript();
+      if (!loaded) {
+        alert('Failed to load Razorpay Checkout SDK script.');
+        setIsResuming(false);
+        return;
+      }
+
+      const rzpOptions = {
+        key: res.razorpay.key,
+        amount: res.razorpay.amount,
+        currency: res.razorpay.currency,
+        name: 'GODSMOVE',
+        description: `Order #${res.order?.orderNumber || activeSession.orderNumber}`,
+        order_id: res.razorpay.orderId,
+        prefill: {
+          email: res.order?.email || '',
+        },
+        theme: { color: '#0A0A0A' },
+        handler: async (response: any) => {
+          setModalState('VERIFYING');
+          zeroAttemptsCountRef.current = 0;
+          runVerificationPoll();
+        },
+        modal: {
+          ondismiss: () => {
+            setIsResuming(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(rzpOptions);
+      rzp.open();
+    } catch (err: any) {
+      alert(err.message || 'Failed to launch payment checkout.');
+    } finally {
+      setIsResuming(false);
+    }
   };
 
   if (modalState === 'IDLE' || !activeSession) {
@@ -134,6 +211,34 @@ export default function GlobalPaymentRecoveryModal() {
                 <span className={styles.orderValue}>#{activeSession.orderNumber}</span>
               </div>
             )}
+          </>
+        )}
+
+        {modalState === 'NO_PAYMENT_ATTEMPT' && (
+          <>
+            <div className={styles.iconWrapper} style={{ color: '#F59E0B', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.1)' }}>
+              <RotateCcw size={32} />
+            </div>
+            <div className={styles.badge} style={{ color: '#F59E0B', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.1)' }}>
+              Payment Interrupted
+            </div>
+            <h3 className={styles.title}>Payment Not Started</h3>
+            <p className={styles.description}>
+              Your payment was interrupted before it reached our payment partner. No payment has been processed. You can safely continue your purchase.
+            </p>
+            {activeSession.orderNumber && (
+              <div className={styles.orderDetails}>
+                <span className={styles.orderLabel}>Order Reference</span>
+                <span className={styles.orderValue}>#{activeSession.orderNumber}</span>
+              </div>
+            )}
+            <button className={styles.actionButton} onClick={handleContinuePayment} disabled={isResuming}>
+              {isResuming ? <Loader2 className={styles.spinner} size={16} /> : <RotateCcw size={16} />}
+              Continue Payment
+            </button>
+            <button className={styles.secondaryButton} onClick={() => { handleDismiss(); router.push('/checkout'); }}>
+              Edit Checkout
+            </button>
           </>
         )}
 

@@ -35,6 +35,8 @@ export interface GatewayPaymentCheckResult {
   isCaptured: boolean;
   paymentId?: string;
   status?: string;
+  attempts?: number;
+  hasAttempts?: boolean;
 }
 
 /**
@@ -147,18 +149,17 @@ export class PaymentService {
    * directly from Razorpay REST API (/v1/orders/{id}/payments).
    */
   static async verifyPaymentStatusOnGateway(razorpayOrderId: string): Promise<GatewayPaymentCheckResult> {
-    if (!razorpayOrderId) return { isCaptured: false };
+    if (!razorpayOrderId) return { isCaptured: false, hasAttempts: false, attempts: 0 };
 
     try {
       const razorpay = getRazorpayClient();
-      const paymentsResponse = await razorpay.orders.fetchPayments(razorpayOrderId);
-      
-      if (!paymentsResponse || !Array.isArray((paymentsResponse as any).items)) {
-        return { isCaptured: false };
-      }
+      const rzpOrder = await razorpay.orders.fetch(razorpayOrderId).catch(() => null);
+      const paymentsResponse = await razorpay.orders.fetchPayments(razorpayOrderId).catch(() => null);
 
-      const items = (paymentsResponse as any).items;
-      
+      const items = Array.isArray((paymentsResponse as any)?.items) ? (paymentsResponse as any).items : [];
+      const attempts = Number(rzpOrder?.attempts || 0);
+      const hasAttempts = attempts > 0 || items.length > 0;
+
       // Search for any payment item with status 'captured' or 'authorized'
       const capturedPayment = items.find(
         (p: any) => p.status === 'captured' || p.status === 'authorized'
@@ -169,18 +170,31 @@ export class PaymentService {
           isCaptured: true,
           paymentId: capturedPayment.id,
           status: capturedPayment.status,
+          attempts,
+          hasAttempts: true,
         };
       }
 
       const failedPayment = items.find((p: any) => p.status === 'failed' || p.status === 'cancelled');
       if (failedPayment && items.length === 1) {
-        return { isCaptured: false, status: failedPayment.status, paymentId: failedPayment.id };
+        return { 
+            isCaptured: false, 
+            status: failedPayment.status, 
+            paymentId: failedPayment.id,
+            attempts,
+            hasAttempts 
+        };
       }
 
-      return { isCaptured: false, status: items[0]?.status || 'created' };
+      return { 
+          isCaptured: false, 
+          status: items[0]?.status || (rzpOrder?.status || 'created'),
+          attempts,
+          hasAttempts
+      };
     } catch (error: any) {
       console.error(`[PaymentService.verifyPaymentStatusOnGateway] Failed for ${razorpayOrderId}:`, error?.message || error);
-      return { isCaptured: false };
+      return { isCaptured: false, hasAttempts: false, attempts: 0 };
     }
   }
 
