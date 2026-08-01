@@ -3,11 +3,14 @@ import { InvoiceService } from '@/lib/invoice';
 import { NotificationService } from '@/notifications/notification.service';
 
 export type PaymentTransitionType = 'CONFIRM_PAYMENT' | 'CANCEL_PAYMENT' | 'RECONCILE_PAYMENT';
+export type TriggerActor = 'WEBHOOK' | 'RECOVERY_MODAL' | 'CRON_WORKER' | 'CLEANUP_JOB' | 'CALLBACK' | 'ADMIN';
 
 export interface TransitionPayload {
   orderId: string;
+  transition: PaymentTransitionType;
   razorpayPaymentId?: string;
   razorpayOrderId?: string;
+  triggerActor?: TriggerActor;
   reason?: string;
 }
 
@@ -19,17 +22,51 @@ export class InvalidStateTransitionError extends Error {
 }
 
 /**
- * GODSMOVE V7 Canonical Payment Transition Engine
+ * GODSMOVE V7.1 Canonical Payment Transition Engine
  * Centralized, transactional state transition service. All gateway callbacks, webhooks,
  * recovery modals, cron jobs, and admin actions MUST invoke this engine.
+ * 
+ * Single Source of Truth for order status, payment status, inventory, invoices, and emails.
  */
 export class PaymentStateEngine {
   /**
-   * Executes a canonical order payment confirmation transition.
-   * Atomically sets paymentStatus = 'PAID', status = 'CONFIRMED', deducts inventory,
-   * generates invoice, and dispatches customer notification emails inside a database transaction lock.
+   * Universal canonical transition executor.
    */
-  static async confirmOrder(orderId: string, razorpayPaymentId?: string, razorpayOrderId?: string) {
+  static async executeTransition(payload: TransitionPayload) {
+    const { transition, orderId, razorpayPaymentId, razorpayOrderId, triggerActor = 'CALLBACK', reason } = payload;
+
+    if (transition === 'CONFIRM_PAYMENT') {
+      return await PaymentStateEngine.confirmOrder(orderId, razorpayPaymentId, razorpayOrderId, triggerActor);
+    } else if (transition === 'CANCEL_PAYMENT') {
+      return await PaymentStateEngine.cancelOrder(orderId, reason, triggerActor);
+    } else if (transition === 'RECONCILE_PAYMENT') {
+      if (razorpayOrderId) {
+        const { PaymentService } = await import('@/lib/payments/payment-service');
+        const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(razorpayOrderId);
+        if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+          return await PaymentStateEngine.confirmOrder(orderId, gatewayCheck.paymentId, razorpayOrderId, triggerActor);
+        } else if (gatewayCheck.status === 'failed' || gatewayCheck.status === 'cancelled') {
+          return await PaymentStateEngine.cancelOrder(orderId, reason || 'Gateway reported failure', triggerActor);
+        }
+      }
+      return await prisma.order.findUnique({ where: { id: orderId } });
+    }
+
+    throw new InvalidStateTransitionError(`Unsupported transition type: ${transition}`);
+  }
+
+  /**
+   * Executes a canonical order payment confirmation transition.
+   * Supports WEBHOOK ORDER RECOVERY: if an order was prematurely marked CANCELLED/FAILED,
+   * but a valid Razorpay payment capture is verified, it atomically recovers the order,
+   * confirms DB status, deducts stock, generates invoice, updates sessions, and dispatches confirmation emails.
+   */
+  static async confirmOrder(
+    orderId: string,
+    razorpayPaymentId?: string,
+    razorpayOrderId?: string,
+    triggerActor: TriggerActor = 'CALLBACK'
+  ) {
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -41,13 +78,23 @@ export class PaymentStateEngine {
       }
 
       // Idempotency check: if already confirmed/paid, return existing order safely
-      if (order.paymentStatus === 'PAID') {
+      if (order.paymentStatus === 'PAID' && order.status === 'CONFIRMED') {
         return order;
       }
 
-      // Guard: Illegal transition checks
-      if (order.status === 'CANCELLED') {
-        throw new InvalidStateTransitionError(`Cannot confirm order ${orderId} because it is in CANCELLED status.`);
+      // Webhook / REST Order Recovery Guard:
+      // If order is currently CANCELLED/FAILED, allow recovery ONLY if razorpayPaymentId is verified
+      const isRecovery = order.status === 'CANCELLED' || order.paymentStatus === 'FAILED';
+      if (isRecovery && !razorpayPaymentId) {
+        throw new InvalidStateTransitionError(
+          `Cannot confirm order ${orderId} in CANCELLED status without verified Razorpay payment ID.`
+        );
+      }
+
+      if (isRecovery) {
+        console.log(
+          `[WEBHOOK_ORDER_RECOVERY] Recovering CANCELLED Order #${order.orderNumber} (ID: ${orderId}) using verified Razorpay Payment ID: ${razorpayPaymentId} [Actor: ${triggerActor}]`
+        );
       }
 
       // Execute database mutation
@@ -63,6 +110,57 @@ export class PaymentStateEngine {
         },
       });
 
+      // Update related CheckoutSession if exists
+      const targetRzpOrderId = razorpayOrderId || order.razorpayOrderId;
+      if (targetRzpOrderId) {
+        await tx.checkoutSession.updateMany({
+          where: {
+            OR: [
+              { orderId: order.id },
+              { razorpayOrderId: targetRzpOrderId }
+            ]
+          },
+          data: {
+            status: 'COMPLETED',
+            verificationState: 'CAPTURED',
+          }
+        }).catch(() => {});
+      }
+
+      // Record / Update PaymentSession
+      if (razorpayPaymentId) {
+        await tx.paymentSession.upsert({
+          where: { razorpayPaymentId },
+          create: {
+            orderId: order.id,
+            razorpayOrderId: targetRzpOrderId,
+            razorpayPaymentId,
+            amount: order.total,
+            status: 'CAPTURED',
+          },
+          update: {
+            status: 'CAPTURED',
+          }
+        }).catch(() => {});
+      }
+
+      // Record Audit Transition Log
+      const idempotencyKey = `${order.id}_CONFIRMED_${razorpayPaymentId || 'DIRECT'}`;
+      await tx.paymentTransitionLog.upsert({
+        where: { idempotencyKey },
+        create: {
+          orderId: order.id,
+          fromStatus: order.status,
+          toStatus: 'CONFIRMED',
+          fromPaymentStatus: order.paymentStatus,
+          toPaymentStatus: 'PAID',
+          triggerActor,
+          reason: isRecovery ? 'Order recovered from verified payment capture' : 'Payment confirmed',
+          idempotencyKey,
+        },
+        update: {},
+      }).catch(() => {});
+
       // Atomic inventory deduction & movement ledger
       for (const item of order.items) {
         const inv = await tx.inventory.upsert({
@@ -74,7 +172,7 @@ export class PaymentStateEngine {
             soldStock: item.quantity,
           },
           update: {
-            reservedStock: { decrement: item.quantity },
+            reservedStock: { decrement: Math.min(100, item.quantity) },
             soldStock: { increment: item.quantity },
           },
         });
@@ -84,7 +182,9 @@ export class PaymentStateEngine {
             inventoryId: inv.id,
             delta: -item.quantity,
             type: 'PURCHASE',
-            reason: `Order #${order.orderNumber} payment confirmed`,
+            reason: isRecovery
+              ? `Order #${order.orderNumber} payment recovered from webhook/REST`
+              : `Order #${order.orderNumber} payment confirmed`,
             orderId: order.id,
           },
         });
@@ -130,29 +230,62 @@ export class PaymentStateEngine {
 
   /**
    * Executes a canonical order payment cancellation transition.
-   * Atomically sets paymentStatus = 'FAILED', status = 'CANCELLED', and releases reserved stock.
+   * Verifies Razorpay REST API out-of-band before executing cancellation.
+   * If Razorpay status is CAPTURED, it auto-confirms payment instead of cancelling.
+   * If Razorpay status is still pending (created/attempted), it retains AWAITING_PAYMENT state.
    */
-  static async cancelOrder(orderId: string, reason?: string) {
+  static async cancelOrder(
+    orderId: string,
+    reason?: string,
+    triggerActor: TriggerActor = 'CALLBACK'
+  ) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new Error(`Order ${orderId} not found`);
+    }
+
+    // Idempotency check: if already cancelled, return existing order
+    if (order.status === 'CANCELLED') {
+      return order;
+    }
+
+    // Guard: Cannot cancel a PAID order
+    if (order.paymentStatus === 'PAID') {
+      throw new InvalidStateTransitionError(`Cannot cancel order ${orderId} because it is already PAID.`);
+    }
+
+    // Razorpay REST Verification Guard before cancelling:
+    const targetRzpOrderId = order.razorpayOrderId;
+    if (targetRzpOrderId) {
+      try {
+        const { PaymentService } = await import('@/lib/payments/payment-service');
+        const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(targetRzpOrderId);
+
+        if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+          console.log(
+            `[CANCEL_GUARD] Payment ${gatewayCheck.paymentId} was captured on Razorpay! Auto-confirming Order ${order.orderNumber} instead of cancelling.`
+          );
+          return await PaymentStateEngine.confirmOrder(order.id, gatewayCheck.paymentId, targetRzpOrderId, triggerActor);
+        }
+
+        // If payment is still created/attempted (pending at bank/OTP), DO NOT cancel prematurely
+        if (gatewayCheck.status === 'created' || gatewayCheck.status === 'attempted') {
+          console.log(
+            `[CANCEL_GUARD] Payment is still PENDING on Razorpay for Order ${order.orderNumber}. Retaining AWAITING_PAYMENT status.`
+          );
+          return order;
+        }
+      } catch (checkErr) {
+        console.warn(`[CANCEL_GUARD] Could not verify Razorpay status for ${orderId}:`, checkErr);
+      }
+    }
+
+    // Execute cancellation mutation
     return prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({
-        where: { id: orderId },
-        include: { items: true },
-      });
-
-      if (!order) {
-        throw new Error(`Order ${orderId} not found`);
-      }
-
-      // Idempotency check: if already cancelled, return existing order
-      if (order.status === 'CANCELLED') {
-        return order;
-      }
-
-      // Guard: Illegal transition checks
-      if (order.paymentStatus === 'PAID') {
-        throw new InvalidStateTransitionError(`Cannot cancel order ${orderId} because it is already PAID.`);
-      }
-
       const cancelled = await tx.order.update({
         where: { id: orderId },
         data: {
@@ -160,6 +293,37 @@ export class PaymentStateEngine {
           paymentStatus: 'FAILED',
         },
       });
+
+      // Update related CheckoutSession if exists
+      if (targetRzpOrderId) {
+        await tx.checkoutSession.updateMany({
+          where: {
+            OR: [
+              { orderId: order.id },
+              { razorpayOrderId: targetRzpOrderId }
+            ]
+          },
+          data: {
+            status: 'CANCELLED',
+            verificationState: 'FAILED',
+          }
+        }).catch(() => {});
+      }
+
+      // Audit transition log
+      const idempotencyKey = `${order.id}_CANCELLED_${Date.now()}`;
+      await tx.paymentTransitionLog.create({
+        data: {
+          orderId: order.id,
+          fromStatus: order.status,
+          toStatus: 'CANCELLED',
+          fromPaymentStatus: order.paymentStatus,
+          toPaymentStatus: 'FAILED',
+          triggerActor,
+          reason: reason || 'Order payment cancelled',
+          idempotencyKey,
+        }
+      }).catch(() => {});
 
       // Release reserved inventory
       for (const item of order.items) {

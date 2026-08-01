@@ -1,12 +1,16 @@
-import 'server-only';
+if (typeof window !== 'undefined') {
+  throw new Error('PaymentService can only be used on the server.');
+}
 import { getRazorpayClient, getRazorpayCredentials } from './razorpay';
 import crypto from 'crypto';
+import { prisma } from '@/lib/prisma';
 
 export interface CreatePaymentOrderInput {
   amount: number;
   currency?: string; // Default: 'INR'
   orderId?: string; // Internal PostgreSQL DB Order ID
   orderNumber?: string;
+  email?: string;
 }
 
 export interface CreatePaymentOrderResult {
@@ -57,10 +61,10 @@ export class PaymentService {
   }
 
   /**
-   * Creates a payment order on Razorpay with robust server notes correlation.
+   * Creates a payment order on Razorpay with robust server notes correlation and CheckoutSession persistence.
    */
   static async createOrder(input: CreatePaymentOrderInput): Promise<CreatePaymentOrderResult> {
-    const { amount: rawAmount, currency = 'INR', orderId, orderNumber } = input;
+    const { amount: rawAmount, currency = 'INR', orderId, orderNumber, email } = input;
 
     const amountInSubunits = this.resolveOrderAmount(rawAmount);
 
@@ -85,6 +89,9 @@ export class PaymentService {
     if (orderNumber) {
       serverNotes.orderNumber = orderNumber;
     }
+    if (email) {
+      serverNotes.email = email;
+    }
 
     try {
       const razorpay = getRazorpayClient();
@@ -98,6 +105,30 @@ export class PaymentService {
       };
 
       const razorpayOrder = await razorpay.orders.create(orderOptions);
+
+      // Persist / Link CheckoutSession in database
+      if (orderId) {
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        await prisma.checkoutSession.upsert({
+          where: { sessionToken: `chk_${orderId}` },
+          create: {
+            sessionToken: `chk_${orderId}`,
+            orderId,
+            razorpayOrderId: razorpayOrder.id,
+            email: email || 'customer@godsmove.com',
+            status: 'AWAITING_PAYMENT',
+            verificationState: 'IDLE',
+            expiresAt,
+          },
+          update: {
+            razorpayOrderId: razorpayOrder.id,
+            status: 'AWAITING_PAYMENT',
+            expiresAt,
+          }
+        }).catch((sessionErr) => {
+          console.warn('[PaymentService] CheckoutSession upsert warning:', sessionErr);
+        });
+      }
 
       return {
         orderId: razorpayOrder.id,
@@ -139,6 +170,11 @@ export class PaymentService {
           paymentId: capturedPayment.id,
           status: capturedPayment.status,
         };
+      }
+
+      const failedPayment = items.find((p: any) => p.status === 'failed' || p.status === 'cancelled');
+      if (failedPayment && items.length === 1) {
+        return { isCaptured: false, status: failedPayment.status, paymentId: failedPayment.id };
       }
 
       return { isCaptured: false, status: items[0]?.status || 'created' };

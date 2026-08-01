@@ -270,24 +270,16 @@ class PaymentService {
       throw new Error('Payment signature verification failed.');
     }
 
-    // Update order status
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paymentStatus: 'PAID',
-        status: 'CONFIRMED',
-        razorpayPaymentId: gatewayPaymentId,
-      },
-      include: { items: true },
+    // Delegate 100% of payment confirmation to PaymentStateEngine
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+    await PaymentStateEngine.executeTransition({
+      transition: 'CONFIRM_PAYMENT',
+      orderId,
+      razorpayPaymentId: gatewayPaymentId,
+      razorpayOrderId: order.razorpayOrderId,
+      triggerActor: 'CALLBACK',
+      reason: 'Signature verified callback',
     });
-
-    // Trigger ORDER_CONFIRMED notification & tax invoice generation
-    try {
-      const { NotificationService } = await import('@/notifications/notification.service');
-      NotificationService.sendOrderConfirmationForOrder(updatedOrder).catch((err) =>
-        console.error('❌ [PAYMENT SERVICE] Confirmation email dispatch error:', err)
-      );
-    } catch {}
 
     return { success: true };
   }

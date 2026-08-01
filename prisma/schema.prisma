@@ -553,6 +553,9 @@ model Order {
   returnRequests ReturnRequest[]
   walletTxns     WalletTransaction[]
   invoice        Invoice?
+  checkoutSession CheckoutSession?
+  paymentSessions PaymentSession[]
+  transitionLogs  PaymentTransitionLog[]
 
   @@index([profileId])
   @@index([status])
@@ -560,6 +563,91 @@ model Order {
   @@index([createdAt])
   @@map("orders")
 }
+
+// ─────────────────────────────────────────────
+// DOMAIN 5B: PAYMENT ORCHESTRATION & SESSIONS
+// ─────────────────────────────────────────────
+
+enum CheckoutSessionStatus {
+  AWAITING_PAYMENT
+  VERIFYING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+enum PaymentSessionStatus {
+  CREATED
+  ATTEMPTED
+  VERIFYING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model CheckoutSession {
+  id                String                @id @default(cuid())
+  sessionToken      String                @unique
+  profileId         String?
+  email             String
+  orderId           String?               @unique
+  order             Order?                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String?               @unique
+  status            CheckoutSessionStatus @default(AWAITING_PAYMENT)
+  verificationState String                @default("IDLE")
+  expiresAt         DateTime
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  paymentSessions   PaymentSession[]
+
+  @@index([sessionToken])
+  @@index([razorpayOrderId])
+  @@index([status])
+  @@map("checkout_sessions")
+}
+
+model PaymentSession {
+  id                String               @id @default(cuid())
+  checkoutSessionId String?
+  checkoutSession   CheckoutSession?     @relation(fields: [checkoutSessionId], references: [id], onDelete: Cascade)
+  orderId           String
+  order             Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String?
+  razorpayPaymentId String?              @unique
+  razorpaySignature String?
+  amount            Decimal              @db.Decimal(10, 2)
+  currency          String               @default("INR")
+  status            PaymentSessionStatus @default(CREATED)
+  rawGatewayResponse Json?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([orderId])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+  @@map("payment_sessions")
+}
+
+model PaymentTransitionLog {
+  id                 String   @id @default(cuid())
+  orderId            String
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus         String
+  toStatus           String
+  fromPaymentStatus  String
+  toPaymentStatus    String
+  triggerActor       String   // WEBHOOK, RECOVERY_MODAL, CRON_WORKER, CLEANUP_JOB, CALLBACK, ADMIN
+  reason             String?
+  idempotencyKey     String   @unique
+  createdAt          DateTime @default(now())
+
+  @@index([orderId])
+  @@index([idempotencyKey])
+  @@map("payment_transition_logs")
+}
+
 
 model Invoice {
   id               String        @id @default(cuid())

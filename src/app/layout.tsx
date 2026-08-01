@@ -9,6 +9,7 @@ import { constructMetadata } from "@/lib/seo-metadata";
 import JsonLd from "@/components/JsonLd";
 import { getOrganizationSchema, getWebSiteSchema } from "@/lib/json-ld";
 import NavigationProgress from "@/components/NavigationProgress";
+import GlobalPaymentRecoveryModal from "@/components/checkout/GlobalPaymentRecoveryModal";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -49,6 +50,7 @@ export default function RootLayout({
         <div className="grain-overlay" aria-hidden="true" />
         <AuthProvider>
           {children}
+          <GlobalPaymentRecoveryModal />
         </AuthProvider>
         <CinematicSiteLoader />
         <GlobalToast />

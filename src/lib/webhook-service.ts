@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { razorpayService } from './razorpay-service';
+import { PaymentStateEngine } from '@/lib/payments/payment-state-engine';
 
 class WebhookService {
   /**
@@ -52,14 +53,15 @@ class WebhookService {
       return;
     }
 
-    if (order.paymentStatus === 'PAID') {
-      console.log(`[WebhookService] Order ${order.id} is already marked as PAID.`);
-      return;
-    }
-
-    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
-    await PaymentStateEngine.confirmOrder(order.id, rzpPaymentId, rzpOrderId);
-    console.log(`[WebhookService] Order ${order.id} successfully confirmed from webhook via PaymentStateEngine.`);
+    await PaymentStateEngine.executeTransition({
+      transition: 'CONFIRM_PAYMENT',
+      orderId: order.id,
+      razorpayPaymentId: rzpPaymentId,
+      razorpayOrderId: rzpOrderId,
+      triggerActor: 'WEBHOOK',
+      reason: 'Razorpay payment.captured webhook service',
+    });
+    console.log(`[WebhookService] Order ${order.id} successfully confirmed/recovered from webhook via PaymentStateEngine.`);
   }
 
   /**
@@ -77,13 +79,14 @@ class WebhookService {
       return;
     }
 
-    if (order.paymentStatus === 'FAILED' || order.status === 'CANCELLED') {
-      return;
-    }
-
-    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
-    await PaymentStateEngine.cancelOrder(order.id, payment.error_description || 'Payment failed on Razorpay');
-    console.log(`[WebhookService] Order ${order.id} successfully cancelled from webhook via PaymentStateEngine.`);
+    await PaymentStateEngine.executeTransition({
+      transition: 'CANCEL_PAYMENT',
+      orderId: order.id,
+      razorpayOrderId: rzpOrderId,
+      triggerActor: 'WEBHOOK',
+      reason: payment.error_description || 'Razorpay payment.failed webhook service',
+    });
+    console.log(`[WebhookService] Order ${order.id} processed cancellation check via PaymentStateEngine.`);
   }
 
   /**
@@ -99,7 +102,6 @@ class WebhookService {
     });
 
     if (order) {
-      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
       const newNote = `[Webhook Refund processed] Razorpay Refund ID ${rzpRefundId} for ₹${amount} has settled.`;
       const nextAdminNotes = order.adminNotes 
         ? `${order.adminNotes}\n${newNote}` 

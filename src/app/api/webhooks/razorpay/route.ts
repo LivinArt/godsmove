@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { confirmOrder } from '@/actions/order.actions';
 import { prisma } from '@/lib/prisma';
+import { PaymentStateEngine } from '@/lib/payments/payment-state-engine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,8 +66,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unresolvable order reference' }, { status: 400 });
       }
 
-      await confirmOrder(internalOrderId, paymentId, order_id);
-      console.log(`✅ Order ${internalOrderId} confirmed via webhook (Idempotent)`);
+      // Authoritative state machine execution with WEBHOOK ORDER RECOVERY
+      await PaymentStateEngine.executeTransition({
+        transition: 'CONFIRM_PAYMENT',
+        orderId: internalOrderId,
+        razorpayPaymentId: paymentId,
+        razorpayOrderId: order_id,
+        triggerActor: 'WEBHOOK',
+        reason: 'Razorpay payment.captured webhook event',
+      });
+
+      console.log(`✅ Order ${internalOrderId} confirmed/recovered via webhook via PaymentStateEngine`);
     }
 
     // ── HANDLE PAYMENT FAILED ─────────────────────────────────────────────────
@@ -86,40 +95,14 @@ export async function POST(request: NextRequest) {
       }
 
       if (internalOrderId) {
-        const order = await prisma.order.findUnique({
-          where: { id: internalOrderId },
-          include: { items: true },
+        // Delegate cancellation to PaymentStateEngine (which executes gateway REST verification guard first)
+        await PaymentStateEngine.executeTransition({
+          transition: 'CANCEL_PAYMENT',
+          orderId: internalOrderId,
+          razorpayOrderId: order_id,
+          triggerActor: 'WEBHOOK',
+          reason: payment.error_description || 'Razorpay payment.failed webhook event',
         });
-
-        // ONLY mark failed if order is NOT already PAID
-        if (order && order.paymentStatus !== 'PAID') {
-          await prisma.order.update({
-            where: { id: internalOrderId },
-            data: { paymentStatus: 'FAILED' },
-          });
-
-          for (const item of order.items) {
-            const inv = await prisma.inventory.findFirst({ where: { variantId: item.variantId } });
-            if (inv && inv.reservedStock > 0) {
-              await prisma.inventory.update({
-                where: { id: inv.id },
-                data: { reservedStock: { decrement: Math.min(inv.reservedStock, item.quantity) } },
-              });
-            }
-          }
-
-          try {
-            const { NotificationService } = await import('@/notifications/notification.service');
-            const addr = typeof order.shippingAddress === 'string'
-              ? JSON.parse(order.shippingAddress)
-              : (order.shippingAddress || {});
-            const customerName = addr.firstName ? `${addr.firstName} ${addr.lastName || ''}`.trim() : 'Collector';
-            const reason = payment.error_description || 'Payment transaction was declined or interrupted.';
-            await NotificationService.sendPaymentFailed(order.email, customerName, order.orderNumber, reason);
-          } catch (notifErr) {
-            console.error('Payment failed notification error:', notifErr);
-          }
-        }
       }
     }
 
@@ -127,7 +110,6 @@ export async function POST(request: NextRequest) {
     if (eventType === 'refund.processed') {
       const refund = payload.refund.entity;
       console.log(`Refund processed: ${refund.id}`);
-      // Future: update order paymentStatus to REFUNDED
     }
 
     return NextResponse.json({ received: true }, { status: 200 });

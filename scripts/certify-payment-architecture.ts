@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
+
 import { prisma } from '../src/lib/prisma';
 import { confirmOrder, getOrderPaymentStatus, reconcilePendingPayments, cleanupExpiredCheckoutSessions, verifyPaymentSignature } from '../src/actions/order.actions';
 import { PaymentService } from '../src/lib/payments/payment-service';

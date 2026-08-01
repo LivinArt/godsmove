@@ -436,68 +436,56 @@ export async function confirmOrder(
 export async function cancelOrder(orderId: string, reason?: string) {
   const user = await getCurrentUser();
 
-  const updatedOrder = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { items: true, profile: { select: { id: true } } },
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, profileId: true, status: true, walletCredit: true, orderNumber: true }
+  });
+  if (!order) throw new Error('Order not found');
+
+  if (order.profileId && order.profileId !== user?.id) {
+    const isAdmin = await prisma.profile.findUnique({
+      where: { id: user?.id ?? '' },
+      select: { role: true },
     });
-    if (!order) throw new Error('Order not found');
-
-    // Customers can only cancel their own pending orders
-    if (order.profileId && order.profileId !== user?.id) {
-      const isAdmin = await tx.profile.findUnique({
-        where: { id: user?.id ?? '' },
-        select: { role: true },
-      });
-      if (!isAdmin || !['ADMIN', 'OPERATIONS'].includes(isAdmin.role)) {
-        throw new Error('FORBIDDEN');
-      }
+    if (!isAdmin || !['ADMIN', 'OPERATIONS'].includes(isAdmin.role)) {
+      throw new Error('FORBIDDEN');
     }
+  }
 
-    if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
-      throw new Error('Order cannot be cancelled at this stage');
-    }
+  // Delegate 100% of order cancellation to PaymentStateEngine
+  const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+  const updatedOrder = await PaymentStateEngine.executeTransition({
+    transition: 'CANCEL_PAYMENT',
+    orderId,
+    triggerActor: user?.role === 'ADMIN' ? 'ADMIN' : 'CALLBACK',
+    reason: reason || 'Cancelled by user or administrator',
+  });
 
-    // Restore inventory
-    for (const item of order.items) {
-      const type = order.paymentStatus === 'PAID' ? 'CANCEL' : 'UNRESERVE';
-      const field =
-        order.paymentStatus === 'PAID' ? 'soldStock' : 'reservedStock';
-
-      await tx.inventory.update({
-        where: { variantId: item.variantId },
-        data: { [field]: { decrement: item.quantity } },
-      });
-    }
-
-    // Refund wallet credit if applied
-    if (Number(order.walletCredit) > 0 && order.profileId) {
+  // Refund wallet credit if applied and order was cancelled
+  if (Number(order.walletCredit) > 0 && order.profileId && updatedOrder?.status === 'CANCELLED') {
+    await prisma.$transaction(async (tx) => {
       await WalletService.adjustBalance(tx, {
-        profileId: order.profileId,
+        profileId: order.profileId!,
         amount: Number(order.walletCredit),
         type: 'CREDIT_ADJUSTMENT',
         description: `Refunded from cancelled Order #${order.orderNumber}`,
         createdBy: user?.email || 'SYSTEM_REFUND',
         orderId: order.id,
       });
-    }
-
-    const updated = await tx.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'CANCELLED',
-        adminNotes: reason,
-      },
     });
+  }
 
+  try {
     revalidatePath('/admin/orders');
-    return updated;
-  });
+    revalidatePath('/profile');
+  } catch {}
 
   // Async dispatch order cancelled notification email
   (async () => {
     try {
-      await NotificationService.sendOrderCancelled(updatedOrder, reason);
+      if (updatedOrder) {
+        await NotificationService.sendOrderCancelled(updatedOrder, reason);
+      }
     } catch (err: any) {
       console.error('Order cancellation notification error:', err);
     }
@@ -505,6 +493,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
 
   return updatedOrder;
 }
+
 
 // ── ADMIN: GET ORDERS ────────────────────────────────────────────────────────
 
@@ -1000,11 +989,24 @@ export async function reconcilePendingPayments() {
         const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
         if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
           console.log(`[BACKGROUND_RECONCILER] Auto-confirming captured Order ${order.orderNumber} (Payment ID: ${gatewayCheck.paymentId})`);
-          await PaymentStateEngine.confirmOrder(order.id, gatewayCheck.paymentId, order.razorpayOrderId);
+          await PaymentStateEngine.executeTransition({
+            transition: 'CONFIRM_PAYMENT',
+            orderId: order.id,
+            razorpayPaymentId: gatewayCheck.paymentId,
+            razorpayOrderId: order.razorpayOrderId,
+            triggerActor: 'CRON_WORKER',
+            reason: 'Background reconciler detected captured payment',
+          });
           reconciledCount++;
         } else if (gatewayCheck.status === 'failed' || gatewayCheck.status === 'cancelled') {
           console.log(`[BACKGROUND_RECONCILER] Auto-cancelling failed Order ${order.orderNumber}`);
-          await PaymentStateEngine.cancelOrder(order.id, 'Gateway payment failed or cancelled');
+          await PaymentStateEngine.executeTransition({
+            transition: 'CANCEL_PAYMENT',
+            orderId: order.id,
+            razorpayOrderId: order.razorpayOrderId,
+            triggerActor: 'CRON_WORKER',
+            reason: 'Background reconciler verified gateway failure',
+          });
           reconciledCount++;
         }
       } catch (err) {
@@ -1021,7 +1023,7 @@ export async function reconcilePendingPayments() {
 }
 
 /**
- * Phase C Server Action: Automatically cancels abandoned checkout sessions (>30m old)
+ * Phase C Server Action: Automatically cleans abandoned checkout sessions (>30m old)
  * after verifying payment was NOT captured on Razorpay.
  */
 export async function cleanupExpiredCheckoutSessions() {
@@ -1045,37 +1047,166 @@ export async function cleanupExpiredCheckoutSessions() {
       return { success: true, cleanedCount: 0 };
     }
 
+    const { PaymentService } = await import('@/lib/payments/payment-service');
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+
     let cleanedCount = 0;
 
     for (const expiredOrder of expiredOrders) {
-      await prisma.$transaction(async (tx) => {
-        await tx.order.update({
-          where: { id: expiredOrder.id },
-          data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
-        });
-
-        for (const item of expiredOrder.items) {
-          const inv = await tx.inventory.findFirst({ where: { variantId: item.variantId } });
-          if (inv && inv.reservedStock > 0) {
-            await tx.inventory.update({
-              where: { id: inv.id },
-              data: {
-                reservedStock: { decrement: Math.min(inv.reservedStock, item.quantity) }
-              }
-            });
-          }
+      if (expiredOrder.razorpayOrderId) {
+        const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(expiredOrder.razorpayOrderId);
+        if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+          console.log(`[CLEANUP_GUARD] Payment ${gatewayCheck.paymentId} was captured on Razorpay! Auto-confirming Order ${expiredOrder.orderNumber} instead of expiring.`);
+          await PaymentStateEngine.executeTransition({
+            transition: 'CONFIRM_PAYMENT',
+            orderId: expiredOrder.id,
+            razorpayPaymentId: gatewayCheck.paymentId,
+            razorpayOrderId: expiredOrder.razorpayOrderId,
+            triggerActor: 'CLEANUP_JOB',
+            reason: 'Auto-confirmed during cleanup job',
+          });
+          cleanedCount++;
+          continue;
         }
+
+        // If payment is still created/attempted (pending at bank/OTP), DO NOT cancel prematurely
+        if (gatewayCheck.status === 'created' || gatewayCheck.status === 'attempted') {
+          console.log(`[CLEANUP_GUARD] Payment still PENDING on Razorpay for Order ${expiredOrder.orderNumber}. Retaining AWAITING_PAYMENT.`);
+          continue;
+        }
+      }
+
+      await PaymentStateEngine.executeTransition({
+        transition: 'CANCEL_PAYMENT',
+        orderId: expiredOrder.id,
+        triggerActor: 'CLEANUP_JOB',
+        reason: 'Expired checkout session (>30m) verified on gateway',
       });
       cleanedCount++;
     }
 
-    console.log(`[CLEANUP_EXPIRED_SESSIONS] Cleaned up ${cleanedCount} expired checkout sessions.`);
+    console.log(`[CLEANUP_EXPIRED_SESSIONS] Processed ${cleanedCount} expired checkout sessions.`);
     return { success: true, cleanedCount };
   } catch (error: any) {
     console.error('Failed to cleanup expired checkout sessions:', error);
     return { success: false, error: error.message || 'Cleanup error' };
   }
 }
+
+/**
+ * Server Action: Active Checkout Session Lookup
+ * Detects if current customer/browser token has an active checkout session in AWAITING_PAYMENT state.
+ */
+export async function getActiveCheckoutSessionAction(sessionTokenOrOrderId?: string) {
+  try {
+    const user = await getCurrentUser().catch(() => null);
+    
+    let session = null;
+    if (sessionTokenOrOrderId) {
+      session = await prisma.checkoutSession.findFirst({
+        where: {
+          OR: [
+            { sessionToken: sessionTokenOrOrderId },
+            { sessionToken: `chk_${sessionTokenOrOrderId}` },
+            { orderId: sessionTokenOrOrderId },
+          ],
+          status: 'AWAITING_PAYMENT',
+        },
+        include: { order: true },
+      });
+    }
+
+    if (!session && user?.id) {
+      session = await prisma.checkoutSession.findFirst({
+        where: {
+          profileId: user.id,
+          status: 'AWAITING_PAYMENT',
+        },
+        include: { order: true },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    if (!session) {
+      return { success: false, hasActiveSession: false };
+    }
+
+    return {
+      success: true,
+      hasActiveSession: true,
+      session: {
+        id: session.id,
+        orderId: session.orderId,
+        razorpayOrderId: session.razorpayOrderId,
+        status: session.status,
+        expiresAt: session.expiresAt.toISOString(),
+        orderNumber: session.order?.orderNumber,
+        total: Number(session.order?.total || 0),
+      }
+    };
+  } catch (error: any) {
+    return { success: false, hasActiveSession: false, error: error?.message };
+  }
+}
+
+/**
+ * Server Action: Active Gateway Status Verification
+ * Queries Razorpay REST API out-of-band and delegates status updates to PaymentStateEngine.
+ */
+export async function verifyCheckoutSessionAction(orderId: string) {
+  try {
+    const { PaymentService } = await import('@/lib/payments/payment-service');
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, razorpayOrderId: true, status: true, paymentStatus: true, orderNumber: true }
+    });
+
+    if (!order) return { success: false, error: 'Order not found' };
+
+    if (order.status === 'CONFIRMED' || order.paymentStatus === 'PAID') {
+      return { success: true, isCaptured: true, status: 'CONFIRMED', paymentStatus: 'PAID' };
+    }
+
+    if (!order.razorpayOrderId) {
+      return { success: true, isCaptured: false, status: order.status, paymentStatus: order.paymentStatus };
+    }
+
+    const gatewayCheck = await PaymentService.verifyPaymentStatusOnGateway(order.razorpayOrderId);
+    if (gatewayCheck.isCaptured && gatewayCheck.paymentId) {
+      const updated = await PaymentStateEngine.executeTransition({
+        transition: 'CONFIRM_PAYMENT',
+        orderId: order.id,
+        razorpayPaymentId: gatewayCheck.paymentId,
+        razorpayOrderId: order.razorpayOrderId,
+        triggerActor: 'RECOVERY_MODAL',
+        reason: 'Recovery modal REST verification captured payment',
+      });
+      return { success: true, isCaptured: true, order: JSON.parse(JSON.stringify(updated)) };
+    } else if (gatewayCheck.status === 'failed' || gatewayCheck.status === 'cancelled') {
+      const updated = await PaymentStateEngine.executeTransition({
+        transition: 'CANCEL_PAYMENT',
+        orderId: order.id,
+        razorpayOrderId: order.razorpayOrderId,
+        triggerActor: 'RECOVERY_MODAL',
+        reason: 'Recovery modal REST verification confirmed gateway failure',
+      });
+      return { success: true, isCaptured: false, isFailed: true, order: JSON.parse(JSON.stringify(updated)) };
+    }
+
+    return {
+      success: true,
+      isCaptured: false,
+      isPending: true,
+      gatewayStatus: gatewayCheck.status || 'created',
+      order: JSON.parse(JSON.stringify(order)),
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Verification error' };
+  }
+}
+
 
 /**
  * Phase C Verification Helper: Verifies HMAC-SHA256 Razorpay payment signature.
