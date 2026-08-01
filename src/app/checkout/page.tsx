@@ -21,7 +21,7 @@ import styles from './page.module.css';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, instantCheckout, getCartTotal, showExclusiveCartToast, showToast, setCartOpen } = useStore();
+  const { cart, getCartTotal, showToast, clearCart, instantCheckout, updateQuantity, removeFromCart, showExclusiveCartToast, setCartOpen } = useStore();
   
   const checkoutItems = instantCheckout ? [instantCheckout] : cart;
   
@@ -1148,7 +1148,7 @@ export default function CheckoutPage() {
               <div className={styles.orderItems}>
                 {checkoutItems.map((item) => {
                   const variant = item.product.variants?.find((v: any) => v.size === item.size);
-                  const itemPrice = variant?.price ? Number(variant.price) : 0;
+                  const itemPrice = variant?.price ? Number(variant.price) : Number(item.product?.price || 0);
                   const { frontImage } = resolveProductImages(item.product);
                   return (
                     <div key={`${item.product.id}-${item.size}`} className={styles.orderItem}>
@@ -1159,6 +1159,42 @@ export default function CheckoutPage() {
                       <div className={styles.orderItemInfo}>
                         <span className={styles.orderItemName}>{item.product.name}</span>
                         <span className={styles.orderItemMeta}>{variant?.color || 'Standard'} / {item.size}</span>
+                        
+                        {/* Inline Product Quantity Controls (- / + / Remove) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '3px', background: 'rgba(0,0,0,0.3)' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.quantity > 1) {
+                                  updateQuantity(item.product.id, item.size, item.quantity - 1);
+                                } else {
+                                  removeFromCart(item.product.id, item.size);
+                                }
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#fff', padding: '1px 7px', cursor: 'pointer', fontSize: '12px' }}
+                              title="Decrease Quantity"
+                            >
+                              -
+                            </button>
+                            <span style={{ fontSize: '11px', fontWeight: 600, padding: '0 4px', color: '#c8a46a' }}>{item.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
+                              style={{ background: 'none', border: 'none', color: '#fff', padding: '1px 7px', cursor: 'pointer', fontSize: '12px' }}
+                              title="Increase Quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.product.id, item.size)}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '10px', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-heading)' }}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                       <span className={styles.orderItemPrice}>₹{(itemPrice * item.quantity).toLocaleString('en-IN')}</span>
                     </div>

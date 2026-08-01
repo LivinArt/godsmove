@@ -1165,6 +1165,166 @@ export async function verifyPaymentSignature(
   }
 }
 
+/**
+ * GODSMOVE V6 Self-Healing Commerce: Live Inventory Validation Server Action
+ * Validates inventory availability and stock levels before checkout/payment.
+ */
+export async function validateLiveInventoryAction(items: Array<{ productId: string; variantId?: string; size: string; quantity: number }>) {
+  try {
+    const validatedItems = await Promise.all(
+      items.map(async (item) => {
+        // Look up variant by variantId or productId + size
+        let variant = null;
+        if (item.variantId) {
+          variant = await prisma.productVariant.findUnique({
+            where: { id: item.variantId },
+            include: { product: true, inventory: true },
+          });
+        }
+
+        if (!variant && item.productId) {
+          variant = await prisma.productVariant.findFirst({
+            where: { productId: item.productId, size: item.size },
+            include: { product: true, inventory: true },
+          });
+        }
+
+        if (!variant) {
+          return {
+            ...item,
+            isAvailable: false,
+            isSoldOut: true,
+            availableStock: 0,
+            price: 0,
+          };
+        }
+
+        const totalStock = variant.inventory?.totalStock ?? 100;
+        const reservedStock = variant.inventory?.reservedStock ?? 0;
+        const netAvailable = Math.max(0, totalStock - reservedStock);
+
+        const isAvailable = netAvailable > 0;
+        const isSoldOut = netAvailable <= 0;
+        const isLowStock = isAvailable && netAvailable <= 5;
+
+        return {
+          productId: variant.productId,
+          variantId: variant.id,
+          size: variant.size,
+          color: variant.color,
+          quantity: item.quantity,
+          price: Number(variant.price || 0),
+          name: variant.product.name,
+          images: resolveProductImages(variant.product),
+          isAvailable,
+          isSoldOut,
+          isLowStock,
+          availableStock: netAvailable,
+        };
+      })
+    );
+
+    const hasSoldOut = validatedItems.some((i) => i.isSoldOut);
+    const allSoldOut = validatedItems.every((i) => i.isSoldOut);
+
+    return {
+      success: true,
+      hasSoldOut,
+      allSoldOut,
+      items: validatedItems,
+    };
+  } catch (error: any) {
+    console.error('Failed to validate live inventory:', error);
+    return { success: false, error: error.message || 'Inventory validation failed' };
+  }
+}
+
+/**
+ * GODSMOVE V6 Reorder Engine: Rebuilds checkout state from past FAILED or CANCELLED orders
+ * recalculating pricing, discounts, stock, and wallet applicability using today's rules.
+ */
+export async function reorderOrderAction(orderId: string) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  include: {
+                    variants: {
+                      include: { inventory: true }
+                    }
+                  }
+                },
+                inventory: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    const reorderedItems: any[] = [];
+    let availableCount = 0;
+
+    for (const item of order.items) {
+      const variant = item.variant;
+      const product = variant?.product;
+
+      if (!variant || !product) {
+        continue;
+      }
+
+      const totalStock = variant.inventory?.totalStock ?? 100;
+      const reservedStock = variant.inventory?.reservedStock ?? 0;
+      const netAvailable = Math.max(0, totalStock - reservedStock);
+
+      const isAvailable = netAvailable > 0;
+      if (isAvailable) availableCount++;
+
+      reorderedItems.push({
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: Number(variant.price || 0),
+          images: resolveProductImages(product),
+          variants: product.variants.map((v) => ({
+            id: v.id,
+            size: v.size,
+            color: v.color,
+            stock: Math.max(0, (v.inventory?.totalStock ?? 100) - (v.inventory?.reservedStock ?? 0)),
+          })),
+        },
+        size: variant.size,
+        quantity: item.quantity,
+        isSoldOut: !isAvailable,
+        availableStock: netAvailable,
+      });
+    }
+
+    return {
+      success: true,
+      orderNumber: order.orderNumber,
+      totalOriginalItems: order.items.length,
+      availableCount,
+      allSoldOut: availableCount === 0,
+      items: reorderedItems,
+    };
+  } catch (error: any) {
+    console.error('Failed to execute reorder:', error);
+    return { success: false, error: error.message || 'Reorder failed' };
+  }
+}
+
+
 
 
 

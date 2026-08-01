@@ -1411,31 +1411,62 @@ export default function ProfilePage() {
                               {/* Unexpanded Primary Actions */}
                               <div className={styles.orderActionsCol}>
                                 <button
-                                  type="button"
-                                  onClick={() => handleDownloadInvoice(order.id, order.orderNumber)}
-                                  className={styles.invoiceBtn}
-                                  title="Download Invoice"
-                                >
-                                  <Download size={14} />
-                                  Invoice
-                                </button>
+                                   type="button"
+                                   onClick={() => handleDownloadInvoice(order.id, order.orderNumber)}
+                                   className={styles.invoiceBtn}
+                                   title="Download Invoice"
+                                 >
+                                   <Download size={14} />
+                                   Invoice
+                                 </button>
 
-                                {['DELIVERED', 'COMPLETED'].includes(order.status) ? (
-                                  <span className={styles.deliveredPill}>
-                                    ✓ Delivered
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActiveTrackingOrder(order);
-                                      setTrackOrderOpen(true);
-                                    }}
-                                    className={styles.trackOrderBtn}
-                                  >
-                                    Track Order
-                                  </button>
-                                )}
+                                 {['FAILED', 'CANCELLED'].includes(order.status) || order.paymentStatus === 'FAILED' ? (
+                                   <button
+                                     type="button"
+                                     onClick={async () => {
+                                       try {
+                                         showToast('Rebuilding Checkout', 'Validating current availability and stock...');
+                                         const { reorderOrderAction } = await import('@/actions/order.actions');
+                                         const res = await reorderOrderAction(order.id);
+                                         if (!res.success || !res.items || res.items.length === 0) {
+                                           showToast('Reorder Unavailable', 'Unfortunately, the products from this order are no longer available.');
+                                           return;
+                                         }
+
+                                         if (res.allSoldOut) {
+                                           showToast('Sold Out', 'Unfortunately, all products from this order are sold out.');
+                                           return;
+                                         }
+
+                                         useStore.setState({ cart: res.items });
+                                         showToast('Cart Rebuilt', 'Rebuilding checkout with current live pricing and stock.');
+                                         router.push('/checkout');
+                                       } catch (err: any) {
+                                         showToast('Reorder Error', err.message || 'Unable to reorder at this time.');
+                                       }
+                                     }}
+                                     className={styles.trackOrderBtn}
+                                     style={{ borderColor: '#c8a46a', color: '#c8a46a', display: 'inline-flex', alignItems: 'center' }}
+                                   >
+                                     <RotateCcw size={13} style={{ marginRight: 6 }} />
+                                     Reorder
+                                   </button>
+                                 ) : ['DELIVERED', 'COMPLETED'].includes(order.status) ? (
+                                   <span className={styles.deliveredPill}>
+                                     ✓ Delivered
+                                   </span>
+                                 ) : (
+                                   <button
+                                     type="button"
+                                     onClick={() => {
+                                       setActiveTrackingOrder(order);
+                                       setTrackOrderOpen(true);
+                                     }}
+                                     className={styles.trackOrderBtn}
+                                   >
+                                     Track Order
+                                   </button>
+                                 )}
 
                                 {/* Luxury Disclosure Toggle Microinteraction */}
                                 <button
