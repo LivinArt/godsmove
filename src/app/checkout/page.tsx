@@ -198,6 +198,7 @@ export default function CheckoutPage() {
 
   // TASK 3 & 4 — REMOVE ITEM BEHAVIOUR & CHECKOUT NAVIGATION FLOW
   useEffect(() => {
+    if (showSuccessModal) return;
     if (checkoutItems.length === 0) {
       const referrer = typeof document !== 'undefined' ? document.referrer : '';
       if (referrer && !referrer.includes('/checkout') && !referrer.includes('/cart')) {
@@ -212,7 +213,7 @@ export default function CheckoutPage() {
       // Priority fallback: return user to /drops (NOT /cart, NOT Empty Cart)
       router.push('/drops');
     }
-  }, [checkoutItems.length, router]);
+  }, [checkoutItems.length, showSuccessModal, router]);
 
   const populateAddressFields = (addr: any) => {
     const defaultEmail = profile?.email || form.email || '';
@@ -292,16 +293,17 @@ export default function CheckoutPage() {
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
   // Calculate pricing (MRP Inclusive GST Model - No separate GST added)
-  const subtotalAfterCoupon = Math.max(0, subtotal - discountAmount);
-  const shipping = subtotalAfterCoupon > 1999 ? 0 : 149;
-  const codFee = (paymentMethod === 'cod' && codConfig.isEnabled)
-    ? (codConfig.chargeType === 'PERCENTAGE'
+  const hasItems = checkoutItems.length > 0;
+  const subtotalAfterCoupon = hasItems ? Math.max(0, subtotal - discountAmount) : 0;
+  const shipping = (!hasItems || subtotal === 0 || subtotalAfterCoupon > 1999) ? 0 : 149;
+  const codFee = (!hasItems || subtotal === 0 || paymentMethod !== 'cod' || !codConfig.isEnabled)
+    ? 0
+    : (codConfig.chargeType === 'PERCENTAGE'
         ? Math.round((subtotalAfterCoupon + shipping) * (codConfig.chargeValue / 100))
-        : Math.round(codConfig.chargeValue))
-    : 0;
-  const totalBeforeCredits = subtotalAfterCoupon + shipping + codFee;
-  const walletCreditsToUse = useCredits ? Math.min(walletBalance, totalBeforeCredits) : 0;
-  const finalPayable = Math.max(0, totalBeforeCredits - walletCreditsToUse);
+        : Math.round(codConfig.chargeValue));
+  const totalBeforeCredits = hasItems ? subtotalAfterCoupon + shipping + codFee : 0;
+  const walletCreditsToUse = (hasItems && useCredits) ? Math.min(walletBalance, totalBeforeCredits) : 0;
+  const finalPayable = hasItems ? Math.max(0, totalBeforeCredits - walletCreditsToUse) : 0;
 
   const handleStep1Submit = async () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim() || !form.city.trim() || !form.state.trim() || !form.pincode.trim()) {
@@ -470,12 +472,14 @@ export default function CheckoutPage() {
         } catch (e) {
           // ignore
         }
-        // Instant success checkouts: Set success state first, then clear cart & session
+        // Instant success checkouts: Destroy all active checkout session tokens, coupons, and credits
         clearCheckoutSessionToken();
+        setAppliedCoupon(null);
+        setDiscountAmount(0);
+        setUseCredits(false);
+
         setConfirmedOrderNumber(order.orderNumber);
         setShowSuccessModal(true);
-        isSubmittingRef.current = false;
-        setIsSubmitLoading(false);
         if (instantCheckout) {
           useStore.setState({ instantCheckout: null });
         } else {
@@ -540,11 +544,14 @@ export default function CheckoutPage() {
                   // ignore
                 }
 
+                // Destroy all active checkout session tokens, coupons, and credits
                 clearCheckoutSessionToken();
+                setAppliedCoupon(null);
+                setDiscountAmount(0);
+                setUseCredits(false);
+
                 setConfirmedOrderNumber(order.orderNumber);
                 setShowSuccessModal(true);
-                isSubmittingRef.current = false;
-                setIsSubmitLoading(false);
                 if (instantCheckout) {
                   useStore.setState({ instantCheckout: null });
                 } else {
@@ -594,6 +601,118 @@ export default function CheckoutPage() {
           </div>
         </main>
       </>
+    );
+  }
+
+  if (showSuccessModal) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#050505', color: '#FAF8F5' }}>
+        <Navbar />
+        <div style={{
+          minHeight: 'calc(100vh - 80px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px',
+        }}>
+          <div
+            style={{
+              background: '#0a0a0a',
+              border: '1px solid rgba(200, 164, 106, 0.25)',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '56px 48px',
+              textAlign: 'center',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+            }}
+          >
+            <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '0 auto 32px' }} />
+
+            <span style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.35em',
+              textTransform: 'uppercase',
+              color: '#c8a46a',
+              display: 'block',
+              marginBottom: '32px',
+            }}>
+              GODSMOVE ARCHIVE
+            </span>
+
+            <h2 style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'clamp(26px, 4.5vw, 38px)',
+              fontWeight: 300,
+              letterSpacing: '-0.02em',
+              color: '#FAF8F5',
+              margin: '0 0 20px',
+              lineHeight: 1.15,
+            }}>
+              Another piece has been<br />allocated to your collection.
+            </h2>
+
+            <p style={{
+              fontSize: '13px',
+              lineHeight: 1.85,
+              color: 'rgba(255, 255, 255, 0.55)',
+              maxWidth: '380px',
+              margin: '0 auto 16px',
+              letterSpacing: '0.015em',
+            }}>
+              This garment has now been reserved under your archive. Every piece becomes part of a carefully curated collection designed to age with you.
+            </p>
+
+            {confirmedOrderNumber && (
+              <p style={{ fontSize: '11px', letterSpacing: '0.14em', color: '#c8a46a', textTransform: 'uppercase', marginBottom: '40px', fontWeight: 600 }}>
+                Archive Reference — #{confirmedOrderNumber}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
+              <button
+                onClick={() => router.push('/drops')}
+                style={{
+                  padding: '16px 32px',
+                  background: '#c8a46a',
+                  color: '#0a0a0a',
+                  border: 'none',
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Explore Drops
+              </button>
+              <button
+                onClick={() => router.push('/profile?tab=collection')}
+                style={{
+                  padding: '15px 32px',
+                  background: 'transparent',
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  border: '1px solid rgba(200, 164, 106, 0.35)',
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Your Collection
+              </button>
+            </div>
+
+            <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '40px auto 0' }} />
+          </div>
+        </div>
+      </div>
     );
   }
 
