@@ -1396,11 +1396,11 @@ export default function ProfilePage() {
                               </div>
 
                               <div className={styles.orderStatusCol}>
-                                <span className={`${styles.orderStatus} ${getStatusClass(order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentStatus === 'FAILED' || order.status === 'CANCELLED' ? 'FAILED' : 'UNPAID'))}`}>
-                                  {order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentStatus === 'FAILED' || order.status === 'CANCELLED' ? 'FAILED' : 'UNPAID')}
+                                <span className={`${styles.orderStatus} ${getStatusClass(order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentMethod === 'COD' ? 'UNPAID' : 'FAILED'))}`}>
+                                  {order.paymentStatus === 'PAID' ? 'PAID' : (order.paymentMethod === 'COD' ? 'UNPAID' : 'FAILED')}
                                 </span>
-                                <span className={`${styles.orderStatus} ${getStatusClass(order.status)}`}>
-                                  {order.status === 'PENDING' ? 'PROCESSING' : (order.status === 'CANCELLED' ? 'CANCELLED' : order.status.replace(/_/g, ' ').toUpperCase())}
+                                <span className={`${styles.orderStatus} ${getStatusClass(order.status === 'CANCELLED' || (order.paymentStatus !== 'PAID' && order.paymentMethod !== 'COD') ? 'CANCELLED' : order.status)}`}>
+                                  {order.status === 'CANCELLED' || (order.paymentStatus !== 'PAID' && order.paymentMethod !== 'COD') ? 'CANCELLED' : (['CONFIRMED', 'PENDING', 'PROCESSING'].includes(order.status) ? 'PROCESSING' : order.status.replace(/_/g, ' ').toUpperCase())}
                                 </span>
                               </div>
 
