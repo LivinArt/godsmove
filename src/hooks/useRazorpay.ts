@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 export interface RazorpayOptions {
   amount: number;
   currency?: string;
+  dbOrderId?: string;
   name?: string;
   description?: string;
   orderId?: string;
@@ -69,6 +70,7 @@ export function useRazorpay() {
     async ({
       amount,
       currency = 'INR',
+      dbOrderId,
       name = 'GODSMOVE',
       description = 'GODSMOVE Purchase',
       prefill,
@@ -87,7 +89,7 @@ export function useRazorpay() {
         const res = await fetch('/api/payments/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount, currency }),
+          body: JSON.stringify({ amount, currency, dbOrderId }),
         });
 
         const orderData = await res.json();

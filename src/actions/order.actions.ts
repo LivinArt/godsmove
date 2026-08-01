@@ -336,6 +336,8 @@ export async function createOrder(input: CreateOrderInput) {
       return order;
     });
 
+    let razorpayPayload: any = null;
+
     if (createdOrder) {
       try {
         const fullOrder = await prisma.order.findUnique({
@@ -365,20 +367,38 @@ export async function createOrder(input: CreateOrderInput) {
           } else if (fullOrder.paymentMethod === 'COD') {
             // Flow 3: Cash On Delivery (Order Confirmation at creation time)
             await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+          } else if (fullOrder.paymentMethod === 'RAZORPAY') {
+            // Rule 3: Server Owns Gateway Linkage
+            const { PaymentService } = await import('@/lib/payments/payment-service');
+            const rzpRes = await PaymentService.createOrder({
+              amount: Number(fullOrder.total),
+              currency: 'INR',
+              orderId: fullOrder.id,
+            });
+
+            await prisma.order.update({
+              where: { id: fullOrder.id },
+              data: { razorpayOrderId: rzpRes.orderId },
+            });
+
+            razorpayPayload = rzpRes;
           }
         }
       } catch (err: any) {
-        console.error(`❌ [POST-ORDER NOTIFICATION TASK ERROR] Order ${createdOrder.id}:`, err);
+        console.error(`❌ [POST-ORDER CREATION TASK ERROR] Order ${createdOrder.id}:`, err);
       }
     }
 
+    const finalOrder = await prisma.order.findUnique({ where: { id: createdOrder.id } }) || createdOrder;
+
     console.log('====================================================================');
-    console.log(`✅ [CHECKOUT COMPLETE] Returning Order ${createdOrder.orderNumber} to Client`);
+    console.log(`✅ [CHECKOUT COMPLETE] Returning Order ${finalOrder.orderNumber} to Client`);
     console.log('====================================================================\n');
 
     return {
       success: true,
-      order: JSON.parse(JSON.stringify(createdOrder)),
+      order: JSON.parse(JSON.stringify(finalOrder)),
+      razorpay: razorpayPayload,
     };
   } catch (error: any) {
     console.error('\n====================================================================');
@@ -1076,7 +1096,9 @@ export async function cleanupExpiredCheckoutSessions() {
         transition: 'CANCEL_PAYMENT',
         orderId: expiredOrder.id,
         triggerActor: 'CLEANUP_JOB',
-        reason: 'Expired checkout session (>30m) verified on gateway',
+        reason: expiredOrder.razorpayOrderId
+          ? 'Expired checkout session (>30m) verified failed on gateway'
+          : 'Expired checkout session (>30m) - unlinked razorpayOrderId',
       });
       cleanedCount++;
     }

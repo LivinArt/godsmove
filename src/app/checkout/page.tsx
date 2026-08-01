@@ -488,16 +488,24 @@ export default function CheckoutPage() {
       } else {
         // Real Razorpay Checkout popup execution
         try {
-          const res = await fetch('/api/payments/create-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: finalPayable, currency: 'INR' }),
-          });
+          let orderData = orderRes.razorpay;
 
-          const orderData = await res.json();
+          if (!orderData || !orderData.orderId) {
+            const res = await fetch('/api/payments/create-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                amount: finalPayable,
+                currency: 'INR',
+                dbOrderId: order.id,
+              }),
+            });
 
-          if (!res.ok || !orderData.orderId) {
-            throw new Error(orderData.error || 'Failed to initialize payment gateway.');
+            orderData = await res.json();
+
+            if (!res.ok || !orderData?.orderId) {
+              throw new Error(orderData?.error || 'Failed to initialize payment gateway.');
+            }
           }
 
           // Centralized SDK script loader
