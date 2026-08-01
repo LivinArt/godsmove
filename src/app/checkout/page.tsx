@@ -196,6 +196,24 @@ export default function CheckoutPage() {
     loadData();
   }, []);
 
+  // TASK 3 & 4 — REMOVE ITEM BEHAVIOUR & CHECKOUT NAVIGATION FLOW
+  useEffect(() => {
+    if (checkoutItems.length === 0) {
+      const referrer = typeof document !== 'undefined' ? document.referrer : '';
+      if (referrer && !referrer.includes('/checkout') && !referrer.includes('/cart')) {
+        try {
+          const url = new URL(referrer);
+          if (url.origin === window.location.origin && url.pathname !== '/checkout' && url.pathname !== '/cart') {
+            router.push(url.pathname);
+            return;
+          }
+        } catch (e) {}
+      }
+      // Priority fallback: return user to /drops (NOT /cart, NOT Empty Cart)
+      router.push('/drops');
+    }
+  }, [checkoutItems.length, router]);
+
   const populateAddressFields = (addr: any) => {
     const defaultEmail = profile?.email || form.email || '';
     setForm({
@@ -1160,11 +1178,12 @@ export default function CheckoutPage() {
                         <span className={styles.orderItemName}>{item.product.name}</span>
                         <span className={styles.orderItemMeta}>{variant?.color || 'Standard'} / {item.size}</span>
                         
-                        {/* Inline Product Quantity Controls (- / + / Remove) */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '3px', background: 'rgba(0,0,0,0.3)' }}>
+                        {/* Luxury Inline Product Quantity Controls (- / + / Remove) */}
+                        <div className={styles.qtyControlWrap}>
+                          <div className={styles.qtyBox}>
                             <button
                               type="button"
+                              className={styles.qtyBtn}
                               onClick={() => {
                                 if (item.quantity > 1) {
                                   updateQuantity(item.product.id, item.size, item.quantity - 1);
@@ -1172,25 +1191,27 @@ export default function CheckoutPage() {
                                   removeFromCart(item.product.id, item.size);
                                 }
                               }}
-                              style={{ background: 'none', border: 'none', color: '#fff', padding: '1px 7px', cursor: 'pointer', fontSize: '12px' }}
                               title="Decrease Quantity"
+                              aria-label="Decrease Quantity"
                             >
                               -
                             </button>
-                            <span style={{ fontSize: '11px', fontWeight: 600, padding: '0 4px', color: '#c8a46a' }}>{item.quantity}</span>
+                            <span className={styles.qtyVal}>{item.quantity}</span>
                             <button
                               type="button"
+                              className={styles.qtyBtn}
                               onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
-                              style={{ background: 'none', border: 'none', color: '#fff', padding: '1px 7px', cursor: 'pointer', fontSize: '12px' }}
                               title="Increase Quantity"
+                              aria-label="Increase Quantity"
                             >
                               +
                             </button>
                           </div>
                           <button
                             type="button"
+                            className={styles.removeItemBtn}
                             onClick={() => removeFromCart(item.product.id, item.size)}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '10px', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-heading)' }}
+                            aria-label="Remove Item"
                           >
                             Remove
                           </button>

@@ -1445,8 +1445,7 @@ export default function ProfilePage() {
                                          showToast('Reorder Error', err.message || 'Unable to reorder at this time.');
                                        }
                                      }}
-                                     className={styles.trackOrderBtn}
-                                     style={{ borderColor: '#c8a46a', color: '#c8a46a', display: 'inline-flex', alignItems: 'center' }}
+                                     className={styles.reorderBtn}
                                    >
                                      <RotateCcw size={13} style={{ marginRight: 6 }} />
                                      Reorder

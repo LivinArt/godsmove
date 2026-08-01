@@ -395,6 +395,91 @@
   color: var(--text-muted);
 }
 
+/* Luxury Inline Quantity Controls (Apple / Nike / Shopify Plus / COS) */
+.qtyControlWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.qtyBox {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: rgba(18, 18, 21, 0.6);
+  padding: 2px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qtyBox:hover {
+  border-color: rgba(200, 164, 106, 0.4);
+}
+
+.qtyBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.qtyBtn:hover {
+  background: rgba(200, 164, 106, 0.12);
+  color: #c8a46a;
+}
+
+.qtyBtn:active {
+  transform: scale(0.92);
+}
+
+.qtyBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.qtyVal {
+  min-width: 22px;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8a46a;
+  user-select: none;
+}
+
+.removeItemBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: all 0.18s ease;
+}
+
+.removeItemBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .orderItemPrice {
   font-family: var(--font-heading);
   font-weight: 500;

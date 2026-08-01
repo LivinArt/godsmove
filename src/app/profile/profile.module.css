@@ -784,7 +784,8 @@
 
 .trackOrderBtn,
 .invoiceBtn,
-.disclosureBtn {
+.disclosureBtn,
+.reorderBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -799,17 +800,8 @@
   text-transform: uppercase;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-}
-
-@media (max-width: 600px) {
-  .trackOrderBtn,
-  .invoiceBtn,
-  .disclosureBtn {
-    flex: 1;
-    min-width: 0;
-  }
 }
 
 .invoiceBtn {
@@ -834,6 +826,26 @@
   background: #c8a46a;
   color: #ffffff;
   border-color: #c8a46a;
+}
+
+.reorderBtn {
+  color: #c8a46a;
+  background: transparent;
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reorderBtn:hover {
+  background: rgba(200, 164, 106, 0.08);
+  color: #c8a46a;
+  border-color: #c8a46a;
+  box-shadow: 0 2px 12px rgba(200, 164, 106, 0.18);
+  transform: translateY(-1px);
+}
+
+.reorderBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(200, 164, 106, 0.12);
 }
 
 .disclosureBtn {
