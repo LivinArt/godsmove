@@ -34,6 +34,11 @@ export class PaymentStateEngine {
    */
   static async executeTransition(payload: TransitionPayload) {
     const { transition, orderId, razorpayPaymentId, razorpayOrderId, triggerActor = 'CALLBACK', reason } = payload;
+    const timestamp = new Date().toISOString();
+
+    console.log(
+      `[PAYMENT_STATE_ENGINE_FORENSIC_LOG] timestamp=${timestamp} orderId=${orderId} requestedTransition=${transition} triggerActor=${triggerActor} razorpayPaymentId=${razorpayPaymentId || 'N/A'} razorpayOrderId=${razorpayOrderId || 'N/A'} reason="${reason || 'N/A'}"`
+    );
 
     if (transition === 'CONFIRM_PAYMENT') {
       return await PaymentStateEngine.confirmOrder(orderId, razorpayPaymentId, razorpayOrderId, triggerActor);

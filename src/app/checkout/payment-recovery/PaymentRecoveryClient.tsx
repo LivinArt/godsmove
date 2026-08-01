@@ -80,7 +80,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
   // 12-Second Active Polling Effect (Every 2s for max 6 attempts = 12s)
   useEffect(() => {
     if (!order?.id) return;
-    if (['authorized', 'processing', 'pending'].includes(gatewayState) && pollCount < 6) {
+    if (['created', 'attempted', 'authorized', 'processing', 'pending'].includes(gatewayState) && pollCount < 6) {
       const timer = setInterval(() => {
         setPollCount((prev) => prev + 1);
         resolvePaymentStatus(order.id);

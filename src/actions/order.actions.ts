@@ -553,6 +553,18 @@ export async function updateOrderStatus(input: {
   await requireAdmin();
   const data = UpdateOrderStatusSchema.parse(input);
 
+  if (data.status === 'CANCELLED') {
+    const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+    const cancelledOrder = await PaymentStateEngine.executeTransition({
+      transition: 'CANCEL_PAYMENT',
+      orderId: data.orderId,
+      triggerActor: 'ADMIN',
+      reason: data.adminNotes || 'Order cancelled by admin',
+    });
+    revalidatePath('/admin/orders');
+    return cancelledOrder || await prisma.order.findUnique({ where: { id: data.orderId } });
+  }
+
   const order = await prisma.order.update({
     where: { id: data.orderId },
     data: {
@@ -573,8 +585,6 @@ export async function updateOrderStatus(input: {
         await NotificationService.sendOrderShipped(fullOrder, 'Express Courier', 'AWB-PENDING');
       } else if (data.status === 'DELIVERED') {
         await NotificationService.sendOrderDelivered(fullOrder);
-      } else if (data.status === 'CANCELLED') {
-        await NotificationService.sendOrderCancelled(fullOrder, data.adminNotes);
       }
     }
   } catch (err: any) {
@@ -692,22 +702,8 @@ export async function getMyOrders() {
     take: 20,
   });
 
-  // Strict Canonical Mapping: A Razorpay order in history can NEVER be UNPAID or PENDING.
-  // If paymentStatus is not PAID for Razorpay, it is FAILED + CANCELLED.
-  const sanitizedOrders = rawOrders.map((order) => {
-    const isPrepaid = order.paymentMethod === 'RAZORPAY' || order.paymentMethod === 'WALLET';
-    if (isPrepaid && order.paymentStatus !== 'PAID') {
-      return {
-        ...order,
-        paymentStatus: 'FAILED',
-        status: 'CANCELLED',
-      };
-    }
-    return order;
-  });
-
   // Serialize Prisma Decimal fields to plain JS numbers for Client Components
-  return JSON.parse(JSON.stringify(sanitizedOrders));
+  return JSON.parse(JSON.stringify(rawOrders));
 }
 
 export async function requestInvoiceEmail(orderId: string) {

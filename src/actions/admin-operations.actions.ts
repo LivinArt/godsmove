@@ -553,36 +553,37 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: s
   });
   if (!order) throw new Error('Order not found');
 
-  if (Number(order.total) === 0 && paymentStatus !== 'PAID') {
-    throw new Error('Zero-payable orders paid via GODSMOVE Credits/Discounts must remain in PAID status.');
+  const { PaymentStateEngine } = await import('@/lib/payments/payment-state-engine');
+
+  if (paymentStatus === 'PAID') {
+    const confirmed = await PaymentStateEngine.executeTransition({
+      transition: 'CONFIRM_PAYMENT',
+      orderId,
+      triggerActor: 'ADMIN',
+      reason: 'Admin marked payment as PAID',
+    });
+    safeRevalidate(`/admin/orders/${orderId}`);
+    safeRevalidate('/admin/orders');
+    safeRevalidate('/profile');
+    return confirmed || await prisma.order.findUnique({ where: { id: orderId } });
+  } else if (paymentStatus === 'FAILED') {
+    const cancelled = await PaymentStateEngine.executeTransition({
+      transition: 'CANCEL_PAYMENT',
+      orderId,
+      triggerActor: 'ADMIN',
+      reason: 'Admin marked payment as FAILED',
+    });
+    safeRevalidate(`/admin/orders/${orderId}`);
+    safeRevalidate('/admin/orders');
+    safeRevalidate('/profile');
+    return cancelled || await prisma.order.findUnique({ where: { id: orderId } });
   }
 
   const updateData: any = { paymentStatus: paymentStatus as any };
-  if (paymentStatus === 'PAID' && !order.paidAt) {
-    updateData.paidAt = new Date();
-  }
-
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: updateData,
   });
-
-  if (paymentStatus === 'PAID') {
-    try {
-      const addr = typeof order.shippingAddress === 'string' ? JSON.parse(order.shippingAddress) : (order.shippingAddress || {});
-      const customerName = addr.firstName ? `${addr.firstName} ${addr.lastName || ''}`.trim() : 'Valued Collector';
-      await NotificationService.sendPaymentConfirmed(
-        order.email,
-        customerName,
-        order.orderNumber,
-        Number(order.total),
-        `PAY_${order.orderNumber}_${Date.now().toString().slice(-6)}`,
-        order.id
-      );
-    } catch (err: any) {
-      console.error('❌ [PAYMENT STATUS UPDATE NOTIFICATION ERROR]:', err?.message);
-    }
-  }
 
   safeRevalidate(`/admin/orders/${orderId}`);
   safeRevalidate('/admin/orders');
