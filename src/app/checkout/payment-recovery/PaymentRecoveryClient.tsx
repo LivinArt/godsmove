@@ -27,6 +27,7 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
   const [error, setError] = useState<string | null>(null);
   const [timeLeftSeconds, setTimeLeftSeconds] = useState<number | null>(null);
   
+  const [pollCount, setPollCount] = useState(0);
   const isRetryingRef = useRef(false);
   const isExpiredHandledRef = useRef(false);
 
@@ -75,6 +76,19 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
 
     resolvePaymentStatus(targetOrderId);
   }, [initialOrderId, resolvePaymentStatus, router]);
+
+  // 12-Second Active Polling Effect (Every 2s for max 6 attempts = 12s)
+  useEffect(() => {
+    if (!order?.id) return;
+    if (['authorized', 'processing', 'pending'].includes(gatewayState) && pollCount < 6) {
+      const timer = setInterval(() => {
+        setPollCount((prev) => prev + 1);
+        resolvePaymentStatus(order.id);
+      }, 2000);
+
+      return () => clearInterval(timer);
+    }
+  }, [order?.id, gatewayState, pollCount, resolvePaymentStatus]);
 
   // Server-synchronized Reservation Countdown Timer
   useEffect(() => {
@@ -367,15 +381,16 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
     );
   }
 
-  // ── STATE 1 (CONT.): PENDING VERIFICATION VIEW (RAZORPAY AUTHORIZED / PROCESSING)
+  // ── STATE 3 (RECOVERY): TEMPORARY UI RECOVERY MODAL FOR PENDING RAZORPAY VERIFICATION ──
   if (gatewayState === 'authorized' || gatewayState === 'processing' || gatewayState === 'pending') {
+    const isStillPolling = pollCount < 6;
     return (
       <div className={styles.container}>
         <div className={styles.brandHeader}>
           <span className={styles.brandTitle}>GODSMOVE</span>
           <div className={styles.brandBadge} style={{ color: '#c8a46a' }}>
             <AlertCircle size={12} style={{ marginRight: 6 }} />
-            Payment Verifying
+            Payment Verification
           </div>
         </div>
 
@@ -383,42 +398,38 @@ export default function PaymentRecoveryClient({ initialOrderId }: PaymentRecover
           <div className={styles.header}>
             <div className={styles.statusBadge} style={{ background: 'rgba(200, 164, 106, 0.12)', color: '#c8a46a' }}>
               <Clock size={13} style={{ marginRight: 6 }} />
-              VERIFYING PAYMENT
+              {isStillPolling ? 'VERIFYING PAYMENT' : 'VERIFICATION IN PROGRESS'}
             </div>
-            <h1 className={styles.title} style={{ fontSize: '20px' }}>Verifying Your Payment</h1>
-            <p className={styles.description} style={{ marginBottom: '12px' }}>
-              Please wait while we confirm your payment securely with our banking partner for Order <strong style={{ color: '#ffffff' }}>#{order.orderNumber}</strong>.
+            <h1 className={styles.title} style={{ fontSize: '20px' }}>
+              {isStillPolling ? 'Verifying your payment' : "We're still confirming your payment"}
+            </h1>
+            <p className={styles.description} style={{ marginBottom: '16px', lineHeight: 1.7 }}>
+              {isStillPolling
+                ? "We're securely confirming your payment with our banking partner. Please don't make another payment. This usually takes a few seconds."
+                : "If your bank has debited the amount, your order will update automatically. You'll receive an email as soon as verification completes."}
             </p>
-            <div style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '4px', textAlign: 'left', fontSize: '11px', lineHeight: '1.6', color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
-              <p style={{ marginBottom: '6px', fontWeight: 600, color: '#c8a46a' }}>⚠️ Important Notice:</p>
-              <ul style={{ margin: 0, paddingLeft: '16px' }}>
-                <li>Do <strong>not</strong> make another payment.</li>
-                <li>If payment has already been deducted from your account, your order will automatically be confirmed and a tax invoice will be sent to your email.</li>
-                <li>If the payment is ultimately declined, the amount will be automatically refunded by your banking partner.</li>
-              </ul>
-            </div>
           </div>
 
           <div className={styles.actionGroup}>
             <button
-              onClick={() => router.push('/profile')}
+              onClick={() => router.push('/drops')}
               className={`btn btn-primary ${styles.retryBtn}`}
             >
-              <Package size={14} style={{ marginRight: 8 }} />
-              View Orders
+              Continue Browsing
             </button>
 
             <button
-              onClick={() => router.push('/drops')}
+              onClick={() => router.push('/profile?tab=collection')}
               className={styles.secondaryBtn}
             >
-              Continue Browsing
+              <Package size={14} style={{ marginRight: 8 }} />
+              View Orders
             </button>
           </div>
 
           <div className={styles.securityFooter}>
             <ShieldCheck size={11} style={{ marginRight: 6 }} />
-            <span>Encrypted Bank Verification Active</span>
+            <span>Encrypted Out-of-Band Verification Active</span>
           </div>
         </div>
       </div>
