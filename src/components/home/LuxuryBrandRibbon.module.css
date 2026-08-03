@@ -1,0 +1,188 @@
+.section {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+}
+
+/* Base Graphic Ribbon Strip — Extended 125% width to end solidly at screen edges without slant cut */
+.ribbon {
+  position: absolute;
+  width: 125%;
+  left: -12.5%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RIBBON 1 — DROP (Charcoal Black Graphic Strip / z-index: 2)
+   - Mobile: +11deg rotation angle for clean separation on small screens
+   - Desktop: +5.5deg rotation angle
+   - 1px Champagne Gold Top & Bottom Borders (#C8A35A)
+   ───────────────────────────────────────────────────────────── */
+.ribbonDrop {
+  top: 50%;
+  transform-origin: 60% 50%;
+  transform: translateY(-50%) rotate(11deg);
+  height: 30px;
+  background-color: #141417;
+  border-top: 1px solid #C8A35A;
+  border-bottom: 1px solid #C8A35A;
+  border-left: none;
+  border-right: none;
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .ribbonDrop {
+    transform: translateY(-50%) rotate(5.5deg);
+    height: 48px;
+    /* Square off left edge for desktop specifically so black ribbon ends vertically at extreme left screen edge */
+    clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+}
+
+.trackDrop {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  will-change: transform;
+  animation: marqueeLeft 20s linear infinite;
+}
+
+.itemDrop {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  height: 100%;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  padding-right: 0;
+}
+
+@media (min-width: 768px) {
+  .itemDrop {
+    font-size: 15px;
+    letter-spacing: 0.18em;
+  }
+}
+
+.dotGold {
+  width: 7.5px;
+  height: 7.5px;
+  border-radius: 50%;
+  background-color: #C8A35A;
+  display: inline-block;
+  margin-left: 22px;
+  margin-right: 26px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .dotGold {
+    width: 9px;
+    height: 9px;
+    margin-left: 26px;
+    margin-right: 32px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RIBBON 2 — EXCLUSIVE RACK (Warm Luxury White Graphic Strip / z-index: 3)
+   - Mobile: -11deg rotation angle for clean separation on small screens
+   - Desktop: -5.5deg rotation angle
+   - 1px 4-Sided Champagne Gold Border (#C8A35A)
+   ───────────────────────────────────────────────────────────── */
+.ribbonExclusive {
+  top: 50%;
+  transform-origin: 60% 50%;
+  transform: translateY(-50%) rotate(-11deg);
+  height: 26px;
+  background-color: #FAF8F5;
+  border: 1px solid #C8A35A;
+  z-index: 3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .ribbonExclusive {
+    transform: translateY(-50%) rotate(-5.5deg);
+    height: 44px;
+  }
+}
+
+.trackExclusive {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  will-change: transform;
+  animation: marqueeLeft 26s linear infinite;
+}
+
+.itemExclusive {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  height: 100%;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #141417;
+  display: inline-flex;
+  align-items: center;
+  padding-right: 0;
+}
+
+@media (min-width: 768px) {
+  .itemExclusive {
+    font-size: 13.5px;
+    letter-spacing: 0.18em;
+  }
+}
+
+.dotDark {
+  width: 7.5px;
+  height: 7.5px;
+  border-radius: 50%;
+  background-color: #C8A35A;
+  display: inline-block;
+  margin-left: 22px;
+  margin-right: 26px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .dotDark {
+    width: 9px;
+    height: 9px;
+    margin-left: 26px;
+    margin-right: 32px;
+  }
+}
+
+/* Seamless GPU Accelerated Infinite Marquee Keyframe */
+@keyframes marqueeLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

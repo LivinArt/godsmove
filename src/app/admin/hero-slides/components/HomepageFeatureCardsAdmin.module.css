@@ -1,0 +1,177 @@
+.container {
+  margin-top: 32px;
+  background: var(--admin-card-bg, #ffffff);
+  border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--admin-card-header, #fcfcfc);
+  border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
+  transition: background 0.2s ease;
+}
+
+.accordionHeader:hover {
+  background: rgba(200, 164, 106, 0.04);
+}
+
+.headerTitle {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--admin-fg, #0f0f0f);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerSubtitle {
+  font-size: 12px;
+  color: var(--admin-muted, #737373);
+  margin-top: 4px;
+}
+
+.content {
+  padding: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cardBox {
+  background: #fdfbf7;
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(200, 164, 106, 0.15);
+  padding-bottom: 12px;
+}
+
+.cardLabel {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.fixedCtaBadge {
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(200, 164, 106, 0.12);
+  color: #8a6d3b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(200, 164, 106, 0.25);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.input, .textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f0f0f;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: #c8a46a;
+  box-shadow: 0 0 0 3px rgba(200, 164, 106, 0.15);
+}
+
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.footer {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #000000;
+  background: #c8a46a;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.saveBtn:hover {
+  background: #d4b278;
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.statusMsg {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.success {
+  color: #16a34a;
+}
+
+.error {
+  color: #dc2626;
+}

@@ -16,7 +16,8 @@ import {
   getStorefrontCategories 
 } from '@/actions/storefront.actions';
 import { getProfileSummary } from '@/actions/profile.actions';
-import HomepageGreeting from '@/components/HomepageGreeting';
+import HomepageFeatureCards from '@/components/home/HomepageFeatureCards';
+import { getHomepageFeatureCardsData } from '@/actions/feature-cards.actions';
 import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
 
@@ -46,7 +47,8 @@ export default async function Home() {
     exclusiveRackProducts,
     categories,
     activeDrop,
-    heroSlidesRaw
+    heroSlidesRaw,
+    featureCardsContent
   ] = await Promise.all([
     getStorefrontProducts({ take: 4 }),
     getStorefrontProducts({ featured: true, take: 4 }),
@@ -54,6 +56,7 @@ export default async function Home() {
     getStorefrontCategories(),
     getActiveDrop(),
     getHomeHeroSlides(),
+    getHomepageFeatureCardsData(),
   ]);
 
   const heroSlides: CinematicHeroSlide[] =
@@ -93,13 +96,8 @@ export default async function Home() {
         {/* 1. Full Cinematic Campaign Hero */}
         <CinematicHero slides={heroSlides} />
 
-        <HomepageGreeting 
-          profile={profile}
-          walletBalance={walletBalance}
-          hasRecentlyDelivered={hasRecentlyDelivered}
-          hasApprovedReturn={hasApprovedReturn}
-          hasActiveCare={hasActiveCare}
-        />
+        {/* 2. Full-Width Editorial Split Campaign Banner (DROPS & EXCLUSIVE RACK) */}
+        <HomepageFeatureCards content={featureCardsContent} />
 
         {/* 2. New Arrivals (Magazine Composition) */}
         {newArrivals.length > 0 && (
