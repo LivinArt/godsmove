@@ -26,18 +26,6 @@
   overflow: hidden; /* Clips all ribbons cleanly inside banner */
 }
 
-@media (min-width: 992px) {
-  .splitBanner {
-    height: 740px;
-  }
-}
-
-@media (max-width: 767px) {
-  .splitBanner {
-    height: 500px;
-  }
-}
-
 /* Split Panels — Left (50%) | Right (50%) */
 .panel {
   position: relative;
@@ -49,21 +37,77 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Move text blocks toward visual center */
-  padding: 60px 48px 120px; /* Healthy bottom padding keeps text/CTA safe above ribbons */
+  justify-content: center;
+  padding: 60px 48px 120px;
   box-sizing: border-box;
   z-index: 2;
 }
 
 @media (min-width: 992px) {
+  .splitBanner {
+    height: 740px;
+  }
+
   .panel {
     padding: 80px 64px 140px;
   }
 }
 
 @media (max-width: 767px) {
+  .section {
+    margin-bottom: var(--space-lg);
+  }
+
+  .splitBanner {
+    height: 185px; /* Increased height for generous breathing space inside mobile button cards */
+  }
+
   .panel {
-    padding: 24px 14px 85px;
+    padding: 22px 14px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .panelContent {
+    gap: 4px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .titleDrops {
+    font-size: 15px;
+    letter-spacing: 0.08em;
+  }
+
+  .titleExclusive {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+  }
+
+  .smallLabel {
+    display: none;
+  }
+
+  .descDrops,
+  .descExclusive {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 6px 0 10px;
+    text-align: center;
+    max-width: 160px;
+  }
+
+  .ctaDrops,
+  .ctaExclusive {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    gap: 5px;
+    margin-top: 2px;
   }
 }
 
