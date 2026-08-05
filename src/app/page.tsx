@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -8,11 +7,9 @@ import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import CinematicHero, { type CinematicHeroSlide } from '@/components/CinematicHero';
 import RecentlyViewed from '@/components/RecentlyViewed';
-import { resolveImageUrl } from '@/lib/image-resolver';
 import { 
   getHomeHeroSlides, 
   getStorefrontProducts, 
-  getActiveDrop, 
   getStorefrontCategories 
 } from '@/actions/storefront.actions';
 import { getProfileSummary } from '@/actions/profile.actions';
@@ -47,7 +44,6 @@ export default async function Home() {
     editorSelection,
     exclusiveRackProducts,
     categories,
-    activeDrop,
     heroSlidesRaw,
     featureCardsContent
   ] = await Promise.all([
@@ -55,7 +51,6 @@ export default async function Home() {
     getStorefrontProducts({ featured: true, take: 4 }),
     getStorefrontProducts({ isExclusiveRack: true, showOnHomepage: true, take: 3 }),
     getStorefrontCategories(),
-    getActiveDrop(),
     getHomeHeroSlides(),
     getHomepageFeatureCardsData(),
   ]);
@@ -65,15 +60,7 @@ export default async function Home() {
       ? (heroSlidesRaw as CinematicHeroSlide[])
       : FALLBACK_HERO_SLIDES;
 
-  const currentDrop = activeDrop || {
-    name: 'Drop 001',
-    tagline: 'First contact.',
-    description: 'Heavyweight essentials for the interior monologue. 300 GSM. Oversized.',
-    heroImageUrl: '/images/campaign/editorial-01.png',
-  };
-
   // 2. Retrieve User Credentials for Personalized Curation
-  // Single lightweight query — replaces 5 separate heavy fetches
   const summary = await getProfileSummary();
 
   const profile = summary ? { firstName: summary.firstName, lastName: summary.lastName, email: summary.email } : null;
@@ -100,7 +87,7 @@ export default async function Home() {
         {/* 2. Full-Width Editorial Split Campaign Banner (DROPS & EXCLUSIVE RACK) */}
         <HomepageFeatureCards content={featureCardsContent} />
 
-        {/* 2. New Arrivals (Magazine Composition) */}
+        {/* 3. New Arrivals (Magazine Composition) */}
         {newArrivals.length > 0 && (
           <section className={styles.section} id="new-arrivals">
             <div className="container">
@@ -120,7 +107,7 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 3. Shop By Category (Editorial Grid) */}
+        {/* 4. Shop By Category (Editorial Grid) */}
         {categories.length > 0 && (
           <section className={styles.section} id="shop-categories">
             <div className="container">
@@ -173,35 +160,6 @@ export default async function Home() {
             </div>
           </section>
         )}
-
-        {/* 4. Featured Showcase (Exclusive Rack Card) */}
-        <section className={styles.section} id="featured-showcase">
-          <div className="container">
-            <ScrollReveal>
-              <div className={styles.featuredBoxBlack}>
-                <div className={styles.featuredImage}>
-                  <Image 
-                    src="/images/campaign/editorial-02.png" 
-                    alt="Exclusive Vault" 
-                    fill 
-                    style={{ objectFit: 'cover' }} 
-                    className={styles.featuredShowcaseImg}
-                  />
-                </div>
-                <div className={styles.featuredTextBlack}>
-                  <span className={styles.showcaseGoldEyebrow}>Private Collection</span>
-                  <h2 className={styles.showcaseTitle}>The Exclusive Rack</h2>
-                  <p className={styles.showcaseDesc}>
-                    Allocated reserve garments and limited editions curated for signature rank. Enter the private room to request allocation.
-                  </p>
-                  <Link href="/exclusive-rack" className={styles.showcaseGoldCta}>
-                    Explore Exclusive Rack
-                  </Link>
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </section>
 
         {/* 5. Exclusive Rack (The Vault Lounge) */}
         {exclusiveRackProducts.length > 0 && (
