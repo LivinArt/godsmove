@@ -6,54 +6,50 @@
 @media (max-width: 767px) {
   .carouselOuter {
     display: block;
-    overflow: hidden;
     width: 100%;
-    /* fade edges */
+    position: relative;
+    overflow: hidden;
+    /* Soft luxury edge masking */
     -webkit-mask-image: linear-gradient(
       to right,
       transparent 0%,
-      black 8%,
-      black 92%,
+      black 4%,
+      black 96%,
       transparent 100%
     );
     mask-image: linear-gradient(
       to right,
       transparent 0%,
-      black 8%,
-      black 92%,
+      black 4%,
+      black 96%,
       transparent 100%
     );
   }
 
-  .carouselTrack {
+  .carouselContainer {
     display: flex;
-    gap: 12px;
-    width: max-content;
-    animation: carouselScroll 30s linear infinite;
-    will-change: transform;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 16px 16px 16px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    will-change: scroll-position;
   }
 
-  .carouselTrack.paused {
-    animation-play-state: paused;
-  }
-
-  @keyframes carouselScroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      /* Move exactly half — the duplicated portion — for seamless loop */
-      transform: translateX(-50%);
-    }
+  .carouselContainer::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
   }
 
   .carouselCard {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 200px;
+    width: 220px;
     aspect-ratio: 16 / 9;
     flex-shrink: 0;
+    scroll-snap-align: start;
     overflow: hidden;
     border-radius: 12px;
     text-decoration: none;
@@ -115,3 +111,4 @@
     white-space: nowrap;
   }
 }
+

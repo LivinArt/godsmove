@@ -95,32 +95,13 @@
   }
 }
 
-/* ── 3. Shop By Category (Magazine Layout) ── */
+/* ── 3. Shop By Category (Magazine Layout — Intelligent Responsive Grid) ── */
 .categoryGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-}
-
-@media (min-width: 640px) {
-  .categoryGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .categoryGrid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 32px;
-  }
-}
-
-/* ── MOBILE: Hide static category grid (carousel takes over) ── */
-@media (max-width: 767px) {
-  .categoryGrid {
-    display: none;
-  }
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
 }
 
 .categoryCard {
@@ -131,6 +112,57 @@
   overflow: hidden;
   background-color: var(--bg-secondary);
   transition: transform var(--duration-base) var(--ease-smooth);
+  flex: 0 1 calc(50% - 10px);
+  min-width: 240px;
+}
+
+/* Intelligent Layout Scaling for 1, 2, 3 categories */
+.categoryGrid[data-count="1"] .categoryCard {
+  flex: 0 1 440px;
+  max-width: 480px;
+}
+
+.categoryGrid[data-count="2"] .categoryCard {
+  flex: 0 1 calc(50% - 12px);
+  max-width: 440px;
+}
+
+.categoryGrid[data-count="3"] .categoryCard {
+  flex: 0 1 calc(33.333% - 14px);
+  max-width: 360px;
+}
+
+@media (min-width: 1024px) {
+  .categoryGrid {
+    gap: 32px;
+  }
+
+  .categoryCard {
+    flex: 0 1 calc(25% - 24px);
+    max-width: 320px;
+  }
+
+  .categoryGrid[data-count="1"] .categoryCard {
+    flex: 0 1 480px;
+    max-width: 520px;
+  }
+
+  .categoryGrid[data-count="2"] .categoryCard {
+    flex: 0 1 calc(50% - 20px);
+    max-width: 460px;
+  }
+
+  .categoryGrid[data-count="3"] .categoryCard {
+    flex: 0 1 calc(33.333% - 22px);
+    max-width: 380px;
+  }
+}
+
+/* ── MOBILE: Hide static category grid (carousel takes over) ── */
+@media (max-width: 767px) {
+  .categoryGrid {
+    display: none;
+  }
 }
 
 .categoryCard:hover {

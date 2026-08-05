@@ -122,7 +122,7 @@ export default async function Home() {
               <MobileCategoryCarousel categories={categories.map((cat: any) => ({ id: cat.id, name: cat.name, slug: cat.slug, imageUrl: cat.imageUrl }))} />
 
               {/* Desktop: editorial grid (hidden on mobile via CSS) */}
-              <div className={styles.categoryGrid}>
+              <div className={styles.categoryGrid} data-count={categories.length}>
                 {categories.map((cat: any) => {
                   const fallbackImage = cat.slug === 'tees' ? '/images/products/tee-black.png' :
                                        cat.slug === 'hoodies' ? '/images/products/tee-charcoal.png' :

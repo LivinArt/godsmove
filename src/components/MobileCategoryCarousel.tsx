@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './MobileCategoryCarousel.module.css';
@@ -18,41 +18,84 @@ interface MobileCategoryCarouselProps {
 }
 
 export default function MobileCategoryCarousel({ categories }: MobileCategoryCarouselProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const scrollDirectionRef = useRef<1 | -1>(1); // 1 = right, -1 = left
+  const [isInteracting, setIsInteracting] = useState(false);
 
-  // Duplicate for seamless infinite loop
-  const doubled = [...categories, ...categories];
+  // Gentle auto-scroll step
+  const autoScrollStep = useCallback(() => {
+    const el = containerRef.current;
+    if (!el || isInteracting) return;
 
-  const pauseAnimation = () => {
-    setIsPaused(true);
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    pauseTimerRef.current = setTimeout(() => {
-      setIsPaused(false);
-    }, 5000);
-  };
+    // Respect user's reduced motion preference
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) return;
+
+    // Move gently by 0.35px per frame
+    const delta = 0.35 * scrollDirectionRef.current;
+    el.scrollLeft += delta;
+
+    // Check bounds & reverse direction smoothly
+    if (el.scrollLeft >= maxScroll - 1) {
+      scrollDirectionRef.current = -1;
+    } else if (el.scrollLeft <= 1) {
+      scrollDirectionRef.current = 1;
+    }
+
+    animFrameRef.current = requestAnimationFrame(autoScrollStep);
+  }, [isInteracting]);
+
+  // Pause auto-scroll on user touch/drag/scroll, resume after 3.5s inactivity
+  const handleInteraction = useCallback(() => {
+    setIsInteracting(true);
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    inactivityTimerRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 3500);
+  }, []);
+
+  // Start auto-scroll loop when not interacting
+  useEffect(() => {
+    if (!isInteracting) {
+      animFrameRef.current = requestAnimationFrame(autoScrollStep);
+    }
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isInteracting, autoScrollStep]);
 
   useEffect(() => {
     return () => {
-      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, []);
 
   if (categories.length === 0) return null;
 
   return (
-    <div
-      className={styles.carouselOuter}
-      onTouchStart={pauseAnimation}
-      onMouseDown={pauseAnimation}
-    >
+    <div className={styles.carouselOuter}>
       <div
-        ref={trackRef}
-        className={`${styles.carouselTrack} ${isPaused ? styles.paused : ''}`}
+        ref={containerRef}
+        className={styles.carouselContainer}
+        onTouchStart={handleInteraction}
+        onTouchMove={handleInteraction}
+        onMouseDown={handleInteraction}
+        onScroll={handleInteraction}
       >
-        {doubled.map((cat, i) => {
-          // Pick a fallback image per category type
+        {categories.map((cat) => {
           let img = '/images/campaign/editorial-01.png';
           if (cat.slug === 'tees') img = '/images/products/tee-black.png';
           else if (cat.slug === 'hoodies') img = '/images/products/tee-charcoal.png';
@@ -61,11 +104,10 @@ export default function MobileCategoryCarousel({ categories }: MobileCategoryCar
 
           return (
             <Link
-              key={`${cat.id}-${i}`}
+              key={cat.id}
               href={`/category/${cat.slug}`}
               className={styles.carouselCard}
               aria-label={cat.name}
-              tabIndex={i < categories.length ? 0 : -1} // only first set is accessible
             >
               <div className={styles.cardImageWrap}>
                 <Image
@@ -80,7 +122,7 @@ export default function MobileCategoryCarousel({ categories }: MobileCategoryCar
               </div>
               <div className={styles.cardInfo}>
                 <h3 className={styles.cardName}>{cat.name}</h3>
-                <span className={styles.cardCta}>Enter ›</span>
+                <span className={styles.cardCta}>Enter Room ›</span>
               </div>
             </Link>
           );
@@ -89,3 +131,4 @@ export default function MobileCategoryCarousel({ categories }: MobileCategoryCar
     </div>
   );
 }
+
