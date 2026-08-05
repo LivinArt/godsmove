@@ -264,18 +264,18 @@
   overflow: hidden;
 }
 
-/* ── 5. Exclusive Rack (Vault Lounge splits) ── */
+/* ── 5. Exclusive Rack (The Vault Section — Quiet Luxury Editorial) ── */
 .exclusiveSection {
-  padding: 96px 0;
-  background-color: #0c0c0c; /* rich black */
-  color: #faf8f5; /* warm ivory text */
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 110px 0;
+  background-color: #070709; /* Deep matte black */
+  color: #faf8f5;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 @media (min-width: 1024px) {
   .exclusiveSection {
-    padding: 120px 0;
+    padding: 130px 0;
   }
 }
 
@@ -288,7 +288,7 @@
 .exclusiveHeader {
   text-align: center;
   max-width: 600px;
-  margin: 0 auto 64px;
+  margin: 0 auto 72px;
 }
 
 .exclusiveEyebrow {
@@ -296,51 +296,52 @@
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #c8a46a;
-  margin-bottom: var(--space-md);
+  margin-bottom: 14px;
 }
 
 .exclusiveTitle {
   font-family: var(--font-heading);
-  font-size: clamp(32px, 5vw, 48px);
-  font-weight: 300;
-  letter-spacing: -0.015em;
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: #ffffff;
-  margin: 0 0 var(--space-md);
+  margin: 0 0 14px;
 }
 
 .exclusiveSub {
   font-size: 14.5px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.45);
-  letter-spacing: 0.02em;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.01em;
+  margin: 0;
 }
 
 .exclusiveContainer {
   display: flex;
   flex-direction: column;
-  gap: 80px; /* refined staggered split rhythm */
+  gap: 110px; /* Generous luxury negative space between featured pieces */
 }
 
 @media (max-width: 767px) {
   .exclusiveContainer {
-    gap: 48px;
+    gap: 60px;
   }
 }
 
 .exclusiveRow {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 40px;
+  gap: 36px;
   align-items: center;
 }
 
 @media (min-width: 1024px) {
   .exclusiveRow {
     grid-template-columns: 1.1fr 1fr;
-    gap: 80px;
+    gap: 88px;
   }
   
   .rowNormal {
@@ -352,42 +353,45 @@
   }
   
   .rowReverse .exclusiveInfoPanel {
-    direction: ltr; /* Reset text direction for readability */
+    direction: ltr; /* Reset text direction for left-to-right reading */
   }
 }
 
 .exclusiveImgPanel {
+  display: block;
   width: 100%;
+  text-decoration: none;
 }
 
 .exclusiveImageContainer {
   position: relative;
   aspect-ratio: 4 / 5;
-  background-color: #161616;
+  background-color: #0c0c0e;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .exclusiveImg {
-  transition: transform var(--duration-slow) var(--ease-cinematic);
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1), opacity 350ms ease;
+  opacity: 0.92;
 }
 
 .exclusiveRow:hover .exclusiveImg {
-  transform: scale(1.02);
+  transform: scale(1.03);
+  opacity: 1;
 }
 
 .exclusiveCardBadge {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 20px;
+  left: 20px;
   font-family: var(--font-heading);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   background-color: #c8a46a;
-  color: #0c0c0c;
-  padding: 6px 12px;
+  color: #070709;
+  padding: 5px 12px;
   z-index: 5;
 }
 
@@ -395,71 +399,82 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 20px;
+  max-width: 440px;
 }
 
 .exclusiveGoldLabel {
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
   color: #c8a46a;
+  margin-bottom: 12px;
 }
 
 .exclusiveItemTitle {
   font-family: var(--font-heading);
-  font-size: clamp(28px, 4vw, 36px);
-  font-weight: 300;
+  font-size: clamp(30px, 3.5vw, 42px);
+  font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0 0 16px 0;
+}
+
+.exclusiveItemTitle a {
   color: #ffffff;
-  margin: 0;
+  text-decoration: none;
+  transition: color 300ms ease;
+}
+
+.exclusiveRow:hover .exclusiveItemTitle a {
+  color: #c8a46a;
 }
 
 .exclusiveItemDesc {
   font-size: 14.5px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-  max-width: 440px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 20px;
 }
 
-.exclusiveDetailsRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.exclusivePrice {
   font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.exclusiveGoldDot {
-  color: #c8a46a;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin-bottom: 24px;
 }
 
 .exclusiveCtaButton {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 12px 28px;
-  background: transparent;
-  border: 1px solid #c8a46a;
-  color: #c8a46a;
+  gap: 8px;
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  transition: all 0.3s ease;
-  margin-top: 10px;
+  color: #c8a46a;
+  text-decoration: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 4px;
+  transition: color 300ms ease;
 }
 
-.exclusiveCtaButton:hover {
-  background: #c8a46a;
-  color: #0c0c0c;
+.exclusiveCtaIcon {
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), color 300ms ease;
+}
+
+.exclusiveRow:hover .exclusiveCtaButton {
+  color: #ffffff;
+}
+
+.exclusiveRow:hover .exclusiveCtaIcon {
+  transform: translateX(6px);
+  color: #ffffff;
 }
 
 /* ── 8. Journal (Foot-ends) ── */

@@ -1,10 +1,9 @@
 /**
  * Cart rules for GODSMOVE product channels.
- * EXCLUSIVE_UNLOCK and EXCLUSIVE_RACK: max 1 unit per product per order/cart.
+ * Note: Exclusive products can be added with multiple quantities and units per business requirements.
  */
 
-export const EXCLUSIVE_CART_TOAST_MESSAGE =
-  'Only one piece can be bought from exclusive products.';
+export const EXCLUSIVE_CART_TOAST_MESSAGE = '';
 
 export function isExclusiveChannel(
   channel?: string | null
@@ -22,20 +21,42 @@ export function cartHasExclusiveProduct(cart: CartLine[], productId: string): bo
   return cart.some((item) => item.product.id === productId);
 }
 
-/** Returns false when the action must be blocked for exclusive products. */
+/** Always allows adding exclusive products to cart (no 1-unit limit restriction). */
 export function canAddExclusiveToCart(params: {
   channel?: string | null;
   quantity: number;
   productId: string;
   cart: CartLine[];
 }): boolean {
-  if (!isExclusiveChannel(params.channel)) return true;
-  if (params.quantity > 1) return false;
-  if (cartHasExclusiveProduct(params.cart, params.productId)) return false;
   return true;
 }
 
 export function canSetExclusiveQuantity(quantity: number, channel?: string | null): boolean {
-  if (!isExclusiveChannel(channel)) return true;
-  return quantity <= 1;
+  return true;
+}
+
+/**
+ * Evaluates whether a cart item is active and available for purchase.
+ * Returns false if product status !== 'ACTIVE', product/variant is inactive, or total stock <= 0.
+ */
+export function isCartItemAvailable(item: any): boolean {
+  if (!item || !item.product) return false;
+  const p = item.product;
+
+  if (p.status && p.status !== 'ACTIVE') return false;
+  if (p.isActive === false) return false;
+
+  const variant = p.variants?.find((v: any) => v.size === item.size);
+  if (!variant) return false;
+  if (variant.isActive === false) return false;
+
+  if (variant.inventory) {
+    const total = variant.inventory.totalStock ?? 0;
+    const reserved = variant.inventory.reservedStock ?? 0;
+    const sold = variant.inventory.soldStock ?? 0;
+    const available = total - reserved - sold;
+    if (available <= 0) return false;
+  }
+
+  return true;
 }

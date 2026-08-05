@@ -1,3 +1,8 @@
+/* ==========================================================================
+   HOMEPAGE FEATURE CARDS — QUIET LUXURY EDITORIAL GATEWAY
+   Design direction: Apple, Loro Piana, Saint Laurent, Hermès, COS, Aesop.
+   ========================================================================== */
+
 .section {
   width: 100vw;
   position: relative;
@@ -6,112 +11,56 @@
   margin-left: -50vw;
   margin-right: -50vw;
   overflow: hidden;
-  background-color: #0d0d0f;
+  background-color: #070709;
   padding: 0;
   margin-bottom: var(--space-xl);
 }
 
-/* Full-Width Split Banner — Edge to edge, 0 border radius, 0 margins, 0 outer white space, overflow hidden clips all ribbons */
+/* Horizontal Luxury Split Container */
 .splitBanner {
   display: flex;
+  flex-direction: row;
   width: 100%;
-  height: 660px;
+  height: 580px;
   position: relative;
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 0;
-  box-shadow: none;
   align-items: stretch;
-  overflow: hidden; /* Clips all ribbons cleanly inside banner */
+  overflow: hidden;
 }
 
-/* Split Panels — Left (50%) | Right (50%) */
+@media (min-width: 1200px) {
+  .splitBanner {
+    height: 640px;
+  }
+}
+
+/* Equal-Width Panels (Left: 50% | Right: 50%) */
 .panel {
   position: relative;
   flex: 1;
   width: 50%;
   height: 100%;
   text-decoration: none;
-  color: inherit;
+  color: #FFFFFF;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 60px 48px 120px;
+  justify-content: flex-end;
+  padding: 64px 56px;
   box-sizing: border-box;
   z-index: 2;
+  transition: background-color 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (min-width: 992px) {
-  .splitBanner {
-    height: 740px;
-  }
-
+@media (min-width: 1200px) {
   .panel {
-    padding: 80px 64px 140px;
+    padding: 80px 72px;
   }
 }
 
-@media (max-width: 767px) {
-  .section {
-    margin-bottom: var(--space-lg);
-  }
-
-  .splitBanner {
-    height: 185px; /* Increased height for generous breathing space inside mobile button cards */
-  }
-
-  .panel {
-    padding: 22px 14px;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .panelContent {
-    gap: 4px;
-    align-items: center;
-    text-align: center;
-  }
-
-  .titleDrops {
-    font-size: 15px;
-    letter-spacing: 0.08em;
-  }
-
-  .titleExclusive {
-    font-size: 14px;
-    letter-spacing: 0.08em;
-  }
-
-  .smallLabel {
-    display: none;
-  }
-
-  .descDrops,
-  .descExclusive {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 10.5px;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.85);
-    margin: 6px 0 10px;
-    text-align: center;
-    max-width: 160px;
-  }
-
-  .ctaDrops,
-  .ctaExclusive {
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    gap: 5px;
-    margin-top: 2px;
-  }
-}
-
-/* Center Divider Line — Faint subtle separation */
+/* Ultra-Thin Center Divider Line */
 .divider {
   position: absolute;
   top: 0;
@@ -123,219 +72,169 @@
   transform: translateX(-50%);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   LEFT HALF — DROPS (Warm, Cream, Bright, Editorial, Minimal)
-   ───────────────────────────────────────────────────────────── */
-.panelDrops {
-  background-color: #FAF8F5;
-}
-
-.panelDrops:hover .image {
-  transform: scale(1.03);
-}
-
-.overlayDrops {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(20, 20, 23, 0.08) 0%, rgba(20, 20, 23, 0.65) 100%);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   RIGHT HALF — EXCLUSIVE RACK (Dark, Cinematic, Secret, Gold Accent)
-   ───────────────────────────────────────────────────────────── */
-.panelExclusive {
-  background-color: #121215;
-}
-
-.panelExclusive:hover .image {
-  transform: scale(1.03);
-}
-
-.overlayExclusive {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(10, 10, 12, 0.2) 0%, rgba(10, 10, 12, 0.82) 100%);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Full Width Image Container */
+/* Panel Background & Image Wrappers */
 .imageWrap {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
+  background-color: #070709;
 }
 
 .image {
   object-fit: cover;
-  object-position: center 20%; /* Preserves shoulders/faces naturally */
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  object-position: center 25%;
+  opacity: 0.62;
+  filter: grayscale(15%) contrast(102%);
+  transition: opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), filter 350ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Content Overlays */
+/* Subtly Brighter Overlay on Hover */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 7, 9, 0.15) 0%, rgba(7, 7, 9, 0.78) 100%);
+  z-index: 2;
+  transition: opacity 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Desktop Hover Interaction (Subtle, Refined, No scale, No glow) */
+.panel:hover .overlay {
+  opacity: 0.65;
+}
+
+.panel:hover .image {
+  opacity: 0.75;
+  filter: grayscale(0%) contrast(105%);
+}
+
+/* Editorial Content Hierarchy */
 .panelContent {
   position: relative;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 480px;
+  align-items: flex-start;
+  max-width: 440px;
 }
 
-/* Drops Typography */
-.titleDrops {
+/* Eyebrow Label */
+.eyebrow {
   font-family: var(--font-heading);
-  font-size: 34px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 12px;
+}
+
+.panelExclusive .eyebrow {
+  color: #c8a46a;
+}
+
+/* Large Title */
+.title {
+  font-family: var(--font-heading);
+  font-size: 42px;
   font-weight: 700;
   color: #FFFFFF;
   letter-spacing: -0.02em;
   line-height: 0.95;
-  margin: 0;
+  margin: 0 0 14px 0;
   text-transform: uppercase;
 }
 
-@media (min-width: 992px) {
-  .titleDrops {
+@media (min-width: 1200px) {
+  .title {
     font-size: 52px;
   }
 }
 
-@media (max-width: 767px) {
-  .titleDrops {
-    font-size: 20px;
-  }
-}
-
-.descDrops {
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.85);
+/* Minimal Sentence */
+.description {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.72);
   line-height: 1.45;
-  margin: 8px 0 24px;
-  max-width: 360px;
+  margin: 0 0 24px 0;
+  letter-spacing: 0.01em;
 }
 
-@media (max-width: 767px) {
-  .descDrops {
-    font-size: 10.5px;
-    line-height: 1.35;
-    margin: 4px 0 16px;
-  }
-}
-
-.ctaDrops {
+/* Elegant Arrow Container & Glide Animation */
+.arrowWrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-heading);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #FFFFFF;
-  transition: gap 0.3s ease;
+  margin-top: 4px;
 }
 
-@media (max-width: 767px) {
-  .ctaDrops {
-    font-size: 9.5px;
-    gap: 4px;
-  }
+.arrowIcon {
+  color: rgba(255, 255, 255, 0.75);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), color 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ctaIconDrops {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.panelDrops:hover .ctaIconDrops {
-  transform: translateX(6px);
-}
-
-/* Exclusive Rack Typography */
-.smallLabel {
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+.panelExclusive .arrowIcon {
   color: #c8a46a;
-  margin-bottom: 2px;
 }
 
-@media (max-width: 767px) {
-  .smallLabel {
-    font-size: 8px;
-    letter-spacing: 0.16em;
-  }
-}
-
-.titleExclusive {
-  font-family: var(--font-heading);
-  font-size: 38px;
-  font-weight: 700;
-  color: #FFFFFF;
-  letter-spacing: -0.02em;
-  line-height: 0.95;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-@media (min-width: 992px) {
-  .titleExclusive {
-    font-size: 58px;
-  }
-}
-
-@media (max-width: 767px) {
-  .titleExclusive {
-    font-size: 22px;
-  }
-}
-
-.descExclusive {
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.45;
-  margin: 8px 0 24px;
-  max-width: 360px;
-}
-
-@media (max-width: 767px) {
-  .descExclusive {
-    font-size: 10.5px;
-    line-height: 1.35;
-    margin: 4px 0 16px;
-  }
-}
-
-.ctaExclusive {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-heading);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #c8a46a;
-  transition: gap 0.3s ease;
-}
-
-@media (max-width: 767px) {
-  .ctaExclusive {
-    font-size: 9.5px;
-    gap: 4px;
-  }
-}
-
-.ctaIconExclusive {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.panelExclusive:hover .ctaIconExclusive {
+.panel:hover .arrowIcon {
   transform: translateX(6px);
+  color: #FFFFFF;
 }
 
+/* ==========================================================================
+   MOBILE DESIGN — Stacked Editorial Cards (Generous Spacing & High Luxury)
+   ========================================================================== */
+@media (max-width: 767px) {
+  .section {
+    margin-bottom: var(--space-lg);
+  }
+
+  .splitBanner {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .panel {
+    width: 100%;
+    min-height: 250px;
+    padding: 44px 28px;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .panelExclusive {
+    border-bottom: none;
+  }
+
+  .panelContent {
+    max-width: 100%;
+  }
+
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .description {
+    font-size: 12.5px;
+    margin-bottom: 20px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .arrowWrap {
+    margin-top: 0;
+  }
+}

@@ -8,13 +8,37 @@ import {
   cartHasExclusiveProduct,
   EXCLUSIVE_CART_TOAST_MESSAGE,
   isExclusiveChannel,
+  isCartItemAvailable,
 } from '@/lib/cart-rules';
 import { formatGA4Item, trackAddToCart, trackRemoveFromCart } from '@/lib/gtag-ecommerce';
+import { refreshCartProducts } from '@/actions/product.actions';
 
 export interface CartItem {
   product: any; // Prisma Product with images and variants
   size: string;
   quantity: number;
+}
+
+/**
+ * Explicit checkout pipeline mode.
+ * INSTANT = Buy Now flow — single product, bypasses cart.
+ * CART    = Cart checkout flow — reads shopping cart, ignores instant session.
+ */
+export type CheckoutMode = 'CART' | 'INSTANT';
+
+/**
+ * Ephemeral session created atomically on every Buy Now click.
+ * Retained as a full product snapshot for this release.
+ * TECH DEBT: Future architecture iteration should store only
+ * { productId, variantId, size, quantity } and resolve live
+ * product data from the catalogue at checkout render time.
+ */
+export interface InstantCheckoutSession {
+  sessionId: string;     // crypto.randomUUID() — unique per click
+  product: any;          // Deep copy of product with variants
+  size: string;
+  quantity: number;
+  createdAt: number;     // Date.now()
 }
 
 export type WishlistItem = {
@@ -39,10 +63,27 @@ interface StoreState {
   clearCart: () => void;
   getCartTotal: () => number;
   getCartCount: () => number;
+  cleanCartUnavailableItems: () => number;
+  syncCartWithCatalogue: (productMap: Record<string, any>) => void;
+  syncCartLive: () => Promise<void>;
 
-  // Instant Checkout Bypass
-  instantCheckout: CartItem | null;
-  setInstantCheckout: (item: CartItem | null) => void;
+  // Checkout Pipeline — explicit mode, no implicit fallback
+  checkoutMode: CheckoutMode | null;
+  instantCheckoutSession: InstantCheckoutSession | null;
+  /**
+   * Buy Now: atomically writes INSTANT mode + fresh session in one set() call.
+   * Always overwrites any previous session. No pre-clear required.
+   */
+  beginInstantCheckout: (params: { product: any; size: string; quantity: number }) => void;
+  /**
+   * Cart Checkout: atomically sets CART mode and clears any instant session.
+   */
+  beginCartCheckout: () => void;
+  /**
+   * Resets both checkoutMode and instantCheckoutSession to null.
+   * Called on: successful order, checkout unmount, back navigation.
+   */
+  clearCheckoutSession: () => void;
 
   // Wishlist
   wishlist: WishlistItem[];
@@ -83,31 +124,11 @@ export const useStore = create<StoreState>()(
       addToCart: (product, size, quantity = 1) => {
         const { cart } = get();
 
-        if (isExclusiveChannel(product.channel)) {
-          if (
-            !canAddExclusiveToCart({
-              channel: product.channel,
-              quantity,
-              productId: product.id,
-              cart,
-            })
-          ) {
-            get().showExclusiveCartToast();
-            return;
-          }
-          quantity = 1;
-        }
-
         const existing = cart.find(
           (item) => item.product.id === product.id && item.size === size
         );
 
         if (existing) {
-          if (isExclusiveChannel(product.channel)) {
-            get().showExclusiveCartToast();
-            return;
-          }
-
           set({
             cart: cart.map((item) =>
               item.product.id === product.id && item.size === size
@@ -187,28 +208,95 @@ export const useStore = create<StoreState>()(
         return get().cart.reduce((count, item) => count + item.quantity, 0);
       },
 
-      // Instant Checkout Bypass
-      instantCheckout: null,
-      setInstantCheckout: (item) => {
-        if (!item) {
-          set({ instantCheckout: null });
-          return;
+      cleanCartUnavailableItems: () => {
+        const currentCart = get().cart;
+        const validCart = currentCart.filter((item) => isCartItemAvailable(item));
+        const removedCount = currentCart.length - validCart.length;
+        if (removedCount > 0) {
+          set({ cart: validCart });
         }
+        return removedCount;
+      },
 
-        if (isExclusiveChannel(item.product?.channel)) {
-          if (item.quantity > 1) {
-            get().showExclusiveCartToast();
-            return;
+      syncCartWithCatalogue: (productMap: Record<string, any>) => {
+        const currentCart = get().cart;
+        if (!currentCart || currentCart.length === 0) return;
+
+        const updatedCart = currentCart.map((item) => {
+          const liveProduct = productMap[item.product?.id];
+          if (!liveProduct) {
+            // Product was deleted from database or archived/not returned
+            return {
+              ...item,
+              product: {
+                ...item.product,
+                status: 'ARCHIVED',
+                isActive: false,
+              },
+            };
           }
-          const { cart } = get();
-          if (cartHasExclusiveProduct(cart, item.product.id)) {
-            get().showExclusiveCartToast();
-            return;
-          }
-          item = { ...item, quantity: 1 };
+          // Product exists live in DB, update with live snapshot
+          return {
+            ...item,
+            product: liveProduct,
+          };
+        });
+
+        set({ cart: updatedCart });
+      },
+
+      syncCartLive: async () => {
+        const currentCart = get().cart;
+        if (!currentCart || currentCart.length === 0) return;
+        const productIds = Array.from(new Set(currentCart.map((i) => i.product?.id).filter(Boolean)));
+        if (productIds.length === 0) return;
+
+        try {
+          const productMap = await refreshCartProducts(productIds);
+          get().syncCartWithCatalogue(productMap);
+        } catch (err) {
+          console.error('Failed to synchronize cart with live product catalogue:', err);
         }
+      },
 
-        set({ instantCheckout: item });
+      // ──────────────────────────────────────────────────────────────
+      // Checkout Pipeline Architecture
+      // Two completely isolated pipelines: INSTANT (Buy Now) and CART.
+      // checkoutMode is the single source of truth — never inferred.
+      // Both fields are ephemeral: NOT persisted to localStorage.
+      // ──────────────────────────────────────────────────────────────
+      checkoutMode: null,
+      instantCheckoutSession: null,
+
+      beginInstantCheckout: ({ product, size, quantity }) => {
+        // Enforce quantity=1 for exclusive channel products.
+        const effectiveQuantity = isExclusiveChannel(product?.channel) ? 1 : quantity;
+
+        // Single atomic set — writes mode + session simultaneously.
+        // No pre-clear. No two-step. No React batching dependency.
+        // Every Buy Now click generates a new sessionId, making it
+        // impossible for any previous session to survive.
+        set({
+          checkoutMode: 'INSTANT',
+          instantCheckoutSession: {
+            sessionId: crypto.randomUUID(),
+            product: { ...product },
+            size,
+            quantity: effectiveQuantity,
+            createdAt: Date.now(),
+          },
+        });
+      },
+
+      beginCartCheckout: () => {
+        // Atomically set CART mode and clear any stale instant session.
+        // Cart data is read directly from the cart[] array at checkout.
+        set({ checkoutMode: 'CART', instantCheckoutSession: null });
+      },
+
+      clearCheckoutSession: () => {
+        // Complete reset: called on order success, unmount, back navigation.
+        set({ checkoutMode: null, instantCheckoutSession: null });
       },
 
       // Wishlist
@@ -259,8 +347,7 @@ export const useStore = create<StoreState>()(
       // Toast
       toast: null,
       showToast: (title, message) => set({ toast: { title, message, isOpen: true } }),
-      showExclusiveCartToast: () =>
-        set({ toast: { title: EXCLUSIVE_CART_TOAST_MESSAGE, message: '', isOpen: true } }),
+      showExclusiveCartToast: () => {},
       hideToast: () => set((state) => ({ toast: state.toast ? { ...state.toast, isOpen: false } : null })),
 
       // UI

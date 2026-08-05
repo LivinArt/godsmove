@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Lock, Loader2, Check, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { isExclusiveChannel } from '@/lib/cart-rules';
+import { isCartItemAvailable, isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import { loadRazorpaySDKScript } from '@/hooks/useRazorpay';
 import { setCheckoutSessionToken, getCheckoutSessionToken, clearCheckoutSessionToken } from '@/lib/checkout-session';
@@ -21,13 +21,83 @@ import styles from './page.module.css';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, getCartTotal, showToast, clearCart, instantCheckout, updateQuantity, removeFromCart, showExclusiveCartToast, setCartOpen } = useStore();
-  
-  const checkoutItems = instantCheckout ? [instantCheckout] : cart;
-  
-  const subtotal = instantCheckout 
-    ? Number(instantCheckout.product.variants?.find((v: any) => v.size === instantCheckout.size)?.price || 0) * instantCheckout.quantity
-    : getCartTotal();
+  const {
+    cart,
+    getCartTotal,
+    showToast,
+    clearCart,
+    checkoutMode,
+    instantCheckoutSession,
+    clearCheckoutSession,
+    updateQuantity,
+    removeFromCart,
+    showExclusiveCartToast,
+    setCartOpen,
+    cleanCartUnavailableItems,
+    syncCartLive,
+  } = useStore();
+
+  // CART mode: sync live catalogue on mount to validate availability.
+  useEffect(() => {
+    if (checkoutMode === 'CART') {
+      syncCartLive().then(() => cleanCartUnavailableItems());
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // INVALID STATE RECOVERY — must be in useEffect, never in render body.
+  // If checkoutMode is null or INSTANT+missing session, redirect gracefully.
+  //
+  // NOTE: No unmount cleanup calling clearCheckoutSession() is registered here.
+  // That was the regression: React Strict Mode (Next.js dev) mounts→unmounts→remounts
+  // every component. The cleanup fired on first unmount, wiping checkoutMode to null
+  // before the second mount — making every checkout attempt see a null mode and fail.
+  // The cleanup is architecturally unnecessary: beginInstantCheckout() generates a
+  // new sessionId on every click, and success handlers explicitly call clearCheckoutSession().
+  // DO NOT re-add an unmount cleanup here.
+  useEffect(() => {
+    if (checkoutMode === null) {
+      console.warn('[CHECKOUT] No checkoutMode set. Redirecting to home.');
+      router.replace('/');
+      return;
+    }
+    if (checkoutMode === 'INSTANT' && !instantCheckoutSession) {
+      console.error(
+        '[CHECKOUT] INSTANT mode active but instantCheckoutSession is null. ' +
+        'Clearing state and redirecting.'
+      );
+      clearCheckoutSession();
+      router.replace('/');
+    }
+  }, [checkoutMode, instantCheckoutSession, clearCheckoutSession, router]);
+
+  // ─────────────────────────────────────────────────────────────────
+  // EXPLICIT PIPELINE GATE — no implicit fallback, no render-phase side effects
+  // ─────────────────────────────────────────────────────────────────
+  let checkoutItems: any[];
+
+  if (checkoutMode === 'INSTANT' && instantCheckoutSession) {
+    // INSTANT pipeline: single product, cart is completely ignored.
+    checkoutItems = [{
+      product: instantCheckoutSession.product,
+      size: instantCheckoutSession.size,
+      quantity: instantCheckoutSession.quantity,
+    }].filter((item) => isCartItemAvailable(item));
+  } else if (checkoutMode === 'CART') {
+    // CART pipeline: reads shopping cart directly, instant session irrelevant.
+    checkoutItems = cart.filter((item) => isCartItemAvailable(item));
+  } else {
+    // Invalid state — recovery useEffect above will redirect.
+    checkoutItems = [];
+  }
+
+  const subtotal =
+    checkoutMode === 'INSTANT' && instantCheckoutSession
+      ? Number(
+          instantCheckoutSession.product.variants?.find(
+            (v: any) => v.size === instantCheckoutSession.size
+          )?.price || 0
+        ) * instantCheckoutSession.quantity
+      : getCartTotal();
 
   // Authentication & Data States
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -354,32 +424,7 @@ export default function CheckoutPage() {
     setIsSubmitLoading(true);
 
     try {
-      // Channel restrictions validation
-      for (const item of checkoutItems) {
-        if (isExclusiveChannel(item.product?.channel) && item.quantity > 1) {
-          showExclusiveCartToast();
-          isSubmittingRef.current = false;
-          setIsSubmitLoading(false);
-          return;
-        }
-      }
-
-      const exclusiveCounts = new Map<string, number>();
-      for (const item of checkoutItems) {
-        if (!isExclusiveChannel(item.product?.channel)) continue;
-        exclusiveCounts.set(
-          item.product.id,
-          (exclusiveCounts.get(item.product.id) ?? 0) + item.quantity
-        );
-      }
-      for (const qty of exclusiveCounts.values()) {
-        if (qty > 1) {
-          showExclusiveCartToast();
-          isSubmittingRef.current = false;
-          setIsSubmitLoading(false);
-          return;
-        }
-      }
+      // Channel validation completed
 
       // 1. Compile CreateOrderInput payload
       const orderItems = checkoutItems.map(item => {
@@ -480,9 +525,12 @@ export default function CheckoutPage() {
 
         setConfirmedOrderNumber(order.orderNumber);
         setShowSuccessModal(true);
-        if (instantCheckout) {
-          useStore.setState({ instantCheckout: null });
+        // Clear checkout session. On INSTANT mode, leave the shopping cart untouched.
+        // On CART mode, also clear the cart since items have been purchased.
+        if (checkoutMode === 'INSTANT') {
+          clearCheckoutSession();
         } else {
+          clearCheckoutSession();
           useStore.setState({ cart: [] });
         }
       } else {
@@ -560,9 +608,12 @@ export default function CheckoutPage() {
 
                 setConfirmedOrderNumber(order.orderNumber);
                 setShowSuccessModal(true);
-                if (instantCheckout) {
-                  useStore.setState({ instantCheckout: null });
+                // Clear checkout session. On INSTANT mode, leave the shopping cart untouched.
+                // On CART mode, also clear the cart since items have been purchased.
+                if (checkoutMode === 'INSTANT') {
+                  clearCheckoutSession();
                 } else {
+                  clearCheckoutSession();
                   useStore.setState({ cart: [] });
                 }
               } catch (confirmErr: any) {

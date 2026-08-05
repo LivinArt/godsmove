@@ -102,34 +102,6 @@ export async function createOrder(input: CreateOrderInput) {
         if (variant.product.status !== 'ACTIVE') {
           throw new Error(`Product "${variant.product.name}" is no longer available`);
         }
-
-        if (isExclusiveChannel(variant.product.channel)) {
-          if (item.quantity > 1) {
-            throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
-          }
-          exclusiveQtyByProduct.set(
-            variant.productId,
-            (exclusiveQtyByProduct.get(variant.productId) ?? 0) + item.quantity
-          );
-        }
-
-        // Soft stock check: fallback to 100 if inventory record not initialized
-        const total = variant.inventory?.totalStock ?? 100;
-        const reserved = variant.inventory?.reservedStock ?? 0;
-        const sold = variant.inventory?.soldStock ?? 0;
-        const available = total - reserved - sold;
-
-        console.log(`- Variant ${variant.sku} (${variant.product.name}): Total=${total}, Reserved=${reserved}, Sold=${sold}, Available=${available}`);
-
-        if (available < item.quantity && available <= 0) {
-          throw new Error(`Item "${variant.product.name} (${variant.size})" is out of stock.`);
-        }
-      }
-
-      for (const totalQty of exclusiveQtyByProduct.values()) {
-        if (totalQty > 1) {
-          throw new Error(EXCLUSIVE_CART_TOAST_MESSAGE);
-        }
       }
 
       const orderNumber = generateOrderNumber();

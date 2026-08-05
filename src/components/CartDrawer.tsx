@@ -9,6 +9,7 @@ import { resolveProductImages } from '@/lib/image-resolver';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
+import { isCartItemAvailable } from '@/lib/cart-rules';
 import styles from './CartDrawer.module.css';
 
 const RESERVATION_MESSAGES = [
@@ -21,17 +22,19 @@ const RESERVATION_MESSAGES = [
 export default function CartDrawer() {
   const router = useRouter();
   const { requireAuth } = useAuth();
-  const { cart, isCartOpen, cartOpenSource, setCartOpen, updateQuantity, removeFromCart, getCartTotal, setInstantCheckout } = useStore();
+  const { cart, isCartOpen, cartOpenSource, setCartOpen, updateQuantity, removeFromCart, getCartTotal, beginCartCheckout, cleanCartUnavailableItems, syncCartLive } = useStore();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [reservationMsg, setReservationMsg] = useState('');
   const [showReservation, setShowReservation] = useState(false);
+  const [editorialNotice, setEditorialNotice] = useState<string | null>(null);
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reservationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Lock body scroll + trackViewCart when open
+  // Lock body scroll + trackViewCart when open + synchronize live database product catalogue
   useEffect(() => {
     if (isCartOpen) {
       document.body.style.overflow = 'hidden';
+      syncCartLive();
       if (cart.length > 0) {
         try {
           const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
@@ -45,7 +48,7 @@ export default function CartDrawer() {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [isCartOpen, cart, getCartTotal]);
+  }, [isCartOpen]);
 
   // Keyboard close
   useEffect(() => {
@@ -94,6 +97,7 @@ export default function CartDrawer() {
   };
 
   const total = getCartTotal();
+  const hasUnavailableItems = cart.some(item => !isCartItemAvailable(item));
 
   return (
     <>
@@ -129,15 +133,21 @@ export default function CartDrawer() {
         </div>
 
         <div className={styles.body}>
+          {editorialNotice && (
+            <div className={styles.inlineEditorialNotice}>
+              {editorialNotice}
+            </div>
+          )}
+
           {cart.length === 0 ? (
             <div className={styles.empty}>
-              <p className={styles.emptyText}>Nothing here yet.</p>
+              <p className={styles.emptyText}>Your reserved selections are no longer available.</p>
               <Link
                 href="/drops"
                 className="btn btn-primary"
                 onClick={() => setCartOpen(false)}
               >
-                Browse collection
+                Continue Discovery →
               </Link>
             </div>
           ) : (
@@ -146,12 +156,13 @@ export default function CartDrawer() {
                 const variant = item.product.variants?.find((v: any) => v.size === item.size);
                 const price = variant?.price ? Number(variant.price) : 0;
                 const color = variant?.color || 'Standard';
+                const isAvailable = isCartItemAvailable(item);
 
                 const { frontImage } = resolveProductImages(item.product);
 
                 return (
                   <div key={`${item.product.id}-${item.size}`} className={styles.item}>
-                    <div className={styles.itemImage}>
+                    <div className={`${styles.itemImage} ${!isAvailable ? styles.itemUnavailableImage : ''}`}>
                       <Image
                         src={frontImage}
                         alt={item.product.name}
@@ -162,7 +173,12 @@ export default function CartDrawer() {
                     </div>
                     <div className={styles.itemInfo}>
                       <div className={styles.itemTop}>
-                        <h3 className={styles.itemName}>{item.product.name}</h3>
+                        <div>
+                          <h3 className={styles.itemName}>{item.product.name}</h3>
+                          {!isAvailable && (
+                            <span className={styles.unavailableBadge}>NO LONGER AVAILABLE</span>
+                          )}
+                        </div>
                         <button
                           className={styles.removeBtn}
                           onClick={() => removeFromCart(item.product.id, item.size)}
@@ -177,14 +193,16 @@ export default function CartDrawer() {
                       <div className={styles.itemBottom}>
                         <div className={styles.quantity}>
                           <button
-                            onClick={() => updateQuantity(item.product.id, item.size, item.quantity - 1)}
+                            onClick={() => isAvailable && updateQuantity(item.product.id, item.size, item.quantity - 1)}
+                            disabled={!isAvailable}
                             aria-label="Decrease quantity"
                           >
                             <Minus size={12} />
                           </button>
                           <span>{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
+                            onClick={() => isAvailable && updateQuantity(item.product.id, item.size, item.quantity + 1)}
+                            disabled={!isAvailable}
                             aria-label="Increase quantity"
                           >
                             <Plus size={12} />
@@ -213,15 +231,23 @@ export default function CartDrawer() {
               type="button"
               className={`btn btn-primary ${styles.checkoutBtn}`}
               onClick={() => {
+                const removedCount = cleanCartUnavailableItems();
+                if (removedCount > 0) {
+                  setEditorialNotice('Some reserved pieces are no longer available and were removed from your checkout.');
+                }
+                const activeCart = useStore.getState().cart;
+                if (activeCart.length === 0) {
+                  return;
+                }
                 try {
-                  const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
-                  const total = getCartTotal();
-                  trackBeginCheckout(gaItems, total);
+                  const gaItems = activeCart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+                  const currentTotal = getCartTotal();
+                  trackBeginCheckout(gaItems, currentTotal);
                 } catch (e) {
                   // ignore
                 }
                 requireAuth('checkout', () => {
-                  setInstantCheckout(null);
+                  beginCartCheckout();
                   setCartOpen(false);
                   router.push('/checkout');
                 }, { type: 'checkout' });

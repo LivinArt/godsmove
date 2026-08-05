@@ -17,6 +17,7 @@ import {
 } from '@/actions/storefront.actions';
 import { getProfileSummary } from '@/actions/profile.actions';
 import HomepageFeatureCards from '@/components/home/HomepageFeatureCards';
+import VaultProductCard from '@/components/home/VaultProductCard';
 import { getHomepageFeatureCardsData } from '@/actions/feature-cards.actions';
 import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
@@ -202,58 +203,26 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 5. Exclusive Rack (Vault Lounge) */}
+        {/* 5. Exclusive Rack (The Vault Lounge) */}
         {exclusiveRackProducts.length > 0 && (
           <section className={styles.exclusiveSection} id="exclusive-rack">
             <div className="container">
               <ScrollReveal>
                 <div className={styles.exclusiveHeader}>
-                  <span className={styles.exclusiveEyebrow}>Vault</span>
+                  <span className={styles.exclusiveEyebrow}>THE VAULT</span>
                   <h2 className={styles.exclusiveTitle}>Exclusive Rack</h2>
                   <p className={styles.exclusiveSub}>
-                    Limited allocation pieces. Private selection accessible by active rank.
+                    Curated garments crafted with uncompromising attention to detail.
                   </p>
                 </div>
               </ScrollReveal>
               
               <div className={styles.exclusiveContainer}>
-                {exclusiveRackProducts.map((p, idx) => {
-                  const isEven = idx % 2 === 0;
-                  return (
-                    <ScrollReveal key={p.id}>
-                      <div className={`${styles.exclusiveRow} ${isEven ? styles.rowNormal : styles.rowReverse}`}>
-                        <div className={styles.exclusiveImgPanel}>
-                          <div className={styles.exclusiveImageContainer}>
-                            <Image 
-                              src={p.images?.[0]?.url || '/images/placeholder.svg'} 
-                              alt={p.name} 
-                              fill 
-                              style={{ objectFit: 'cover' }} 
-                              className={styles.exclusiveImg}
-                            />
-                            {p.featuredBadge && (
-                              <span className={styles.exclusiveCardBadge}>{p.featuredBadge}</span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className={styles.exclusiveInfoPanel}>
-                          <span className={styles.exclusiveGoldLabel}>{p.collectionName || 'Archival Vault'}</span>
-                          <h3 className={styles.exclusiveItemTitle}>{p.name}</h3>
-                          <p className={styles.exclusiveItemDesc}>{p.tagline || p.shortDesc || 'Limited production item.'}</p>
-                          <div className={styles.exclusiveDetailsRow}>
-                            <span>{p.category?.name || 'Archival'}</span>
-                            <span className={styles.exclusiveGoldDot}>•</span>
-                            <span>{p.variants?.[0]?.price ? `₹${p.variants[0].price}` : 'Private Allocation'}</span>
-                          </div>
-                          <Link href={`/product/${p.slug}`} className={styles.exclusiveCtaButton}>
-                            Request Allocation
-                          </Link>
-                        </div>
-                      </div>
-                    </ScrollReveal>
-                  );
-                })}
+                {exclusiveRackProducts.map((p, idx) => (
+                  <ScrollReveal key={p.id}>
+                    <VaultProductCard product={p} isEven={idx % 2 === 0} />
+                  </ScrollReveal>
+                ))}
               </div>
             </div>
           </section>

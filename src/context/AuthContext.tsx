@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearWishlist = useStore((s) => s.clearWishlist);
   const addToCart = useStore((s) => s.addToCart);
   const toggleWishlist = useStore((s) => s.toggleWishlist);
-  const setInstantCheckout = useStore((s) => s.setInstantCheckout);
+  const beginInstantCheckout = useStore((s) => s.beginInstantCheckout);
 
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } else if (pending.type === 'checkout') {
             if (pending.product) {
-              setInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+              beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
             }
             router.push('/checkout');
           } else if (pending.type === 'profile') {
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [user, loading, addToCart, toggleWishlist, setInstantCheckout, router]);
+  }, [user, loading, addToCart, toggleWishlist, beginInstantCheckout, router]);
 
   useEffect(() => {
     // Initial Session check via Supabase Auth
@@ -195,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } else if (pending.type === 'checkout') {
             if (pending.product) {
-              setInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+              beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
             }
             router.push('/checkout');
           } else if (pending.type === 'profile') {

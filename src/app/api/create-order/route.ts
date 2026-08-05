@@ -16,35 +16,9 @@ export async function POST(req: Request) {
       );
     }
 
+    // Exclusive product 1-piece quantity restriction removed per production requirements
     if (items && Array.isArray(items)) {
-      const exclusiveQtyByProduct = new Map<string, number>();
-
-      for (const item of items) {
-        if (!item.productId) continue;
-
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-          select: { channel: true },
-        });
-
-        if (!isExclusiveChannel(product?.channel)) continue;
-
-        const qty = Number(item.quantity) || 0;
-        if (qty > 1) {
-          return NextResponse.json({ error: EXCLUSIVE_CART_TOAST_MESSAGE }, { status: 400 });
-        }
-
-        exclusiveQtyByProduct.set(
-          item.productId,
-          (exclusiveQtyByProduct.get(item.productId) ?? 0) + qty
-        );
-      }
-
-      for (const totalQty of exclusiveQtyByProduct.values()) {
-        if (totalQty > 1) {
-          return NextResponse.json({ error: EXCLUSIVE_CART_TOAST_MESSAGE }, { status: 400 });
-        }
-      }
+      // Validate items array exists
     }
 
     // In production, uncomment and use:

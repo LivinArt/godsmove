@@ -21,10 +21,6 @@ export default function QuantitySelector({ quantity, onChange, max = 99, isExclu
   };
 
   const handleIncrement = () => {
-    if (isExclusive && quantity >= 1) {
-      showExclusiveCartToast();
-      return;
-    }
     if (quantity < max) {
       onChange(quantity + 1);
     }

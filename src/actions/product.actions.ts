@@ -177,87 +177,167 @@ export async function updateProduct(input: UpdateProductInput) {
   return product;
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string): Promise<{ success: boolean; archived: boolean; message: string }> {
   await requireAdmin();
 
-  // 1. Load the product with its images so we can attempt Storage cleanup
+  // 1. Load product and variants
   const product = await prisma.product.findUnique({
     where: { id },
     select: {
+      id: true,
       slug: true,
+      name: true,
       images: { select: { url: true } },
       variants: { select: { id: true } },
     },
   });
 
-  if (!product) throw new Error('Product not found');
+  if (!product) {
+    throw new Error('Product not found');
+  }
 
-  // 2. Attempt to delete files from Supabase Storage (best-effort — never blocks DB delete)
-  if (product.images.length > 0) {
-    try {
-      const supabase = await createClient();
+  const variantIds = product.variants.map((v) => v.id);
 
-      // Extract the storage path from the public URL
-      // URL format: https://<project>.supabase.co/storage/v1/object/public/product-images/<path>
-      const filePaths = product.images
-        .map((img) => {
-          try {
-            const url = new URL(img.url);
-            const marker = '/object/public/product-images/';
-            const idx = url.pathname.indexOf(marker);
-            return idx !== -1 ? url.pathname.slice(idx + marker.length) : null;
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean) as string[];
+  // 2. Check if product has historical commerce dependencies (Orders, Reservations, Unlocks, Draws, Care Requests)
+  let hasCommerceHistory = false;
 
-      if (filePaths.length > 0) {
-        const { error } = await supabase.storage
-          .from('product-images')
-          .remove(filePaths);
-        if (error) {
-          console.error('[deleteProduct] Storage cleanup failed (continuing):', error.message);
-        }
-      }
-    } catch (err) {
-      console.error('[deleteProduct] Storage cleanup exception (continuing):', err);
+  if (variantIds.length > 0) {
+    const orderItemsCount = await prisma.orderItem.count({
+      where: { variantId: { in: variantIds } },
+    });
+    const reservationsCount = await prisma.exclusiveReservation.count({
+      where: { variantId: { in: variantIds } },
+    });
+    if (orderItemsCount > 0 || reservationsCount > 0) {
+      hasCommerceHistory = true;
     }
   }
 
-  // 3. Transactional database teardown — children before parent
-  await prisma.$transaction(async (tx) => {
-    const variantIds = product.variants.map((v) => v.id);
+  const unlockCount = await prisma.productUnlock.count({ where: { productId: id } });
+  const drawCount = await prisma.exclusiveDraw.count({ where: { productId: id } });
 
-    // 3a. Inventory movements → Inventory
-    if (variantIds.length > 0) {
-      const inventoryRecords = await tx.inventory.findMany({
-        where: { variantId: { in: variantIds } },
-        select: { id: true },
+  if (unlockCount > 0 || drawCount > 0) {
+    hasCommerceHistory = true;
+  }
+
+  // 3. IF COMMERCE HISTORY EXISTS -> ARCHIVE (Soft Delete) to preserve financial & order history
+  if (hasCommerceHistory) {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data: {
+          status: 'ARCHIVED',
+          isFeatured: false,
+          isExclusiveRack: false,
+          showOnHomepage: false,
+          showOnExclusivePage: false,
+        },
       });
-      const inventoryIds = inventoryRecords.map((i) => i.id);
 
-      if (inventoryIds.length > 0) {
-        await tx.inventoryMovement.deleteMany({ where: { inventoryId: { in: inventoryIds } } });
+      if (variantIds.length > 0) {
+        await tx.productVariant.updateMany({
+          where: { productId: id },
+          data: { isActive: false },
+        });
       }
-      await tx.inventory.deleteMany({ where: { variantId: { in: variantIds } } });
+
+      await tx.wishlistItem.deleteMany({ where: { productId: id } });
+    });
+
+    revalidatePath('/admin/products');
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath('/exclusive-rack');
+    revalidatePath('/drops');
+    revalidatePath('/');
+
+    return {
+      success: true,
+      archived: true,
+      message: `"${product.name}" has historical customer orders. It has been safely archived instead of permanently deleted.`,
+    };
+  }
+
+  // 4. IF NO COMMERCE HISTORY -> PERMANENT HARD DELETE (in strict dependency order)
+  try {
+    if (product.images.length > 0) {
+      try {
+        const supabase = await createClient();
+        const filePaths = product.images
+          .map((img) => {
+            try {
+              const url = new URL(img.url);
+              const marker = '/object/public/product-images/';
+              const idx = url.pathname.indexOf(marker);
+              return idx !== -1 ? url.pathname.slice(idx + marker.length) : null;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean) as string[];
+
+        if (filePaths.length > 0) {
+          await supabase.storage.from('product-images').remove(filePaths);
+        }
+      } catch (err) {
+        console.error('[deleteProduct] Storage cleanup exception (continuing):', err);
+      }
     }
 
-    // 3b. Order items that reference these variants — disconnect by nullifying or skip
-    //     (OrderItems store snapshots; they survive product deletion by design)
+    await prisma.$transaction(async (tx) => {
+      if (variantIds.length > 0) {
+        const inventoryRecords = await tx.inventory.findMany({
+          where: { variantId: { in: variantIds } },
+          select: { id: true },
+        });
+        const inventoryIds = inventoryRecords.map((i) => i.id);
 
-    // 3c. Variants → Images → Tags → Wishlist items → Product
-    await tx.productVariant.deleteMany({ where: { productId: id } });
-    await tx.productImage.deleteMany({ where: { productId: id } });
-    await tx.productTag.deleteMany({ where: { productId: id } });
-    await tx.wishlistItem.deleteMany({ where: { productId: id } });
-    await tx.product.delete({ where: { id } });
-  });
+        if (inventoryIds.length > 0) {
+          await tx.inventoryMovement.deleteMany({ where: { inventoryId: { in: inventoryIds } } });
+        }
+        await tx.inventory.deleteMany({ where: { variantId: { in: variantIds } } });
+        await tx.productVariant.deleteMany({ where: { productId: id } });
+      }
 
-  revalidatePath('/admin/products');
-  revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/drops');
-  revalidatePath('/');
+      await tx.productImage.deleteMany({ where: { productId: id } });
+      await tx.productTag.deleteMany({ where: { productId: id } });
+      await tx.wishlistItem.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
+    });
+
+    revalidatePath('/admin/products');
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath('/exclusive-rack');
+    revalidatePath('/drops');
+    revalidatePath('/');
+
+    return {
+      success: true,
+      archived: false,
+      message: `"${product.name}" was permanently deleted successfully.`,
+    };
+  } catch (dbError: any) {
+    console.error('[deleteProduct] DB error during hard delete:', dbError);
+    // Safety fallback to archive if any unexpected DB constraint occurs
+    try {
+      await prisma.product.update({
+        where: { id },
+        data: {
+          status: 'ARCHIVED',
+          isFeatured: false,
+          isExclusiveRack: false,
+          showOnHomepage: false,
+          showOnExclusivePage: false,
+        },
+      });
+      return {
+        success: true,
+        archived: true,
+        message: `"${product.name}" has active system references and was safely archived instead.`,
+      };
+    } catch {
+      throw new Error('This product cannot be permanently deleted because it has historical records. Archive it instead.');
+    }
+  }
 }
 
 
@@ -685,3 +765,30 @@ export async function isSlugAvailable(slug: string, excludeProductId?: string) {
   if (excludeProductId && existing.id === excludeProductId) return true;
   return false;
 }
+
+/**
+ * Synchronizes cart product items with current live database state.
+ * Returns a map of productId -> current live product snapshot.
+ */
+export async function refreshCartProducts(productIds: string[]) {
+  if (!productIds || productIds.length === 0) return {};
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    include: {
+      category: true,
+      images: { orderBy: { position: 'asc' } },
+      variants: {
+        include: { inventory: true },
+        orderBy: { position: 'asc' },
+      },
+    },
+  });
+
+  const map: Record<string, any> = {};
+  for (const p of products) {
+    map[p.id] = serializePrisma(p);
+  }
+  return map;
+}
+

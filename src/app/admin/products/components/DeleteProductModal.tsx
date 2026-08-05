@@ -37,11 +37,11 @@ export function DeleteProductModal({ product, onClose, onDeleted }: DeleteProduc
     setIsPending(true);
     setError(null);
     try {
-      await deleteProduct(product.id);
+      const res = await deleteProduct(product.id);
       onDeleted(product.id);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Deletion failed. Please try again.');
+      setError(err.message || 'Action failed. Please try again.');
     } finally {
       setIsPending(false);
     }

@@ -96,7 +96,7 @@ export default function ProductClient({
   }, [product, selectedSize]);
 
   const { requireAuth } = useAuth();
-  const { addToCart, setInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
+  const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
@@ -177,7 +177,7 @@ export default function ProductClient({
     requireAuth(
       'checkout',
       () => {
-        setInstantCheckout({ product, size: selectedSize, quantity });
+        beginInstantCheckout({ product, size: selectedSize, quantity });
         router.push('/checkout');
       },
       { type: 'checkout', product, size: selectedSize, quantity }
@@ -604,7 +604,7 @@ export default function ProductClient({
           setSelectedSize(size);
           setSizeError(false);
           if (mobileSheetAction === 'buy') {
-            setInstantCheckout({ product, size, quantity });
+            beginInstantCheckout({ product, size, quantity });
             router.push('/checkout');
           } else {
             addToCart(product, size, quantity);
