@@ -85,7 +85,7 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
               aria-controls="mobile-nav-menu"
               id="mobile-menu-toggle"
             >
-              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMobileMenuOpen ? <X size={20} strokeWidth={1.8} /> : <Menu size={20} strokeWidth={1.8} />}
             </button>
             <nav className={styles.links} aria-label="Primary">
               {NAV_LINKS.map((item) => {
