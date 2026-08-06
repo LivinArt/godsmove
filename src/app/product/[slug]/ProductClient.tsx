@@ -23,6 +23,7 @@ import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
+import ExclusiveRackProductPage from './ExclusiveRackProductPage';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
 import { formatGA4Item, trackViewItem } from '@/lib/gtag-ecommerce';
@@ -39,6 +40,16 @@ export default function ProductClient({
   coverImage?: string | null;
   profile?: any;
 }) {
+  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK') {
+    return (
+      <ExclusiveRackProductPage
+        product={product}
+        availableSizes={availableSizes}
+        coverImage={coverImage}
+        profile={profile}
+      />
+    );
+  }
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
