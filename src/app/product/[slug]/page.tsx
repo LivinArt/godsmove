@@ -159,6 +159,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     // Guest
   }
 
+  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK') {
+    return (
+      <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100vw', overflowX: 'hidden' }}>
+        <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />
+        <CartDrawer />
+        <ProductClient
+          product={product}
+          availableSizes={availableSizes}
+          coverImage={coverImage}
+          profile={profile}
+        />
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <>
       <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />

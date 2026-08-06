@@ -1,23 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Heart,
   ShoppingBag,
   ArrowLeftRight,
   Share2,
-  Lock,
   ChevronDown,
-  ShieldCheck,
   Award,
-  CheckCircle2,
-  Sparkles
+  Sparkles,
+  User,
+  Ruler,
+  ShieldCheck,
+  Package,
+  Minus,
+  Plus
 } from 'lucide-react';
-import SizeSelector from '@/components/SizeSelector';
 import SizeChartModal, { type SizeChartEntry } from '@/components/SizeChartModal';
-import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
 import { useStore } from '@/store/useStore';
@@ -73,12 +75,14 @@ export default function ExclusiveRackProductPage({
     (e: any) => e.measurements && typeof e.measurements === 'object' && Object.keys(e.measurements).length > 0
   );
 
-  const { requireAuth } = useAuth();
-  const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
+  const { user, openAuthModal, requireAuth } = useAuth();
+  const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast, setCartOpen } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
-  // Color Swatches Pipeline
+  const cartCount = useStore((s) => s.cart.length > 0 ? s.getCartCount() : 0);
+
+  // Colors Swatches Pipeline
   const rawColors = (product.variants || [])
     .map((v: any) => ({ name: v.color?.trim() || '', hex: v.colorHex?.trim() || '' }))
     .filter((c: any) => c.name !== '');
@@ -91,9 +95,15 @@ export default function ExclusiveRackProductPage({
   }
   const availableColors = Array.from(uniqueColorsMap.entries()).map(([name, hex]) => ({ name, hex }));
 
-  const [selectedColor, setSelectedColor] = useState<string | null>(
-    availableColors.length > 0 ? availableColors[0].name : null
-  );
+  // Fallback luxury colors if none provided
+  const displayColors = availableColors.length > 0 ? availableColors : [
+    { name: 'DEEP BLACK', hex: '#0a0a0a' },
+    { name: 'RAW IVORY', hex: '#f0ede6' },
+    { name: 'EARTH TAUPE', hex: '#5c4e46' },
+    { name: 'MIDNIGHT NAVY', hex: '#1c2430' }
+  ];
+
+  const [selectedColor, setSelectedColor] = useState<string | null>(displayColors[0].name);
 
   const selectedVariantData = product.variants?.find((v: any) => {
     const matchSize = selectedSize ? v.size === selectedSize : true;
@@ -104,7 +114,6 @@ export default function ExclusiveRackProductPage({
   const baseVariant = selectedVariantData || product.variants?.[0];
   const price = baseVariant?.price ? Number(baseVariant.price) : 0;
   const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
-  const activeSku = baseVariant?.sku || '';
 
   const filteredSizes = availableSizes.map(s => {
     const matchingVariant = product.variants?.find((v: any) => 
@@ -138,7 +147,7 @@ export default function ExclusiveRackProductPage({
     ? colorFilteredImages[0].url
     : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
 
-  // SCARCITY & ETIMATION DYNAMIC CALCULATIONS
+  // SCARCITY & ALLOCATION CALCULATIONS
   const variantsList = product.variants || [];
   const totalStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
   const soldStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
@@ -147,7 +156,7 @@ export default function ExclusiveRackProductPage({
   const editionTotal = totalStockSum > 0 ? totalStockSum : 100;
   const remainingCount = Math.max(0, editionTotal - allocatedCount);
   const editionNumber = Math.min(editionTotal, Math.max(1, allocatedCount + 1));
-  const scarcityPercent = Math.min(100, Math.max(0, Math.round((allocatedCount / editionTotal) * 100)));
+  const scarcityPercent = Math.min(100, Math.max(0, Math.round((remainingCount / editionTotal) * 100)));
 
   useEffect(() => {
     try {
@@ -174,7 +183,6 @@ export default function ExclusiveRackProductPage({
 
       const numImages = activeGalleryUrls.length;
       if (numImages > 1) {
-        // Compute active image index as user scrolls through locked hero height
         const heroStepDistance = window.innerHeight * 0.9;
         const index = Math.min(numImages - 1, Math.floor(scrollY / heroStepDistance));
         setGalleryIndex(Math.max(0, index));
@@ -183,6 +191,51 @@ export default function ExclusiveRackProductPage({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeGalleryUrls.length]);
+
+  // Wheel Scroll Lock: Locks body scroll on desktop until the final gallery image is reached
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.innerWidth < 1023) return;
+
+    const totalImages = activeGalleryUrls.length;
+    if (totalImages <= 1) return;
+
+    let isUnlocked = false;
+
+    const handleWheel = (e: WheelEvent) => {
+      // If user has already scrolled past the hero section, let normal scroll happen
+      if (window.scrollY > window.innerHeight * 0.5) {
+        isUnlocked = true;
+        return;
+      }
+
+      if (!isUnlocked) {
+        if (e.deltaY > 0) {
+          // Scrolling Down
+          setGalleryIndex((prevIndex) => {
+            if (prevIndex < totalImages - 1) {
+              e.preventDefault();
+              return prevIndex + 1;
+            } else {
+              isUnlocked = true;
+              return prevIndex;
+            }
+          });
+        } else if (e.deltaY < 0 && window.scrollY <= 10) {
+          // Scrolling Up at top of page
+          setGalleryIndex((prevIndex) => {
+            if (prevIndex > 0) {
+              e.preventDefault();
+              return prevIndex - 1;
+            }
+            return 0;
+          });
+        }
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
   }, [activeGalleryUrls.length]);
 
   const handleAddToCart = () => {
@@ -235,6 +288,50 @@ export default function ExclusiveRackProductPage({
   return (
     <div className={styles.pageContainer}>
       
+      {/* INTEGRATED EDGE-TO-EDGE NAVBAR (MATCHING REFERENCE) */}
+      <nav className={styles.vaultNavbar}>
+        <div className={styles.vaultNavLeft}>
+          <Link href="/" className={styles.vaultNavLink}>HOME</Link>
+          <Link href="/drops" className={styles.vaultNavLink}>DROPS</Link>
+          <Link href="/exclusive-rack" className={`${styles.vaultNavLink} ${styles.vaultNavLinkActive}`}>EXCLUSIVE RACK</Link>
+          <Link href="/our-story" className={styles.vaultNavLink}>STORY</Link>
+        </div>
+
+        <div className={styles.vaultNavCenter}>
+          <Link href="/" className={styles.logoText} aria-label="GODSMOVE Home">
+            GODSMOVE
+          </Link>
+        </div>
+
+        <div className={styles.vaultNavRight}>
+          <button type="button" className={styles.navTextBtn}>SEARCH</button>
+          <button
+            type="button"
+            className={styles.navTextBtn}
+            onClick={() => requireAuth('wishlist', () => router.push('/wishlist'), { type: 'wishlist' })}
+          >
+            WISHLIST
+          </button>
+          <button
+            type="button"
+            className={styles.navTextBtn}
+            onClick={() => {
+              if (user) router.push('/profile');
+              else openAuthModal('profile');
+            }}
+          >
+            ACCOUNT
+          </button>
+          <button
+            type="button"
+            className={styles.navTextBtn}
+            onClick={() => setCartOpen(true)}
+          >
+            BAG ({cartCount})
+          </button>
+        </div>
+      </nav>
+
       {/* MOBILE HERO: 100vh FULLSCREEN GALLERY */}
       <div className={styles.mobileOnlyHero}>
         <img
@@ -243,90 +340,63 @@ export default function ExclusiveRackProductPage({
           className={styles.mobileHeroImage}
         />
 
-        {/* Scroll overlay indicator */}
         <div className={styles.mobileScrollOverlay} style={{ opacity: isScrolled ? 0 : 1 }}>
           <span>Scroll for Vault Details</span>
           <ChevronDown size={14} />
         </div>
       </div>
 
-      {/* FULLSCREEN DESKTOP HERO WITH PURE CSS STICKY SCROLL */}
+      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH PURE STICKY SCROLL */}
       <section className={styles.heroScrollSection} style={{ height: heroScrollHeight }}>
         
         <div className={styles.heroStickyContainer}>
           
-          {/* Top Vault Nav & Breadcrumb */}
-          <div className={styles.topNavRow}>
-            <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-              <Link href="/">Home</Link>
-              <span className={styles.breadcrumbSep}>/</span>
-              <Link href="/exclusive-rack">Exclusive Rack</Link>
-              <span className={styles.breadcrumbSep}>/</span>
-              <span className={styles.breadcrumbCurrent}>{product.name}</span>
-            </nav>
-
-            <div className={styles.vaultBadgeHeader}>
-              <Sparkles size={11} color="#c8a46a" />
-              <span>Private Vault</span>
-            </div>
-          </div>
-
-          {/* 60% / 40% DESKTOP GRID */}
-          <div className={styles.pdpGrid}>
+          <div className={styles.threeColGrid}>
             
-            {/* ==================================================
-                LEFT SIDE (60%): STATIC COVER + DYNAMIC GALLERY
-                ================================================== */}
-            <div className={styles.leftCol}>
+            {/* COLUMN 1: LEFT (STATIC COVER IMAGE) */}
+            <div className={styles.colLeft}>
               
-              {/* STATIC COVER IMAGE CARD */}
-              <div className={styles.staticImageCard}>
-                
-                {/* EMBOSSED WHITE CLOTH STITCHED RIBBON */}
-                <div className={styles.ribbonWrap}>
-                  <div className={styles.ribbonCloth}>
-                    <span className={styles.ribbonText}>Exclusive</span>
-                  </div>
-                </div>
-
-                <img
-                  src={activeCoverImage}
-                  alt={`${product.name} Identity`}
-                  className={styles.staticImage}
-                />
-              </div>
-
-              {/* DYNAMIC GALLERY IMAGE CARD (BOTTOM -> TOP TRANSITION) */}
-              <div className={styles.dynamicImageCard}>
-                {activeGalleryUrls.map((url: string, idx: number) => {
-                  const isActive = idx === galleryIndex;
-                  return (
-                    <img
-                      key={url + idx}
-                      src={url}
-                      alt={`${product.name} Gallery ${idx + 1}`}
-                      className={styles.dynamicImage}
-                      style={{
-                        opacity: isActive ? 1 : 0,
-                        transform: isActive ? 'translateY(0)' : 'translateY(40px)',
-                        zIndex: isActive ? 2 : 1,
-                        pointerEvents: isActive ? 'auto' : 'none',
-                      }}
-                    />
-                  );
-                })}
-
-                <div className={styles.galleryCounter}>
-                  {galleryIndex + 1} / {activeGalleryUrls.length}
+              {/* WHITE CLOTH EMBOSSED CURSIVE RIBBON */}
+              <div className={styles.ribbonWrap}>
+                <div className={styles.ribbonCloth}>
+                  <span className={styles.ribbonText}>Exclusive</span>
                 </div>
               </div>
 
+              <img
+                src={activeCoverImage}
+                alt={`${product.name} Identity`}
+                className={styles.staticImage}
+              />
             </div>
 
-            {/* ==================================================
-                RIGHT SIDE (40%): STICKY VAULT CONTROL PANEL
-                ================================================== */}
-            <div className={styles.rightCol}>
+            {/* COLUMN 2: CENTER (DYNAMIC GALLERY IMAGE) */}
+            <div className={styles.colCenter}>
+              {activeGalleryUrls.map((url: string, idx: number) => {
+                const isActive = idx === galleryIndex;
+                return (
+                  <img
+                    key={url + idx}
+                    src={url}
+                    alt={`${product.name} Gallery ${idx + 1}`}
+                    className={styles.galleryImage}
+                    style={{
+                      opacity: isActive ? 1 : 0,
+                      transform: isActive ? 'translateY(0)' : 'translateY(40px)',
+                      zIndex: isActive ? 2 : 1,
+                      pointerEvents: isActive ? 'auto' : 'none',
+                    }}
+                  />
+                );
+              })}
+
+              <div className={styles.galleryCounterBadge}>
+                0{galleryIndex + 1} — 0{activeGalleryUrls.length}
+              </div>
+            </div>
+
+            {/* COLUMN 3: RIGHT (STICKY CONTROL PANEL) */}
+            <div className={styles.colRight}>
               
               {/* Collection Name */}
               <span className={styles.collectionTag}>
@@ -336,18 +406,12 @@ export default function ExclusiveRackProductPage({
               {/* Product Name */}
               <h1 className={styles.productTitle}>{product.name}</h1>
 
-              {/* Category */}
-              <div className={styles.categoryMeta}>
-                <span>Category:</span>
-                <span className={styles.categoryLabel}>{product.category?.name || 'OVERSIZED TEES'}</span>
-              </div>
-
-              {/* Short Description */}
+              {/* Short Editorial Description */}
               <p className={styles.shortDesc}>
-                {product.shortDesc || 'Archival silhouette crafted with heavy cotton, drop-shoulder structure, and high-density finish.'}
+                {product.shortDesc || 'A tribute to stillness. Inspired by the quiet depth of the ocean — crafted for those who move with purpose and stay rooted in their intent.'}
               </p>
 
-              {/* Price Block */}
+              {/* Price Row */}
               <div className={styles.priceBox}>
                 <span className={styles.sellingPrice}>₹{price.toLocaleString('en-IN')}</span>
                 {hasDiscount && comparePrice && (
@@ -357,101 +421,116 @@ export default function ExclusiveRackProductPage({
                   <span className={styles.discountBadge}>{discountPercent}% OFF</span>
                 )}
               </div>
-              <div className={styles.taxNote}>Price inclusive of all taxes</div>
 
-              {/* Color Selector (Luxury Swatches) */}
-              {availableColors.length > 0 && (
-                <div className={styles.selectorWrap}>
+              {/* 2-Column Metadata */}
+              <div className={styles.metaTwoCol}>
+                <div>
+                  <div className={styles.metaBlockLabel}>CATEGORY</div>
+                  <div className={styles.metaBlockVal}>{product.category?.name || 'Oversized Tees'}</div>
+                </div>
+                <div>
+                  <div className={styles.metaBlockLabel}>COLLECTION</div>
+                  <div className={styles.metaBlockVal}>{product.collectionName || 'Signature Collection'}</div>
+                </div>
+              </div>
+
+              {/* Color & Size Selector Row */}
+              <div className={styles.selectorRow}>
+                {/* Color Swatches */}
+                <div>
                   <div className={styles.selectorLabelRow}>
-                    <span className={styles.selectorTitle}>Color</span>
+                    <span className={styles.selectorTitle}>COLOR:</span>
                     <span className={styles.selectedValName}>{selectedColor}</span>
                   </div>
-                  <div className={styles.colorGrid}>
-                    {availableColors.map((c) => {
+                  <div className={styles.colorSwatches}>
+                    {displayColors.map((c) => {
                       const isSelected = selectedColor === c.name;
                       return (
                         <button
                           key={c.name}
                           type="button"
                           onClick={() => setSelectedColor(c.name)}
-                          className={`${styles.colorSwatchBtn} ${isSelected ? styles.colorSwatchBtnActive : ''}`}
-                        >
-                          {c.hex && (
-                            <span
-                              className={styles.colorCircle}
-                              style={{ backgroundColor: c.hex }}
-                            />
-                          )}
-                          <span>{c.name}</span>
-                        </button>
+                          className={`${styles.colorDotBtn} ${isSelected ? styles.colorDotBtnActive : ''}`}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.name}
+                        />
                       );
                     })}
                   </div>
                 </div>
-              )}
 
-              {/* Size Selector */}
-              <div className={styles.selectorWrap}>
-                <div className={styles.selectorLabelRow}>
-                  <span className={styles.selectorTitle}>Select Size</span>
+                {/* Size Boxes */}
+                <div>
+                  <div className={styles.selectorLabelRow}>
+                    <span className={styles.selectorTitle}>SIZE:</span>
+                  </div>
+                  <div className={styles.sizeBoxes}>
+                    {(filteredSizes.length > 0 ? filteredSizes : [
+                      { label: 'XS', available: true },
+                      { label: 'S', available: true },
+                      { label: 'M', available: true },
+                      { label: 'L', available: true },
+                      { label: 'XL', available: true }
+                    ]).map((s) => {
+                      const isSelected = selectedSize === s.label;
+                      return (
+                        <button
+                          key={s.label}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSize(s.label);
+                            setSizeError(false);
+                          }}
+                          className={`${styles.sizeBoxBtn} ${isSelected ? styles.sizeBoxBtnActive : ''}`}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   {hasSizeChart && (
                     <button
                       type="button"
                       onClick={() => setIsSizeChartOpen(true)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#c8a46a',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: '3px',
-                        padding: 0,
-                      }}
+                      className={styles.sizeChartLink}
                     >
-                      Size Chart
+                      <Ruler size={12} />
+                      <span>SIZE CHART</span>
                     </button>
                   )}
                 </div>
-                <SizeSelector
-                  sizes={filteredSizes}
-                  selected={selectedSize}
-                  onSelect={(size) => {
-                    setSelectedSize(size);
-                    setSizeError(false);
-                  }}
-                />
-                {sizeError && (
-                  <p style={{ color: '#ff6b6b', fontSize: '10px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Select a size to proceed with custody allocation
-                  </p>
-                )}
               </div>
 
-              {/* Size Chart Modal Component */}
-              {hasSizeChart && (
-                <SizeChartModal
-                  isOpen={isSizeChartOpen}
-                  onClose={() => setIsSizeChartOpen(false)}
-                  productName={product.name}
-                  entries={sizeChartEntries}
-                />
+              {sizeError && (
+                <p style={{ color: '#ff6b6b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                  Please select a size to proceed
+                </p>
               )}
 
-              {/* Quantity Selector */}
-              <div className={styles.selectorWrap}>
-                <span className={styles.selectorTitle}>Quantity</span>
-                <QuantitySelector
-                  quantity={quantity}
-                  onChange={setQuantity}
-                  max={availableStock}
-                />
+              {/* Quantity Counter Box */}
+              <div>
+                <div className={styles.selectorTitle} style={{ marginBottom: '6px' }}>QUANTITY</div>
+                <div className={styles.quantityBoxRow}>
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  >
+                    <Minus size={12} />
+                  </button>
+                  <span className={styles.qtyVal}>{quantity}</span>
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               </div>
 
-              {/* Action Buttons Stack */}
+              {/* Primary CTAs */}
               <div className={styles.actionStack}>
                 <button
                   type="button"
@@ -460,7 +539,7 @@ export default function ExclusiveRackProductPage({
                   id="vault-buy-now"
                   disabled={availableStock === 0}
                 >
-                  Buy Now
+                  BUY NOW
                 </button>
 
                 <button
@@ -471,128 +550,135 @@ export default function ExclusiveRackProductPage({
                   disabled={availableStock === 0}
                 >
                   <ShoppingBag size={14} />
-                  Add to Bag
+                  ADD TO BAG
+                </button>
+              </div>
+
+              {/* 3-Column Icon Actions Row */}
+              <div className={styles.iconRowThree}>
+                <button
+                  type="button"
+                  className={`${styles.iconRowBtn} ${wishlisted ? styles.iconRowBtnActive : ''}`}
+                  onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
+                >
+                  <Heart size={13} fill={wishlisted ? 'currentColor' : 'none'} />
+                  <span>WISHLIST</span>
                 </button>
 
-                {/* Wishlist, Compare, Share Icon Actions Row */}
-                <div className={styles.iconActionsRow}>
-                  <button
-                    type="button"
-                    className={`${styles.iconBtn} ${wishlisted ? styles.iconBtnActive : ''}`}
-                    onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
-                    id="vault-wishlist"
-                  >
-                    <Heart size={14} fill={wishlisted ? 'currentColor' : 'none'} />
-                    <span>{wishlisted ? 'Saved' : 'Wishlist'}</span>
-                  </button>
+                <button
+                  type="button"
+                  className={`${styles.iconRowBtn} ${inCompare ? styles.iconRowBtnActive : ''}`}
+                  onClick={() => toggleCompare(product)}
+                >
+                  <ArrowLeftRight size={13} />
+                  <span>COMPARE</span>
+                </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.iconBtn} ${inCompare ? styles.iconBtnActive : ''}`}
-                    onClick={() => toggleCompare(product)}
-                    id="vault-compare"
-                  >
-                    <ArrowLeftRight size={14} />
-                    <span>{inCompare ? 'Comparing' : 'Compare'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.iconBtn}
-                    onClick={handleShare}
-                    id="vault-share"
-                  >
-                    <Share2 size={14} />
-                    <span>{copiedShare ? 'Copied' : 'Share'}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className={styles.iconRowBtn}
+                  onClick={handleShare}
+                >
+                  <Share2 size={13} />
+                  <span>{copiedShare ? 'COPIED' : 'SHARE'}</span>
+                </button>
               </div>
 
               {/* ==================================================
-                  EXCLUSIVE OWNERSHIP CERTIFICATE PANEL (REDESIGNED V3)
+                  EXCLUSIVE RACK ALLOCATION PANEL (100% REFERENCE MATCH)
                   ================================================== */}
-              <div className={styles.certificatePanel}>
+              <div className={styles.certBox}>
                 
                 <div className={styles.certHeader}>
-                  <div className={styles.certTitleGroup}>
-                    <Award size={14} color="#c8a46a" />
-                    <span className={styles.certTitle}>
-                      GODSMOVE VAULT CERTIFICATE OF ALLOCATION
-                    </span>
+                  <div className={styles.certHeaderTitle}>
+                    <Award size={13} color="#c8a46a" />
+                    <span>EXCLUSIVE RACK ALLOCATION</span>
                   </div>
-                  <span className={styles.certEditionBadge}>
-                    Edition {editionNumber} / {editionTotal}
+                  <span className={styles.certEditionText}>
+                    EDITION {editionNumber} / {editionTotal}
                   </span>
                 </div>
 
-                {/* Scarcity message banner */}
-                <div className={styles.scarcityMessageBanner}>
-                  {allocatedCount > 0 
-                    ? `${allocatedCount} collectors already own this edition. Only ${remainingCount} pieces remain worldwide.`
-                    : `Only ${remainingCount} pieces remain worldwide in private archives.`}
-                </div>
-
-                {/* Certificate Data Grid */}
-                <div className={styles.certGrid}>
-                  <div className={styles.certDataCard}>
-                    <div className={styles.certDataLabel}>Available</div>
-                    <div className={`${styles.certDataVal} ${styles.certDataValGold}`}>
-                      {remainingCount} Pieces Remaining
+                {/* 3 Metric Columns: AVAILABLE | SOLD | TOTAL */}
+                <div className={styles.metricsThreeCol}>
+                  <div className={styles.metricColItem}>
+                    <span className={styles.metricColLabel}>AVAILABLE</span>
+                    <div className={styles.metricColNum}>
+                      <span>{remainingCount}</span>
+                      <span className={styles.metricColPcs}>PCS</span>
                     </div>
                   </div>
 
-                  <div className={styles.certDataCard}>
-                    <div className={styles.certDataLabel}>Allocated</div>
-                    <div className={styles.certDataVal}>
-                      {allocatedCount} Pieces Allocated
+                  <div className={styles.metricColItem}>
+                    <span className={styles.metricColLabel}>SOLD</span>
+                    <div className={styles.metricColNum}>
+                      <span>{allocatedCount}</span>
+                      <span className={styles.metricColPcs}>PCS</span>
                     </div>
                   </div>
 
-                  <div className={styles.certDataCard}>
-                    <div className={styles.certDataLabel}>Allocation Status</div>
-                    <div className={styles.certDataVal}>No Restocking</div>
-                  </div>
-
-                  <div className={styles.certDataCard}>
-                    <div className={styles.certDataLabel}>Allocation Type</div>
-                    <div className={styles.certDataVal}>Limited Allocation</div>
+                  <div className={styles.metricColItem}>
+                    <span className={styles.metricColLabel}>TOTAL</span>
+                    <div className={styles.metricColNum}>
+                      <span>{editionTotal}</span>
+                      <span className={styles.metricColPcs}>PCS</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress Section */}
-                <div className={styles.certProgressWrap}>
-                  <div className={styles.certProgressLabels}>
-                    <span>{remainingCount} Remaining</span>
-                    <span>{allocatedCount} Allocated</span>
-                  </div>
-                  <div className={styles.certTrack}>
+                {/* Solid Warm Gold Progress Bar */}
+                <div className={styles.certProgressSection}>
+                  <div className={styles.certProgressTrack}>
                     <div
-                      className={styles.certFill}
+                      className={styles.certProgressFill}
                       style={{ width: `${scarcityPercent}%` }}
                     />
                   </div>
-                </div>
-
-                {/* Certificate Statements */}
-                <div className={styles.certStatements}>
-                  <div className={styles.certStatementRow}>
-                    <span className={styles.certBullet}>◆</span>
-                    <span>Each piece is individually allocated. No future manufacturing.</span>
-                  </div>
-                  <div className={styles.certStatementRow}>
-                    <span className={styles.certBullet}>◆</span>
-                    <span>Once allocated, this edition is permanently closed.</span>
+                  <div className={styles.certProgressLabels}>
+                    <span>{scarcityPercent}% REMAINING</span>
+                    <span>{100 - scarcityPercent}% ALLOCATED</span>
                   </div>
                 </div>
 
-                {/* Certificate Tag Pills */}
-                <div className={styles.certTags}>
-                  <span className={styles.certTag}>Private Collection</span>
-                  <span className={styles.certTag}>Hand Numbered</span>
-                  <span className={styles.certTag}>Edition Verified</span>
-                  <span className={styles.certTag}>Exclusive Allocation</span>
-                  <span className={styles.certTag}>Crafted Once</span>
-                  <span className={styles.certTag}>Never Restocked</span>
+                {/* 3 Status Cards */}
+                <div className={styles.statusThreeBox}>
+                  <div className={styles.statusCard}>
+                    <div className={styles.statusCardLabel}>ALLOCATION TYPE</div>
+                    <div className={styles.statusCardVal}>Limited Allocation</div>
+                  </div>
+
+                  <div className={styles.statusCard}>
+                    <div className={styles.statusCardLabel}>RESTOCKING</div>
+                    <div className={styles.statusCardVal}>No Restocking</div>
+                  </div>
+
+                  <div className={styles.statusCard}>
+                    <div className={styles.statusCardLabel}>UNIQUE PIECE</div>
+                    <div className={styles.statusCardVal}>Individually Allocated</div>
+                  </div>
+                </div>
+
+                {/* 4 Feature Icons Row */}
+                <div className={styles.featureFourRow}>
+                  <div className={styles.featureIconCard}>
+                    <User size={13} color="#c8a46a" />
+                    <span className={styles.featureIconCardText}>HAND NUMBERED</span>
+                  </div>
+
+                  <div className={styles.featureIconCard}>
+                    <Award size={13} color="#c8a46a" />
+                    <span className={styles.featureIconCardText}>LIMITED EDITION</span>
+                  </div>
+
+                  <div className={styles.featureIconCard}>
+                    <Package size={13} color="#c8a46a" />
+                    <span className={styles.featureIconCardText}>PRIVATE COLLECTION</span>
+                  </div>
+
+                  <div className={styles.featureIconCard}>
+                    <ShieldCheck size={13} color="#c8a46a" />
+                    <span className={styles.featureIconCardText}>EDITION VERIFIED</span>
+                  </div>
                 </div>
 
               </div>
@@ -607,11 +693,9 @@ export default function ExclusiveRackProductPage({
 
       {/* ==================================================
           UNLOCKED VAULT SECTIONS (PRODUCT DETAILS & SYMBOLISM)
-          Unlocked after full gallery sequence
           ================================================== */}
       <div className={styles.vaultUnlockedContent}>
         
-        {/* EDITORIAL DETAILS & SYMBOLISM */}
         <section className={styles.editorialSection}>
           <div className={styles.editorialHeader}>
             <span className={styles.editorialEyebrow}>DESIGN SPECIFICATION</span>
@@ -672,7 +756,6 @@ export default function ExclusiveRackProductPage({
           className={`${styles.mobileBarWishlist} ${wishlisted ? styles.wishlisted : ''}`}
           onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
           aria-label="Wishlist"
-          id="mobile-vault-wishlist"
         >
           <Heart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
         </button>
@@ -681,23 +764,31 @@ export default function ExclusiveRackProductPage({
           type="button"
           className={styles.mobileBarBuyNow}
           onClick={handleBuyNow}
-          id="mobile-vault-buy-now"
           disabled={availableStock === 0}
         >
-          Buy Now
+          BUY NOW
         </button>
 
         <button
           type="button"
           className={styles.mobileBarAddToBag}
           onClick={handleAddToCart}
-          id="mobile-vault-add-to-bag"
           disabled={availableStock === 0}
         >
           <ShoppingBag size={14} />
-          Add to Bag
+          ADD TO BAG
         </button>
       </div>
+
+      {/* Size Chart Modal */}
+      {hasSizeChart && (
+        <SizeChartModal
+          isOpen={isSizeChartOpen}
+          onClose={() => setIsSizeChartOpen(false)}
+          productName={product.name}
+          entries={sizeChartEntries}
+        />
+      )}
 
       {/* Mobile Variant Quick Add Sheet */}
       <MobileQuickAddSheet
