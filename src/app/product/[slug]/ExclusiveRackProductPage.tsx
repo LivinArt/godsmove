@@ -143,9 +143,7 @@ export default function ExclusiveRackProductPage({
     return [];
   })();
 
-  const hasSizeChart = sizeChartEntries.some(
-    (e: any) => e.measurements && typeof e.measurements === 'object' && Object.keys(e.measurements).length > 0
-  );
+  const hasSizeChart = true; // Always expose existing size chart system cleanly
 
   const { requireAuth } = useAuth();
   const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
@@ -157,7 +155,7 @@ export default function ExclusiveRackProductPage({
   const soldStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
   const reservedStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.reservedStock ?? 0), 0);
   const allocatedCount = soldStockSum + reservedStockSum;
-  const editionTotal = totalStockSum > 0 ? totalStockSum : 100;
+  const editionTotal = totalStockSum > 0 ? totalStockSum : 400;
   const remainingCount = Math.max(0, editionTotal - allocatedCount);
   const editionNumber = Math.min(editionTotal, Math.max(1, allocatedCount + 1));
   const scarcityPercent = Math.min(100, Math.max(0, Math.round((remainingCount / editionTotal) * 100)));
@@ -351,7 +349,7 @@ export default function ExclusiveRackProductPage({
               </div>
             </div>
 
-            {/* COLUMN 3: RIGHT (EDITORIAL PRODUCT INFO — RESPONSIVE & UNCONGESTED) */}
+            {/* COLUMN 3: RIGHT (EDITORIAL PRODUCT INFO — EFFORTLESS BREATHING SPACE) */}
             <div className={styles.colRight}>
               
               {/* Collection Name */}
@@ -390,9 +388,9 @@ export default function ExclusiveRackProductPage({
                 </div>
               </div>
 
-              {/* Dynamic Variant Selectors Block (100% Admin Panel Synchronized) */}
+              {/* Dynamic Variant Selectors Block (Intelligent Auto-Hide When No Colors Exist) */}
               <div className={styles.selectorRow}>
-                {/* Dynamic Tactile Color Swatches */}
+                {/* Dynamic Tactile Color Swatches (ONLY RENDER IF ADMIN CREATED COLOR VARIANTS) */}
                 {dynamicColors.length > 0 && (
                   <div className={styles.selectorBlock}>
                     <div className={styles.selectorLabelRow}>
@@ -418,10 +416,18 @@ export default function ExclusiveRackProductPage({
                   </div>
                 )}
 
-                {/* Dynamic Substantial Size Boxes */}
+                {/* Dynamic Substantial Size Boxes with Integrated Size Chart Link */}
                 <div className={styles.selectorBlock}>
                   <div className={styles.selectorLabelRow}>
                     <span className={styles.selectorTitle}>SIZE:</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSizeChartOpen(true)}
+                      className={styles.sizeChartLinkBtn}
+                    >
+                      <Ruler size={11} />
+                      <span>SIZE CHART</span>
+                    </button>
                   </div>
                   <div className={styles.sizeBoxes}>
                     {dynamicSizesList.map((s) => {
@@ -443,17 +449,6 @@ export default function ExclusiveRackProductPage({
                       );
                     })}
                   </div>
-
-                  {hasSizeChart && (
-                    <button
-                      type="button"
-                      onClick={() => setIsSizeChartOpen(true)}
-                      className={styles.sizeChartLink}
-                    >
-                      <Ruler size={11} />
-                      <span>SIZE CHART</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -485,11 +480,11 @@ export default function ExclusiveRackProductPage({
                 </div>
               </div>
 
-              {/* Primary CTAs */}
-              <div className={styles.actionStack}>
+              {/* REFINED HORIZONTAL CTA ROW: [ BUY NOW ] [ 👜 ] */}
+              <div className={styles.ctaHorizontalRow}>
                 <button
                   type="button"
-                  className={styles.buyNowBtn}
+                  className={styles.buyNowBtnCompact}
                   onClick={handleBuyNow}
                   id="vault-buy-now"
                   disabled={availableStock === 0}
@@ -499,13 +494,14 @@ export default function ExclusiveRackProductPage({
 
                 <button
                   type="button"
-                  className={styles.addToBagBtn}
+                  className={styles.addToBagSquareBtn}
                   onClick={handleAddToCart}
                   id="vault-add-to-bag"
                   disabled={availableStock === 0}
+                  title="Add to Bag"
+                  aria-label="Add to Bag"
                 >
-                  <ShoppingBag size={14} />
-                  ADD TO BAG
+                  <ShoppingBag size={18} />
                 </button>
               </div>
 
@@ -552,99 +548,86 @@ export default function ExclusiveRackProductPage({
           ================================================== */}
       <div className={styles.vaultUnlockedContent}>
         
-        {/* EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL */}
-        <section className={styles.certBoxSection}>
-          <div className={styles.certBox}>
+        {/* REDESIGNED FULL-WIDTH EDITORIAL EXCLUSIVE RACK ALLOCATION DASHBOARD */}
+        <section className={styles.fullWidthAllocationSection}>
+          <div className={styles.allocationDashboard}>
             
-            <div className={styles.certHeader}>
-              <div className={styles.certHeaderTitle}>
-                <Award size={14} color="#c8a46a" />
-                <span>EXCLUSIVE RACK ALLOCATION</span>
+            <div className={styles.allocationHeaderRow}>
+              <div className={styles.allocationTitleGroup}>
+                <Award size={16} color="#c8a46a" />
+                <span className={styles.allocationTitleText}>EXCLUSIVE RACK ALLOCATION</span>
               </div>
-              <span className={styles.certEditionText}>
+              <span className={styles.allocationEditionTag}>
                 EDITION {editionNumber} / {editionTotal}
               </span>
             </div>
 
-            {/* 3 Metric Columns: AVAILABLE | SOLD | TOTAL */}
-            <div className={styles.metricsThreeCol}>
-              <div className={styles.metricColItem}>
-                <span className={styles.metricColLabel}>AVAILABLE</span>
-                <div className={styles.metricColNum}>
-                  <span>{remainingCount}</span>
-                  <span className={styles.metricColPcs}>PCS</span>
+            {/* 3 LARGE EDITORIAL STATISTIC COLUMNS */}
+            <div className={styles.editorialStatsThreeCol}>
+              <div className={styles.statColBlock}>
+                <span className={styles.statColLabel}>AVAILABLE</span>
+                <div className={styles.statColNumberRow}>
+                  <span className={styles.statColBigNum}>{remainingCount}</span>
+                  <span className={styles.statColUnit}>PCS</span>
                 </div>
               </div>
 
-              <div className={styles.metricColItem}>
-                <span className={styles.metricColLabel}>SOLD</span>
-                <div className={styles.metricColNum}>
-                  <span>{allocatedCount}</span>
-                  <span className={styles.metricColPcs}>PCS</span>
+              <div className={styles.statColBlock}>
+                <span className={styles.statColLabel}>SOLD</span>
+                <div className={styles.statColNumberRow}>
+                  <span className={styles.statColBigNum}>{allocatedCount}</span>
+                  <span className={styles.statColUnit}>PCS</span>
                 </div>
               </div>
 
-              <div className={styles.metricColItem}>
-                <span className={styles.metricColLabel}>TOTAL</span>
-                <div className={styles.metricColNum}>
-                  <span>{editionTotal}</span>
-                  <span className={styles.metricColPcs}>PCS</span>
+              <div className={styles.statColBlock}>
+                <span className={styles.statColLabel}>TOTAL</span>
+                <div className={styles.statColNumberRow}>
+                  <span className={styles.statColBigNum}>{editionTotal}</span>
+                  <span className={styles.statColUnit}>PCS</span>
                 </div>
               </div>
             </div>
 
-            {/* Solid Warm Gold Progress Bar */}
-            <div className={styles.certProgressSection}>
-              <div className={styles.certProgressTrack}>
+            {/* FULL-WIDTH THIN GOLD PROGRESS BAR */}
+            <div className={styles.progressVisualizationWrap}>
+              <div className={styles.progressTrackLine}>
                 <div
-                  className={styles.certProgressFill}
+                  className={styles.progressFillGold}
                   style={{ width: `${scarcityPercent}%` }}
                 />
               </div>
-              <div className={styles.certProgressLabels}>
+              <div className={styles.progressLabelMeta}>
                 <span>{scarcityPercent}% REMAINING</span>
                 <span>{100 - scarcityPercent}% ALLOCATED</span>
               </div>
             </div>
 
-            {/* 3 Status Cards */}
-            <div className={styles.statusThreeBox}>
-              <div className={styles.statusCard}>
-                <div className={styles.statusCardLabel}>ALLOCATION TYPE</div>
-                <div className={styles.statusCardVal}>Limited Allocation</div>
+            {/* 5-COLUMN HORIZONTAL EDITORIAL STATUS TAGS */}
+            <div className={styles.fiveTagEditorialRow}>
+              <div className={styles.editorialTagCard}>
+                <span className={styles.editorialTagLabel}>ALLOCATION TYPE</span>
+                <span className={styles.editorialTagVal}>Limited Allocation</span>
               </div>
 
-              <div className={styles.statusCard}>
-                <div className={styles.statusCardLabel}>RESTOCKING</div>
-                <div className={styles.statusCardVal}>No Restocking</div>
+              <div className={styles.editorialTagCard}>
+                <span className={styles.editorialTagLabel}>RESTOCKING</span>
+                <span className={styles.editorialTagVal}>No Restocking</span>
               </div>
 
-              <div className={styles.statusCard}>
-                <div className={styles.statusCardLabel}>UNIQUE PIECE</div>
-                <div className={styles.statusCardVal}>Individually Allocated</div>
-              </div>
-            </div>
-
-            {/* 4 Feature Icons Row */}
-            <div className={styles.featureFourRow}>
-              <div className={styles.featureIconCard}>
-                <User size={14} color="#c8a46a" />
-                <span className={styles.featureIconCardText}>HAND NUMBERED</span>
+              <div className={styles.editorialTagCard}>
+                <span className={styles.editorialTagLabel}>CURATION</span>
+                <span className={styles.editorialTagVal}>Private Collection</span>
               </div>
 
-              <div className={styles.featureIconCard}>
-                <Award size={14} color="#c8a46a" />
-                <span className={styles.featureIconCardText}>LIMITED EDITION</span>
+              <div className={styles.editorialTagCard}>
+                <span className={styles.editorialTagLabel}>SERIALISATION</span>
+                <span className={styles.editorialTagVal}>Hand Numbered</span>
               </div>
 
-              <div className={styles.featureIconCard}>
-                <Package size={14} color="#c8a46a" />
-                <span className={styles.featureIconCardText}>PRIVATE COLLECTION</span>
-              </div>
-
-              <div className={styles.featureIconCard}>
-                <ShieldCheck size={14} color="#c8a46a" />
-                <span className={styles.featureIconCardText}>EDITION VERIFIED</span>
+              <div className={styles.editorialTagCard}>
+                <span className={styles.editorialTagLabel}>AUTHENTICITY</span>
+                <span className={styles.editorialTagVal}>Edition Verified</span>
               </div>
             </div>
 
@@ -665,18 +648,12 @@ export default function ExclusiveRackProductPage({
             </div>
           )}
 
+          {/* SPECS GRID (SILHOUETTE & FIT / BOLD FIT REMOVED CLEANLY) */}
           <div className={styles.specsGrid}>
             {product.material && (
               <div className={styles.specCard}>
                 <span className={styles.specTitle}>MATERIAL & FABRIC</span>
                 <p className={styles.specText}>{product.material}</p>
-              </div>
-            )}
-
-            {product.fit && (
-              <div className={styles.specCard}>
-                <span className={styles.specTitle}>SILHOUETTE & FIT</span>
-                <p className={styles.specText}>{product.fit}</p>
               </div>
             )}
 
@@ -730,9 +707,9 @@ export default function ExclusiveRackProductPage({
           className={styles.mobileBarAddToBag}
           onClick={handleAddToCart}
           disabled={availableStock === 0}
+          aria-label="Add to Bag"
         >
-          <ShoppingBag size={14} />
-          ADD TO BAG
+          <ShoppingBag size={16} />
         </button>
       </div>
 
@@ -757,10 +734,10 @@ export default function ExclusiveRackProductPage({
           setSelectedSize(size);
           setSizeError(false);
           if (mobileSheetAction === 'buy') {
-            beginInstantCheckout({ product, size, quantity });
+            beginInstantCheckout({ product, size, quantity, color: selectedColor || undefined });
             router.push('/checkout');
           } else {
-            addToCart(product, size, quantity);
+            addToCart(product, size, quantity, selectedColor || undefined);
           }
         }}
       />
