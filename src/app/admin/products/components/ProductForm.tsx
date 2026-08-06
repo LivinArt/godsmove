@@ -25,10 +25,9 @@ import {
 import { upsertProductRecord, createCategory, isSlugAvailable } from '@/actions/product.actions';
 import { createDrop } from '@/actions/drop.actions';
 
-// Import newly refactored subcomponents
+// Import subcomponents
 import ProductClient from '@/app/product/[slug]/ProductClient';
 import { ProductIdentity } from './ProductIdentity';
-import { ProductStory } from './ProductStory';
 import { VariantManager } from './VariantManager';
 import { Merchandising } from './Merchandising';
 import { MediaManager } from './MediaManager';
@@ -44,7 +43,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lists for local inline additions
   const [localCategories, setLocalCategories] = useState(categories);
   const [localDrops, setLocalDrops] = useState(drops);
   const [localCollections, setLocalCollections] = useState<any[]>([]);
@@ -55,18 +53,16 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     });
   }, []);
 
-  // Active PIM navigation step (6 steps)
+  // Active PIM navigation step (5 chapters)
   const [activeStep, setActiveStep] = useState<
-    'identity' | 'story' | 'variants' | 'merchandising' | 'media' | 'audit'
+    'identity' | 'variants' | 'merchandising' | 'media' | 'audit'
   >('identity');
 
   // Sidebar collapsing toggle (Responsiveness)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Slug check status
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-  // Inline Creation Modals
   const [showCatModal, setShowCatModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatSlug, setNewCatSlug] = useState('');
@@ -82,7 +78,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isPublishingFromModal, setIsPublishingFromModal] = useState(false);
 
-  // Primary fields with V4.0 additions
+  // Primary fields
   const [formData, setFormData] = useState<any>({
     id: initialData?.id || undefined,
     name: initialData?.name || '',
@@ -96,32 +92,13 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     categoryId: initialData?.categoryId || categories[0]?.id || '',
     dropId: initialData?.dropId || '',
     channel: initialData?.channel || 'DROP',
-    unlockTeaser: initialData?.unlockTeaser || '',
-    exclusiveStory: initialData?.exclusiveStory || '',
-    countdownDurationDays: initialData?.countdownDurationDays ?? 10,
-    winnerCount: initialData?.winnerCount ?? 3,
-    reservationPrice: initialData?.reservationPrice ? Number(initialData.reservationPrice) : undefined,
-    refundNonWinnersToWallet: initialData?.refundNonWinnersToWallet ?? true,
-    refundWinnersToWallet: initialData?.refundWinnersToWallet ?? true,
-    exclusiveBadgeText: initialData?.exclusiveBadgeText || 'Member Access',
-    unlockButtonText: initialData?.unlockButtonText || 'Unlock Access',
-    reserveButtonText: initialData?.reserveButtonText || 'Reserve This Drop',
-    enableImageToggle: initialData?.enableImageToggle || false,
-    frontImageUrl: initialData?.frontImageUrl || '',
-    backImageUrl: initialData?.backImageUrl || '',
-    defaultImageSide: initialData?.defaultImageSide || 'front',
-    seoTitle: initialData?.seoTitle || '',
-    seoDescription: initialData?.seoDescription || '',
-
+    
     // Merchandising
     isExclusiveRack: initialData?.isExclusiveRack || false,
     showOnHomepage: initialData?.showOnHomepage || false,
     showOnExclusivePage: initialData?.showOnExclusivePage || false,
     featuredPriority: initialData?.featuredPriority ?? 0,
     featuredBadge: initialData?.featuredBadge || '',
-    featuredHeadline: initialData?.featuredHeadline || '',
-    featuredDescription: initialData?.featuredDescription || '',
-    editorStory: initialData?.editorStory || '',
     collectionName: initialData?.collectionName || '',
     collectionBanner: initialData?.collectionBanner || '',
     collectionHeroImage: initialData?.collectionHeroImage || '',
@@ -129,15 +106,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     featuredFrom: initialData?.featuredFrom ? new Date(initialData.featuredFrom).toISOString().slice(0, 16) : '',
     featuredUntil: initialData?.featuredUntil ? new Date(initialData.featuredUntil).toISOString().slice(0, 16) : '',
     theme: initialData?.theme || 'Black',
-
-    // Editorial Storytelling
-    whyWeMadeThis: initialData?.whyWeMadeThis || '',
-    fabricName: initialData?.fabricName || '',
-    fabricWhy: initialData?.fabricWhy || '',
-    constructionName: initialData?.constructionName || '',
-    constructionWhy: initialData?.constructionWhy || '',
-    printName: initialData?.printName || '',
-    printWhy: initialData?.printWhy || '',
 
     // Technical Specs
     material: initialData?.material || '',
@@ -149,52 +117,35 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     mrp: initialData?.mrp ? Number(initialData.mrp) : undefined,
     hsn: initialData?.hsn || '',
     netQuantity: initialData?.netQuantity ?? 1,
-    styleWithIds: initialData?.styleWithIds || [],
-
-    // PIM Columns
     barcode: initialData?.barcode || '',
     costPrice: initialData?.costPrice ? Number(initialData.costPrice) : undefined,
+    comparePrice: initialData?.comparePrice ? Number(initialData.comparePrice) : undefined,
     gstPercentage: initialData?.gstPercentage !== undefined && initialData?.gstPercentage !== null ? Number(initialData.gstPercentage) : 18,
     weight: initialData?.weight ? Number(initialData.weight) : undefined,
     weightWithPackaging: initialData?.weightWithPackaging ? Number(initialData.weightWithPackaging) : undefined,
     dimensions: initialData?.dimensions || '',
-    shippingClass: initialData?.shippingClass || 'Standard Shipping',
+    shippingClass: initialData?.shippingClass || 'Standard Ground',
     returnEligible: initialData?.returnEligible ?? true,
     returnWindowDays: initialData?.returnWindowDays ?? 7,
-    metadata: initialData?.metadata || {},
-
-    // PIM V3.0 Guided attributes
     brand: initialData?.brand || 'GODSMOVE',
     warehouse: initialData?.warehouse || 'Main Warehouse',
     lowStockThreshold: initialData?.lowStockThreshold ?? 5,
     currency: initialData?.currency || 'INR',
-    lifestyleImages: initialData?.lifestyleImages || [],
-    editorialImages: initialData?.editorialImages || [],
-    videos: initialData?.videos || [],
-    packaging: initialData?.packaging || '',
-    warranty: initialData?.warranty || '',
-    ownershipInfo: initialData?.ownershipInfo || '',
-    editorialNotes: initialData?.editorialNotes || '',
-    garmentLifeCycle: initialData?.garmentLifeCycle || '',
-    useCoverImage: initialData?.useCoverImage ?? true,
-    seoCanonicalUrl: initialData?.seoCanonicalUrl || '',
-    seoOgImage: initialData?.seoOgImage || '',
-    seoTwitterTitle: initialData?.seoTwitterTitle || '',
-    seoTwitterDesc: initialData?.seoTwitterDesc || '',
+
+    styleWithIds: initialData?.styleWithIds || [],
   });
 
-  const [images, setImages] = useState<ProductImageInput[]>(
-    initialData?.images?.map((img: any) => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      position: img.position,
-      isCover: img.isCover,
+  const [images, setImages] = useState<ProductImageInput[]>(() =>
+    initialData?.images?.map((i: any) => ({
+      id: i.id,
+      url: i.url,
+      alt: i.alt || '',
+      position: i.position,
+      isCover: i.isCover,
     })) || []
   );
 
-  // Variant manager internal settings
-  const [variants, setVariants] = useState<FormVariantInput[]>(
+  const [variants, setVariants] = useState<FormVariantInput[]>(() =>
     initialData?.variants?.map((v: any) => ({
       sku: v.sku,
       size: v.size,
@@ -210,28 +161,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       initialStock: v.inventory?.totalStock || 0,
     })) || []
   );
-
-  // Garment Life Cycle State Builder (exactly 6 steps)
-  const defaultStages = [
-    { title: 'Concept Curation', desc: 'Narrative sketching in our design studio.', icon: 'Compass' },
-    { title: 'Material Sourcing', desc: 'Acquiring premium double-weave cotton.', icon: 'Layers' },
-    { title: 'Pattern Sculpting', desc: 'Precision grading and prototyping cuts.', icon: 'Scissors' },
-    { title: 'Technical Construction', desc: 'High-density reinforcing stitchwork.', icon: 'Cpu' },
-    { title: 'Quality Auditing', desc: 'Tensile test and dimensional validation.', icon: 'ShieldCheck' },
-    { title: 'Archival Packaging', desc: 'Boxed in matte linen collection slips.', icon: 'Package' },
-  ];
-
-  const [stages, setStages] = useState<{ title: string; desc: string; icon: string }[]>(() => {
-    if (initialData?.garmentLifeCycle) {
-      try {
-        const parsed = JSON.parse(initialData.garmentLifeCycle);
-        if (Array.isArray(parsed) && parsed.length === 6) {
-          return parsed;
-        }
-      } catch {}
-    }
-    return defaultStages;
-  });
 
   // Badge curation helper
   const [badgeType, setBadgeType] = useState<string>(() => {
@@ -251,7 +180,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       : ''
   );
 
-  // Synchronize custom badge text back to form data state
   useEffect(() => {
     let finalBadge = '';
     if (badgeType === 'Custom') {
@@ -262,13 +190,11 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     setFormData((prev: any) => ({ ...prev, featuredBadge: finalBadge }));
   }, [badgeType, customBadgeText]);
 
-  // Debounced Slug Availability Check
   useEffect(() => {
     if (!formData.slug) {
       setSlugStatus('idle');
       return;
     }
-
     setSlugStatus('checking');
     const timer = setTimeout(async () => {
       try {
@@ -278,18 +204,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         setSlugStatus('idle');
       }
     }, 500);
-
     return () => clearTimeout(timer);
   }, [formData.slug, formData.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-
-    if (name === 'channel' && val !== 'DROP') {
-      setFormData((prev: any) => ({ ...prev, channel: val, isFeatured: false }));
-      return;
-    }
 
     setFormData((prev: any) => ({ ...prev, [name]: val }));
   };
@@ -299,10 +219,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     try {
       const slugToUse = (newCatSlug && newCatSlug.trim()) ? newCatSlug.trim() : newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const cat = await createCategory(newCatName.trim(), slugToUse);
-      setLocalCategories((prev: any[]) => {
-        const exists = prev.some((c: any) => c.id === cat.id);
-        return exists ? prev : [...prev, { id: cat.id, name: cat.name }];
-      });
+      setLocalCategories((prev: any[]) => [...prev, { id: cat.id, name: cat.name }]);
       setFormData((prev: any) => ({ ...prev, categoryId: cat.id }));
       setShowCatModal(false);
       setNewCatName('');
@@ -324,7 +241,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         productIds: [],
       });
       setLocalDrops((prev: any[]) => [...prev, { id: drop.id, name: drop.name, slug: drop.slug }]);
-      setFormData((prev: any) => ({ ...prev, dropId: drop.id }));
+      setFormData((prev: any) => ({
+        ...prev,
+        dropId: drop.id,
+        channel: 'DROP',
+        isExclusiveRack: false,
+      }));
       setShowDropModal(false);
       setNewDropName('');
       setNewDropSlug('');
@@ -336,19 +258,46 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const handleInlineColCreate = () => {
     if (!newColName || !newColName.trim()) return;
     const colName = newColName.trim();
-    const story = newColStory ? newColStory.trim() : '';
-    setLocalCollections((prev: any[]) => {
-      const exists = prev.some((c: any) => (typeof c === 'string' ? c : c.name) === colName);
-      return exists ? prev : [...prev, { name: colName }];
-    });
-    setFormData((prev: any) => ({ ...prev, collectionName: colName, editorStory: story }));
+    setLocalCollections((prev: any[]) => [...prev, { name: colName }]);
+    setFormData((prev: any) => ({ ...prev, collectionName: colName }));
     setShowColModal(false);
     setNewColName('');
-    setNewColStory('');
   };
 
   const handlePreviewProduct = () => {
-    setShowPreviewModal(true);
+    const cleanSlug = formData.slug ? formData.slug.trim().toLowerCase() : `preview-${Date.now()}`;
+    const cleanDesc = (formData.description && formData.description.trim())
+      ? formData.description.trim()
+      : (formData.shortDesc || formData.name || 'GODSMOVE Luxury Piece');
+
+    const cleanDropId = (formData.dropId && formData.dropId.trim()) ? formData.dropId.trim() : null;
+
+    const basePrice = variants[0]?.price && Number(variants[0].price) > 0 ? Number(variants[0].price) : (formData.mrp ? Number(formData.mrp) : 2999);
+
+    const cleanVariants = (variants.length > 0 ? variants : [{ sku: `PREVIEW-${Date.now().toString().slice(-4)}-M`, size: 'M', color: 'Black', colorHex: '#000000', price: basePrice, initialStock: 25, position: 0 }]).map(v => ({
+      ...v,
+      price: v.price && Number(v.price) > 0 ? Number(v.price) : basePrice,
+    }));
+
+    const cleanImages = images.length > 0 ? images : [
+      { url: formData.frontImageUrl || '/images/placeholder.svg', isCover: true, position: 0 }
+    ];
+
+    const previewPayload = {
+      ...formData,
+      slug: cleanSlug,
+      description: cleanDesc,
+      shortDesc: formData.shortDesc || cleanDesc,
+      dropId: cleanDropId,
+      frontImageUrl: formData.frontImageUrl || '/images/placeholder.svg',
+      images: cleanImages,
+      variants: cleanVariants,
+    };
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('godsmove_preview_product', JSON.stringify(previewPayload));
+      window.open('/admin/products/preview', '_blank');
+    }
   };
 
   const handlePublishFromModal = async () => {
@@ -364,9 +313,9 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
 
       const cleanDropId = (formData.dropId && formData.dropId.trim()) ? formData.dropId.trim() : null;
 
-      const basePrice = variants[0]?.price && Number(variants[0].price) > 0 ? Number(variants[0].price) : 12500;
+      const basePrice = variants[0]?.price && Number(variants[0].price) > 0 ? Number(variants[0].price) : (formData.mrp ? Number(formData.mrp) : 2999);
 
-      const cleanVariants = (variants.length > 0 ? variants : [{ sku: `QA-${Date.now().toString().slice(-4)}-M`, size: 'M', color: 'Black', colorHex: '#000000', price: 12500, initialStock: 25, position: 0 }]).map(v => ({
+      const cleanVariants = (variants.length > 0 ? variants : [{ sku: `QA-${Date.now().toString().slice(-4)}-M`, size: 'M', color: 'Black', colorHex: '#000000', price: basePrice, initialStock: 25, position: 0 }]).map(v => ({
         ...v,
         price: v.price && Number(v.price) > 0 ? Number(v.price) : basePrice,
       }));
@@ -406,7 +355,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       errors.push({
         section: 'Identity',
         message: 'Product Name is missing',
-        resolution: 'Provide a name inside Step 1 (Identity).',
+        resolution: 'Provide a product name in Step 1 (Identity).',
         severity: 'ERROR'
       });
     }
@@ -414,7 +363,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       errors.push({
         section: 'Identity',
         message: 'URL Slug is missing',
-        resolution: 'Generate or write a custom slug inside Step 1 (Identity).',
+        resolution: 'Generate or type a custom slug in Step 1 (Identity).',
         severity: 'ERROR'
       });
     }
@@ -426,11 +375,27 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         severity: 'ERROR'
       });
     }
+    if (!formData.dropId && !formData.isExclusiveRack) {
+      errors.push({
+        section: 'Identity',
+        message: 'Associated Release Drop or Destination is required',
+        resolution: 'Select an Associated Release Drop or EXCLUSIVE RACK in Step 1.',
+        severity: 'ERROR'
+      });
+    }
     if (!formData.description) {
       errors.push({
         section: 'Identity',
         message: 'Full Description is missing',
-        resolution: 'Provide a description in Step 1 to describe materials and cuts.',
+        resolution: 'Provide a full product description in Step 1.',
+        severity: 'ERROR'
+      });
+    }
+    if (!formData.shortDesc) {
+      errors.push({
+        section: 'Identity',
+        message: 'Short Description / Teaser is missing',
+        resolution: 'Provide a short teaser summary in Step 1.',
         severity: 'ERROR'
       });
     }
@@ -440,7 +405,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       errors.push({
         section: 'Variants',
         message: 'Product has no variants configured',
-        resolution: 'Specify size/color details and generate at least one variant in Step 3.',
+        resolution: 'Generate at least one variant in Step 2 (Variants).',
         severity: 'ERROR'
       });
     } else {
@@ -449,7 +414,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           errors.push({
             section: 'Variants',
             message: `SKU code is missing on Variant ${idx + 1}`,
-            resolution: 'Generate or type an SKU for all combinations in Step 3.',
+            resolution: 'Generate or type an SKU for all combinations in Step 2.',
             severity: 'ERROR'
           });
         }
@@ -457,21 +422,19 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           errors.push({
             section: 'Variants',
             message: `Selling price is invalid on Variant ${v.sku || (idx + 1)}`,
-            resolution: `Specify a positive price for Variant ${idx + 1} in Step 3.`,
+            resolution: `Specify a positive price for Variant ${idx + 1} in Step 2.`,
             severity: 'ERROR'
           });
         }
       });
     }
 
-
-
     // Media
     if (!formData.frontImageUrl) {
       errors.push({
         section: 'Media',
         message: 'Cover Image is required',
-        resolution: 'Upload a primary cover image under Step 5 (Media).',
+        resolution: 'Upload a primary cover image under Step 4 (Media).',
         severity: 'ERROR'
       });
     }
@@ -479,7 +442,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       errors.push({
         section: 'Media',
         message: 'At least one gallery image is required',
-        resolution: 'Upload at least one gallery image in Step 5 (Media).',
+        resolution: 'Upload at least one gallery image in Step 4 (Media).',
         severity: 'ERROR'
       });
     }
@@ -489,7 +452,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       errors.push({
         section: 'Identity',
         message: 'HSN Tax Code is missing',
-        resolution: 'Fill in the required 8-digit HSN code in Step 1 (Identity).',
+        resolution: 'Fill in the required HSN code in Step 1 (Identity).',
         severity: 'ERROR'
       });
     }
@@ -503,11 +466,9 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    console.log('===> [CLIENT] STEP 0: Initiating handleSubmit');
 
     const activeCritical = performValidationAudit().filter(x => x.severity === 'ERROR');
     if (activeCritical.length > 0) {
-      console.warn('===> [CLIENT] Audit validation failed with critical errors');
       setError(`Cannot publish. Please resolve the ${activeCritical.length} critical errors listed in Review & Publish.`);
       setActiveStep('audit');
       return;
@@ -516,7 +477,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     setIsPending(true);
 
     try {
-      console.log('===> [CLIENT] STEP 1: Preparing payload');
       const parsedFrom = formData.featuredFrom ? new Date(formData.featuredFrom) : null;
       const parsedUntil = formData.featuredUntil ? new Date(formData.featuredUntil) : null;
 
@@ -527,7 +487,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         ...formData,
         mrp: productSellingPrice,
         costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
-        gstPercentage: Number(formData.gstPercentage || 12.0),
+        gstPercentage: Number(formData.gstPercentage || 18.0),
         dropId: formData.dropId || null,
         featuredFrom: parsedFrom,
         featuredUntil: parsedUntil,
@@ -538,23 +498,14 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           comparePrice: (v.comparePrice !== undefined && v.comparePrice !== null) ? Number(v.comparePrice) : productComparePrice,
           position: idx,
         })),
-        garmentLifeCycle: JSON.stringify(stages),
       };
 
-      console.log('===> [CLIENT] STEP 2: Running UpsertProductSchema.parse');
       const validated = UpsertProductSchema.parse(payload);
-
-      console.log('===> [CLIENT] STEP 3: Invoking upsertProductRecord server action');
       const savedProduct = await upsertProductRecord(validated);
-      console.log('===> [CLIENT] STEP 4: Server action returned successfully:', savedProduct?.slug);
 
-      console.log('===> [CLIENT] STEP 5: Executing router.push and router.refresh');
       router.push(`/product/${savedProduct.slug}`);
       router.refresh();
     } catch (err: any) {
-      console.error('❌ [CLIENT] CATCH IN HANDLESUBMIT:', err);
-      console.error('❌ [CLIENT] ERROR STACK:', err?.stack);
-      console.error('❌ [CLIENT] ERROR DIGEST:', err?.digest);
       if (err instanceof z.ZodError) {
         setError(err.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(' | '));
       } else {
@@ -567,18 +518,16 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
 
   const steps = [
     { id: 'identity', title: 'Identity & Details', number: 1 },
-    { id: 'story', title: 'Brand Storytelling', number: 2 },
-    { id: 'variants', title: 'Variant Manager', number: 3 },
-    { id: 'merchandising', title: 'Merchandising', number: 4 },
-    { id: 'media', title: 'Media Manager', number: 5 },
-    { id: 'audit', title: 'Review & Publish', number: 6 },
+    { id: 'variants', title: 'Variant Manager', number: 2 },
+    { id: 'merchandising', title: 'Merchandising', number: 3 },
+    { id: 'media', title: 'Media Manager', number: 4 },
+    { id: 'audit', title: 'Review & Publish', number: 5 },
   ] as const;
 
   const currentStepIndex = steps.findIndex(s => s.id === activeStep);
 
   const getSectionStatusColor = (sectionId: typeof activeStep) => {
-    let checkWord = sectionId === 'identity' ? 'identity' : sectionId === 'story' ? 'story' : sectionId;
-    const secErrors = auditErrors.filter(e => e.section.toLowerCase().includes(checkWord.substring(0, 5)));
+    const secErrors = auditErrors.filter(e => e.section.toLowerCase().includes(sectionId.substring(0, 5)));
     if (secErrors.some(e => e.severity === 'ERROR')) return '#ef4444';
     if (secErrors.some(e => e.severity === 'WARNING')) return '#f59e0b';
     return '#22c55e';
@@ -613,10 +562,10 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           </Link>
           <div>
             <h1 style={{ fontSize: '16px', fontWeight: 600, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {initialData ? 'Modify Luxury Piece' : 'Create PIM Listing'}
+              {initialData ? 'Modify Product' : 'Create Product Listing'}
             </h1>
             <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Step {currentStepIndex + 1} of 6 — {steps[currentStepIndex].title}
+              Step {currentStepIndex + 1} of 5 — {steps[currentStepIndex].title}
             </span>
           </div>
         </div>
@@ -632,7 +581,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           <button
             type="submit"
             disabled={isPending || criticalCount > 0}
-            className="btn-primary"
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -665,19 +613,16 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
         </div>
       )}
 
-      {/* Main Workspace Split Grid */}
       <div 
         style={{ 
           display: 'grid', 
           gridTemplateColumns: sidebarCollapsed ? '60px 1fr' : '260px 1fr', 
           gap: '32px', 
           flex: 1,
-          transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
         }}
         className="pim-container-layout"
       >
         
-        {/* Progress Sidebar */}
         <aside 
           style={{ 
             display: 'flex', 
@@ -686,7 +631,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
             borderRight: '1px solid rgba(255, 255, 255, 0.05)',
             paddingRight: '16px'
           }}
-          className="pim-sidebar"
         >
           <button 
             type="button" 
@@ -759,7 +703,6 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
           })}
         </aside>
 
-        {/* Dynamic Form View Container */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
           {/* STEP 1: Core Identity */}
@@ -778,149 +721,84 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 setShowDropModal={setShowDropModal}
                 setShowColModal={setShowColModal}
               />
-              
+
               <section className="admin-card" style={{ padding: '32px' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', color: '#fff' }}>
-                  Taxation & Logistics Info
+                <h2 style={{ fontSize: '15px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '24px', color: '#fff' }}>
+                  Taxation & Pricing Architecture
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
+                  <div>
+                    <label className="form-label">Cost Price (₹)</label>
+                    <input
+                      type="number"
+                      name="costPrice"
+                      value={formData.costPrice || ''}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="e.g. 1200"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label">Selling Price (Inclusive of GST) (₹) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      type="number"
+                      name="mrp"
+                      value={formData.mrp || ''}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="e.g. 2999"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }} className="pim-grid-col2">
+                  <div>
+                    <label className="form-label">Compare Price / Strikethrough MRP (₹)</label>
+                    <input
+                      type="number"
+                      name="comparePrice"
+                      value={formData.comparePrice || ''}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="e.g. 4999"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label">GST Tax Percentage (%) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      type="number"
+                      name="gstPercentage"
+                      value={formData.gstPercentage ?? 18}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="e.g. 0, 5, 12, 18, 28"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }} className="pim-grid-col2">
                   <div>
                     <label className="form-label">HSN Tax Code <span style={{ color: '#ef4444' }}>*</span></label>
                     <input
                       type="text"
                       name="hsn"
-                      value={formData.hsn}
+                      value={formData.hsn || ''}
                       onChange={handleChange}
                       className="admin-input"
                       placeholder="e.g. 61091000"
                       required
                     />
                   </div>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginTop: '20px' }} className="pim-grid-col3">
                   <div>
-                    <label className="form-label">Product Weight (kg)</label>
-                    <input
-                      type="number"
-                      name="weight"
-                      value={formData.weight || ''}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="e.g. 0.45"
-                      step="0.01"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Weight With Packaging (kg)</label>
-                    <input
-                      type="number"
-                      name="weightWithPackaging"
-                      value={formData.weightWithPackaging || ''}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="e.g. 0.65"
-                      step="0.01"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Warehouse (Optional)</label>
-                    <input
-                      type="text"
-                      name="warehouse"
-                      value={formData.warehouse}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="e.g. Main Warehouse"
-                    />
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '24px', paddingTop: '24px' }}>
-                  <h3 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c8a46a', marginBottom: '16px' }}>
-                    MRP & GST Pricing Architecture (Inclusive Model)
-                  </h3>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
-                    <div>
-                      <label className="form-label">Cost Price (₹)</label>
-                      <input
-                        type="number"
-                        name="costPrice"
-                        value={formData.costPrice || ''}
-                        onChange={handleChange}
-                        className="admin-input"
-                        placeholder="e.g. 1200"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">Selling Price (Inclusive of GST) (₹) <span style={{ color: '#ef4444' }}>*</span></label>
-                      <input
-                        type="number"
-                        name="mrp"
-                        value={formData.mrp || ''}
-                        onChange={handleChange}
-                        className="admin-input"
-                        placeholder="e.g. 2999"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }} className="pim-grid-col2">
-                    <div>
-                      <label className="form-label">Compare Price / Strikethrough MRP (₹)</label>
-                      <input
-                        type="number"
-                        name="comparePrice"
-                        value={formData.comparePrice || ''}
-                        onChange={handleChange}
-                        className="admin-input"
-                        placeholder="e.g. 4999"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">GST Rate %</label>
-                      <select
-                        className="admin-input admin-select"
-                        value={[0, 5, 12, 18, 28].includes(Number(formData.gstPercentage)) ? String(formData.gstPercentage) : 'custom'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'custom') {
-                            setFormData((prev: any) => ({ ...prev, gstPercentage: prev.gstPercentage || 12 }));
-                          } else {
-                            setFormData((prev: any) => ({ ...prev, gstPercentage: Number(val) }));
-                          }
-                        }}
-                      >
-                        <option value="0">0% (Exempted)</option>
-                        <option value="5">5% (Apparel & Low Rate)</option>
-                        <option value="12">12% (Standard Fashion Rate)</option>
-                        <option value="18">18% (Standard Rate)</option>
-                        <option value="28">28% (Luxury Rate)</option>
-                        <option value="custom">Custom Percentage</option>
-                      </select>
-
-                      {![0, 5, 12, 18, 28].includes(Number(formData.gstPercentage)) && (
-                        <div style={{ marginTop: '10px' }}>
-                          <label className="form-label">Custom GST Percentage (%)</label>
-                          <input
-                            type="number"
-                            name="gstPercentage"
-                            value={formData.gstPercentage ?? ''}
-                            onChange={handleChange}
-                            className="admin-input"
-                            placeholder="Enter custom GST % (e.g. 7.5)"
-                            step="0.1"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '16px' }}>
                     <label className="form-label">Barcode / UPC (Optional)</label>
                     <input
                       type="text"
@@ -935,12 +813,24 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               </section>
 
               <section className="admin-card" style={{ padding: '32px' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', color: '#fff' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '24px', color: '#fff' }}>
                   Product Descriptions & Symbolism
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label className="form-label">Main Description <span style={{ color: '#ef4444' }}>*</span></label>
+                    <label className="form-label">Short Description / Teaser <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      type="text"
+                      name="shortDesc"
+                      value={formData.shortDesc || ''}
+                      onChange={handleChange}
+                      className="admin-input"
+                      placeholder="Quick summary teaser shown in catalog cards..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Product Description & Symbolism <span style={{ color: '#ef4444' }}>*</span></label>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -951,47 +841,16 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                       required
                     />
                   </div>
-                  <div>
-                    <label className="form-label">Short Description / Teaser</label>
-                    <input
-                      type="text"
-                      name="shortDesc"
-                      value={formData.shortDesc || ''}
-                      onChange={handleChange}
-                      className="admin-input"
-                      placeholder="Quick summary shown in indexes..."
-                    />
-                  </div>
                 </div>
               </section>
-
-              {/* Inline quick create modals buttons */}
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="button" onClick={() => setShowCatModal(true)} className="btn-secondary" style={{ fontSize: '11px' }}>
-                  <Plus size={14} style={{ marginRight: '6px' }} /> Quick Add Category
-                </button>
-                <button type="button" onClick={() => setShowDropModal(true)} className="btn-secondary" style={{ fontSize: '11px' }}>
-                  <Plus size={14} style={{ marginRight: '6px' }} /> Quick Add Drop
-                </button>
-              </div>
             </div>
           )}
 
-          {/* STEP 2: Storytelling */}
-          {activeStep === 'story' && (
-            <ProductStory
-              formData={formData}
-              onChange={handleChange}
-              stages={stages}
-              setStages={setStages}
-            />
-          )}
-
-          {/* STEP 3: Variants */}
+          {/* STEP 2: Variants */}
           {activeStep === 'variants' && (
             <section className="admin-card" style={{ padding: '32px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '24px', color: '#fff' }}>
-                3. Variant & Size Inventory Manager
+                2. Variant & Size Inventory Manager
               </h2>
               <VariantManager
                 variants={variants}
@@ -1000,12 +859,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                 globalCostPrice={Number(formData.costPrice || 0)}
                 globalSellingPrice={Number(formData.mrp || 0)}
                 globalComparePrice={formData.comparePrice ? Number(formData.comparePrice) : null}
-                globalGstPercentage={Number(formData.gstPercentage || 12.0)}
+                globalGstPercentage={Number(formData.gstPercentage || 18.0)}
               />
             </section>
           )}
 
-          {/* STEP 4: Merchandising */}
+          {/* STEP 3: Merchandising */}
           {activeStep === 'merchandising' && (
             <Merchandising
               formData={formData}
@@ -1018,7 +877,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
             />
           )}
 
-          {/* STEP 5: Media Manager */}
+          {/* STEP 4: Media Manager */}
           {activeStep === 'media' && (
             <MediaManager
               formData={formData}
@@ -1029,19 +888,19 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
             />
           )}
 
-          {/* STEP 6: Audit & Review */}
+          {/* STEP 5: Audit & Review */}
           {activeStep === 'audit' && (
             <section className="admin-card" style={{ padding: '32px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '24px', color: '#fff' }}>
-                6. Guided Review & Publishing
+                5. Review & Publish Summary
               </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {criticalCount === 0 ? (
                   <div style={{ padding: '24px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '2px', textAlign: 'center' }}>
                     <CheckCircle className="w-12 h-12 text-green-500" style={{ margin: '0 auto 12px' }} />
                     <h3 style={{ fontSize: '14px', margin: '0 0 6px 0', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Perfect Quality Score</h3>
-                    <p style={{ fontSize: '11px', color: 'var(--admin-muted)', margin: 0 }}>This listing satisfies all luxury presentation standards and tax rules. Ready to save & publish.</p>
+                    <p style={{ fontSize: '11px', color: 'var(--admin-muted)', margin: 0 }}>This product satisfies all luxury presentation standards and tax rules. Ready to save & publish.</p>
                   </div>
                 ) : (
                   <div style={{ padding: '24px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '2px', textAlign: 'center' }}>
@@ -1051,141 +910,58 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Listing Audit Log
-                  </span>
-                  
-                  {auditErrors.length === 0 ? (
-                    <p style={{ fontSize: '11px', color: 'var(--admin-muted)' }}>No issues found.</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {auditErrors.map((err, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            padding: '12px 16px',
-                            background: err.severity === 'ERROR' ? 'rgba(239,68,68,0.04)' : 'rgba(245,158,11,0.04)',
-                            borderLeft: `3px solid ${err.severity === 'ERROR' ? '#ef4444' : '#f59e0b'}`,
-                            fontSize: '11px'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <strong style={{ color: '#fff', textTransform: 'uppercase', fontSize: '9px', letterSpacing: '0.05em' }}>
-                              [{err.section}] {err.message}
-                            </strong>
-                            <span style={{ color: err.severity === 'ERROR' ? '#ef4444' : '#f59e0b', fontWeight: 700, fontSize: '9px', textTransform: 'uppercase' }}>
-                              {err.severity}
-                            </span>
-                          </div>
-                          <span style={{ color: 'var(--admin-muted)' }}>{err.resolution}</span>
-                        </div>
-                      ))}
+                {/* Structured Review Summary Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#c8a46a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Listing Identity</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                      {formData.frontImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={formData.frontImageUrl} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 4 }} />
+                      ) : (
+                        <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.05)', borderRadius: 4 }} />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: '#fff' }}>{formData.name || 'Untitled'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--admin-muted)' }}>{formData.slug}</div>
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Admin Visibility Only Financial & GST Breakdown */}
-                <div style={{ background: 'rgba(200, 164, 106, 0.04)', border: '1px solid rgba(200, 164, 106, 0.2)', padding: '24px', borderRadius: '4px', marginTop: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c8a46a', margin: 0 }}>
-                      Financial & GST Tax Breakdown (Admin Visibility Only)
-                    </h4>
-                    <span style={{ fontSize: '10px', color: '#8c857b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Internal Compliance Metrics
-                    </span>
+                    <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--admin-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div>Destination: <strong style={{ color: formData.isExclusiveRack ? '#c8a46a' : '#fff' }}>{formData.isExclusiveRack ? 'EXCLUSIVE RACK' : (localDrops.find(d => d.id === formData.dropId)?.name || 'Drop Assigned')}</strong></div>
+                      <div>Category: <strong style={{ color: '#fff' }}>{localCategories.find(c => c.id === formData.categoryId)?.name || 'Default'}</strong></div>
+                      <div>Collection: <strong style={{ color: '#fff' }}>{formData.collectionName || 'Default Catalog'}</strong></div>
+                      <div>Brandmark: <strong style={{ color: '#fff' }}>{formData.brand || 'GODSMOVE'}</strong></div>
+                    </div>
                   </div>
 
-                  {(() => {
-                    const sp = Number(formData.mrp || 0);
-                    const cp = Number(formData.costPrice || 0);
-                    const compPrice = formData.comparePrice ? Number(formData.comparePrice) : 0;
-                    const gstRate = Number(formData.gstPercentage || 12);
-                    const taxableValue = sp > 0 ? Number((sp / (1 + gstRate / 100)).toFixed(2)) : 0;
-                    const gstIncluded = sp > 0 ? Number((sp - taxableValue).toFixed(2)) : 0;
+                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#c8a46a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Pricing & Tax Architecture</span>
+                    <div style={{ marginTop: '12px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div>Selling Price (MRP): <strong style={{ color: '#c8a46a', fontSize: '13px' }}>₹{Number(formData.mrp || 0).toLocaleString('en-IN')}</strong></div>
+                      <div>Cost Price: <strong style={{ color: '#fff' }}>{formData.costPrice ? `₹${Number(formData.costPrice).toLocaleString('en-IN')}` : 'N/A'}</strong></div>
+                      <div>Strikethrough Price: <strong style={{ color: '#9ca3af' }}>{formData.comparePrice ? `₹${Number(formData.comparePrice).toLocaleString('en-IN')}` : 'N/A'}</strong></div>
+                      <div>GST Tax Rate: <strong style={{ color: '#fff' }}>{formData.gstPercentage ?? 18}%</strong></div>
+                      <div>HSN Code: <strong style={{ color: '#fff' }}>{formData.hsn || 'N/A'}</strong></div>
+                    </div>
+                  </div>
 
-                    const hasVariantOverrides = variants.some(v => 
-                      (v.price !== undefined && v.price !== null && Number(v.price) > 0 && Number(v.price) !== sp) ||
-                      (v.comparePrice !== undefined && v.comparePrice !== null && Number(v.comparePrice) !== compPrice)
-                    );
-
-                    return (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '16px', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Cost Price</span>
-                            <strong style={{ fontSize: '14px', color: '#fff' }}>₹{cp.toLocaleString('en-IN')}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Selling Price (Inclusive GST)</span>
-                            <strong style={{ fontSize: '14px', color: '#c8a46a' }}>₹{sp.toLocaleString('en-IN')}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Compare Price</span>
-                            <strong style={{ fontSize: '14px', color: '#9ca3af' }}>{compPrice > 0 ? `₹${compPrice.toLocaleString('en-IN')}` : 'N/A'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Rate</span>
-                            <strong style={{ fontSize: '14px', color: '#fff' }}>{gstRate}%</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GST Included</span>
-                            <strong style={{ fontSize: '14px', color: '#22c55e' }}>₹{gstIncluded.toLocaleString('en-IN')}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '10px', color: 'var(--admin-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Taxable Value</span>
-                            <strong style={{ fontSize: '14px', color: '#fff' }}>₹{taxableValue.toLocaleString('en-IN')}</strong>
-                          </div>
-                        </div>
-
-                        {hasVariantOverrides && (
-                          <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(200,164,106,0.08)', border: '1px solid rgba(200,164,106,0.3)', borderRadius: '2px', fontSize: '11px', color: '#c8a46a' }}>
-                            ⚡ <strong>Size-Based Custom Pricing:</strong> Some variants use custom price overrides.
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  <p style={{ fontSize: '10px', color: '#8c857b', marginTop: '12px', marginBottom: 0, fontStyle: 'italic' }}>
-                    Note: These calculations are strictly internal for tax filing & margin analytics. Customers see only the final Selling Price with &quot;Price inclusive of GST&quot; subtext.
-                  </p>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#c8a46a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Inventory & Merchandising</span>
+                    <div style={{ marginTop: '12px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div>Configured Sizes/Variants: <strong style={{ color: '#fff' }}>{variants.length} sizes</strong></div>
+                      <div>Total Available Stock: <strong style={{ color: '#22c55e' }}>{variants.reduce((acc, v) => acc + (v.initialStock || 0), 0)} units</strong></div>
+                      <div>Featured on Homepage: <strong style={{ color: formData.showOnHomepage ? '#22c55e' : 'var(--admin-muted)' }}>{formData.showOnHomepage ? 'YES' : 'NO'}</strong></div>
+                      <div>Badge: <strong style={{ color: '#c8a46a' }}>{formData.featuredBadge || 'None'}</strong></div>
+                      <div>Media Attachments: <strong style={{ color: '#fff' }}>{images.length} images</strong></div>
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <button
-                      type="button"
-                      onClick={handlePreviewProduct}
-                      className="btn-secondary"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '12px 20px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        border: '1px solid rgba(200, 164, 106, 0.4)',
-                        color: '#c8a46a',
-                        borderRadius: '2px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Preview Product</span>
-                    </button>
-
-                    <button
                       type="submit"
                       disabled={isPending || criticalCount > 0}
-                      className="btn-primary"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1202,8 +978,12 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
                         cursor: criticalCount > 0 ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      <span>Save & Publish listing</span>
+                      {isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      <span>Save Product</span>
                     </button>
                   </div>
                 </div>

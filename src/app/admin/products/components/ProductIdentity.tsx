@@ -163,10 +163,12 @@ export function ProductIdentity({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="pim-grid-col2">
-          {/* DROP SELECTOR + INLINE CREATE */}
+          {/* DROP / DESTINATION SELECTOR + INLINE CREATE */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label className="form-label" style={{ margin: 0 }}>Associated Release Drop (Optional)</label>
+              <label className="form-label" style={{ margin: 0 }}>
+                Associated Release Drop / Destination <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               {setShowDropModal && (
                 <button
                   type="button"
@@ -182,17 +184,38 @@ export function ProductIdentity({
               )}
             </div>
             <select
-              name="dropId"
-              value={formData.dropId || ''}
-              onChange={onChange}
+              name="dropSelect"
+              value={formData.isExclusiveRack ? 'EXCLUSIVE_RACK' : (formData.dropId || '')}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'EXCLUSIVE_RACK') {
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    dropId: '',
+                    channel: 'EXCLUSIVE_RACK',
+                    isExclusiveRack: true,
+                  }));
+                } else {
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    dropId: val,
+                    channel: 'DROP',
+                    isExclusiveRack: false,
+                  }));
+                }
+              }}
               className="admin-input admin-select"
+              required
             >
-              <option value="">No Drop Association</option>
-              {drops.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.status})
-                </option>
-              ))}
+              <option value="">Select Destination Drop / Rack...</option>
+              <option value="EXCLUSIVE_RACK">EXCLUSIVE RACK (Vault Destination)</option>
+              <optgroup label="Release Drops">
+                {drops.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.status})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
@@ -209,21 +232,7 @@ export function ProductIdentity({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }} className="pim-grid-col3">
-          <div>
-            <label className="form-label">Product Publishing Channel</label>
-            <select
-              name="channel"
-              value={formData.channel}
-              onChange={onChange}
-              className="admin-input admin-select"
-            >
-              <option value="DROP">Drop Catalog (Standard)</option>
-              <option value="EXCLUSIVE_RACK">Exclusive Rack Catalog</option>
-              <option value="EXCLUSIVE_UNLOCK">Exclusive Draw (Tier Unlock)</option>
-            </select>
-          </div>
-
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
           <div>
             <label className="form-label">Publishing status</label>
             <select

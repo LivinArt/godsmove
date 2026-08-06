@@ -11,6 +11,9 @@ type ProductRow = {
   slug: string;
   status: string;
   channel: string;
+  isExclusiveRack?: boolean;
+  collectionName?: string | null;
+  featuredBadge?: string | null;
   images: { isCover: boolean; url: string }[];
   category: { name: string };
   drop: { name: string } | null;
@@ -54,7 +57,7 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
         <table className="admin-table">
           <tbody>
             <tr>
-              <td colSpan={8} style={{ textAlign: 'center', padding: 60, color: 'var(--admin-muted)' }}>
+              <td colSpan={10} style={{ textAlign: 'center', padding: 60, color: 'var(--admin-muted)' }}>
                 No products found matching your criteria.
               </td>
             </tr>
@@ -73,11 +76,13 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
               <th>Image</th>
               <th>Product</th>
               <th>Category</th>
-              <th>Drop</th>
+              <th>Drop / Destination</th>
               <th>Status</th>
               <th>Stock</th>
               <th>Variants</th>
-              <th></th>
+              <th>Collection</th>
+              <th>Badge</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -85,10 +90,13 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
               const stock = availableStock(p);
               const isLow = stock <= 5 && stock > 0;
               const coverImg = p.images.find((i) => i.isCover)?.url || p.images[0]?.url;
+              const dropLabel = p.isExclusiveRack
+                ? 'EXCLUSIVE RACK'
+                : (p.drop?.name ?? '—');
 
               return (
                 <tr key={p.id}>
-                  <td style={{ width: 60 }}>
+                  <td style={{ width: 50 }}>
                     {coverImg ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -101,20 +109,22 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                     )}
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--admin-muted)', fontFamily: 'var(--admin-mono)' }}>
-                      {p.slug} • {p.channel}
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--admin-muted)', fontFamily: 'var(--admin-mono)' }}>
+                      {p.slug}
                     </div>
                   </td>
-                  <td style={{ fontSize: 13 }}>{p.category.name}</td>
-                  <td style={{ fontSize: 13, color: 'var(--admin-muted)' }}>{p.drop?.name ?? '—'}</td>
+                  <td style={{ fontSize: 12 }}>{p.category.name}</td>
+                  <td style={{ fontSize: 12, color: p.isExclusiveRack ? '#c8a46a' : 'var(--admin-muted)', fontWeight: p.isExclusiveRack ? 600 : 400 }}>
+                    {dropLabel}
+                  </td>
                   <td>
                     <span className={STATUS_CLASS[p.status] ?? 'badge badge-grey'}>{p.status}</span>
                   </td>
                   <td>
                     <span
                       style={{
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: 600,
                         color:
                           isLow
@@ -125,16 +135,34 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                       }}
                     >
                       {stock}
-                      {isLow && <span style={{ marginLeft: 4, fontSize: 10 }}>LOW</span>}
+                      {isLow && <span style={{ marginLeft: 4, fontSize: 9 }}>LOW</span>}
                     </span>
                   </td>
-                  <td style={{ fontSize: 13, color: 'var(--admin-muted)' }}>{p.variants.length} sizes</td>
+                  <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{p.variants.length} sizes</td>
+                  <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{p.collectionName || '—'}</td>
+                  <td style={{ fontSize: 12 }}>
+                    {p.featuredBadge ? (
+                      <span className="badge badge-grey" style={{ fontSize: 10, color: '#c8a46a', borderColor: 'rgba(200,164,106,0.3)' }}>
+                        {p.featuredBadge}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
                       <Link
+                        href={`/product/${p.slug}`}
+                        className="btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                        target="_blank"
+                      >
+                        Preview
+                      </Link>
+                      <Link
                         href={`/admin/products/${p.id}/edit`}
                         className="btn-secondary"
-                        style={{ padding: '5px 12px', fontSize: 12 }}
+                        style={{ padding: '4px 10px', fontSize: 11 }}
                       >
                         Edit
                       </Link>
@@ -143,20 +171,12 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                         id={`delete-product-${p.id}`}
                         onClick={() => setPendingDelete({ id: p.id, name: p.name, slug: p.slug })}
                         className="btn-danger"
-                        style={{ padding: '5px 12px', fontSize: 12 }}
+                        style={{ padding: '4px 10px', fontSize: 11 }}
                         title={`Delete ${p.name}`}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={11} />
                         Delete
                       </button>
-                      <Link
-                        href={`/product/${p.slug}`}
-                        className="btn-secondary"
-                        style={{ padding: '5px 12px', fontSize: 12 }}
-                        target="_blank"
-                      >
-                        Preview
-                      </Link>
                     </div>
                   </td>
                 </tr>

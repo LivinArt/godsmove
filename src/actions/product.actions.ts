@@ -59,6 +59,9 @@ export async function getProducts(params?: {
   status?: string;
   dropId?: string;
   categoryId?: string;
+  destination?: string;
+  collectionName?: string;
+  featuredBadge?: string;
   isFeatured?: boolean;
   take?: number;
   skip?: number;
@@ -75,6 +78,10 @@ export async function getProducts(params?: {
       ...(params?.status ? { status: params.status as any } : {}),
       ...(params?.dropId && { dropId: params.dropId }),
       ...(params?.categoryId && { categoryId: params.categoryId }),
+      ...(params?.collectionName && { collectionName: params.collectionName }),
+      ...(params?.featuredBadge && { featuredBadge: params.featuredBadge }),
+      ...(params?.destination === 'drops' && { isExclusiveRack: false }),
+      ...(params?.destination === 'exclusive_rack' && { isExclusiveRack: true }),
       ...(params?.isFeatured !== undefined && { isFeatured: params.isFeatured }),
     },
     include: {
@@ -88,7 +95,7 @@ export async function getProducts(params?: {
       tags: true,
     },
     orderBy: { createdAt: 'desc' },
-    take: params?.take ?? 50,
+    take: params?.take ?? 100,
     skip: params?.skip ?? 0,
   });
   return serializePrisma(data);

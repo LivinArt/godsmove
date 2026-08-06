@@ -1,5 +1,5 @@
 import { getProducts, getCategories } from '@/actions/product.actions';
-import { getDrops } from '@/actions/drop.actions';
+import { getCollections } from '@/actions/collection.actions';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { ProductsTable } from './components/ProductsTable';
@@ -7,79 +7,201 @@ import { ProductsTable } from './components/ProductsTable';
 export default async function ProductsAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; category?: string; drop?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    destination?: string;
+    category?: string;
+    collection?: string;
+    badge?: string;
+    status?: string;
+  }>;
 }) {
-  const { q, status, category, drop } = await searchParams;
+  const { q, destination, category, collection, badge, status } = await searchParams;
 
-  const [products] = await Promise.all([
+  const [products, categories, collections] = await Promise.all([
     getProducts({
       search: q,
-      status: status,
+      destination: destination,
       categoryId: category,
-      dropId: drop,
+      collectionName: collection,
+      featuredBadge: badge,
+      status: status,
     }),
-    // categories and drops fetched here if needed for future filters
+    getCategories(),
+    getCollections(),
   ]);
+
+  // Extract unique badges from products for badge filter options
+  const knownBadges = ['Editor\'s Pick', 'Limited', 'Signature', 'Archive', 'Exclusive', 'Members Only'];
+
+  const buildQuery = (newParams: Record<string, string | undefined>) => {
+    const current = {
+      q,
+      destination,
+      category,
+      collection,
+      badge,
+      status,
+      ...newParams,
+    };
+    const params = new URLSearchParams();
+    Object.entries(current).forEach(([k, v]) => {
+      if (v) params.set(k, v);
+    });
+    const str = params.toString();
+    return str ? `?${str}` : '/admin/products';
+  };
 
   return (
     <div className="space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Products</h1>
-          <p className="page-sub">{products.length} products found</p>
+          <p className="page-sub">{products.length} products listed</p>
         </div>
         <Link href="/admin/products/new" className="btn-primary">
           + New Product
         </Link>
       </div>
 
-      {/* Search + Filter bar */}
-      <div className="bg-[#111] p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row gap-4 items-center">
-        <form className="flex-1 w-full relative" method="GET">
-          {status && <input type="hidden" name="status" value={status} />}
-          {category && <input type="hidden" name="category" value={category} />}
-          {drop && <input type="hidden" name="drop" value={drop} />}
+      {/* Destination Tabs Bar */}
+      <div className="flex border-b border-white/10 gap-6 pb-2">
+        <Link
+          href={buildQuery({ destination: undefined })}
+          className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
+            !destination || destination === 'all'
+              ? 'border-[#c8a46a] text-[#c8a46a]'
+              : 'border-transparent text-zinc-400 hover:text-white'
+          }`}
+        >
+          All Listing Destinations
+        </Link>
+        <Link
+          href={buildQuery({ destination: 'drops' })}
+          className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
+            destination === 'drops'
+              ? 'border-[#c8a46a] text-[#c8a46a]'
+              : 'border-transparent text-zinc-400 hover:text-white'
+          }`}
+        >
+          Drops
+        </Link>
+        <Link
+          href={buildQuery({ destination: 'exclusive_rack' })}
+          className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
+            destination === 'exclusive_rack'
+              ? 'border-[#c8a46a] text-[#c8a46a]'
+              : 'border-transparent text-zinc-400 hover:text-white'
+          }`}
+        >
+          Exclusive Rack
+        </Link>
+      </div>
 
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+      {/* Multi-Filter & Search Controls */}
+      <div className="bg-[#111] p-4 rounded-xl border border-white/10 flex flex-col md:flex-row gap-4 items-center">
+        <form className="flex-1 w-full relative" method="GET">
+          {destination && <input type="hidden" name="destination" value={destination} />}
+          {category && <input type="hidden" name="category" value={category} />}
+          {collection && <input type="hidden" name="collection" value={collection} />}
+          {badge && <input type="hidden" name="badge" value={badge} />}
+          {status && <input type="hidden" name="status" value={status} />}
+
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             name="q"
             defaultValue={q || ''}
-            placeholder="Search products by name, slug, or SKU..."
-            className="w-full pl-10 pr-4 py-2 bg-black border border-white/10 rounded-lg text-white focus:outline-none focus:border-white text-sm"
+            placeholder="Search by product name, slug, or SKU..."
+            className="w-full pl-9 pr-4 py-2 bg-black border border-white/10 rounded-lg text-white focus:outline-none focus:border-white text-xs"
           />
         </form>
 
-        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-          <Link
-            href="/admin/products"
-            className={`px-4 py-2 text-sm rounded-lg border whitespace-nowrap ${!status ? 'bg-white text-black border-white' : 'bg-black text-white border-white/10 hover:border-white/30'}`}
-          >
-            All
-          </Link>
-          <Link
-            href={`?status=ACTIVE${q ? `&q=${q}` : ''}`}
-            className={`px-4 py-2 text-sm rounded-lg border whitespace-nowrap ${status === 'ACTIVE' ? 'bg-white text-black border-white' : 'bg-black text-white border-white/10 hover:border-white/30'}`}
-          >
-            Active
-          </Link>
-          <Link
-            href={`?status=DRAFT${q ? `&q=${q}` : ''}`}
-            className={`px-4 py-2 text-sm rounded-lg border whitespace-nowrap ${status === 'DRAFT' ? 'bg-white text-black border-white' : 'bg-black text-white border-white/10 hover:border-white/30'}`}
-          >
-            Drafts
-          </Link>
-          <Link
-            href={`?status=ARCHIVED${q ? `&q=${q}` : ''}`}
-            className={`px-4 py-2 text-sm rounded-lg border whitespace-nowrap ${status === 'ARCHIVED' ? 'bg-white text-black border-white' : 'bg-black text-white border-white/10 hover:border-white/30'}`}
-          >
-            Archived
-          </Link>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
+          {/* Category Filter */}
+          <form method="GET">
+            {q && <input type="hidden" name="q" value={q} />}
+            {destination && <input type="hidden" name="destination" value={destination} />}
+            {collection && <input type="hidden" name="collection" value={collection} />}
+            {badge && <input type="hidden" name="badge" value={badge} />}
+            {status && <input type="hidden" name="status" value={status} />}
+            <select
+              name="category"
+              defaultValue={category || ''}
+              onChange={(e) => e.target.form?.submit()}
+              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat: any) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </form>
+
+          {/* Collection Filter */}
+          <form method="GET">
+            {q && <input type="hidden" name="q" value={q} />}
+            {destination && <input type="hidden" name="destination" value={destination} />}
+            {category && <input type="hidden" name="category" value={category} />}
+            {badge && <input type="hidden" name="badge" value={badge} />}
+            {status && <input type="hidden" name="status" value={status} />}
+            <select
+              name="collection"
+              defaultValue={collection || ''}
+              onChange={(e) => e.target.form?.submit()}
+              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
+            >
+              <option value="">All Collections</option>
+              {collections.map((col: any) => {
+                const cName = typeof col === 'string' ? col : col.name;
+                return (
+                  <option key={cName} value={cName}>
+                    {cName}
+                  </option>
+                );
+              })}
+            </select>
+          </form>
+
+          {/* Badge Filter */}
+          <form method="GET">
+            {q && <input type="hidden" name="q" value={q} />}
+            {destination && <input type="hidden" name="destination" value={destination} />}
+            {category && <input type="hidden" name="category" value={category} />}
+            {collection && <input type="hidden" name="collection" value={collection} />}
+            {status && <input type="hidden" name="status" value={status} />}
+            <select
+              name="badge"
+              defaultValue={badge || ''}
+              onChange={(e) => e.target.form?.submit()}
+              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
+            >
+              <option value="">All Badges</option>
+              {knownBadges.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </form>
+
+          {/* Clear Filters Link if any filter active */}
+          {(destination || category || collection || badge || q || status) && (
+            <Link
+              href="/admin/products"
+              className="text-xs text-[#c8a46a] hover:underline px-2 py-2"
+            >
+              Reset
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Table — client component owns delete state + modal */}
+      {/* Products Table with Refined Columns */}
       <ProductsTable products={products} />
     </div>
   );
 }
+
