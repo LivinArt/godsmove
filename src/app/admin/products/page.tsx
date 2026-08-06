@@ -1,8 +1,8 @@
 import { getProducts, getCategories } from '@/actions/product.actions';
 import { getCollections } from '@/actions/collection.actions';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { ProductsTable } from './components/ProductsTable';
+import { ProductFilters } from './components/ProductFilters';
 
 export default async function ProductsAdminPage({
   searchParams,
@@ -98,106 +98,18 @@ export default async function ProductsAdminPage({
         </Link>
       </div>
 
-      {/* Multi-Filter & Search Controls */}
-      <div className="bg-[#111] p-4 rounded-xl border border-white/10 flex flex-col md:flex-row gap-4 items-center">
-        <form className="flex-1 w-full relative" method="GET">
-          {destination && <input type="hidden" name="destination" value={destination} />}
-          {category && <input type="hidden" name="category" value={category} />}
-          {collection && <input type="hidden" name="collection" value={collection} />}
-          {badge && <input type="hidden" name="badge" value={badge} />}
-          {status && <input type="hidden" name="status" value={status} />}
-
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            name="q"
-            defaultValue={q || ''}
-            placeholder="Search by product name, slug, or SKU..."
-            className="w-full pl-9 pr-4 py-2 bg-black border border-white/10 rounded-lg text-white focus:outline-none focus:border-white text-xs"
-          />
-        </form>
-
-        <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
-          {/* Category Filter */}
-          <form method="GET">
-            {q && <input type="hidden" name="q" value={q} />}
-            {destination && <input type="hidden" name="destination" value={destination} />}
-            {collection && <input type="hidden" name="collection" value={collection} />}
-            {badge && <input type="hidden" name="badge" value={badge} />}
-            {status && <input type="hidden" name="status" value={status} />}
-            <select
-              name="category"
-              defaultValue={category || ''}
-              onChange={(e) => e.target.form?.submit()}
-              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
-            >
-              <option value="">All Categories</option>
-              {categories.map((cat: any) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </form>
-
-          {/* Collection Filter */}
-          <form method="GET">
-            {q && <input type="hidden" name="q" value={q} />}
-            {destination && <input type="hidden" name="destination" value={destination} />}
-            {category && <input type="hidden" name="category" value={category} />}
-            {badge && <input type="hidden" name="badge" value={badge} />}
-            {status && <input type="hidden" name="status" value={status} />}
-            <select
-              name="collection"
-              defaultValue={collection || ''}
-              onChange={(e) => e.target.form?.submit()}
-              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
-            >
-              <option value="">All Collections</option>
-              {collections.map((col: any) => {
-                const cName = typeof col === 'string' ? col : col.name;
-                return (
-                  <option key={cName} value={cName}>
-                    {cName}
-                  </option>
-                );
-              })}
-            </select>
-          </form>
-
-          {/* Badge Filter */}
-          <form method="GET">
-            {q && <input type="hidden" name="q" value={q} />}
-            {destination && <input type="hidden" name="destination" value={destination} />}
-            {category && <input type="hidden" name="category" value={category} />}
-            {collection && <input type="hidden" name="collection" value={collection} />}
-            {status && <input type="hidden" name="status" value={status} />}
-            <select
-              name="badge"
-              defaultValue={badge || ''}
-              onChange={(e) => e.target.form?.submit()}
-              className="bg-black border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none"
-            >
-              <option value="">All Badges</option>
-              {knownBadges.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </form>
-
-          {/* Clear Filters Link if any filter active */}
-          {(destination || category || collection || badge || q || status) && (
-            <Link
-              href="/admin/products"
-              className="text-xs text-[#c8a46a] hover:underline px-2 py-2"
-            >
-              Reset
-            </Link>
-          )}
-        </div>
-      </div>
+      {/* Multi-Filter & Search Controls Client Component */}
+      <ProductFilters
+        q={q}
+        destination={destination}
+        category={category}
+        collection={collection}
+        badge={badge}
+        status={status}
+        categories={categories}
+        collections={collections}
+        knownBadges={knownBadges}
+      />
 
       {/* Products Table with Refined Columns */}
       <ProductsTable products={products} />
