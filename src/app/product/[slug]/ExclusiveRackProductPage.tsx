@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,7 +11,9 @@ import {
   Lock,
   ChevronDown,
   ShieldCheck,
-  Award
+  Award,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import SizeSelector from '@/components/SizeSelector';
 import SizeChartModal, { type SizeChartEntry } from '@/components/SizeChartModal';
@@ -45,11 +47,11 @@ export default function ExclusiveRackProductPage({
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
-  // Dynamic Scroll Progress & Image Index tracking
+  // Dynamic Scroll Progress & Image Index tracking for Cinematic Vault Sequence
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Extract size chart entries
+  // Size chart entries extraction
   const sizeChartEntries: SizeChartEntry[] = (() => {
     if (Array.isArray(product.variants) && product.variants.length > 0) {
       return product.variants.map((v: any) => ({
@@ -76,7 +78,7 @@ export default function ExclusiveRackProductPage({
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
-  // Colors Pipeline
+  // Color Swatches Pipeline
   const rawColors = (product.variants || [])
     .map((v: any) => ({ name: v.color?.trim() || '', hex: v.colorHex?.trim() || '' }))
     .filter((c: any) => c.name !== '');
@@ -128,7 +130,7 @@ export default function ExclusiveRackProductPage({
     ? product.images?.filter((img: any) => img.alt && img.alt.toLowerCase().includes(selectedColor.toLowerCase()))
     : [];
 
-  const activeGalleryUrls = (colorFilteredImages && colorFilteredImages.length > 0)
+  const activeGalleryUrls: string[] = (colorFilteredImages && colorFilteredImages.length > 0)
     ? colorFilteredImages.map((i: any) => i.url)
     : (product.images?.map((i: any) => i.url) || ['/images/placeholder.svg']);
 
@@ -136,7 +138,7 @@ export default function ExclusiveRackProductPage({
     ? colorFilteredImages[0].url
     : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
 
-  // SCARCITY & ETIMATION CALCULATIONS
+  // SCARCITY & ETIMATION DYNAMIC CALCULATIONS
   const variantsList = product.variants || [];
   const totalStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
   const soldStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
@@ -164,17 +166,18 @@ export default function ExclusiveRackProductPage({
     }
   }, [product, selectedSize]);
 
-  // Scroll listener for Bottom -> Top image transitions & mobile scroll overlay fade
+  // Scroll listener for Pure CSS Sticky Scroll Progression & gallery index stepping
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      setIsScrolled(scrollY > 60);
+      setIsScrolled(scrollY > 50);
 
-      if (activeGalleryUrls.length > 1) {
-        const scrollRange = window.innerHeight * 1.5;
-        const progress = Math.min(1, Math.max(0, scrollY / scrollRange));
-        const index = Math.min(activeGalleryUrls.length - 1, Math.floor(progress * activeGalleryUrls.length));
-        setGalleryIndex(index);
+      const numImages = activeGalleryUrls.length;
+      if (numImages > 1) {
+        // Compute active image index as user scrolls through locked hero height
+        const heroStepDistance = window.innerHeight * 0.9;
+        const index = Math.min(numImages - 1, Math.floor(scrollY / heroStepDistance));
+        setGalleryIndex(Math.max(0, index));
       }
     };
 
@@ -221,10 +224,13 @@ export default function ExclusiveRackProductPage({
     try {
       navigator.clipboard.writeText(window.location.href);
       setCopiedShare(true);
-      showToast('Link Copied', 'Product link copied to clipboard.');
+      showToast('Link Copied', 'Vault product link copied to clipboard.');
       setTimeout(() => setCopiedShare(false), 2000);
     } catch (e) {}
   };
+
+  const numImages = activeGalleryUrls.length;
+  const heroScrollHeight = numImages > 1 ? `${numImages * 100}vh` : '100vh';
 
   return (
     <div className={styles.pageContainer}>
@@ -239,335 +245,356 @@ export default function ExclusiveRackProductPage({
 
         {/* Scroll overlay indicator */}
         <div className={styles.mobileScrollOverlay} style={{ opacity: isScrolled ? 0 : 1 }}>
-          <span>Scroll for Details</span>
+          <span>Scroll for Vault Details</span>
           <ChevronDown size={14} />
         </div>
       </div>
 
-      <div className={styles.contentWrapper}>
+      {/* FULLSCREEN DESKTOP HERO WITH PURE CSS STICKY SCROLL */}
+      <section className={styles.heroScrollSection} style={{ height: heroScrollHeight }}>
         
-        {/* Breadcrumb */}
-        <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
-          <span className={styles.breadcrumbSep}>/</span>
-          <Link href="/exclusive-rack">Exclusive Rack</Link>
-          <span className={styles.breadcrumbSep}>/</span>
-          <span className={styles.breadcrumbCurrent}>{product.name}</span>
-        </nav>
-
-        {/* 60% / 40% DESKTOP LAYOUT */}
-        <div className={styles.pdpGrid}>
+        <div className={styles.heroStickyContainer}>
           
-          {/* ==================================================
-              LEFT SIDE (60%): STATIC COVER + DYNAMIC GALLERY
-              ================================================== */}
-          <div className={styles.leftCol}>
-            
-            {/* STATIC COVER IMAGE CARD */}
-            <div className={styles.staticImageCard}>
-              
-              {/* EMBOSSED WHITE CLOTH STITCHED RIBBON */}
-              <div className={styles.ribbonWrap}>
-                <div className={styles.ribbonCloth}>
-                  <span className={styles.ribbonText}>Exclusive</span>
-                </div>
-              </div>
+          {/* Top Vault Nav & Breadcrumb */}
+          <div className={styles.topNavRow}>
+            <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+              <Link href="/">Home</Link>
+              <span className={styles.breadcrumbSep}>/</span>
+              <Link href="/exclusive-rack">Exclusive Rack</Link>
+              <span className={styles.breadcrumbSep}>/</span>
+              <span className={styles.breadcrumbCurrent}>{product.name}</span>
+            </nav>
 
-              <img
-                src={activeCoverImage}
-                alt={`${product.name} Identity`}
-                className={styles.staticImage}
-              />
+            <div className={styles.vaultBadgeHeader}>
+              <Sparkles size={11} color="#c8a46a" />
+              <span>Private Vault</span>
             </div>
-
-            {/* DYNAMIC GALLERY IMAGE CARD (BOTTOM -> TOP TRANSITION) */}
-            <div className={styles.dynamicImageCard}>
-              {activeGalleryUrls.map((url: string, idx: number) => {
-                const isActive = idx === galleryIndex;
-                return (
-                  <img
-                    key={url + idx}
-                    src={url}
-                    alt={`${product.name} Gallery ${idx + 1}`}
-                    className={styles.dynamicImage}
-                    style={{
-                      opacity: isActive ? 1 : 0,
-                      transform: isActive ? 'translateY(0)' : 'translateY(40px)',
-                      zIndex: isActive ? 2 : 1,
-                      pointerEvents: isActive ? 'auto' : 'none',
-                    }}
-                  />
-                );
-              })}
-
-              <div className={styles.galleryCounter}>
-                {galleryIndex + 1} / {activeGalleryUrls.length}
-              </div>
-            </div>
-
           </div>
 
-          {/* ==================================================
-              RIGHT SIDE (40%): STICKY PRODUCT INFO & PANEL
-              ================================================== */}
-          <div className={styles.rightCol}>
+          {/* 60% / 40% DESKTOP GRID */}
+          <div className={styles.pdpGrid}>
             
-            {/* Collection Name */}
-            <span className={styles.collectionTag}>
-              {product.collectionName || 'SIGNATURE COLLECTION'}
-            </span>
-
-            {/* Product Name */}
-            <h1 className={styles.productTitle}>{product.name}</h1>
-
-            {/* Category */}
-            <div className={styles.categoryMeta}>
-              <span>Category:</span>
-              <span className={styles.categoryLabel}>{product.category?.name || 'OVERSIZED TEES'}</span>
-            </div>
-
-            {/* Price Block */}
-            <div className={styles.priceBox}>
-              <span className={styles.sellingPrice}>₹{price.toLocaleString('en-IN')}</span>
-              {hasDiscount && comparePrice && (
-                <span className={styles.comparePrice}>₹{comparePrice.toLocaleString('en-IN')}</span>
-              )}
-              {hasDiscount && (
-                <span className={styles.discountBadge}>{discountPercent}% OFF</span>
-              )}
-            </div>
-            <div className={styles.taxNote}>Price inclusive of all taxes</div>
-
-            {/* Short Description */}
-            <p className={styles.shortDesc}>
-              {product.shortDesc || 'Archival silhouette crafted with heavy cotton, drop-shoulder structure, and high-density finish.'}
-            </p>
-
-            {/* Color Selector (Luxury Swatches) */}
-            {availableColors.length > 0 && (
-              <div className={styles.selectorWrap}>
-                <div className={styles.selectorLabelRow}>
-                  <span className={styles.selectorTitle}>Color</span>
-                  <span className={styles.selectedValName}>{selectedColor}</span>
+            {/* ==================================================
+                LEFT SIDE (60%): STATIC COVER + DYNAMIC GALLERY
+                ================================================== */}
+            <div className={styles.leftCol}>
+              
+              {/* STATIC COVER IMAGE CARD */}
+              <div className={styles.staticImageCard}>
+                
+                {/* EMBOSSED WHITE CLOTH STITCHED RIBBON */}
+                <div className={styles.ribbonWrap}>
+                  <div className={styles.ribbonCloth}>
+                    <span className={styles.ribbonText}>Exclusive</span>
+                  </div>
                 </div>
-                <div className={styles.colorGrid}>
-                  {availableColors.map((c) => {
-                    const isSelected = selectedColor === c.name;
-                    return (
-                      <button
-                        key={c.name}
-                        type="button"
-                        onClick={() => setSelectedColor(c.name)}
-                        className={`${styles.colorSwatchBtn} ${isSelected ? styles.colorSwatchBtnActive : ''}`}
-                      >
-                        {c.hex && (
-                          <span
-                            className={styles.colorCircle}
-                            style={{ backgroundColor: c.hex }}
-                          />
-                        )}
-                        <span>{c.name}</span>
-                      </button>
-                    );
-                  })}
+
+                <img
+                  src={activeCoverImage}
+                  alt={`${product.name} Identity`}
+                  className={styles.staticImage}
+                />
+              </div>
+
+              {/* DYNAMIC GALLERY IMAGE CARD (BOTTOM -> TOP TRANSITION) */}
+              <div className={styles.dynamicImageCard}>
+                {activeGalleryUrls.map((url: string, idx: number) => {
+                  const isActive = idx === galleryIndex;
+                  return (
+                    <img
+                      key={url + idx}
+                      src={url}
+                      alt={`${product.name} Gallery ${idx + 1}`}
+                      className={styles.dynamicImage}
+                      style={{
+                        opacity: isActive ? 1 : 0,
+                        transform: isActive ? 'translateY(0)' : 'translateY(40px)',
+                        zIndex: isActive ? 2 : 1,
+                        pointerEvents: isActive ? 'auto' : 'none',
+                      }}
+                    />
+                  );
+                })}
+
+                <div className={styles.galleryCounter}>
+                  {galleryIndex + 1} / {activeGalleryUrls.length}
                 </div>
               </div>
-            )}
 
-            {/* Size Selector */}
-            <div className={styles.selectorWrap}>
-              <div className={styles.selectorLabelRow}>
-                <span className={styles.selectorTitle}>Select Size</span>
-                {hasSizeChart && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSizeChartOpen(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#c8a46a',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      textUnderlineOffset: '3px',
-                      padding: 0,
-                    }}
-                  >
-                    Size Chart
-                  </button>
-                )}
-              </div>
-              <SizeSelector
-                sizes={filteredSizes}
-                selected={selectedSize}
-                onSelect={(size) => {
-                  setSelectedSize(size);
-                  setSizeError(false);
-                }}
-              />
-              {sizeError && (
-                <p style={{ color: '#ff6b6b', fontSize: '11px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Please select a size to proceed with allocation
-                </p>
-              )}
-            </div>
-
-            {/* Size Chart Modal Component */}
-            {hasSizeChart && (
-              <SizeChartModal
-                isOpen={isSizeChartOpen}
-                onClose={() => setIsSizeChartOpen(false)}
-                productName={product.name}
-                entries={sizeChartEntries}
-              />
-            )}
-
-            {/* Quantity Selector */}
-            <div className={styles.selectorWrap}>
-              <span className={styles.selectorTitle}>Quantity</span>
-              <QuantitySelector
-                quantity={quantity}
-                onChange={setQuantity}
-                max={availableStock}
-              />
-            </div>
-
-            {/* Action Buttons Stack */}
-            <div className={styles.actionStack}>
-              <button
-                type="button"
-                className={styles.buyNowBtn}
-                onClick={handleBuyNow}
-                id="exclusive-buy-now"
-                disabled={availableStock === 0}
-              >
-                Buy Now
-              </button>
-
-              <button
-                type="button"
-                className={styles.addToBagBtn}
-                onClick={handleAddToCart}
-                id="exclusive-add-to-bag"
-                disabled={availableStock === 0}
-              >
-                <ShoppingBag size={14} />
-                Add to Bag
-              </button>
-
-              {/* Wishlist, Compare, Share Icon Actions Row */}
-              <div className={styles.iconActionsRow}>
-                <button
-                  type="button"
-                  className={`${styles.iconBtn} ${wishlisted ? styles.iconBtnActive : ''}`}
-                  onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
-                  id="exclusive-wishlist"
-                >
-                  <Heart size={14} fill={wishlisted ? 'currentColor' : 'none'} />
-                  <span>{wishlisted ? 'Saved' : 'Wishlist'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.iconBtn} ${inCompare ? styles.iconBtnActive : ''}`}
-                  onClick={() => toggleCompare(product)}
-                  id="exclusive-compare"
-                >
-                  <ArrowLeftRight size={14} />
-                  <span>{inCompare ? 'Comparing' : 'Compare'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.iconBtn}
-                  onClick={handleShare}
-                  id="exclusive-share"
-                >
-                  <Share2 size={14} />
-                  <span>{copiedShare ? 'Copied' : 'Share'}</span>
-                </button>
-              </div>
             </div>
 
             {/* ==================================================
-                EXCLUSIVE INFORMATION PANEL (SCARCITY & ALLOCATION)
+                RIGHT SIDE (40%): STICKY VAULT CONTROL PANEL
                 ================================================== */}
-            <div className={styles.exclusivePanel}>
+            <div className={styles.rightCol}>
               
-              <div className={styles.panelHeader}>
-                <span className={styles.panelTitle}>
-                  <Award size={14} color="#c8a46a" />
-                  Exclusive Rack Allocation
-                </span>
-                <span className={styles.editionPill}>
-                  Edition {editionNumber} / {editionTotal}
-                </span>
+              {/* Collection Name */}
+              <span className={styles.collectionTag}>
+                {product.collectionName || 'SIGNATURE COLLECTION'}
+              </span>
+
+              {/* Product Name */}
+              <h1 className={styles.productTitle}>{product.name}</h1>
+
+              {/* Category */}
+              <div className={styles.categoryMeta}>
+                <span>Category:</span>
+                <span className={styles.categoryLabel}>{product.category?.name || 'OVERSIZED TEES'}</span>
               </div>
 
-              {/* Metrics 2x2 Grid */}
-              <div className={styles.metricsGrid}>
-                <div className={styles.metricCard}>
-                  <div className={styles.metricLabel}>Available</div>
-                  <div className={`${styles.metricVal} ${styles.metricValGold}`}>
-                    {remainingCount} Pieces Remaining
+              {/* Short Description */}
+              <p className={styles.shortDesc}>
+                {product.shortDesc || 'Archival silhouette crafted with heavy cotton, drop-shoulder structure, and high-density finish.'}
+              </p>
+
+              {/* Price Block */}
+              <div className={styles.priceBox}>
+                <span className={styles.sellingPrice}>₹{price.toLocaleString('en-IN')}</span>
+                {hasDiscount && comparePrice && (
+                  <span className={styles.comparePrice}>₹{comparePrice.toLocaleString('en-IN')}</span>
+                )}
+                {hasDiscount && (
+                  <span className={styles.discountBadge}>{discountPercent}% OFF</span>
+                )}
+              </div>
+              <div className={styles.taxNote}>Price inclusive of all taxes</div>
+
+              {/* Color Selector (Luxury Swatches) */}
+              {availableColors.length > 0 && (
+                <div className={styles.selectorWrap}>
+                  <div className={styles.selectorLabelRow}>
+                    <span className={styles.selectorTitle}>Color</span>
+                    <span className={styles.selectedValName}>{selectedColor}</span>
+                  </div>
+                  <div className={styles.colorGrid}>
+                    {availableColors.map((c) => {
+                      const isSelected = selectedColor === c.name;
+                      return (
+                        <button
+                          key={c.name}
+                          type="button"
+                          onClick={() => setSelectedColor(c.name)}
+                          className={`${styles.colorSwatchBtn} ${isSelected ? styles.colorSwatchBtnActive : ''}`}
+                        >
+                          {c.hex && (
+                            <span
+                              className={styles.colorCircle}
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          )}
+                          <span>{c.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Selector */}
+              <div className={styles.selectorWrap}>
+                <div className={styles.selectorLabelRow}>
+                  <span className={styles.selectorTitle}>Select Size</span>
+                  {hasSizeChart && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSizeChartOpen(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#c8a46a',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: '3px',
+                        padding: 0,
+                      }}
+                    >
+                      Size Chart
+                    </button>
+                  )}
+                </div>
+                <SizeSelector
+                  sizes={filteredSizes}
+                  selected={selectedSize}
+                  onSelect={(size) => {
+                    setSelectedSize(size);
+                    setSizeError(false);
+                  }}
+                />
+                {sizeError && (
+                  <p style={{ color: '#ff6b6b', fontSize: '10px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Select a size to proceed with custody allocation
+                  </p>
+                )}
+              </div>
+
+              {/* Size Chart Modal Component */}
+              {hasSizeChart && (
+                <SizeChartModal
+                  isOpen={isSizeChartOpen}
+                  onClose={() => setIsSizeChartOpen(false)}
+                  productName={product.name}
+                  entries={sizeChartEntries}
+                />
+              )}
+
+              {/* Quantity Selector */}
+              <div className={styles.selectorWrap}>
+                <span className={styles.selectorTitle}>Quantity</span>
+                <QuantitySelector
+                  quantity={quantity}
+                  onChange={setQuantity}
+                  max={availableStock}
+                />
+              </div>
+
+              {/* Action Buttons Stack */}
+              <div className={styles.actionStack}>
+                <button
+                  type="button"
+                  className={styles.buyNowBtn}
+                  onClick={handleBuyNow}
+                  id="vault-buy-now"
+                  disabled={availableStock === 0}
+                >
+                  Buy Now
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.addToBagBtn}
+                  onClick={handleAddToCart}
+                  id="vault-add-to-bag"
+                  disabled={availableStock === 0}
+                >
+                  <ShoppingBag size={14} />
+                  Add to Bag
+                </button>
+
+                {/* Wishlist, Compare, Share Icon Actions Row */}
+                <div className={styles.iconActionsRow}>
+                  <button
+                    type="button"
+                    className={`${styles.iconBtn} ${wishlisted ? styles.iconBtnActive : ''}`}
+                    onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
+                    id="vault-wishlist"
+                  >
+                    <Heart size={14} fill={wishlisted ? 'currentColor' : 'none'} />
+                    <span>{wishlisted ? 'Saved' : 'Wishlist'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.iconBtn} ${inCompare ? styles.iconBtnActive : ''}`}
+                    onClick={() => toggleCompare(product)}
+                    id="vault-compare"
+                  >
+                    <ArrowLeftRight size={14} />
+                    <span>{inCompare ? 'Comparing' : 'Compare'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={handleShare}
+                    id="vault-share"
+                  >
+                    <Share2 size={14} />
+                    <span>{copiedShare ? 'Copied' : 'Share'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ==================================================
+                  EXCLUSIVE OWNERSHIP CERTIFICATE PANEL (REDESIGNED V3)
+                  ================================================== */}
+              <div className={styles.certificatePanel}>
+                
+                <div className={styles.certHeader}>
+                  <div className={styles.certTitleGroup}>
+                    <Award size={14} color="#c8a46a" />
+                    <span className={styles.certTitle}>
+                      GODSMOVE VAULT CERTIFICATE OF ALLOCATION
+                    </span>
+                  </div>
+                  <span className={styles.certEditionBadge}>
+                    Edition {editionNumber} / {editionTotal}
+                  </span>
+                </div>
+
+                {/* Scarcity message banner */}
+                <div className={styles.scarcityMessageBanner}>
+                  {allocatedCount > 0 
+                    ? `${allocatedCount} collectors already own this edition. Only ${remainingCount} pieces remain worldwide.`
+                    : `Only ${remainingCount} pieces remain worldwide in private archives.`}
+                </div>
+
+                {/* Certificate Data Grid */}
+                <div className={styles.certGrid}>
+                  <div className={styles.certDataCard}>
+                    <div className={styles.certDataLabel}>Available</div>
+                    <div className={`${styles.certDataVal} ${styles.certDataValGold}`}>
+                      {remainingCount} Pieces Remaining
+                    </div>
+                  </div>
+
+                  <div className={styles.certDataCard}>
+                    <div className={styles.certDataLabel}>Allocated</div>
+                    <div className={styles.certDataVal}>
+                      {allocatedCount} Pieces Allocated
+                    </div>
+                  </div>
+
+                  <div className={styles.certDataCard}>
+                    <div className={styles.certDataLabel}>Allocation Status</div>
+                    <div className={styles.certDataVal}>No Restocking</div>
+                  </div>
+
+                  <div className={styles.certDataCard}>
+                    <div className={styles.certDataLabel}>Allocation Type</div>
+                    <div className={styles.certDataVal}>Limited Allocation</div>
                   </div>
                 </div>
 
-                <div className={styles.metricCard}>
-                  <div className={styles.metricLabel}>Allocated</div>
-                  <div className={styles.metricVal}>
-                    {allocatedCount} Pieces Allocated
+                {/* Progress Section */}
+                <div className={styles.certProgressWrap}>
+                  <div className={styles.certProgressLabels}>
+                    <span>{remainingCount} Remaining</span>
+                    <span>{allocatedCount} Allocated</span>
+                  </div>
+                  <div className={styles.certTrack}>
+                    <div
+                      className={styles.certFill}
+                      style={{ width: `${scarcityPercent}%` }}
+                    />
                   </div>
                 </div>
 
-                <div className={styles.metricCard}>
-                  <div className={styles.metricLabel}>Allocation Status</div>
-                  <div className={styles.metricVal}>No Restocking</div>
+                {/* Certificate Statements */}
+                <div className={styles.certStatements}>
+                  <div className={styles.certStatementRow}>
+                    <span className={styles.certBullet}>◆</span>
+                    <span>Each piece is individually allocated. No future manufacturing.</span>
+                  </div>
+                  <div className={styles.certStatementRow}>
+                    <span className={styles.certBullet}>◆</span>
+                    <span>Once allocated, this edition is permanently closed.</span>
+                  </div>
                 </div>
 
-                <div className={styles.metricCard}>
-                  <div className={styles.metricLabel}>Allocation Type</div>
-                  <div className={styles.metricVal}>Limited Allocation</div>
+                {/* Certificate Tag Pills */}
+                <div className={styles.certTags}>
+                  <span className={styles.certTag}>Private Collection</span>
+                  <span className={styles.certTag}>Hand Numbered</span>
+                  <span className={styles.certTag}>Edition Verified</span>
+                  <span className={styles.certTag}>Exclusive Allocation</span>
+                  <span className={styles.certTag}>Crafted Once</span>
+                  <span className={styles.certTag}>Never Restocked</span>
                 </div>
-              </div>
 
-              {/* Scarcity Progress Bar */}
-              <div className={styles.progressSection}>
-                <div className={styles.progressLabelRow}>
-                  <span>{remainingCount} Remaining</span>
-                  <span>{allocatedCount} Sold</span>
-                </div>
-                <div className={styles.progressBarTrack}>
-                  <div
-                    className={styles.progressBarFill}
-                    style={{ width: `${scarcityPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Statements List */}
-              <div className={styles.statementsList}>
-                <div className={styles.statementItem}>
-                  <span className={styles.statementBullet}>◆</span>
-                  <span>Each piece is individually allocated. No future manufacturing.</span>
-                </div>
-                <div className={styles.statementItem}>
-                  <span className={styles.statementBullet}>◆</span>
-                  <span>Once allocated, this edition is permanently closed.</span>
-                </div>
-              </div>
-
-              {/* Premium Verification Tags */}
-              <div className={styles.tagsRow}>
-                <span className={styles.tagPill}>Hand Numbered</span>
-                <span className={styles.tagPill}>Limited Edition</span>
-                <span className={styles.tagPill}>No Restock</span>
-                <span className={styles.tagPill}>Exclusive Allocation</span>
-                <span className={styles.tagPill}>Private Collection</span>
-                <span className={styles.tagPill}>Edition Verified</span>
               </div>
 
             </div>
@@ -576,9 +603,15 @@ export default function ExclusiveRackProductPage({
 
         </div>
 
-        {/* ==================================================
-            EDITORIAL MAGAZINE DETAILS SECTION
-            ================================================== */}
+      </section>
+
+      {/* ==================================================
+          UNLOCKED VAULT SECTIONS (PRODUCT DETAILS & SYMBOLISM)
+          Unlocked after full gallery sequence
+          ================================================== */}
+      <div className={styles.vaultUnlockedContent}>
+        
+        {/* EDITORIAL DETAILS & SYMBOLISM */}
         <section className={styles.editorialSection}>
           <div className={styles.editorialHeader}>
             <span className={styles.editorialEyebrow}>DESIGN SPECIFICATION</span>
@@ -623,21 +656,23 @@ export default function ExclusiveRackProductPage({
           </div>
         </section>
 
-        {/* Browsing history list */}
-        {profile && <RecentlyViewed />}
+        {/* INTEGRATED RECENTLY VIEWED SECTION */}
+        {profile && (
+          <div className={styles.recentlyViewedVaultWrap}>
+            <RecentlyViewed />
+          </div>
+        )}
 
       </div>
 
-      {/* ==================================================
-          MOBILE STICKY GLASSMORPHISM BOTTOM CTA BAR
-          ================================================== */}
+      {/* MOBILE FIXED BOTTOM STICKY BAR */}
       <div className={styles.mobileBottomBar}>
         <button
           type="button"
           className={`${styles.mobileBarWishlist} ${wishlisted ? styles.wishlisted : ''}`}
           onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
           aria-label="Wishlist"
-          id="mobile-exclusive-wishlist"
+          id="mobile-vault-wishlist"
         >
           <Heart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
         </button>
@@ -646,7 +681,7 @@ export default function ExclusiveRackProductPage({
           type="button"
           className={styles.mobileBarBuyNow}
           onClick={handleBuyNow}
-          id="mobile-exclusive-buy-now"
+          id="mobile-vault-buy-now"
           disabled={availableStock === 0}
         >
           Buy Now
@@ -656,7 +691,7 @@ export default function ExclusiveRackProductPage({
           type="button"
           className={styles.mobileBarAddToBag}
           onClick={handleAddToCart}
-          id="mobile-exclusive-add-to-bag"
+          id="mobile-vault-add-to-bag"
           disabled={availableStock === 0}
         >
           <ShoppingBag size={14} />
@@ -664,7 +699,7 @@ export default function ExclusiveRackProductPage({
         </button>
       </div>
 
-      {/* Mobile Variant Quick Add Bottom Sheet */}
+      {/* Mobile Variant Quick Add Sheet */}
       <MobileQuickAddSheet
         isOpen={mobileSheetOpen}
         onClose={() => setMobileSheetOpen(false)}

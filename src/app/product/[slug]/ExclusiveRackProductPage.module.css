@@ -1,56 +1,60 @@
 /* ==========================================================================
-   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V2 (DARK LUXURY EDITORIAL)
+   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (VAULT EXPERIENCE REDESIGN)
    ========================================================================== */
 
+/* Root page container: 100% Matte Black Vault atmosphere */
 .pageContainer {
-  background: #070707;
+  background-color: #050505;
   color: #ffffff;
   min-height: 100vh;
-  padding-bottom: 120px;
   position: relative;
   overflow-x: hidden;
+  font-family: var(--font-body);
 }
 
-/* Subtly ambient top glow */
+/* Subtle ambient gold atmospheric aura */
 .pageContainer::before {
   content: '';
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100vw;
-  height: 600px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(200, 164, 106, 0.04) 0%, rgba(7, 7, 7, 0) 75%);
+  width: 120vw;
+  height: 900px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(200, 164, 106, 0.06) 0%, rgba(5, 5, 5, 0) 70%);
   pointer-events: none;
   z-index: 0;
 }
 
-.contentWrapper {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 40px;
-  position: relative;
-  z-index: 1;
+/* Top Navigation / Breadcrumb Bar inside Vault */
+.topNavRow {
+  position: absolute;
+  top: 16px;
+  left: 40px;
+  right: 40px;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: auto;
 }
 
-/* Breadcrumb */
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-family: var(--font-heading);
-  font-size: 11px;
-  fontWeight: 500;
-  letter-spacing: 0.15em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
-  padding: 24px 0 32px;
 }
 
 .breadcrumb a {
   color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.25s ease;
 }
 
 .breadcrumb a:hover {
@@ -63,39 +67,77 @@
 
 .breadcrumbCurrent {
   color: #ffffff;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.vaultBadgeHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  padding: 4px 12px;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  border-radius: 100px;
 }
 
 /* ==========================================================================
-   DESKTOP 60% / 40% GRID
+   DESKTOP HERO SECTION (PURE CSS STICKY SCROLL SEQUENCE)
    ========================================================================== */
 
-.pdpGrid {
-  display: grid;
-  grid-template-columns: 60% 40%;
-  gap: 48px;
-  align-items: start;
+/* Outer scroll section wrapper (Height = N * 100vh) */
+.heroScrollSection {
+  position: relative;
+  width: 100%;
 }
 
-/* LEFT SIDE (60%): 2 EQUAL VERTICAL PLACEHOLDERS */
-.leftCol {
+/* Sticky viewport container (pinned to top: 0, height: 100vh) */
+.heroStickyContainer {
   position: sticky;
-  top: 100px;
-  height: calc(100vh - 120px);
-  max-height: 850px;
-  min-height: 550px;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background-color: #050505;
+  z-index: 10;
+}
+
+/* 60% / 40% Desktop Split Grid */
+.pdpGrid {
+  width: 100%;
+  max-width: 1600px;
+  height: calc(100vh - 40px);
+  margin: 40px auto 0;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 60% 40%;
+  gap: 40px;
+  align-items: stretch;
+}
+
+/* LEFT COLUMN (60%): 2 EQUAL VERTICAL PLACEHOLDERS */
+.leftCol {
+  width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-/* Static Image Placeholder (50% of left column) */
+/* Static Image Placeholder (Fixed, 50% of left column) */
 .staticImageCard {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
   display: flex;
@@ -110,23 +152,23 @@
   display: block;
 }
 
-/* Exclusive Embossed White Cloth Ribbon */
+/* Embossed White Cloth Stitched Ribbon */
 .ribbonWrap {
   position: absolute;
   top: 24px;
-  left: -36px;
-  z-index: 10;
+  left: -38px;
+  z-index: 15;
   transform: rotate(-45deg);
   pointer-events: none;
 }
 
 .ribbonCloth {
   background: #f7f5f0;
-  color: #0d0d0d;
-  padding: 6px 44px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  border-top: 1px dashed rgba(180, 150, 100, 0.5);
-  border-bottom: 1px dashed rgba(180, 150, 100, 0.5);
+  color: #0a0a0a;
+  padding: 6px 48px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  border-top: 1.5px dashed rgba(180, 150, 100, 0.4);
+  border-bottom: 1.5px dashed rgba(180, 150, 100, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,8 +179,8 @@
   font-style: italic;
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  color: #0a0a0a;
+  letter-spacing: 0.15em;
+  color: #070707;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
@@ -147,8 +189,8 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -160,40 +202,56 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
 
-/* Image counter indicator inside dynamic placeholder */
+/* Cinematic counter badge */
 .galleryCounter {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 5;
-  background: rgba(10, 10, 10, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  padding: 4px 10px;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10;
+  background: rgba(5, 5, 5, 0.8);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  backdrop-filter: blur(16px);
+  padding: 5px 12px;
   border-radius: 100px;
   font-family: var(--font-heading);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.15em;
   color: #c8a46a;
 }
 
-/* RIGHT SIDE (40%): STICKY INFORMATION COLUMN */
+/* RIGHT COLUMN (40%): STICKY VAULT CONTROL PANEL */
 .rightCol {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 12px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+
+  /* Custom subtle scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 164, 106, 0.3) transparent;
+}
+
+.rightCol::-webkit-scrollbar {
+  width: 4px;
+}
+.rightCol::-webkit-scrollbar-thumb {
+  background: rgba(200, 164, 106, 0.3);
+  border-radius: 4px;
 }
 
 .collectionTag {
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: #c8a46a;
   display: block;
@@ -201,7 +259,7 @@
 
 .productTitle {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 3vw, 38px);
+  font-size: clamp(26px, 2.5vw, 36px);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -209,70 +267,15 @@
   margin: 0;
 }
 
-.shortDesc {
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0;
-}
-
-/* Pricing block */
-.priceBox {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.sellingPrice {
-  font-family: var(--font-heading);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-}
-
-.comparePrice {
-  font-family: var(--font-heading);
-  font-size: 16px;
-  font-weight: 400;
-  text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.discountBadge {
-  font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  padding: 4px 10px;
-  background: rgba(200, 164, 106, 0.12);
-  border: 1px solid rgba(200, 164, 106, 0.3);
-  color: #c8a46a;
-  border-radius: 2px;
-}
-
-.taxNote {
-  font-family: var(--font-heading);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-  margin-top: -8px;
-}
-
 .categoryMeta {
   display: flex;
   align-items: center;
   gap: 8px;
   font-family: var(--font-heading);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .categoryLabel {
@@ -280,11 +283,66 @@
   font-weight: 600;
 }
 
-/* Color Selector */
+.shortDesc {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+/* Price Box */
+.priceBox {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sellingPrice {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.comparePrice {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 400;
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.discountBadge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 3px 9px;
+  background: rgba(200, 164, 106, 0.12);
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  color: #c8a46a;
+  border-radius: 2px;
+}
+
+.taxNote {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: -6px;
+}
+
+/* Color & Size Selectors */
 .selectorWrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .selectorLabelRow {
@@ -295,16 +353,16 @@
 
 .selectorTitle {
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .selectedValName {
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -314,16 +372,16 @@
 .colorGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .colorSwatchBtn {
-  padding: 8px 16px;
+  padding: 7px 14px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -332,7 +390,7 @@
   align-items: center;
   gap: 8px;
   border-radius: 2px;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .colorSwatchBtn:hover {
@@ -347,41 +405,41 @@
 }
 
 .colorCircle {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.3);
   display: inline-block;
 }
 
-/* Action Buttons Stack */
+/* Action Stack */
 .actionStack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .buyNowBtn {
   width: 100%;
-  padding: 18px 24px;
+  padding: 16px 24px;
   background: #c8a46a;
   border: none;
-  color: #070707;
+  color: #050505;
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 2px;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(200, 164, 106, 0.25);
+  box-shadow: 0 4px 20px rgba(200, 164, 106, 0.2);
 }
 
 .buyNowBtn:hover {
   background: #d8b47a;
-  box-shadow: 0 6px 28px rgba(200, 164, 106, 0.4);
+  box-shadow: 0 6px 28px rgba(200, 164, 106, 0.35);
   transform: translateY(-1px);
 }
 
@@ -394,12 +452,12 @@
 
 .addToBagBtn {
   width: 100%;
-  padding: 16px 24px;
+  padding: 15px 24px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -423,20 +481,20 @@
   cursor: not-allowed;
 }
 
-/* Secondary Action Row (Wishlist, Compare, Share) */
+/* Icon actions row */
 .iconActionsRow {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .iconBtn {
   flex: 1;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -444,7 +502,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   border-radius: 2px;
   transition: all 0.2s ease;
 }
@@ -461,174 +519,209 @@
 }
 
 /* ==========================================================================
-   EXCLUSIVE INFORMATION PANEL (SCARCITY & ALLOCATION)
+   EXCLUSIVE OWNERSHIP CERTIFICATE PANEL (REDESIGNED V3 VAULT DOCUMENT)
    ========================================================================== */
 
-.exclusivePanel {
-  margin-top: 24px;
-  padding: 28px;
-  background: rgba(18, 18, 18, 0.7);
-  border: 1px solid rgba(200, 164, 106, 0.25);
+.certificatePanel {
+  margin-top: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: radial-gradient(circle at top left, #0d0d0d 0%, #050505 100%);
+  border: 1px solid rgba(200, 164, 106, 0.3);
   border-radius: 2px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   position: relative;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
-.panelHeader {
+.certificatePanel::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(200, 164, 106, 0.12);
+  pointer-events: none;
+}
+
+.certHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(200, 164, 106, 0.15);
-  padding-bottom: 14px;
+  padding-bottom: 12px;
 }
 
-.panelTitle {
-  font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: #c8a46a;
+.certTitleGroup {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.editionPill {
+.certTitle {
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.certEditionBadge {
+  font-family: var(--font-heading);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.15em;
-  padding: 4px 12px;
+  padding: 3px 10px;
   background: rgba(200, 164, 106, 0.12);
   border: 1px solid rgba(200, 164, 106, 0.35);
   color: #c8a46a;
   border-radius: 100px;
 }
 
-/* Metrics 2x2 grid */
-.metricsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+/* Scarcity message banner */
+.scarcityMessageBanner {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  background: rgba(200, 164, 106, 0.06);
+  border-left: 2px solid #c8a46a;
+  padding: 8px 12px;
 }
 
-.metricCard {
+/* Certificate Data Grid */
+.certGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.certDataCard {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 12px;
   border-radius: 2px;
 }
 
-.metricLabel {
+.certDataLabel {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 3px;
 }
 
-.metricVal {
+.certDataVal {
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: -0.01em;
   color: #ffffff;
 }
 
-.metricValGold {
+.certDataValGold {
   color: #c8a46a;
 }
 
-/* Progress bar */
-.progressSection {
+/* Progress Section */
+.certProgressWrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.progressLabelRow {
+.certProgressLabels {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.progressBarTrack {
+.certTrack {
   width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 100px;
   overflow: hidden;
   border: 1px solid rgba(200, 164, 106, 0.15);
 }
 
-.progressBarFill {
+.certFill {
   height: 100%;
-  background: linear-gradient(90deg, #c8a46a 0%, #e5ca9a 100%);
+  background: linear-gradient(90deg, #c8a46a 0%, #e8cf9f 100%);
   border-radius: 100px;
   transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Statements list */
-.statementsList {
+/* Certificate Statements */
+.certStatements {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  padding-top: 16px;
-}
-
-.statementItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.statementBullet {
-  color: #c8a46a;
-  font-size: 10px;
-  margin-top: 2px;
-}
-
-/* Verification Tags */
-.tagsRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  border-top: 1px dashed rgba(200, 164, 106, 0.15);
   padding-top: 12px;
 }
 
-.tagPill {
-  font-family: var(--font-heading);
+.certStatementRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.certBullet {
+  color: #c8a46a;
   font-size: 9px;
+  margin-top: 1px;
+}
+
+/* Certificate Tag Pills */
+.certTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.certTag {
+  font-family: var(--font-heading);
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
   border-radius: 2px;
 }
 
-/* Editorial Magazine Details Section */
+/* ==========================================================================
+   UNLOCKED VAULT SECTIONS (PRODUCT DETAILS, SYMBOLISM, RECENTLY VIEWED)
+   ========================================================================== */
+
+.vaultUnlockedContent {
+  width: 100%;
+  background-color: #050505;
+  border-top: 1px solid rgba(200, 164, 106, 0.2);
+  padding: 100px 0 120px;
+  position: relative;
+  z-index: 15;
+}
+
 .editorialSection {
   max-width: 900px;
-  margin: 90px auto 0;
+  margin: 0 auto;
   padding: 0 40px;
 }
 
@@ -645,12 +738,12 @@
   text-transform: uppercase;
   color: rgba(200, 164, 106, 0.7);
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .editorialTitle {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 4vw, 40px);
+  font-size: clamp(26px, 3.5vw, 40px);
   font-weight: 200;
   letter-spacing: -0.02em;
   color: #ffffff;
@@ -672,7 +765,7 @@
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
   max-width: 720px;
-  margin: 0 auto 48px;
+  margin: 0 auto 56px;
 }
 
 .specsGrid {
@@ -699,14 +792,21 @@
 
 .specText {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 13.5px;
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.7;
   margin: 0;
 }
 
+/* Integrated Recently Viewed Section Container */
+.recentlyViewedVaultWrap {
+  margin-top: 100px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 80px;
+}
+
 /* ==========================================================================
-   MOBILE DEDICATED LAYOUT & FULLSCREEN HERO GALLERY (< 1024px)
+   MOBILE DEDICATED RESPONSIVE EXPERIENCE (< 1024px)
    ========================================================================== */
 
 .mobileOnlyHero {
@@ -718,14 +818,27 @@
 }
 
 @media (max-width: 1023px) {
+  .heroScrollSection {
+    height: auto !important;
+  }
+
+  .heroStickyContainer {
+    position: relative !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   .pdpGrid {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0;
   }
 
   .leftCol {
-    display: none; /* Hide 2-column desktop images on mobile */
+    display: none; /* Hidden on mobile in favor of fullscreen 100vh hero */
   }
 
   /* Fullscreen 100vh Mobile Hero */
@@ -734,10 +847,7 @@
     position: relative;
     width: 100vw;
     height: 100vh;
-    margin-left: calc(-50vw + 50%);
-    margin-right: calc(-50vw + 50%);
-    margin-top: -24px;
-    background: #000000;
+    background: #050505;
     overflow: hidden;
   }
 
@@ -746,10 +856,9 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition: opacity 0.6s ease;
   }
 
-  /* Scroll for details overlay text */
   .mobileScrollOverlay {
     position: absolute;
     bottom: 40px;
@@ -777,14 +886,26 @@
   }
 
   .rightCol {
-    padding-top: 32px;
+    padding: 32px 20px;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  .contentWrapper {
+  .topNavRow {
+    left: 20px;
+    right: 20px;
+    top: 20px;
+  }
+
+  .vaultUnlockedContent {
+    padding: 60px 0 100px;
+  }
+
+  .editorialSection {
     padding: 0 20px;
   }
 
-  /* Fixed Glassmorphism Mobile Bottom CTA */
+  /* Fixed Mobile Bottom Bar */
   .mobileBottomBar {
     display: flex;
     position: fixed;
@@ -825,7 +946,7 @@
     height: 44px;
     background: #c8a46a;
     border: none;
-    color: #070707;
+    color: #050505;
     font-family: var(--font-heading);
     font-size: 11px;
     font-weight: 800;
