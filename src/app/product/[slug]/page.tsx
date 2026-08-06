@@ -163,7 +163,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     return (
       <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />
-        <Navbar />
+        <Navbar variant="exclusive-rack" />
         <CartDrawer />
         <ProductClient
           product={product}

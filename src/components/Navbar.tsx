@@ -23,7 +23,11 @@ const HAMBURGER_LINKS = [
   { href: '/our-story', label: 'Story', icon: BookOpen },
 ] as const;
 
-export default function Navbar() {
+interface NavbarProps {
+  variant?: 'default' | 'exclusive-rack';
+}
+
+export default function Navbar({ variant = 'default' }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, openAuthModal, requireAuth } = useAuth();
@@ -70,7 +74,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`${styles.nav} ${(scrolled || !isHome) ? styles.scrolled : ''} ${showHeroLogo ? styles.heroActive : ''}`}>
+      <nav className={`${styles.nav} ${variant === 'exclusive-rack' ? styles.exclusiveRackNav : ''} ${(scrolled || !isHome) ? styles.scrolled : ''} ${showHeroLogo ? styles.heroActive : ''}`}>
         <div className={styles.inner}>
           <div className={styles.leftZone}>
             <button

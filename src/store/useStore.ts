@@ -16,6 +16,7 @@ import { refreshCartProducts } from '@/actions/product.actions';
 export interface CartItem {
   product: any; // Prisma Product with images and variants
   size: string;
+  color?: string;
   quantity: number;
 }
 
@@ -37,6 +38,7 @@ export interface InstantCheckoutSession {
   sessionId: string;     // crypto.randomUUID() — unique per click
   product: any;          // Deep copy of product with variants
   size: string;
+  color?: string;
   quantity: number;
   createdAt: number;     // Date.now()
 }
@@ -57,9 +59,9 @@ export type WishlistItem = {
 interface StoreState {
   // Cart
   cart: CartItem[];
-  addToCart: (product: any, size: string, quantity?: number) => void;
-  removeFromCart: (productId: string, size: string) => void;
-  updateQuantity: (productId: string, size: string, quantity: number) => void;
+  addToCart: (product: any, size: string, quantity?: number, color?: string) => void;
+  removeFromCart: (productId: string, size: string, color?: string) => void;
+  updateQuantity: (productId: string, size: string, quantity: number, color?: string) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartCount: () => number;
@@ -74,7 +76,7 @@ interface StoreState {
    * Buy Now: atomically writes INSTANT mode + fresh session in one set() call.
    * Always overwrites any previous session. No pre-clear required.
    */
-  beginInstantCheckout: (params: { product: any; size: string; quantity: number }) => void;
+  beginInstantCheckout: (params: { product: any; size: string; quantity: number; color?: string }) => void;
   /**
    * Cart Checkout: atomically sets CART mode and clears any instant session.
    */
@@ -121,23 +123,23 @@ export const useStore = create<StoreState>()(
       // Cart
       cart: [],
 
-      addToCart: (product, size, quantity = 1) => {
+      addToCart: (product, size, quantity = 1, color?: string) => {
         const { cart } = get();
 
         const existing = cart.find(
-          (item) => item.product.id === product.id && item.size === size
+          (item) => item.product.id === product.id && item.size === size && (color ? item.color === color : true)
         );
 
         if (existing) {
           set({
             cart: cart.map((item) =>
-              item.product.id === product.id && item.size === size
+              item.product.id === product.id && item.size === size && (color ? item.color === color : true)
                 ? { ...item, quantity: item.quantity + quantity }
                 : item
             ),
           });
         } else {
-          set({ cart: [...cart, { product, size, quantity }] });
+          set({ cart: [...cart, { product, size, color, quantity }] });
         }
 
         set({ isCartOpen: true, cartOpenSource: 'quickAdd' });
@@ -150,9 +152,9 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      removeFromCart: (productId, size) => {
+      removeFromCart: (productId, size, color?: string) => {
         const itemToRemove = get().cart.find(
-          (item) => item.product?.id === productId && item.size === size
+          (item) => item.product?.id === productId && item.size === size && (color ? item.color === color : true)
         );
 
         if (itemToRemove?.product) {
@@ -166,19 +168,19 @@ export const useStore = create<StoreState>()(
 
         set({
           cart: get().cart.filter(
-            (item) => !(item.product.id === productId && item.size === size)
+            (item) => !(item.product.id === productId && item.size === size && (color ? item.color === color : true))
           ),
         });
       },
 
-      updateQuantity: (productId, size, quantity) => {
+      updateQuantity: (productId, size, quantity, color?: string) => {
         if (quantity <= 0) {
-          get().removeFromCart(productId, size);
+          get().removeFromCart(productId, size, color);
           return;
         }
 
         const { cart } = get();
-        const item = cart.find(i => i.product.id === productId && i.size === size);
+        const item = cart.find(i => i.product.id === productId && i.size === size && (color ? i.color === color : true));
         
         if (item?.product && !canSetExclusiveQuantity(quantity, item.product.channel)) {
           get().showExclusiveCartToast();

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (CONTINUOUS REEL & LUXURY PROPORTIONS)
+   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (LUXURY EDITORIAL REFINEMENT)
    ========================================================================== */
 
 .pageContainer {
@@ -8,17 +8,18 @@
   background-color: #050505;
   color: #ffffff;
   margin: 0;
-  padding: 0;
+  padding-top: 64px; /* Begins EXACTLY below the 64px fixed black navbar */
   position: relative;
   overflow-x: hidden;
   font-family: var(--font-body);
+  box-sizing: border-box;
 }
 
 /* Subtle ambient gold atmospheric aura */
 .pageContainer::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: 64px;
   left: 50%;
   transform: translateX(-50%);
   width: 100vw;
@@ -29,7 +30,7 @@
 }
 
 /* ==========================================================================
-   HERO SECTION (100vh LOCKED DESKTOP EXPERIENCE)
+   HERO SECTION (SYMMETRICAL 50/50 IMAGE LAYOUT WITH NARROW 14px GAP)
    ========================================================================== */
 
 .heroScrollSection {
@@ -39,33 +40,33 @@
 
 .heroStickyContainer {
   position: sticky;
-  top: calc(var(--nav-height, 64px) + 20px);
+  top: 64px;
   width: 100%;
-  height: calc(100vh - var(--nav-height, 64px) - 32px);
+  height: calc(100vh - 64px);
   overflow: hidden;
   background-color: #050505;
   z-index: 10;
 }
 
-/* 3 VERTICAL COLUMNS: LEFT (34%) | CENTER (38%) | RIGHT (28%) */
+/* 3 VERTICAL COLUMNS: LEFT IMAGE (35.5%) | CENTER REEL (35.5%) | RIGHT INFO (29%) */
 .threeColGrid {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: 34% 38% 28%;
+  grid-template-columns: 35.5% 35.5% 29%;
   gap: 0;
   align-items: stretch;
   box-sizing: border-box;
 }
 
-/* COLUMN 1: LEFT (STATIC COVER IMAGE - COMPLETELY FIXED) */
+/* COLUMN 1: LEFT (STATIC COVER IMAGE - PERFECT ASPECT MATCH) */
 .colLeft {
   position: relative;
   width: 100%;
   height: 100%;
   background: #050505;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 6px 12px 16px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -81,23 +82,23 @@
   border-radius: 2px;
 }
 
-/* Diagonal White Cloth Stitched Ribbon */
+/* Elegant Luxury Garment Label Ribbon */
 .ribbonWrap {
   position: absolute;
-  top: 36px;
-  left: -40px;
+  top: 32px;
+  left: -36px;
   z-index: 15;
   transform: rotate(-45deg);
   pointer-events: none;
 }
 
 .ribbonCloth {
-  background: #f7f5f0;
-  color: #0a0a0a;
-  padding: 6px 44px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  border-top: 1.5px dashed rgba(180, 150, 100, 0.4);
-  border-bottom: 1.5px dashed rgba(180, 150, 100, 0.4);
+  background: #f8f6f0;
+  color: #080808;
+  padding: 4px 36px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  border-top: 1px dashed rgba(180, 150, 100, 0.4);
+  border-bottom: 1px dashed rgba(180, 150, 100, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,21 +107,21 @@
 .ribbonText {
   font-family: 'Playfair Display', Georgia, serif;
   font-style: italic;
-  font-size: 13.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: #070707;
+  color: #080808;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* COLUMN 2: CENTER (CONTINUOUS VERTICAL IMAGE REEL) */
+/* COLUMN 2: CENTER (CONTINUOUS REEL — EXACT MATCHING ASPECT RATIO) */
 .colCenter {
   position: relative;
   width: 100%;
   height: 100%;
   background: #050505;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 16px 12px 6px;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -131,10 +132,10 @@
 .reelContainer {
   position: absolute;
   top: 12px;
-  left: 12px;
-  right: 12px;
+  left: 6px;
+  right: 16px;
   bottom: 12px;
-  width: calc(100% - 24px);
+  width: calc(100% - 22px);
   height: calc(100% - 24px);
   overflow: hidden;
   border-radius: 2px;
@@ -177,17 +178,17 @@
   border-radius: 100px;
 }
 
-/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBAR) */
+/* COLUMN 3: RIGHT (EDITORIAL PRODUCT INFO — RESPONSIVE & UNCONGESTED) */
 .colRight {
   width: 100%;
   height: 100%;
-  padding: 24px 28px;
+  padding: 28px 32px;
   box-sizing: border-box;
   background: #050505;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   overflow: hidden; /* ZERO NESTED SCROLLBARS */
 }
 
@@ -203,7 +204,7 @@
 
 .productTitle {
   font-family: var(--font-heading);
-  font-size: clamp(24px, 2.2vw, 34px);
+  font-size: clamp(26px, 2.3vw, 36px);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -213,8 +214,8 @@
 
 .shortDesc {
   font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: rgba(255, 255, 255, 0.65);
   margin: 0;
 }
@@ -224,14 +225,14 @@
   display: flex;
   align-items: baseline;
   gap: 14px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sellingPrice {
   font-family: var(--font-heading);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: #c8a46a;
@@ -261,44 +262,48 @@
 .metaTwoCol {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
 .metaBlockLabel {
   font-family: var(--font-heading);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .metaBlockVal {
   font-family: var(--font-heading);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: #ffffff;
 }
 
-/* Color & Size Selectors Row */
+/* Dynamic Variant Selectors Row */
 .selectorRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.selectorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .selectorLabelRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
 }
 
 .selectorTitle {
   font-family: var(--font-heading);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -307,60 +312,85 @@
 
 .selectedValName {
   font-family: var(--font-heading);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #c8a46a;
 }
 
+/* Dynamic Tactile Color Swatches */
 .colorSwatches {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .colorDotBtn {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   cursor: pointer;
   padding: 0;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.colorDotBtn:hover {
+  transform: scale(1.1);
+  border-color: rgba(200, 164, 106, 0.6);
 }
 
 .colorDotBtnActive {
-  border: 2px solid #c8a46a;
+  border: 2px solid #c8a46a !important;
   transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(200, 164, 106, 0.4);
 }
 
+/* Dynamic Substantial Size Boxes */
 .sizeBoxes {
   display: flex;
-  gap: 5px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .sizeBoxBtn {
-  width: 30px;
-  height: 30px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
   font-family: var(--font-heading);
-  font-size: 9.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border-radius: 2px;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.sizeBoxBtn:hover:not(:disabled) {
+  border-color: rgba(200, 164, 106, 0.6);
+  color: #ffffff;
 }
 
 .sizeBoxBtnActive {
-  border-color: #c8a46a;
-  color: #c8a46a;
-  background: rgba(200, 164, 106, 0.1);
+  border-color: #c8a46a !important;
+  color: #c8a46a !important;
+  background: rgba(200, 164, 106, 0.12) !important;
+  box-shadow: 0 0 14px rgba(200, 164, 106, 0.25);
+}
+
+.sizeBoxBtnDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  text-decoration: line-through;
 }
 
 .sizeChartLink {
@@ -368,7 +398,7 @@
   border: none;
   color: #c8a46a;
   font-family: var(--font-heading);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -384,9 +414,9 @@
 .quantityBoxRow {
   display: flex;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  width: 130px;
-  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  width: 140px;
+  height: 38px;
   border-radius: 2px;
 }
 
@@ -411,7 +441,7 @@
   flex: 1;
   text-align: center;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #ffffff;
 }
@@ -420,28 +450,31 @@
 .actionStack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .buyNowBtn {
   width: 100%;
-  padding: 14px 20px;
+  height: 50px;
   background: #c8a46a;
   border: none;
   color: #050505;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 2px;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 20px rgba(200, 164, 106, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.buyNowBtn:hover {
+.buyNowBtn:hover:not(:disabled) {
   background: #d8b47a;
   box-shadow: 0 6px 28px rgba(200, 164, 106, 0.4);
   transform: translateY(-1px);
@@ -449,14 +482,14 @@
 
 .addToBagBtn {
   width: 100%;
-  padding: 13px 20px;
+  height: 50px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 2px;
@@ -464,10 +497,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.addToBagBtn:hover {
+.addToBagBtn:hover:not(:disabled) {
   border-color: #c8a46a;
   color: #c8a46a;
   background: rgba(200, 164, 106, 0.05);
@@ -479,7 +512,7 @@
   grid-template-columns: 1fr 1fr 1fr;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 8px 0;
+  padding: 10px 0;
 }
 
 .iconRowBtn {
@@ -496,7 +529,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   transition: color 0.2s ease;
 }
 
@@ -793,6 +826,10 @@
 }
 
 @media (max-width: 1023px) {
+  .pageContainer {
+    padding-top: 60px;
+  }
+
   .heroScrollSection {
     height: auto !important;
   }

@@ -52,10 +52,83 @@ export default function ExclusiveRackProductPage({
   const reelProgressRef = useRef(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // 100% DYNAMIC ADMIN VARIANT SYNCHRONIZATION (Source of truth: Admin Product Variants)
+  const adminVariants = Array.isArray(product.variants) ? product.variants : [];
+
+  // Dynamically extract unique colors from admin variants
+  const colorMap = new Map<string, string>();
+  adminVariants.forEach((v: any) => {
+    if (v.color && v.color.trim() !== '') {
+      const name = v.color.trim();
+      const hex = (v.colorHex && v.colorHex.trim() !== '') ? v.colorHex.trim() : '#1a1a1a';
+      if (!colorMap.has(name)) {
+        colorMap.set(name, hex);
+      }
+    }
+  });
+
+  const dynamicColors = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
+  const [selectedColor, setSelectedColor] = useState<string | null>(
+    dynamicColors.length > 0 ? dynamicColors[0].name : null
+  );
+
+  useEffect(() => {
+    if (dynamicColors.length > 0 && (!selectedColor || !colorMap.has(selectedColor))) {
+      setSelectedColor(dynamicColors[0].name);
+    }
+  }, [product.variants]);
+
+  // Dynamically map sizes from admin variants
+  const dynamicSizesList = availableSizes.map(s => {
+    const matchingVariants = adminVariants.filter((v: any) => 
+      v.size === s.label && (!selectedColor || v.color?.trim() === selectedColor)
+    );
+    const totalInv = matchingVariants.reduce((sum: number, v: any) => {
+      const inv = v.inventory;
+      return sum + (inv ? Math.max(0, inv.totalStock - inv.reservedStock - inv.soldStock) : 0);
+    }, 0);
+    
+    return {
+      label: s.label,
+      available: matchingVariants.length > 0 ? totalInv > 0 : s.available,
+      hasVariant: matchingVariants.length > 0
+    };
+  });
+
+  const selectedVariantData = adminVariants.find((v: any) => {
+    const matchSize = selectedSize ? v.size === selectedSize : true;
+    const matchColor = selectedColor ? (v.color?.trim() === selectedColor) : true;
+    return matchSize && matchColor;
+  }) || adminVariants.find((v: any) => v.size === selectedSize) || adminVariants[0];
+
+  const baseVariant = selectedVariantData || adminVariants[0];
+  const price = baseVariant?.price ? Number(baseVariant.price) : 0;
+  const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
+
+  const hasDiscount = comparePrice != null && comparePrice > price && price > 0;
+  const discountPercent = hasDiscount ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
+
+  const availableStock = selectedVariantData?.inventory 
+    ? Math.max(0, selectedVariantData.inventory.totalStock - selectedVariantData.inventory.soldStock - selectedVariantData.inventory.reservedStock)
+    : 99;
+
+  // Filter gallery images dynamically
+  const colorFilteredImages = selectedColor
+    ? product.images?.filter((img: any) => img.alt && img.alt.toLowerCase().includes(selectedColor.toLowerCase()))
+    : [];
+
+  const activeGalleryUrls: string[] = (colorFilteredImages && colorFilteredImages.length > 0)
+    ? colorFilteredImages.map((i: any) => i.url)
+    : (product.images?.map((i: any) => i.url) || ['/images/placeholder.svg']);
+
+  const activeCoverImage = (colorFilteredImages && colorFilteredImages.length > 0)
+    ? colorFilteredImages[0].url
+    : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
+
   // Size chart entries extraction
   const sizeChartEntries: SizeChartEntry[] = (() => {
-    if (Array.isArray(product.variants) && product.variants.length > 0) {
-      return product.variants.map((v: any) => ({
+    if (adminVariants.length > 0) {
+      return adminVariants.map((v: any) => ({
         size: v.color ? `${v.color} - ${v.size}` : v.size,
         alphaSize: v.alphaSize,
         numericSize: v.numericSize,
@@ -79,75 +152,10 @@ export default function ExclusiveRackProductPage({
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
-  // Color Swatches Pipeline
-  const rawColors = (product.variants || [])
-    .map((v: any) => ({ name: v.color?.trim() || '', hex: v.colorHex?.trim() || '' }))
-    .filter((c: any) => c.name !== '');
-
-  const uniqueColorsMap = new Map<string, string>();
-  for (const c of rawColors) {
-    if (!uniqueColorsMap.has(c.name)) {
-      uniqueColorsMap.set(c.name, c.hex);
-    }
-  }
-  const availableColors = Array.from(uniqueColorsMap.entries()).map(([name, hex]) => ({ name, hex }));
-
-  const displayColors = availableColors.length > 0 ? availableColors : [
-    { name: 'DEEP BLACK', hex: '#0a0a0a' },
-    { name: 'RAW IVORY', hex: '#f0ede6' },
-    { name: 'EARTH TAUPE', hex: '#5c4e46' },
-    { name: 'MIDNIGHT NAVY', hex: '#1c2430' }
-  ];
-
-  const [selectedColor, setSelectedColor] = useState<string | null>(displayColors[0].name);
-
-  const selectedVariantData = product.variants?.find((v: any) => {
-    const matchSize = selectedSize ? v.size === selectedSize : true;
-    const matchColor = selectedColor ? (v.color?.trim() === selectedColor) : true;
-    return matchSize && matchColor;
-  }) || product.variants?.find((v: any) => v.size === selectedSize) || product.variants?.[0];
-
-  const baseVariant = selectedVariantData || product.variants?.[0];
-  const price = baseVariant?.price ? Number(baseVariant.price) : 0;
-  const comparePrice = baseVariant?.comparePrice ? Number(baseVariant.comparePrice) : null;
-
-  const filteredSizes = availableSizes.map(s => {
-    const matchingVariant = product.variants?.find((v: any) => 
-      v.size === s.label && (selectedColor ? v.color?.trim() === selectedColor : true)
-    );
-    const inv = matchingVariant?.inventory;
-    const inStock = inv ? (inv.totalStock - inv.reservedStock - inv.soldStock) > 0 : s.available;
-    return {
-      label: s.label,
-      available: inStock && Boolean(matchingVariant)
-    };
-  });
-
-  const hasDiscount = comparePrice != null && comparePrice > price && price > 0;
-  const discountPercent = hasDiscount ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
-
-  const availableStock = selectedVariantData?.inventory 
-    ? selectedVariantData.inventory.totalStock - selectedVariantData.inventory.soldStock - selectedVariantData.inventory.reservedStock 
-    : 99;
-
-  // Filter gallery images
-  const colorFilteredImages = selectedColor
-    ? product.images?.filter((img: any) => img.alt && img.alt.toLowerCase().includes(selectedColor.toLowerCase()))
-    : [];
-
-  const activeGalleryUrls: string[] = (colorFilteredImages && colorFilteredImages.length > 0)
-    ? colorFilteredImages.map((i: any) => i.url)
-    : (product.images?.map((i: any) => i.url) || ['/images/placeholder.svg']);
-
-  const activeCoverImage = (colorFilteredImages && colorFilteredImages.length > 0)
-    ? colorFilteredImages[0].url
-    : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
-
   // SCARCITY & ALLOCATION DYNAMIC CALCULATIONS
-  const variantsList = product.variants || [];
-  const totalStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
-  const soldStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
-  const reservedStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.reservedStock ?? 0), 0);
+  const totalStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
+  const soldStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
+  const reservedStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.reservedStock ?? 0), 0);
   const allocatedCount = soldStockSum + reservedStockSum;
   const editionTotal = totalStockSum > 0 ? totalStockSum : 100;
   const remainingCount = Math.max(0, editionTotal - allocatedCount);
@@ -182,7 +190,7 @@ export default function ExclusiveRackProductPage({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Continuous Proportional Wheel Scroll Hook (60 FPS GPU Translation)
+  // 100% Deterministic Bidirectional Continuous Scroll Reel Hook (60 FPS GPU Translation)
   useEffect(() => {
     if (typeof window === 'undefined' || window.innerWidth < 1023) return;
 
@@ -190,39 +198,41 @@ export default function ExclusiveRackProductPage({
     if (totalImages <= 1) return;
 
     const maxProgress = totalImages - 1;
-    let isUnlocked = false;
 
     const handleWheel = (e: WheelEvent) => {
-      if (window.scrollY > 30) {
-        isUnlocked = true;
+      const scrollY = window.scrollY;
+
+      // If document is scrolled down past top hero section:
+      if (scrollY > 15) {
+        if (e.deltaY < 0 && scrollY <= 30 && reelProgressRef.current > 0) {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: 'instant' as any });
+          const delta = (e.deltaY / 400) * 0.8;
+          const next = Math.max(0, Math.min(maxProgress, reelProgressRef.current + delta));
+          reelProgressRef.current = next;
+          setReelProgress(next);
+        }
         return;
       }
 
-      if (!isUnlocked) {
-        if (e.deltaY > 0) {
-          // Scrolling Down -> Move continuous reel upward smoothly
-          if (reelProgressRef.current < maxProgress) {
-            e.preventDefault();
-            const delta = (e.deltaY / 450) * 0.85;
-            const next = Math.min(maxProgress, Math.max(0, reelProgressRef.current + delta));
-            reelProgressRef.current = next;
-            setReelProgress(next);
-            if (next >= maxProgress) {
-              isUnlocked = true;
-            }
-          } else {
-            isUnlocked = true;
-          }
-        } else if (e.deltaY < 0 && window.scrollY <= 10) {
-          // Scrolling Up -> Move continuous reel downward smoothly
-          if (reelProgressRef.current > 0) {
-            e.preventDefault();
-            isUnlocked = false;
-            const delta = (e.deltaY / 450) * 0.85;
-            const next = Math.max(0, reelProgressRef.current + delta);
-            reelProgressRef.current = next;
-            setReelProgress(next);
-          }
+      // When window.scrollY <= 15 (Top Hero Section):
+      if (e.deltaY > 0) {
+        // Scrolling DOWN -> Advance continuous reel smoothly
+        if (reelProgressRef.current < maxProgress) {
+          e.preventDefault();
+          const delta = (e.deltaY / 400) * 0.8;
+          const next = Math.min(maxProgress, Math.max(0, reelProgressRef.current + delta));
+          reelProgressRef.current = next;
+          setReelProgress(next);
+        }
+      } else if (e.deltaY < 0) {
+        // Scrolling UP -> Retreat continuous reel smoothly
+        if (reelProgressRef.current > 0) {
+          e.preventDefault();
+          const delta = (e.deltaY / 400) * 0.8;
+          const next = Math.max(0, Math.min(maxProgress, reelProgressRef.current + delta));
+          reelProgressRef.current = next;
+          setReelProgress(next);
         }
       }
     };
@@ -242,7 +252,7 @@ export default function ExclusiveRackProductPage({
       return;
     }
     setSizeError(false);
-    addToCart(product, selectedSize, quantity);
+    addToCart(product, selectedSize, quantity, selectedColor || undefined);
   };
 
   const handleBuyNow = () => {
@@ -259,10 +269,10 @@ export default function ExclusiveRackProductPage({
     requireAuth(
       'checkout',
       () => {
-        beginInstantCheckout({ product, size: selectedSize, quantity });
+        beginInstantCheckout({ product, size: selectedSize, quantity, color: selectedColor || undefined });
         router.push('/checkout');
       },
-      { type: 'checkout', product, size: selectedSize, quantity }
+      { type: 'checkout', product, size: selectedSize, quantity, color: selectedColor || undefined }
     );
   };
 
@@ -294,17 +304,17 @@ export default function ExclusiveRackProductPage({
         </div>
       </div>
 
-      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH CONTINUOUS 60 FPS REEL */}
+      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH SYMMETRICAL 50/50 IMAGES */}
       <section className={styles.heroScrollSection}>
         
         <div className={styles.heroStickyContainer}>
           
           <div className={styles.threeColGrid}>
             
-            {/* COLUMN 1: LEFT (STATIC COVER IMAGE - COMPLETELY FIXED) */}
+            {/* COLUMN 1: LEFT (STATIC COVER IMAGE - EXACT MATCHING ASPECT RATIO) */}
             <div className={styles.colLeft}>
               
-              {/* WHITE CLOTH EMBOSSED CURSIVE RIBBON */}
+              {/* ELEGANT LUXURY GARMENT LABEL RIBBON */}
               <div className={styles.ribbonWrap}>
                 <div className={styles.ribbonCloth}>
                   <span className={styles.ribbonText}>Exclusive</span>
@@ -318,7 +328,7 @@ export default function ExclusiveRackProductPage({
               />
             </div>
 
-            {/* COLUMN 2: CENTER (CONTINUOUS VERTICAL IMAGE REEL) */}
+            {/* COLUMN 2: CENTER (CONTINUOUS REEL — NARROW 14px LUXURY SPACING) */}
             <div className={styles.colCenter}>
               <div className={styles.reelContainer}>
                 <div
@@ -341,7 +351,7 @@ export default function ExclusiveRackProductPage({
               </div>
             </div>
 
-            {/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBAR) */}
+            {/* COLUMN 3: RIGHT (EDITORIAL PRODUCT INFO — RESPONSIVE & UNCONGESTED) */}
             <div className={styles.colRight}>
               
               {/* Collection Name */}
@@ -380,54 +390,53 @@ export default function ExclusiveRackProductPage({
                 </div>
               </div>
 
-              {/* Color & Size Selector Row */}
+              {/* Dynamic Variant Selectors Block (100% Admin Panel Synchronized) */}
               <div className={styles.selectorRow}>
-                {/* Color Swatches */}
-                <div>
-                  <div className={styles.selectorLabelRow}>
-                    <span className={styles.selectorTitle}>COLOR:</span>
-                    <span className={styles.selectedValName}>{selectedColor}</span>
+                {/* Dynamic Tactile Color Swatches */}
+                {dynamicColors.length > 0 && (
+                  <div className={styles.selectorBlock}>
+                    <div className={styles.selectorLabelRow}>
+                      <span className={styles.selectorTitle}>COLOR:</span>
+                      <span className={styles.selectedValName}>{selectedColor}</span>
+                    </div>
+                    <div className={styles.colorSwatches}>
+                      {dynamicColors.map((c) => {
+                        const isSelected = selectedColor === c.name;
+                        return (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => setSelectedColor(c.name)}
+                            className={`${styles.colorDotBtn} ${isSelected ? styles.colorDotBtnActive : ''}`}
+                            style={{ backgroundColor: c.hex }}
+                            title={c.name}
+                            aria-label={`Select color ${c.name}`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className={styles.colorSwatches}>
-                    {displayColors.map((c) => {
-                      const isSelected = selectedColor === c.name;
-                      return (
-                        <button
-                          key={c.name}
-                          type="button"
-                          onClick={() => setSelectedColor(c.name)}
-                          className={`${styles.colorDotBtn} ${isSelected ? styles.colorDotBtnActive : ''}`}
-                          style={{ backgroundColor: c.hex }}
-                          title={c.name}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                )}
 
-                {/* Size Boxes */}
-                <div>
+                {/* Dynamic Substantial Size Boxes */}
+                <div className={styles.selectorBlock}>
                   <div className={styles.selectorLabelRow}>
                     <span className={styles.selectorTitle}>SIZE:</span>
                   </div>
                   <div className={styles.sizeBoxes}>
-                    {(filteredSizes.length > 0 ? filteredSizes : [
-                      { label: 'XS', available: true },
-                      { label: 'S', available: true },
-                      { label: 'M', available: true },
-                      { label: 'L', available: true },
-                      { label: 'XL', available: true }
-                    ]).map((s) => {
+                    {dynamicSizesList.map((s) => {
                       const isSelected = selectedSize === s.label;
+                      const isDisabled = !s.available;
                       return (
                         <button
                           key={s.label}
                           type="button"
+                          disabled={isDisabled}
                           onClick={() => {
                             setSelectedSize(s.label);
                             setSizeError(false);
                           }}
-                          className={`${styles.sizeBoxBtn} ${isSelected ? styles.sizeBoxBtnActive : ''}`}
+                          className={`${styles.sizeBoxBtn} ${isSelected ? styles.sizeBoxBtnActive : ''} ${isDisabled ? styles.sizeBoxBtnDisabled : ''}`}
                         >
                           {s.label}
                         </button>
@@ -456,7 +465,7 @@ export default function ExclusiveRackProductPage({
 
               {/* Quantity Counter Box */}
               <div>
-                <div className={styles.selectorTitle} style={{ marginBottom: '4px' }}>QUANTITY</div>
+                <div className={styles.selectorTitle} style={{ marginBottom: '6px' }}>QUANTITY</div>
                 <div className={styles.quantityBoxRow}>
                   <button
                     type="button"

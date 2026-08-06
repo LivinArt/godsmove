@@ -23,6 +23,50 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.nav.exclusiveRackNav {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 64px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: #050505 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  z-index: 1000 !important;
+}
+
+.nav.exclusiveRackNav .inner {
+  height: 64px !important;
+  padding: 0 40px !important;
+  max-width: 100% !important;
+}
+
+/* Ensure navbar text, links, and icons are crisp white for Exclusive Rack */
+.nav.exclusiveRackNav a,
+.nav.exclusiveRackNav button,
+.nav.exclusiveRackNav span,
+.nav.exclusiveRackNav svg {
+  color: #ffffff !important;
+}
+
+.nav.exclusiveRackNav a:hover,
+.nav.exclusiveRackNav button:hover {
+  color: #c8a46a !important;
+}
+
+.nav.exclusiveRackNav a:hover svg,
+.nav.exclusiveRackNav button:hover svg {
+  color: #c8a46a !important;
+  stroke: #c8a46a !important;
+}
+
 .inner {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
