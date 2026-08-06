@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Heart,
@@ -11,7 +10,6 @@ import {
   Share2,
   ChevronDown,
   Award,
-  Sparkles,
   User,
   Ruler,
   ShieldCheck,
@@ -49,7 +47,7 @@ export default function ExclusiveRackProductPage({
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
-  // Dynamic Scroll Progress & Image Index tracking for Cinematic Vault Sequence
+  // Dynamic Scroll Progress & Image Index tracking for Cinematic Vault Reel
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -75,14 +73,12 @@ export default function ExclusiveRackProductPage({
     (e: any) => e.measurements && typeof e.measurements === 'object' && Object.keys(e.measurements).length > 0
   );
 
-  const { user, openAuthModal, requireAuth } = useAuth();
-  const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast, setCartOpen } = useStore();
+  const { requireAuth } = useAuth();
+  const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
 
-  const cartCount = useStore((s) => s.cart.length > 0 ? s.getCartCount() : 0);
-
-  // Colors Swatches Pipeline
+  // Color Swatches Pipeline
   const rawColors = (product.variants || [])
     .map((v: any) => ({ name: v.color?.trim() || '', hex: v.colorHex?.trim() || '' }))
     .filter((c: any) => c.name !== '');
@@ -95,7 +91,6 @@ export default function ExclusiveRackProductPage({
   }
   const availableColors = Array.from(uniqueColorsMap.entries()).map(([name, hex]) => ({ name, hex }));
 
-  // Fallback luxury colors if none provided
   const displayColors = availableColors.length > 0 ? availableColors : [
     { name: 'DEEP BLACK', hex: '#0a0a0a' },
     { name: 'RAW IVORY', hex: '#f0ede6' },
@@ -147,7 +142,7 @@ export default function ExclusiveRackProductPage({
     ? colorFilteredImages[0].url
     : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
 
-  // SCARCITY & ALLOCATION CALCULATIONS
+  // SCARCITY & ALLOCATION DYNAMIC CALCULATIONS
   const variantsList = product.variants || [];
   const totalStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
   const soldStockSum = variantsList.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
@@ -175,23 +170,16 @@ export default function ExclusiveRackProductPage({
     }
   }, [product, selectedSize]);
 
-  // Scroll listener for Pure CSS Sticky Scroll Progression & gallery index stepping
+  // Scroll listener for Pure Sticky Scroll Progression
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 50);
-
-      const numImages = activeGalleryUrls.length;
-      if (numImages > 1) {
-        const heroStepDistance = window.innerHeight * 0.9;
-        const index = Math.min(numImages - 1, Math.floor(scrollY / heroStepDistance));
-        setGalleryIndex(Math.max(0, index));
-      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeGalleryUrls.length]);
+  }, []);
 
   // Wheel Scroll Lock: Locks body scroll on desktop until the final gallery image is reached
   useEffect(() => {
@@ -201,32 +189,43 @@ export default function ExclusiveRackProductPage({
     if (totalImages <= 1) return;
 
     let isUnlocked = false;
+    let isThrottled = false;
 
     const handleWheel = (e: WheelEvent) => {
-      // If user has already scrolled past the hero section, let normal scroll happen
-      if (window.scrollY > window.innerHeight * 0.5) {
+      // If user has already scrolled past top hero, let normal scroll happen
+      if (window.scrollY > 30) {
         isUnlocked = true;
         return;
       }
 
       if (!isUnlocked) {
         if (e.deltaY > 0) {
-          // Scrolling Down
+          // Scrolling Down -> Advance gallery reel
           setGalleryIndex((prevIndex) => {
             if (prevIndex < totalImages - 1) {
               e.preventDefault();
-              return prevIndex + 1;
+              if (!isThrottled) {
+                isThrottled = true;
+                setTimeout(() => { isThrottled = false; }, 350);
+                return prevIndex + 1;
+              }
+              return prevIndex;
             } else {
               isUnlocked = true;
               return prevIndex;
             }
           });
         } else if (e.deltaY < 0 && window.scrollY <= 10) {
-          // Scrolling Up at top of page
+          // Scrolling Up at top of page -> Retreat gallery reel
           setGalleryIndex((prevIndex) => {
             if (prevIndex > 0) {
               e.preventDefault();
-              return prevIndex - 1;
+              if (!isThrottled) {
+                isThrottled = true;
+                setTimeout(() => { isThrottled = false; }, 350);
+                return prevIndex - 1;
+              }
+              return prevIndex;
             }
             return 0;
           });
@@ -282,56 +281,9 @@ export default function ExclusiveRackProductPage({
     } catch (e) {}
   };
 
-  const numImages = activeGalleryUrls.length;
-  const heroScrollHeight = numImages > 1 ? `${numImages * 100}vh` : '100vh';
-
   return (
     <div className={styles.pageContainer}>
       
-      {/* INTEGRATED EDGE-TO-EDGE NAVBAR (MATCHING REFERENCE) */}
-      <nav className={styles.vaultNavbar}>
-        <div className={styles.vaultNavLeft}>
-          <Link href="/" className={styles.vaultNavLink}>HOME</Link>
-          <Link href="/drops" className={styles.vaultNavLink}>DROPS</Link>
-          <Link href="/exclusive-rack" className={`${styles.vaultNavLink} ${styles.vaultNavLinkActive}`}>EXCLUSIVE RACK</Link>
-          <Link href="/our-story" className={styles.vaultNavLink}>STORY</Link>
-        </div>
-
-        <div className={styles.vaultNavCenter}>
-          <Link href="/" className={styles.logoText} aria-label="GODSMOVE Home">
-            GODSMOVE
-          </Link>
-        </div>
-
-        <div className={styles.vaultNavRight}>
-          <button type="button" className={styles.navTextBtn}>SEARCH</button>
-          <button
-            type="button"
-            className={styles.navTextBtn}
-            onClick={() => requireAuth('wishlist', () => router.push('/wishlist'), { type: 'wishlist' })}
-          >
-            WISHLIST
-          </button>
-          <button
-            type="button"
-            className={styles.navTextBtn}
-            onClick={() => {
-              if (user) router.push('/profile');
-              else openAuthModal('profile');
-            }}
-          >
-            ACCOUNT
-          </button>
-          <button
-            type="button"
-            className={styles.navTextBtn}
-            onClick={() => setCartOpen(true)}
-          >
-            BAG ({cartCount})
-          </button>
-        </div>
-      </nav>
-
       {/* MOBILE HERO: 100vh FULLSCREEN GALLERY */}
       <div className={styles.mobileOnlyHero}>
         <img
@@ -346,14 +298,14 @@ export default function ExclusiveRackProductPage({
         </div>
       </div>
 
-      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH PURE STICKY SCROLL */}
-      <section className={styles.heroScrollSection} style={{ height: heroScrollHeight }}>
+      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH CONTINUOUS VERTICAL IMAGE REEL */}
+      <section className={styles.heroScrollSection}>
         
         <div className={styles.heroStickyContainer}>
           
           <div className={styles.threeColGrid}>
             
-            {/* COLUMN 1: LEFT (STATIC COVER IMAGE) */}
+            {/* COLUMN 1: LEFT (STATIC COVER IMAGE - COMPLETELY FIXED) */}
             <div className={styles.colLeft}>
               
               {/* WHITE CLOTH EMBOSSED CURSIVE RIBBON */}
@@ -370,32 +322,30 @@ export default function ExclusiveRackProductPage({
               />
             </div>
 
-            {/* COLUMN 2: CENTER (DYNAMIC GALLERY IMAGE) */}
+            {/* COLUMN 2: CENTER (CONTINUOUS VERTICAL IMAGE REEL) */}
             <div className={styles.colCenter}>
-              {activeGalleryUrls.map((url: string, idx: number) => {
-                const isActive = idx === galleryIndex;
-                return (
-                  <img
-                    key={url + idx}
-                    src={url}
-                    alt={`${product.name} Gallery ${idx + 1}`}
-                    className={styles.galleryImage}
-                    style={{
-                      opacity: isActive ? 1 : 0,
-                      transform: isActive ? 'translateY(0)' : 'translateY(40px)',
-                      zIndex: isActive ? 2 : 1,
-                      pointerEvents: isActive ? 'auto' : 'none',
-                    }}
-                  />
-                );
-              })}
+              <div className={styles.reelContainer}>
+                <div
+                  className={styles.galleryReelStack}
+                  style={{ transform: `translateY(-${galleryIndex * 100}%)` }}
+                >
+                  {activeGalleryUrls.map((url: string, idx: number) => (
+                    <img
+                      key={url + idx}
+                      src={url}
+                      alt={`${product.name} Gallery ${idx + 1}`}
+                      className={styles.galleryReelItem}
+                    />
+                  ))}
+                </div>
+              </div>
 
               <div className={styles.galleryCounterBadge}>
                 0{galleryIndex + 1} — 0{activeGalleryUrls.length}
               </div>
             </div>
 
-            {/* COLUMN 3: RIGHT (STICKY CONTROL PANEL) */}
+            {/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBARS) */}
             <div className={styles.colRight}>
               
               {/* Collection Name */}
@@ -495,7 +445,7 @@ export default function ExclusiveRackProductPage({
                       onClick={() => setIsSizeChartOpen(true)}
                       className={styles.sizeChartLink}
                     >
-                      <Ruler size={12} />
+                      <Ruler size={11} />
                       <span>SIZE CHART</span>
                     </button>
                   )}
@@ -503,21 +453,21 @@ export default function ExclusiveRackProductPage({
               </div>
 
               {sizeError && (
-                <p style={{ color: '#ff6b6b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                <p style={{ color: '#ff6b6b', fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
                   Please select a size to proceed
                 </p>
               )}
 
               {/* Quantity Counter Box */}
               <div>
-                <div className={styles.selectorTitle} style={{ marginBottom: '6px' }}>QUANTITY</div>
+                <div className={styles.selectorTitle} style={{ marginBottom: '4px' }}>QUANTITY</div>
                 <div className={styles.quantityBoxRow}>
                   <button
                     type="button"
                     className={styles.qtyBtn}
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   >
-                    <Minus size={12} />
+                    <Minus size={11} />
                   </button>
                   <span className={styles.qtyVal}>{quantity}</span>
                   <button
@@ -525,7 +475,7 @@ export default function ExclusiveRackProductPage({
                     className={styles.qtyBtn}
                     onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
                   >
-                    <Plus size={12} />
+                    <Plus size={11} />
                   </button>
                 </div>
               </div>
@@ -561,7 +511,7 @@ export default function ExclusiveRackProductPage({
                   className={`${styles.iconRowBtn} ${wishlisted ? styles.iconRowBtnActive : ''}`}
                   onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
                 >
-                  <Heart size={13} fill={wishlisted ? 'currentColor' : 'none'} />
+                  <Heart size={12} fill={wishlisted ? 'currentColor' : 'none'} />
                   <span>WISHLIST</span>
                 </button>
 
@@ -570,7 +520,7 @@ export default function ExclusiveRackProductPage({
                   className={`${styles.iconRowBtn} ${inCompare ? styles.iconRowBtnActive : ''}`}
                   onClick={() => toggleCompare(product)}
                 >
-                  <ArrowLeftRight size={13} />
+                  <ArrowLeftRight size={12} />
                   <span>COMPARE</span>
                 </button>
 
@@ -579,108 +529,9 @@ export default function ExclusiveRackProductPage({
                   className={styles.iconRowBtn}
                   onClick={handleShare}
                 >
-                  <Share2 size={13} />
+                  <Share2 size={12} />
                   <span>{copiedShare ? 'COPIED' : 'SHARE'}</span>
                 </button>
-              </div>
-
-              {/* ==================================================
-                  EXCLUSIVE RACK ALLOCATION PANEL (100% REFERENCE MATCH)
-                  ================================================== */}
-              <div className={styles.certBox}>
-                
-                <div className={styles.certHeader}>
-                  <div className={styles.certHeaderTitle}>
-                    <Award size={13} color="#c8a46a" />
-                    <span>EXCLUSIVE RACK ALLOCATION</span>
-                  </div>
-                  <span className={styles.certEditionText}>
-                    EDITION {editionNumber} / {editionTotal}
-                  </span>
-                </div>
-
-                {/* 3 Metric Columns: AVAILABLE | SOLD | TOTAL */}
-                <div className={styles.metricsThreeCol}>
-                  <div className={styles.metricColItem}>
-                    <span className={styles.metricColLabel}>AVAILABLE</span>
-                    <div className={styles.metricColNum}>
-                      <span>{remainingCount}</span>
-                      <span className={styles.metricColPcs}>PCS</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.metricColItem}>
-                    <span className={styles.metricColLabel}>SOLD</span>
-                    <div className={styles.metricColNum}>
-                      <span>{allocatedCount}</span>
-                      <span className={styles.metricColPcs}>PCS</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.metricColItem}>
-                    <span className={styles.metricColLabel}>TOTAL</span>
-                    <div className={styles.metricColNum}>
-                      <span>{editionTotal}</span>
-                      <span className={styles.metricColPcs}>PCS</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Solid Warm Gold Progress Bar */}
-                <div className={styles.certProgressSection}>
-                  <div className={styles.certProgressTrack}>
-                    <div
-                      className={styles.certProgressFill}
-                      style={{ width: `${scarcityPercent}%` }}
-                    />
-                  </div>
-                  <div className={styles.certProgressLabels}>
-                    <span>{scarcityPercent}% REMAINING</span>
-                    <span>{100 - scarcityPercent}% ALLOCATED</span>
-                  </div>
-                </div>
-
-                {/* 3 Status Cards */}
-                <div className={styles.statusThreeBox}>
-                  <div className={styles.statusCard}>
-                    <div className={styles.statusCardLabel}>ALLOCATION TYPE</div>
-                    <div className={styles.statusCardVal}>Limited Allocation</div>
-                  </div>
-
-                  <div className={styles.statusCard}>
-                    <div className={styles.statusCardLabel}>RESTOCKING</div>
-                    <div className={styles.statusCardVal}>No Restocking</div>
-                  </div>
-
-                  <div className={styles.statusCard}>
-                    <div className={styles.statusCardLabel}>UNIQUE PIECE</div>
-                    <div className={styles.statusCardVal}>Individually Allocated</div>
-                  </div>
-                </div>
-
-                {/* 4 Feature Icons Row */}
-                <div className={styles.featureFourRow}>
-                  <div className={styles.featureIconCard}>
-                    <User size={13} color="#c8a46a" />
-                    <span className={styles.featureIconCardText}>HAND NUMBERED</span>
-                  </div>
-
-                  <div className={styles.featureIconCard}>
-                    <Award size={13} color="#c8a46a" />
-                    <span className={styles.featureIconCardText}>LIMITED EDITION</span>
-                  </div>
-
-                  <div className={styles.featureIconCard}>
-                    <Package size={13} color="#c8a46a" />
-                    <span className={styles.featureIconCardText}>PRIVATE COLLECTION</span>
-                  </div>
-
-                  <div className={styles.featureIconCard}>
-                    <ShieldCheck size={13} color="#c8a46a" />
-                    <span className={styles.featureIconCardText}>EDITION VERIFIED</span>
-                  </div>
-                </div>
-
               </div>
 
             </div>
@@ -692,10 +543,110 @@ export default function ExclusiveRackProductPage({
       </section>
 
       {/* ==================================================
-          UNLOCKED VAULT SECTIONS (PRODUCT DETAILS & SYMBOLISM)
+          UNLOCKED PAGE FLOW (SINGLE BROWSER SCROLLBAR)
           ================================================== */}
       <div className={styles.vaultUnlockedContent}>
         
+        {/* EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL */}
+        <section className={styles.certBoxSection}>
+          <div className={styles.certBox}>
+            
+            <div className={styles.certHeader}>
+              <div className={styles.certHeaderTitle}>
+                <Award size={14} color="#c8a46a" />
+                <span>EXCLUSIVE RACK ALLOCATION</span>
+              </div>
+              <span className={styles.certEditionText}>
+                EDITION {editionNumber} / {editionTotal}
+              </span>
+            </div>
+
+            {/* 3 Metric Columns: AVAILABLE | SOLD | TOTAL */}
+            <div className={styles.metricsThreeCol}>
+              <div className={styles.metricColItem}>
+                <span className={styles.metricColLabel}>AVAILABLE</span>
+                <div className={styles.metricColNum}>
+                  <span>{remainingCount}</span>
+                  <span className={styles.metricColPcs}>PCS</span>
+                </div>
+              </div>
+
+              <div className={styles.metricColItem}>
+                <span className={styles.metricColLabel}>SOLD</span>
+                <div className={styles.metricColNum}>
+                  <span>{allocatedCount}</span>
+                  <span className={styles.metricColPcs}>PCS</span>
+                </div>
+              </div>
+
+              <div className={styles.metricColItem}>
+                <span className={styles.metricColLabel}>TOTAL</span>
+                <div className={styles.metricColNum}>
+                  <span>{editionTotal}</span>
+                  <span className={styles.metricColPcs}>PCS</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Solid Warm Gold Progress Bar */}
+            <div className={styles.certProgressSection}>
+              <div className={styles.certProgressTrack}>
+                <div
+                  className={styles.certProgressFill}
+                  style={{ width: `${scarcityPercent}%` }}
+                />
+              </div>
+              <div className={styles.certProgressLabels}>
+                <span>{scarcityPercent}% REMAINING</span>
+                <span>{100 - scarcityPercent}% ALLOCATED</span>
+              </div>
+            </div>
+
+            {/* 3 Status Cards */}
+            <div className={styles.statusThreeBox}>
+              <div className={styles.statusCard}>
+                <div className={styles.statusCardLabel}>ALLOCATION TYPE</div>
+                <div className={styles.statusCardVal}>Limited Allocation</div>
+              </div>
+
+              <div className={styles.statusCard}>
+                <div className={styles.statusCardLabel}>RESTOCKING</div>
+                <div className={styles.statusCardVal}>No Restocking</div>
+              </div>
+
+              <div className={styles.statusCard}>
+                <div className={styles.statusCardLabel}>UNIQUE PIECE</div>
+                <div className={styles.statusCardVal}>Individually Allocated</div>
+              </div>
+            </div>
+
+            {/* 4 Feature Icons Row */}
+            <div className={styles.featureFourRow}>
+              <div className={styles.featureIconCard}>
+                <User size={14} color="#c8a46a" />
+                <span className={styles.featureIconCardText}>HAND NUMBERED</span>
+              </div>
+
+              <div className={styles.featureIconCard}>
+                <Award size={14} color="#c8a46a" />
+                <span className={styles.featureIconCardText}>LIMITED EDITION</span>
+              </div>
+
+              <div className={styles.featureIconCard}>
+                <Package size={14} color="#c8a46a" />
+                <span className={styles.featureIconCardText}>PRIVATE COLLECTION</span>
+              </div>
+
+              <div className={styles.featureIconCard}>
+                <ShieldCheck size={14} color="#c8a46a" />
+                <span className={styles.featureIconCardText}>EDITION VERIFIED</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* EDITORIAL DETAILS & SYMBOLISM */}
         <section className={styles.editorialSection}>
           <div className={styles.editorialHeader}>
             <span className={styles.editorialEyebrow}>DESIGN SPECIFICATION</span>

@@ -1,9 +1,10 @@
 /* ==========================================================================
-   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (PIXEL PERFECT REFERENCE MATCH)
+   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (REFINED INTERACTION ARCHITECTURE)
    ========================================================================== */
 
+/* Root Container — Zero Nested Scrollbars, Continuous Matte Black */
 .pageContainer {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   background-color: #050505;
   color: #ffffff;
@@ -14,127 +15,58 @@
   font-family: var(--font-body);
 }
 
-/* ==========================================================================
-   TOP INTEGRATED NAVBAR (100vw, 64px)
-   ========================================================================== */
-
-.vaultNavbar {
-  position: sticky;
+/* Subtle ambient gold atmospheric aura */
+.pageContainer::before {
+  content: '';
+  position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100vw;
-  height: 64px;
-  z-index: 100;
-  background: #050505;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  box-sizing: border-box;
-}
-
-.vaultNavLeft {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-}
-
-.vaultNavLink {
-  font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.65);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.vaultNavLink:hover {
-  color: #ffffff;
-}
-
-.vaultNavLinkActive {
-  color: #c8a46a;
-}
-
-.vaultNavCenter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logoText {
-  font-family: var(--font-heading);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.vaultNavRight {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.navTextBtn {
-  background: transparent;
-  border: none;
-  font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition: color 0.2s ease;
-  padding: 0;
-}
-
-.navTextBtn:hover {
-  color: #c8a46a;
+  height: 900px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(200, 164, 106, 0.05) 0%, rgba(5, 5, 5, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ==========================================================================
-   DESKTOP 3-COLUMN LAYOUT (100vw, calc(100vh - 64px))
+   HERO SECTION (100vh LOCKED DESKTOP EXPERIENCE)
    ========================================================================== */
 
 .heroScrollSection {
   position: relative;
-  width: 100vw;
+  width: 100%;
 }
 
 .heroStickyContainer {
   position: sticky;
-  top: 64px;
-  width: 100vw;
-  height: calc(100vh - 64px);
+  top: calc(var(--nav-height, 88px) + 12px);
+  width: 100%;
+  height: calc(100vh - var(--nav-height, 88px) - 24px);
   overflow: hidden;
   background-color: #050505;
   z-index: 10;
 }
 
+/* 3 VERTICAL COLUMNS: LEFT (32%) | CENTER (36%) | RIGHT (32%) */
 .threeColGrid {
-  width: 100vw;
+  width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: 33% 34% 33%;
+  grid-template-columns: 32% 36% 32%;
   gap: 0;
   align-items: stretch;
   box-sizing: border-box;
 }
 
-/* COLUMN 1: LEFT (STATIC COVER IMAGE) */
+/* COLUMN 1: LEFT (STATIC COVER IMAGE - COMPLETELY FIXED) */
 .colLeft {
   position: relative;
   width: 100%;
   height: 100%;
   background: #050505;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 32px;
+  padding: 24px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -152,7 +84,7 @@
 /* Diagonal White Cloth Stitched Ribbon */
 .ribbonWrap {
   position: absolute;
-  top: 40px;
+  top: 36px;
   left: -40px;
   z-index: 15;
   transform: rotate(-45deg);
@@ -162,7 +94,7 @@
 .ribbonCloth {
   background: #f7f5f0;
   color: #0a0a0a;
-  padding: 6px 48px;
+  padding: 6px 44px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   border-top: 1.5px dashed rgba(180, 150, 100, 0.4);
   border-bottom: 1.5px dashed rgba(180, 150, 100, 0.4);
@@ -174,21 +106,21 @@
 .ribbonText {
   font-family: 'Playfair Display', Georgia, serif;
   font-style: italic;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.15em;
   color: #070707;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* COLUMN 2: CENTER (DYNAMIC GALLERY IMAGE) */
+/* COLUMN 2: CENTER (CONTINUOUS VERTICAL IMAGE REEL) */
 .colCenter {
   position: relative;
   width: 100%;
   height: 100%;
   background: #050505;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 32px;
+  padding: 24px;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -196,55 +128,65 @@
   justify-content: center;
 }
 
-.galleryImage {
+.reelContainer {
   position: absolute;
-  top: 32px;
-  left: 32px;
-  right: 32px;
-  bottom: 32px;
-  width: calc(100% - 64px);
-  height: calc(100% - 64px);
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  width: calc(100% - 48px);
+  height: calc(100% - 48px);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.galleryReelStack {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.galleryReelItem {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
   object-fit: cover;
   display: block;
-  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
 }
 
 .galleryCounterBadge {
   position: absolute;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.25em;
   color: #c8a46a;
+  background: rgba(5, 5, 5, 0.85);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  backdrop-filter: blur(12px);
+  padding: 4px 12px;
+  border-radius: 100px;
 }
 
-/* COLUMN 3: RIGHT (STICKY CONTROL PANEL) */
+/* COLUMN 3: RIGHT (FIXED PRODUCT INFO — NO NESTED SCROLLBAR) */
 .colRight {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  padding: 32px 36px;
+  padding: 24px 32px;
   box-sizing: border-box;
   background: #050505;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  scrollbar-width: thin;
-  scrollbar-color: rgba(200, 164, 106, 0.3) transparent;
-}
-
-.colRight::-webkit-scrollbar {
-  width: 4px;
-}
-.colRight::-webkit-scrollbar-thumb {
-  background: rgba(200, 164, 106, 0.3);
-  border-radius: 4px;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden; /* ZERO NESTED SCROLLBARS */
 }
 
 .collectionTag {
@@ -259,7 +201,7 @@
 
 .productTitle {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 2.4vw, 36px);
+  font-size: clamp(24px, 2.2vw, 34px);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -270,7 +212,7 @@
 .shortDesc {
   font-family: var(--font-body);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.6;
   color: rgba(255, 255, 255, 0.65);
   margin: 0;
 }
@@ -280,7 +222,7 @@
   display: flex;
   align-items: baseline;
   gap: 14px;
-  padding: 12px 0;
+  padding: 10px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -317,22 +259,22 @@
 .metaTwoCol {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
 .metaBlockLabel {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .metaBlockVal {
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #ffffff;
 }
@@ -341,7 +283,7 @@
 .selectorRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -354,7 +296,7 @@
 
 .selectorTitle {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -363,7 +305,7 @@
 
 .selectedValName {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -376,8 +318,8 @@
 }
 
 .colorDotBtn {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
@@ -392,18 +334,18 @@
 
 .sizeBoxes {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .sizeBoxBtn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.8);
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -424,7 +366,7 @@
   border: none;
   color: #c8a46a;
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -432,7 +374,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 6px;
+  margin-top: 4px;
   padding: 0;
 }
 
@@ -441,8 +383,8 @@
   display: flex;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  width: 140px;
-  height: 36px;
+  width: 130px;
+  height: 34px;
   border-radius: 2px;
 }
 
@@ -452,7 +394,7 @@
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -467,22 +409,29 @@
   flex: 1;
   text-align: center;
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #ffffff;
 }
 
 /* Primary CTAs */
+.actionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
 .buyNowBtn {
   width: 100%;
-  padding: 16px 24px;
+  padding: 14px 20px;
   background: #c8a46a;
   border: none;
   color: #050505;
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 2px;
@@ -498,21 +447,21 @@
 
 .addToBagBtn {
   width: 100%;
-  padding: 15px 24px;
+  padding: 13px 20px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.25s ease;
 }
 
@@ -528,7 +477,7 @@
   grid-template-columns: 1fr 1fr 1fr;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .iconRowBtn {
@@ -537,7 +486,7 @@
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.7);
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -545,7 +494,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   transition: color 0.2s ease;
 }
 
@@ -559,18 +508,35 @@
 }
 
 /* ==========================================================================
-   EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL (MATCHING REFERENCE IMAGE 100%)
+   UNLOCKED PAGE SECTIONS (SINGLE BROWSER SCROLLBAR)
    ========================================================================== */
+
+.vaultUnlockedContent {
+  width: 100%;
+  background-color: #050505;
+  border-top: 1px solid rgba(200, 164, 106, 0.2);
+  padding: 80px 0 120px;
+  position: relative;
+  z-index: 15;
+  box-sizing: border-box;
+}
+
+/* EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL (PLANTED IN UNLOCKED PAGE FLOW) */
+.certBoxSection {
+  max-width: 900px;
+  margin: 0 auto 80px;
+  padding: 0 40px;
+}
 
 .certBox {
   border: 1px solid rgba(200, 164, 106, 0.25);
   border-radius: 2px;
-  padding: 20px;
+  padding: 28px;
   background: #080808;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 8px;
+  gap: 20px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.6);
 }
 
 .certHeader {
@@ -578,34 +544,33 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 10px;
+  padding-bottom: 14px;
 }
 
 .certHeaderTitle {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: #c8a46a;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .certEditionText {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.15em;
   color: #c8a46a;
 }
 
-/* 3 Metric Columns: AVAILABLE | SOLD | TOTAL */
 .metricsThreeCol {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
 }
 
 .metricColItem {
@@ -616,7 +581,7 @@
 
 .metricColLabel {
   font-family: var(--font-heading);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -625,22 +590,21 @@
 
 .metricColNum {
   font-family: var(--font-heading);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #ffffff;
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 6px;
 }
 
 .metricColPcs {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #c8a46a;
 }
 
-/* Progress Section */
 .certProgressSection {
   display: flex;
   flex-direction: column;
@@ -666,51 +630,49 @@
   display: flex;
   justify-content: space-between;
   font-family: var(--font-heading);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* 3 Allocation Status Boxes */
 .statusThreeBox {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  gap: 12px;
 }
 
 .statusCard {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 2px;
 }
 
 .statusCardLabel {
   font-family: var(--font-heading);
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .statusCardVal {
   font-family: var(--font-heading);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #c8a46a;
 }
 
-/* 4 Feature Icons Row */
 .featureFourRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 12px;
+  padding-top: 16px;
 }
 
 .featureIconCard {
@@ -718,32 +680,19 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .featureIconCardText {
   font-family: var(--font-heading);
-  font-size: 7.5px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* ==========================================================================
-   UNLOCKED VAULT SECTIONS (PRODUCT DETAILS & SYMBOLISM)
-   ========================================================================== */
-
-.vaultUnlockedContent {
-  width: 100vw;
-  background-color: #050505;
-  border-top: 1px solid rgba(200, 164, 106, 0.2);
-  padding: 100px 0 120px;
-  position: relative;
-  z-index: 15;
-  box-sizing: border-box;
-}
-
+/* PRODUCT DETAILS & SYMBOLISM */
 .editorialSection {
   max-width: 900px;
   margin: 0 auto;
@@ -857,7 +806,7 @@
     display: flex;
     flex-direction: column;
     height: auto !important;
-    width: 100vw !important;
+    width: 100% !important;
   }
 
   .colLeft, .colCenter {
@@ -913,19 +862,11 @@
     overflow: visible !important;
   }
 
-  .vaultNavbar {
-    padding: 0 16px;
-    height: 60px;
-  }
-
-  .vaultNavLinks {
-    display: none;
-  }
-
   .vaultUnlockedContent {
     padding: 60px 0 100px;
   }
 
+  .certBoxSection,
   .editorialSection {
     padding: 0 20px;
   }

@@ -161,8 +161,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK') {
     return (
-      <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100vw', overflowX: 'hidden' }}>
+      <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />
+        <Navbar />
         <CartDrawer />
         <ProductClient
           product={product}
