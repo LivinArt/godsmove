@@ -16,7 +16,7 @@ export default async function ProductsAdminPage({
     status?: string;
   }>;
 }) {
-  const { q, destination, category, collection, badge, status } = await searchParams;
+  const { q, destination, category, collection, badge, status } = (await searchParams) || {};
 
   const [products, categories, collections] = await Promise.all([
     getProducts({

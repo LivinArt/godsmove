@@ -15,8 +15,8 @@ type ProductRow = {
   collectionName?: string | null;
   featuredBadge?: string | null;
   images: { isCover: boolean; url: string }[];
-  category: { name: string };
-  drop: { name: string } | null;
+  category?: { name: string } | null;
+  drop?: { name: string } | null;
   variants: {
     id: string;
     inventory: { totalStock: number; soldStock: number; reservedStock: number } | null;
@@ -36,6 +36,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 function availableStock(product: ProductRow) {
+  if (!product.variants || !Array.isArray(product.variants)) return 0;
   return product.variants.reduce((sum, v) => {
     const inv = v.inventory;
     if (!inv) return sum;
@@ -114,7 +115,7 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                       {p.slug}
                     </div>
                   </td>
-                  <td style={{ fontSize: 12 }}>{p.category.name}</td>
+                  <td style={{ fontSize: 12 }}>{p.category?.name || 'Uncategorized'}</td>
                   <td style={{ fontSize: 12, color: p.isExclusiveRack ? '#c8a46a' : 'var(--admin-muted)', fontWeight: p.isExclusiveRack ? 600 : 400 }}>
                     {dropLabel}
                   </td>
@@ -138,7 +139,7 @@ export function ProductsTable({ products: initialProducts }: ProductsTableProps)
                       {isLow && <span style={{ marginLeft: 4, fontSize: 9 }}>LOW</span>}
                     </span>
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{p.variants.length} sizes</td>
+                  <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{p.variants?.length ?? 0} sizes</td>
                   <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{p.collectionName || '—'}</td>
                   <td style={{ fontSize: 12 }}>
                     {p.featuredBadge ? (
