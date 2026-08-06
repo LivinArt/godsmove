@@ -1,8 +1,7 @@
 /* ==========================================================================
-   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (REFINED INTERACTION ARCHITECTURE)
+   GODSMOVE — EXCLUSIVE RACK PRODUCT PAGE V3 (CONTINUOUS REEL & LUXURY PROPORTIONS)
    ========================================================================== */
 
-/* Root Container — Zero Nested Scrollbars, Continuous Matte Black */
 .pageContainer {
   width: 100%;
   min-height: 100vh;
@@ -40,20 +39,20 @@
 
 .heroStickyContainer {
   position: sticky;
-  top: calc(var(--nav-height, 88px) + 12px);
+  top: calc(var(--nav-height, 64px) + 20px);
   width: 100%;
-  height: calc(100vh - var(--nav-height, 88px) - 24px);
+  height: calc(100vh - var(--nav-height, 64px) - 32px);
   overflow: hidden;
   background-color: #050505;
   z-index: 10;
 }
 
-/* 3 VERTICAL COLUMNS: LEFT (32%) | CENTER (36%) | RIGHT (32%) */
+/* 3 VERTICAL COLUMNS: LEFT (34%) | CENTER (38%) | RIGHT (28%) */
 .threeColGrid {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: 32% 36% 32%;
+  grid-template-columns: 34% 38% 28%;
   gap: 0;
   align-items: stretch;
   box-sizing: border-box;
@@ -66,7 +65,7 @@
   height: 100%;
   background: #050505;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 24px;
+  padding: 12px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -75,10 +74,11 @@
 }
 
 .staticImage {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
+  border-radius: 2px;
 }
 
 /* Diagonal White Cloth Stitched Ribbon */
@@ -120,7 +120,7 @@
   height: 100%;
   background: #050505;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 24px;
+  padding: 12px;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -130,23 +130,25 @@
 
 .reelContainer {
   position: absolute;
-  top: 24px;
-  left: 24px;
-  right: 24px;
-  bottom: 24px;
-  width: calc(100% - 48px);
-  height: calc(100% - 48px);
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
   overflow: hidden;
   border-radius: 2px;
 }
 
+/* GPU-Accelerated 60 FPS Continuous Motion Reel Stack */
 .galleryReelStack {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .galleryReelItem {
@@ -159,7 +161,7 @@
 
 .galleryCounterBadge {
   position: absolute;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -175,11 +177,11 @@
   border-radius: 100px;
 }
 
-/* COLUMN 3: RIGHT (FIXED PRODUCT INFO — NO NESTED SCROLLBAR) */
+/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBAR) */
 .colRight {
   width: 100%;
   height: 100%;
-  padding: 24px 32px;
+  padding: 24px 28px;
   box-sizing: border-box;
   background: #050505;
   display: flex;
@@ -521,7 +523,7 @@
   box-sizing: border-box;
 }
 
-/* EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL (PLANTED IN UNLOCKED PAGE FLOW) */
+/* EXCLUSIVE RACK OWNERSHIP CERTIFICATE PANEL */
 .certBoxSection {
   max-width: 900px;
   margin: 0 auto 80px;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -47,8 +47,9 @@ export default function ExclusiveRackProductPage({
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
-  // Dynamic Scroll Progress & Image Index tracking for Cinematic Vault Reel
-  const [galleryIndex, setGalleryIndex] = useState(0);
+  // Proportional Continuous Reel Scroll Progress (0 to totalImages - 1)
+  const [reelProgress, setReelProgress] = useState(0);
+  const reelProgressRef = useRef(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Size chart entries extraction
@@ -170,7 +171,7 @@ export default function ExclusiveRackProductPage({
     }
   }, [product, selectedSize]);
 
-  // Scroll listener for Pure Sticky Scroll Progression
+  // Scroll listener for sticky container state
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -181,18 +182,17 @@ export default function ExclusiveRackProductPage({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Wheel Scroll Lock: Locks body scroll on desktop until the final gallery image is reached
+  // Continuous Proportional Wheel Scroll Hook (60 FPS GPU Translation)
   useEffect(() => {
     if (typeof window === 'undefined' || window.innerWidth < 1023) return;
 
     const totalImages = activeGalleryUrls.length;
     if (totalImages <= 1) return;
 
+    const maxProgress = totalImages - 1;
     let isUnlocked = false;
-    let isThrottled = false;
 
     const handleWheel = (e: WheelEvent) => {
-      // If user has already scrolled past top hero, let normal scroll happen
       if (window.scrollY > 30) {
         isUnlocked = true;
         return;
@@ -200,35 +200,29 @@ export default function ExclusiveRackProductPage({
 
       if (!isUnlocked) {
         if (e.deltaY > 0) {
-          // Scrolling Down -> Advance gallery reel
-          setGalleryIndex((prevIndex) => {
-            if (prevIndex < totalImages - 1) {
-              e.preventDefault();
-              if (!isThrottled) {
-                isThrottled = true;
-                setTimeout(() => { isThrottled = false; }, 350);
-                return prevIndex + 1;
-              }
-              return prevIndex;
-            } else {
+          // Scrolling Down -> Move continuous reel upward smoothly
+          if (reelProgressRef.current < maxProgress) {
+            e.preventDefault();
+            const delta = (e.deltaY / 450) * 0.85;
+            const next = Math.min(maxProgress, Math.max(0, reelProgressRef.current + delta));
+            reelProgressRef.current = next;
+            setReelProgress(next);
+            if (next >= maxProgress) {
               isUnlocked = true;
-              return prevIndex;
             }
-          });
+          } else {
+            isUnlocked = true;
+          }
         } else if (e.deltaY < 0 && window.scrollY <= 10) {
-          // Scrolling Up at top of page -> Retreat gallery reel
-          setGalleryIndex((prevIndex) => {
-            if (prevIndex > 0) {
-              e.preventDefault();
-              if (!isThrottled) {
-                isThrottled = true;
-                setTimeout(() => { isThrottled = false; }, 350);
-                return prevIndex - 1;
-              }
-              return prevIndex;
-            }
-            return 0;
-          });
+          // Scrolling Up -> Move continuous reel downward smoothly
+          if (reelProgressRef.current > 0) {
+            e.preventDefault();
+            isUnlocked = false;
+            const delta = (e.deltaY / 450) * 0.85;
+            const next = Math.max(0, reelProgressRef.current + delta);
+            reelProgressRef.current = next;
+            setReelProgress(next);
+          }
         }
       }
     };
@@ -281,13 +275,15 @@ export default function ExclusiveRackProductPage({
     } catch (e) {}
   };
 
+  const currentDisplayIndex = Math.min(activeGalleryUrls.length, Math.floor(reelProgress) + 1);
+
   return (
     <div className={styles.pageContainer}>
       
       {/* MOBILE HERO: 100vh FULLSCREEN GALLERY */}
       <div className={styles.mobileOnlyHero}>
         <img
-          src={activeGalleryUrls[galleryIndex] || activeCoverImage}
+          src={activeGalleryUrls[Math.floor(reelProgress)] || activeCoverImage}
           alt={product.name}
           className={styles.mobileHeroImage}
         />
@@ -298,7 +294,7 @@ export default function ExclusiveRackProductPage({
         </div>
       </div>
 
-      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH CONTINUOUS VERTICAL IMAGE REEL */}
+      {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH CONTINUOUS 60 FPS REEL */}
       <section className={styles.heroScrollSection}>
         
         <div className={styles.heroStickyContainer}>
@@ -327,7 +323,7 @@ export default function ExclusiveRackProductPage({
               <div className={styles.reelContainer}>
                 <div
                   className={styles.galleryReelStack}
-                  style={{ transform: `translateY(-${galleryIndex * 100}%)` }}
+                  style={{ transform: `translate3d(0, -${reelProgress * 100}%, 0)` }}
                 >
                   {activeGalleryUrls.map((url: string, idx: number) => (
                     <img
@@ -341,11 +337,11 @@ export default function ExclusiveRackProductPage({
               </div>
 
               <div className={styles.galleryCounterBadge}>
-                0{galleryIndex + 1} — 0{activeGalleryUrls.length}
+                0{currentDisplayIndex} — 0{activeGalleryUrls.length}
               </div>
             </div>
 
-            {/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBARS) */}
+            {/* COLUMN 3: RIGHT (FIXED PRODUCT INFO PANEL — ZERO NESTED SCROLLBAR) */}
             <div className={styles.colRight}>
               
               {/* Collection Name */}
