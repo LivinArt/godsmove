@@ -1255,5 +1255,226 @@
   text-align: center;
 }
 
+/* Pre-Booking Checkout Light Luxury Visual Identity */
+.preBookingSidebar {
+  border: 1px solid #E5E1DA !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
+  color: #111111 !important;
+}
+
+/* Header & Section Title inside Pre-Booking Sidebar */
+.preBookingSidebar .sectionTitle {
+  color: #111111 !important;
+  border-bottom-color: #E5E1DA !important;
+}
+
+.preBookingBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #FAF8F5;
+  border: 1px solid #E5E1DA;
+  border-radius: 4px;
+  margin-bottom: 18px;
+}
+
+.preBookingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #B08D57;
+}
+
+.preBookingLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #666666;
+  text-transform: uppercase;
+}
+
+/* Items list inside Pre-Booking Sidebar */
+.preBookingSidebar .orderItems {
+  border-bottom-color: #E5E1DA !important;
+}
+
+.preBookingSidebar .orderItemName {
+  color: #111111 !important;
+}
+
+.preBookingSidebar .orderItemMeta {
+  color: #666666 !important;
+}
+
+.preBookingSidebar .orderItemPrice {
+  color: #111111 !important;
+}
+
+/* Quantity controls inside Pre-Booking Sidebar */
+.preBookingSidebar .qtyBox {
+  border-color: #E5E1DA !important;
+  background: #FAF8F5 !important;
+}
+
+.preBookingSidebar .qtyBtn {
+  color: #444444 !important;
+}
+
+.preBookingSidebar .qtyBtn:hover {
+  color: #111111 !important;
+  background: #E5E1DA !important;
+}
+
+.preBookingSidebar .qtyVal {
+  color: #111111 !important;
+}
+
+.preBookingSidebar .removeItemBtn {
+  color: #888888 !important;
+}
+
+.preBookingSidebar .removeItemBtn:hover {
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+/* Coupon & Offers block inside Pre-Booking Sidebar */
+.preBookingSidebar .couponBlock {
+  border-bottom-color: #E5E1DA !important;
+}
+
+.preBookingSidebar .bestOfferAvailableLabel,
+.preBookingSidebar .bestOfferAppliedLabel {
+  color: #666666 !important;
+}
+
+.preBookingSidebar .checkOffersLink {
+  color: #B08D57 !important;
+}
+
+.preBookingSidebar .appliedCodeBadge {
+  background: #FAF8F5 !important;
+  border-color: #C0A06A !important;
+  color: #B08D57 !important;
+}
+
+.preBookingSidebar .appliedCodeSavings {
+  color: #16a34a !important;
+}
+
+/* Credits Row inside Pre-Booking Sidebar */
+.preBookingSidebar .creditCheckboxRow {
+  border-bottom-color: #E5E1DA !important;
+}
+
+.preBookingSidebar .checkboxLabel {
+  color: #111111 !important;
+}
+
+.preBookingSidebar .checkboxInput {
+  accent-color: #B08D57 !important;
+}
+
+.preBookingSidebar .noCreditsNote {
+  color: #888888 !important;
+}
+
+.preBookingSidebar .inlineCreditsConfirmation {
+  color: #16a34a !important;
+  background: rgba(22, 163, 74, 0.08) !important;
+  border-color: rgba(22, 163, 74, 0.25) !important;
+}
+
+/* Payment Method Options inside Pre-Booking Sidebar */
+.preBookingSidebar .paymentSectionLabel {
+  color: #111111 !important;
+}
+
+.preBookingSidebar .paymentOption {
+  border-color: #E5E1DA !important;
+  background: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+.preBookingSidebar .paymentOption.paymentActive {
+  border-color: #C0A06A !important;
+  background: #FAF8F5 !important;
+}
+
+.preBookingSidebar .paymentOption input[type="radio"] {
+  accent-color: #B08D57 !important;
+}
+
+.preBookingSidebar .paymentName {
+  color: #111111 !important;
+}
+
+.preBookingSidebar .paymentDesc {
+  color: #666666 !important;
+}
+
+.preBookingSidebar .prepaidFeatureNote {
+  color: #B08D57 !important;
+}
+
+.preBookingSidebar .codInfoNote {
+  color: #888888 !important;
+}
+
+.preBookingSidebar .recommendedBadge {
+  background: #FAF8F5 !important;
+  border-color: #C0A06A !important;
+  color: #B08D57 !important;
+}
+
+/* Pricing Rows inside Pre-Booking Sidebar */
+.preBookingSidebar .pricingRows {
+  border-top-color: #E5E1DA !important;
+}
+
+.preBookingSidebar .orderRow {
+  color: #444444 !important;
+}
+
+.preBookingSidebar .orderTotal {
+  color: #111111 !important;
+  border-top-color: #E5E1DA !important;
+  font-size: 17px !important;
+}
+
+.preBookingLegalLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #E5E1DA;
+}
+
+.preBookingLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #B08D57;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.preBookingLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 
 

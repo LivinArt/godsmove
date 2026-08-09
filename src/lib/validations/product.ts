@@ -57,6 +57,18 @@ export const CreateProductSchema = z.object({
   featuredHeadline: z.string().max(200).optional().nullable(),
   featuredDescription: z.string().max(1000).optional().nullable(),
   editorStory: z.string().max(10000).optional().nullable(),
+
+  // Pre Booking & Scheduled Launch System
+  isPreBooking: z.boolean().default(false),
+  launchDateTime: z.preprocess(emptyStringToNull, z.coerce.date().optional().nullable()),
+  preBookingOpenDateTime: z.preprocess(emptyStringToNull, z.coerce.date().optional().nullable()),
+  expectedDispatch: z.string().optional().nullable().default('IMMEDIATELY'),
+  customExpectedDispatch: z.string().optional().nullable(),
+  maxPreBooking: z.preprocess(emptyStringToNull, z.coerce.number().int().min(1).optional().nullable()),
+  currentPreBookings: z.coerce.number().int().default(0),
+  hasPreBookingOffer: z.boolean().default(false),
+  preBookingOfferType: z.string().optional().nullable(),
+  preBookingOfferValue: z.preprocess(emptyStringToNull, z.coerce.number().optional().nullable()),
   
   // Curated Collection details
   collectionName: z.string().max(120).optional().nullable(),
@@ -146,6 +158,9 @@ export const CreateProductSchema = z.object({
 
   // Size Chart Configuration
   sizeChart: z.any().optional().nullable(),
+
+  // Storytelling & Atelier Technical Archive Data
+  storytelling: z.any().optional().nullable(),
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({

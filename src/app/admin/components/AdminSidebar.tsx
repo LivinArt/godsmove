@@ -30,6 +30,7 @@ const navGroups = [
     label: 'People',
     items: [
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
+      { href: '/admin/members', label: 'Manage Members', icon: UsersIcon },
       { href: '/admin/communication', label: 'Communication', icon: MegaphoneIcon },
     ],
   },
@@ -45,8 +46,8 @@ const navGroups = [
 // Role-based nav restrictions
 const ROLE_RESTRICTIONS: Record<string, string[]> = {
   CONTENT_EDITOR: ['/admin/editorial', '/admin/hero-slides', '/admin/collections', '/admin/categories'],
-  OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/care', '/admin/exclusive-draws', '/admin/categories', '/admin/collections'],
-  SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/care', '/admin/customers'],
+  OPERATIONS: ['/admin', '/admin/orders', '/admin/inventory', '/admin/returns', '/admin/care', '/admin/members', '/admin/exclusive-draws', '/admin/categories', '/admin/collections'],
+  SUPPORT: ['/admin', '/admin/orders', '/admin/returns', '/admin/care', '/admin/customers', '/admin/members'],
   MARKETING: ['/admin', '/admin/discounts', '/admin/drops', '/admin/hero-slides', '/admin/collections', '/admin/communication', '/admin/marketing'],
 };
 

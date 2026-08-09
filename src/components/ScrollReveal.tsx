@@ -13,7 +13,7 @@ export default function ScrollReveal({
   children,
   className = '',
   delay = 0,
-  threshold = 0.15,
+  threshold = 0.05,
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,18 +21,30 @@ export default function ScrollReveal({
     const el = ref.current;
     if (!el) return;
 
+    // If already visible, skip observer
+    if (el.classList.contains('visible')) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setTimeout(() => {
+            if (delay > 0) {
+              const timer = setTimeout(() => {
+                if (el) el.classList.add('visible');
+              }, delay);
+              observer.unobserve(el);
+              return () => clearTimeout(timer);
+            } else {
               el.classList.add('visible');
-            }, delay);
-            observer.unobserve(el);
+              observer.unobserve(el);
+            }
           }
         });
       },
-      { threshold }
+      {
+        threshold,
+        rootMargin: '0px 0px 80px 0px', // Trigger 80px before entering viewport for seamless scroll
+      }
     );
 
     observer.observe(el);

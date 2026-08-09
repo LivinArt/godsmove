@@ -37,6 +37,7 @@ export const CreateOrderSchema = z.object({
   paymentMethod: z.enum(['RAZORPAY', 'COD', 'WALLET', 'MIXED']),
   couponCode: z.string().optional().nullable().transform((v) => v ?? undefined),
   walletAmountToUse: z.number().min(0).default(0),
+  orderType: z.enum(['REGULAR', 'PRE_BOOKING']).default('REGULAR').optional(),
 });
 
 export const UpdateOrderStatusSchema = z.object({

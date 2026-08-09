@@ -7,16 +7,17 @@ import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import CinematicHero, { type CinematicHeroSlide } from '@/components/CinematicHero';
 import RecentlyViewed from '@/components/RecentlyViewed';
+import PreBookingHomepageSection from '@/components/home/PreBookingHomepageSection';
+import VaultProductCard from '@/components/home/VaultProductCard';
+import HomepageFeatureCards from '@/components/home/HomepageFeatureCards';
+import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import { 
   getHomeHeroSlides, 
   getStorefrontProducts, 
   getStorefrontCategories 
 } from '@/actions/storefront.actions';
 import { getProfileSummary } from '@/actions/profile.actions';
-import HomepageFeatureCards from '@/components/home/HomepageFeatureCards';
-import VaultProductCard from '@/components/home/VaultProductCard';
 import { getHomepageFeatureCardsData } from '@/actions/feature-cards.actions';
-import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -40,14 +41,14 @@ const FALLBACK_HERO_SLIDES: CinematicHeroSlide[] = [
 export default async function Home() {
   // 1. Fetch Dynamic Stores Metadata & Curation Lists
   const [
-    newArrivals,
+    allProducts,
     editorSelection,
     exclusiveRackProducts,
     categories,
     heroSlidesRaw,
     featureCardsContent
   ] = await Promise.all([
-    getStorefrontProducts({ take: 4 }),
+    getStorefrontProducts({ take: 50 }),
     getStorefrontProducts({ featured: true, take: 4 }),
     getStorefrontProducts({ isExclusiveRack: true, showOnHomepage: true, take: 3 }),
     getStorefrontCategories(),
@@ -60,19 +61,19 @@ export default async function Home() {
       ? (heroSlidesRaw as CinematicHeroSlide[])
       : FALLBACK_HERO_SLIDES;
 
+  // Filter products for dedicated sections
+  const preBookingProducts = allProducts.filter((p) => p && p.isPreBooking);
+  const dropsProducts = allProducts.filter((p) => p && !p.isExclusiveRack).slice(0, 4);
+
   // 2. Retrieve User Credentials for Personalized Curation
   const summary = await getProfileSummary();
 
   const profile = summary ? { firstName: summary.firstName, lastName: summary.lastName, email: summary.email } : null;
-  const walletBalance = summary?.walletBalance ?? 0;
-  const hasRecentlyDelivered = summary?.hasRecentlyDelivered ?? false;
-  const hasApprovedReturn = summary?.hasApprovedReturn ?? false;
-  const hasActiveCare = summary?.hasActiveCare ?? false;
   const orderedProductIds = summary?.orderedProductIds ?? [];
 
   // Filter recommendations based on purchase ledger
   const recommendedProducts = editorSelection
-    .filter(p => !orderedProductIds.includes(p.id))
+    .filter((p) => !orderedProductIds.includes(p.id))
     .slice(0, 4);
 
   return (
@@ -81,47 +82,53 @@ export default async function Home() {
       <CartDrawer />
 
       <main className={styles.flagshipMain}>
-        {/* 1. Full Cinematic Campaign Hero */}
+        {/* ── 1. SPLIT BANNER: Cinematic Campaign Hero + Split Feature Cards ── */}
         <CinematicHero slides={heroSlides} />
-
-        {/* 2. Full-Width Editorial Split Campaign Banner (DROPS & EXCLUSIVE RACK) */}
         <HomepageFeatureCards content={featureCardsContent} />
 
-        {/* 3. New Arrivals (Magazine Composition) */}
-        {newArrivals.length > 0 && (
-          <section className={styles.section} id="new-arrivals">
+        {/* ── 2. PRE-BOOKING / UPCOMING ALLOCATIONS (Immediately After Split Banner) ── */}
+        <PreBookingHomepageSection products={preBookingProducts} />
+
+        {/* ── 3. THE VAULT / EXCLUSIVE RACK ── */}
+        {exclusiveRackProducts.length > 0 && (
+          <section className={styles.exclusiveSection} id="exclusive-rack">
             <div className="container">
               <ScrollReveal>
-                <div className={styles.header}>
-                  <span className="caption">Releases</span>
-                  <h2 className={styles.sectionTitle}>New Arrivals</h2>
+                <div className={styles.exclusiveHeader}>
+                  <span className={styles.exclusiveEyebrow}>THE VAULT</span>
+                  <h2 className={styles.exclusiveTitle}>EXCLUSIVE RACK</h2>
+                  <p className={styles.exclusiveSub}>
+                    Curated garments crafted with uncompromising attention to detail.
+                  </p>
                 </div>
               </ScrollReveal>
               
-              <div className={styles.grid}>
-                {newArrivals.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} />
+              <div className={styles.exclusiveContainer}>
+                {exclusiveRackProducts.map((p, idx) => (
+                  <ScrollReveal key={p.id}>
+                    <VaultProductCard product={p} isEven={idx % 2 === 0} />
+                  </ScrollReveal>
                 ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* 4. Shop By Category (Editorial Grid) */}
+        {/* ── 4. ROOMS — SHOP BY CATEGORY ── */}
         {categories.length > 0 && (
           <section className={styles.section} id="shop-categories">
             <div className="container">
               <ScrollReveal>
                 <div className={styles.header}>
-                  <span className="caption">Rooms</span>
-                  <h2 className={styles.sectionTitle}>Shop by Category</h2>
+                  <span className="caption">ROOMS</span>
+                  <h2 className={styles.sectionTitle}>EXPLORE BY WORLD</h2>
                 </div>
               </ScrollReveal>
 
               {/* Mobile: horizontal auto-scrolling carousel */}
               <MobileCategoryCarousel categories={categories.map((cat: any) => ({ id: cat.id, name: cat.name, slug: cat.slug, imageUrl: cat.imageUrl }))} />
 
-              {/* Desktop: editorial grid (hidden on mobile via CSS) */}
+              {/* Desktop: editorial grid */}
               <div className={styles.categoryGrid} data-count={categories.length}>
                 {categories.map((cat: any) => {
                   const fallbackImage = cat.slug === 'tees' ? '/images/products/tee-black.png' :
@@ -151,7 +158,7 @@ export default async function Home() {
                       <div className={styles.categoryInfo}>
                         <h3>{cat.name}</h3>
                         <p>{desc}</p>
-                        <span className={styles.categoryLink}>Enter Room</span>
+                        <span className={styles.categoryLink}>ENTER ROOM →</span>
                       </div>
                     </Link>
                   );
@@ -161,32 +168,27 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 5. Exclusive Rack (The Vault Lounge) */}
-        {exclusiveRackProducts.length > 0 && (
-          <section className={styles.exclusiveSection} id="exclusive-rack">
+        {/* ── 5. DROPS / NEW RELEASES SECTION ── */}
+        {dropsProducts.length > 0 && (
+          <section className={styles.section} id="latest-drops">
             <div className="container">
               <ScrollReveal>
-                <div className={styles.exclusiveHeader}>
-                  <span className={styles.exclusiveEyebrow}>THE VAULT</span>
-                  <h2 className={styles.exclusiveTitle}>Exclusive Rack</h2>
-                  <p className={styles.exclusiveSub}>
-                    Curated garments crafted with uncompromising attention to detail.
-                  </p>
+                <div className={styles.header}>
+                  <span className="caption">DROPS</span>
+                  <h2 className={styles.sectionTitle}>THE LATEST DROP</h2>
                 </div>
               </ScrollReveal>
               
-              <div className={styles.exclusiveContainer}>
-                {exclusiveRackProducts.map((p, idx) => (
-                  <ScrollReveal key={p.id}>
-                    <VaultProductCard product={p} isEven={idx % 2 === 0} />
-                  </ScrollReveal>
+              <div className={styles.grid}>
+                {dropsProducts.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
                 ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* 6. Curated For You / Allocated For You (Only show if logged in) */}
+        {/* ── 6. ALLOCATED FOR YOU (Personalized Curation for Logged-In Users) ── */}
         {profile && recommendedProducts.length > 0 && (
           <section className={styles.section} id="recommendations">
             <div className="container">
@@ -205,40 +207,8 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 7. Recently Viewed (Logged in only) */}
+        {/* ── 7. RECENTLY VIEWED ── */}
         {profile && <RecentlyViewed />}
-
-        {/* 8. Journal (Archival Writings) */}
-        <section className={styles.journalSection}>
-          <div className="container">
-            <ScrollReveal>
-              <div className={styles.journalHeader}>
-                <span className="caption">Journal</span>
-                <h2 className={styles.sectionTitle}>Archival Writings</h2>
-              </div>
-              <div className={styles.journalGrid}>
-                <div className={styles.journalCard}>
-                  <span className={styles.journalTag}>Edition 01</span>
-                  <h3>The Seam Architecture</h3>
-                  <p>How we design drop-shoulder sleeves to hold form across frames.</p>
-                  <span className={styles.journalRead}>Read Entry</span>
-                </div>
-                <div className={styles.journalCard}>
-                  <span className={styles.journalTag}>Edition 02</span>
-                  <h3>Slow Curation</h3>
-                  <p>The philosophy of rejecting mass retail and embracing selective allocation.</p>
-                  <span className={styles.journalRead}>Read Entry</span>
-                </div>
-                <div className={styles.journalCard}>
-                  <span className={styles.journalTag}>Edition 03</span>
-                  <h3>Textiles Care</h3>
-                  <p>Caring for fine combed long-staple cotton fibers to extend product lifetime.</p>
-                  <span className={styles.journalRead}>Read Entry</span>
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </section>
       </main>
 
       <Footer />

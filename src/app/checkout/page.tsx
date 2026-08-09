@@ -4,8 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock, Loader2, Check, X, Pencil } from 'lucide-react';
+import { ArrowLeft, Lock, Loader2, Check, X, Pencil, Crown, ShieldCheck, Tag } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { PreBookingSuccessModal } from '@/components/prebooking/PreBookingSuccessModal';
+import { PreBookingPaymentFailedModal } from '@/components/prebooking/PreBookingPaymentFailedModal';
+import { getPreBookingOfferDetails } from '@/lib/launch-engine';
 import { isCartItemAvailable, isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import { loadRazorpaySDKScript } from '@/hooks/useRazorpay';
@@ -126,7 +129,11 @@ export default function CheckoutPage() {
   const [useCredits, setUseCredits] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [showFailedModal, setShowFailedModal] = useState(false);
   const [bestCouponDetected, setBestCouponDetected] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [codConfig, setCodConfig] = useState<CodConfigData>({
     isEnabled: true,
     chargeType: 'FIXED',
@@ -135,12 +142,14 @@ export default function CheckoutPage() {
   });
 
   // Load COD configuration live
+  const isPreBookingCheckout = checkoutMode === 'INSTANT' && instantCheckoutSession?.orderType === 'PRE_BOOKING';
+
   useEffect(() => {
     async function loadCodSettings() {
       try {
         const cfg = await getCodSettings();
         setCodConfig(cfg);
-        if (!cfg.isEnabled && paymentMethod === 'cod') {
+        if ((!cfg.isEnabled || isPreBookingCheckout) && paymentMethod === 'cod') {
           setPaymentMethod('razorpay');
         }
       } catch (err) {
@@ -148,7 +157,7 @@ export default function CheckoutPage() {
       }
     }
     loadCodSettings();
-  }, []);
+  }, [isPreBookingCheckout, paymentMethod]);
 
   // Load active discounts and auto-apply best fit
   useEffect(() => {
@@ -198,7 +207,6 @@ export default function CheckoutPage() {
   }, [subtotal, useCredits]);
 
   // Processing & Payments Simulation States
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [simulatedPaymentStep, setSimulatedPaymentStep] = useState<string | null>(null);
 
@@ -265,6 +273,13 @@ export default function CheckoutPage() {
     }
     loadData();
   }, []);
+
+  // Auto-reset payment method away from COD for Pre-Booking checkouts
+  useEffect(() => {
+    if (isPreBookingCheckout && paymentMethod === 'cod') {
+      setPaymentMethod('razorpay');
+    }
+  }, [isPreBookingCheckout, paymentMethod]);
 
   // TASK 3 & 4 — REMOVE ITEM BEHAVIOUR & CHECKOUT NAVIGATION FLOW
   useEffect(() => {
@@ -362,11 +377,35 @@ export default function CheckoutPage() {
   // Mobile Step Wizard State (1: Address, 2: Summary/GST, 3: Payment)
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
-  // Calculate pricing (MRP Inclusive GST Model - No separate GST added)
+  // Calculate pricing (MRP Inclusive GST Model - Single Source of Truth for Pre-Booking)
   const hasItems = checkoutItems.length > 0;
-  const subtotalAfterCoupon = hasItems ? Math.max(0, subtotal - discountAmount) : 0;
-  const shipping = (!hasItems || subtotal === 0 || subtotalAfterCoupon > 1999) ? 0 : 149;
-  const codFee = (!hasItems || subtotal === 0 || paymentMethod !== 'cod' || !codConfig.isEnabled)
+
+  // Pre-Booking offer calculation
+  const preBookingOffer = (() => {
+    if (!isPreBookingCheckout || !hasItems) return null;
+    const itemProd = checkoutItems[0]?.product;
+    if (!itemProd) return null;
+    const variantPrice = itemProd.variants?.find((v: any) => v.size === checkoutItems[0].size)?.price;
+    const basePrice = Number(variantPrice || itemProd.price || subtotal);
+    const offerDetails = getPreBookingOfferDetails(itemProd, basePrice);
+    if (!offerDetails || !offerDetails.isOfferActive) return null;
+    const qty = checkoutItems[0].quantity || 1;
+    return {
+      originalUnitPrice: offerDetails.originalPrice,
+      effectiveUnitPrice: offerDetails.effectivePrice,
+      unitSavings: offerDetails.savingsAmount,
+      totalOriginal: offerDetails.originalPrice * qty,
+      totalSavings: offerDetails.savingsAmount * qty,
+      totalEffective: offerDetails.effectivePrice * qty,
+    };
+  })();
+
+  const preBookingSavings = preBookingOffer ? preBookingOffer.totalSavings : 0;
+  const effectiveSubtotal = hasItems ? Math.max(0, subtotal - preBookingSavings) : 0;
+
+  const subtotalAfterCoupon = hasItems ? Math.max(0, effectiveSubtotal - discountAmount) : 0;
+  const shipping = (!hasItems || subtotal === 0 || subtotalAfterCoupon > 1999 || isPreBookingCheckout) ? 0 : 149;
+  const codFee = (!hasItems || subtotal === 0 || paymentMethod !== 'cod' || !codConfig.isEnabled || isPreBookingCheckout)
     ? 0
     : (codConfig.chargeType === 'PERCENTAGE'
         ? Math.round((subtotalAfterCoupon + shipping) * (codConfig.chargeValue / 100))
@@ -469,12 +508,14 @@ export default function CheckoutPage() {
       }
 
       // 2. Call createOrder server action
+      const isPreBookingSession = checkoutMode === 'INSTANT' && instantCheckoutSession?.orderType === 'PRE_BOOKING';
       const orderRes = await createOrder({
         items: orderItems,
         shippingAddress,
         paymentMethod: actualPaymentMethod,
         couponCode: appliedCoupon || undefined,
         walletAmountToUse: walletCreditsToUse,
+        orderType: isPreBookingSession ? 'PRE_BOOKING' : 'REGULAR',
       });
 
       if (!orderRes.success || !orderRes.order) {
@@ -626,7 +667,11 @@ export default function CheckoutPage() {
               ondismiss: () => {
                 isSubmittingRef.current = false;
                 setIsSubmitLoading(false);
-                showToast('Payment Cancelled', 'You closed the payment window before completing payment.');
+                if (isPreBookingCheckout) {
+                  setShowFailedModal(true);
+                } else {
+                  showToast('Payment Cancelled', 'You closed the payment window before completing payment.');
+                }
               },
             },
           };
@@ -634,7 +679,11 @@ export default function CheckoutPage() {
           const rzp = new (window as any).Razorpay(rzpOptions);
           rzp.open();
         } catch (rzpErr: any) {
-          showToast('Payment Error', rzpErr.message || 'Failed to launch payment gateway.');
+          if (isPreBookingCheckout) {
+            setShowFailedModal(true);
+          } else {
+            showToast('Payment Error', rzpErr.message || 'Failed to launch payment gateway.');
+          }
           isSubmittingRef.current = false;
           setIsSubmitLoading(false);
         }
@@ -791,183 +840,144 @@ export default function CheckoutPage() {
 
       {/* ── Order Success Modal ── */}
       {showSuccessModal && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(5, 5, 5, 0.88)',
-            backdropFilter: 'blur(18px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '24px',
-            animation: 'successFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          }}
-        >
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes successFadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            @keyframes successSlideUp {
-              from { opacity: 0; transform: translateY(32px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          ` }} />
+        isPreBookingCheckout ? (
+          <PreBookingSuccessModal
+            isOpen={true}
+            onClose={() => setShowSuccessModal(false)}
+            orderNumber={confirmedOrderNumber || undefined}
+          />
+        ) : (
           <div
             style={{
-              background: '#0a0a0a',
-              border: '1px solid rgba(200, 164, 106, 0.25)',
-              maxWidth: '520px',
-              width: '100%',
-              padding: '56px 48px',
-              textAlign: 'center',
-              position: 'relative',
-              animation: 'successSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: 'rgba(5, 5, 5, 0.88)',
+              backdropFilter: 'blur(18px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '24px',
+              animation: 'successFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             }}
           >
-            {/* Top gold rule */}
-            <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '0 auto 32px' }} />
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes successFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes successSlideUp {
+                from { opacity: 0; transform: translateY(32px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            ` }} />
+            <div
+              style={{
+                background: '#0a0a0a',
+                border: '1px solid rgba(200, 164, 106, 0.25)',
+                maxWidth: '520px',
+                width: '100%',
+                padding: '56px 48px',
+                textAlign: 'center',
+                position: 'relative',
+                animation: 'successSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+              }}
+            >
+              {/* Top gold rule */}
+              <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '0 auto 32px' }} />
 
-            {/* Brand mark */}
-            <span style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.35em',
-              textTransform: 'uppercase',
-              color: '#c8a46a',
-              display: 'block',
-              marginBottom: '32px',
-            }}>
-              GODSMOVE
-            </span>
+              {/* Brand mark */}
+              <span style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.35em',
+                textTransform: 'uppercase',
+                color: '#c8a46a',
+                display: 'block',
+                marginBottom: '32px',
+              }}>
+                GODSMOVE
+              </span>
 
-            {/* Editorial headline */}
-            <h2 style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(28px, 5vw, 40px)',
-              fontWeight: 300,
-              letterSpacing: '-0.02em',
-              color: '#FAF8F5',
-              margin: '0 0 20px',
-              lineHeight: 1.1,
-            }}>
-              Another piece has been<br />allocated to your collection.
-            </h2>
+              {/* Editorial headline */}
+              <h2 style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 'clamp(28px, 5vw, 40px)',
+                fontWeight: 300,
+                letterSpacing: '-0.02em',
+                color: '#FAF8F5',
+                margin: '0 0 20px',
+                lineHeight: 1.1,
+              }}>
+                Another piece has been<br />allocated to your collection.
+              </h2>
 
-            {/* Editorial paragraph */}
-            <p style={{
-              fontSize: '13px',
-              lineHeight: 1.85,
-              color: 'rgba(255, 255, 255, 0.5)',
-              maxWidth: '380px',
-              margin: '0 auto 12px',
-              letterSpacing: '0.015em',
-            }}>
-              This garment has now been reserved under your archive. Every piece becomes part of a carefully curated collection designed to age with you.
-            </p>
-
-            {/* Order ref */}
-            {confirmedOrderNumber && (
-              <p style={{ fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(200, 164, 106, 0.6)', textTransform: 'uppercase', marginBottom: '40px' }}>
-                Archive Reference — #{confirmedOrderNumber}
+              {/* Editorial paragraph */}
+              <p style={{
+                fontSize: '13px',
+                lineHeight: 1.85,
+                color: 'rgba(255, 255, 255, 0.5)',
+                maxWidth: '380px',
+                margin: '0 auto 12px',
+                letterSpacing: '0.015em',
+              }}>
+                This garment has now been reserved under your archive. Every piece becomes part of a carefully curated collection designed to age with you.
               </p>
-            )}
 
-            {/* CTA buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
-              {cart && cart.length > 0 ? (
-                <>
-                  <button
-                    onClick={() => { setShowSuccessModal(false); router.push('/drops'); }}
-                    style={{
-                      padding: '16px 32px',
-                      background: '#c8a46a',
-                      color: '#0a0a0a',
-                      border: 'none',
-                      fontFamily: 'var(--font-heading)',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#d4b07a')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = '#c8a46a')}
-                  >
-                    Continue Shopping
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      setCartOpen(true, 'manual');
-                      router.push('/drops');
-                    }}
-                    style={{
-                      padding: '15px 32px',
-                      background: 'transparent',
-                      color: '#FAF8F5',
-                      border: '1px solid #c8a46a',
-                      fontFamily: 'var(--font-heading)',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    Review My Bag ({cart.length})
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => { router.push('/drops'); }}
-                    style={{
-                      padding: '16px 32px',
-                      background: '#c8a46a',
-                      color: '#0a0a0a',
-                      border: 'none',
-                      fontFamily: 'var(--font-heading)',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#d4b07a')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = '#c8a46a')}
-                  >
-                    Explore Drops
-                  </button>
-                  <button
-                    onClick={() => { router.push('/profile?tab=collection'); }}
-                    style={{
-                      padding: '15px 32px',
-                      background: 'transparent',
-                      color: 'rgba(255, 255, 255, 0.65)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      fontFamily: 'var(--font-heading)',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    Your Collection
-                  </button>
-                </>
-              )}
+              {/* CTA buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto', marginTop: '32px' }}>
+                <button
+                  onClick={() => { setShowSuccessModal(false); router.push('/drops'); }}
+                  style={{
+                    padding: '16px 32px',
+                    background: '#c8a46a',
+                    color: '#0a0a0a',
+                    border: 'none',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Explore Drops
+                </button>
+                <button
+                  onClick={() => { router.push('/profile?tab=collection'); }}
+                  style={{
+                    padding: '15px 32px',
+                    background: 'transparent',
+                    color: 'rgba(255, 255, 255, 0.65)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Your Collection
+                </button>
+              </div>
+
+              {/* Bottom gold rule */}
+              <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '40px auto 0' }} />
             </div>
-
-            {/* Bottom gold rule */}
-            <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '40px auto 0' }} />
           </div>
-        </div>
+        )
       )}
+
+      {/* Pre-Booking Payment Failed Modal */}
+      <PreBookingPaymentFailedModal
+        isOpen={showFailedModal}
+        onClose={() => setShowFailedModal(false)}
+        onRetry={() => {
+          setShowFailedModal(false);
+          const formEl = document.querySelector('form');
+          if (formEl) formEl.requestSubmit();
+        }}
+      />
 
       <main className={styles.page}>
         <div className="container">
@@ -1288,8 +1298,8 @@ export default function CheckoutPage() {
                               </div>
                             </label>
                             
-                            {/* Global Admin COD Management Control: Hide COD entirely if disabled */}
-                            {codConfig.isEnabled && (
+                            {/* Global Admin COD Management Control: Hide COD entirely if disabled or Pre-Booking */}
+                            {codConfig.isEnabled && !isPreBookingCheckout && (
                               <label
                                 className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}
                                 style={{
@@ -1335,10 +1345,19 @@ export default function CheckoutPage() {
             </div>
 
             {/* Order Summary Sidebar (Mobile Step 2 & 3 / Desktop always visible) */}
-            <div className={`${styles.sidebar} ${mobileStep === 1 ? styles.mobileStepHidden : ''}`}>
+            <div className={`${styles.sidebar} ${isPreBookingCheckout ? styles.preBookingSidebar : ''} ${mobileStep === 1 ? styles.mobileStepHidden : ''}`}>
               <h2 className={styles.sectionTitle}>
                 {mobileStep === 3 ? 'Final Confirmation' : 'Summary'}
               </h2>
+
+              {isPreBookingCheckout && (
+                <div className={styles.preBookingBanner}>
+                  <span className={styles.preBookingBadge}>
+                    <Crown size={12} style={{ color: '#d4af37' }} /> PRE-BOOK ALLOCATION
+                  </span>
+                  <span className={styles.preBookingLabel}>PRE-ORDER RELEASE</span>
+                </div>
+              )}
 
               <div className={styles.orderItems}>
                 {checkoutItems.map((item) => {
@@ -1423,7 +1442,7 @@ export default function CheckoutPage() {
                             padding: 0,
                             marginTop: '6px',
                             fontSize: '11px',
-                            color: '#000000',
+                            color: isPreBookingCheckout ? '#d4af37' : 'var(--text-primary)',
                             textDecoration: 'underline',
                             cursor: 'pointer',
                             fontFamily: 'var(--font-heading)',
@@ -1509,7 +1528,7 @@ export default function CheckoutPage() {
                             <span className={styles.prepaidFeatureNote}>✓ Instant Order Processing • No Extra Fee</span>
                           </div>
                         </label>
-                        {codConfig.isEnabled && (
+                        {codConfig.isEnabled && !isPreBookingCheckout && (
                           <label className={`${styles.paymentOption} ${paymentMethod === 'cod' ? styles.paymentActive : ''}`}>
                             <input type="radio" name="mobileStep2Payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} disabled={finalPayable === 0} />
                             <div style={{ flex: 1 }}>
@@ -1537,15 +1556,54 @@ export default function CheckoutPage() {
               )}
 
               <div className={styles.pricingRows}>
-                <div className={styles.orderRow}>
-                  <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString('en-IN')}</span>
-                </div>
-                <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.45)', marginTop: '-8px', marginBottom: '8px', letterSpacing: '0.04em', fontFamily: 'var(--font-heading)' }}>
-                  Price inclusive of GST
-                </div>
+                {isPreBookingCheckout ? (
+                  <>
+                    {preBookingOffer ? (
+                      <>
+                        <div className={styles.orderRow} style={{ color: '#666666' }}>
+                          <span>Original Price</span>
+                          <span style={{ textDecoration: 'line-through' }}>₹{preBookingOffer.totalOriginal.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className={styles.orderRow} style={{ color: '#B08D57' }}>
+                          <span>Pre-Booking Savings</span>
+                          <span>-₹{preBookingOffer.totalSavings.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className={styles.orderRow} style={{ fontWeight: 600 }}>
+                          <span>Pre-Booking Subtotal</span>
+                          <span>₹{preBookingOffer.totalEffective.toLocaleString('en-IN')}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className={styles.orderRow}>
+                        <span>Pre-Booking Subtotal</span>
+                        <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+
+                    <div className={styles.orderRow} style={{ color: '#B08D57', fontWeight: 600, marginTop: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Crown size={13} /> GODSMOVE MEMBERSHIP
+                      </span>
+                      <span style={{ color: '#16a34a' }}>FREE (₹0)</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666666', marginTop: '-4px', marginBottom: '8px', letterSpacing: '0.01em' }}>
+                      Complimentary GODSMOVE Membership included with your allocation.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.orderRow}>
+                      <span>Subtotal</span>
+                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#888888', marginTop: '-8px', marginBottom: '8px', letterSpacing: '0.04em', fontFamily: 'var(--font-heading)' }}>
+                      Price inclusive of GST
+                    </div>
+                  </>
+                )}
+
                 {discountAmount > 0 && (
-                  <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
+                  <div className={styles.orderRow} style={{ color: '#B08D57' }}>
                     <span>Discount</span>
                     <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
                   </div>
@@ -1555,13 +1613,13 @@ export default function CheckoutPage() {
                   <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                 </div>
                 {codFee > 0 && (
-                  <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
+                  <div className={styles.orderRow} style={{ color: '#B08D57' }}>
                     <span>COD Handling Fee</span>
                     <span>+₹{codFee.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 {walletCreditsToUse > 0 && (
-                  <div className={styles.orderRow} style={{ color: '#c8a46a' }}>
+                  <div className={styles.orderRow} style={{ color: '#B08D57' }}>
                     <span>Credits Applied</span>
                     <span>-₹{walletCreditsToUse.toLocaleString('en-IN')}</span>
                   </div>
@@ -1571,6 +1629,17 @@ export default function CheckoutPage() {
                   <span>₹{finalPayable.toLocaleString('en-IN')}</span>
                 </div>
               </div>
+
+              {isPreBookingCheckout && (
+                <div className={styles.preBookingLegalLinks}>
+                  <button type="button" onClick={() => setIsBenefitsModalOpen(true)} className={styles.preBookingLink}>
+                    • PRE-BOOKING BENEFITS
+                  </button>
+                  <button type="button" onClick={() => setIsTermsModalOpen(true)} className={styles.preBookingLink}>
+                    • PRE-BOOKING TERMS & CONDITIONS
+                  </button>
+                </div>
+              )}
 
               {/* Submit / Place Order Button (Mobile Step 2 or Desktop) */}
               <div className={`${styles.placeOrderBtnWrap} ${mobileStep === 1 ? styles.mobileStepHidden : ''}`}>
@@ -1588,7 +1657,11 @@ export default function CheckoutPage() {
                   ) : (
                     <>
                       <Lock size={14} style={{ marginRight: 6 }} />
-                      Place Order {finalPayable === 0 ? '(₹0 - Covered)' : `(₹${finalPayable.toLocaleString('en-IN')})`}
+                      {isPreBookingCheckout
+                        ? (finalPayable === 0
+                            ? 'PLACE PRE-BOOKING ORDER — ₹0'
+                            : `PLACE PRE-BOOKING ORDER — ₹${finalPayable.toLocaleString('en-IN')}`)
+                        : `Place Order ${finalPayable === 0 ? '(₹0 - Covered)' : `(₹${finalPayable.toLocaleString('en-IN')})`}`}
                     </>
                   )}
                 </button>
@@ -1702,6 +1775,46 @@ export default function CheckoutPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pre-Booking Benefits Modal */}
+      {isBenefitsModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#0e0e0e', border: '1px solid #d4af37', maxWidth: '480px', width: '100%', padding: '32px', borderRadius: '8px', color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: '#d4af37', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <Crown size={18} /> PRE-BOOKING BENEFITS
+              </h3>
+              <button onClick={() => setIsBenefitsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <ul style={{ paddingLeft: '20px', fontSize: '13px', lineHeight: 1.8, color: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <li><strong>Guaranteed Priority Allocation:</strong> Reserves your piece straight from the upcoming production drop.</li>
+              <li><strong>Complimentary Membership:</strong> Grants active GODSMOVE membership status upon order confirmation.</li>
+              <li><strong>Dispatch Priority:</strong> First-tier fulfillment schedule immediately upon release launch.</li>
+              <li><strong>Price Lock Guarantee:</strong> Protects your purchase price against future price updates.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Pre-Booking Terms Modal */}
+      {isTermsModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.2)', maxWidth: '480px', width: '100%', padding: '32px', borderRadius: '8px', color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: '#fff', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <ShieldCheck size={18} /> PRE-BOOKING TERMS & CONDITIONS
+              </h3>
+              <button onClick={() => setIsTermsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <ul style={{ paddingLeft: '20px', fontSize: '13px', lineHeight: 1.8, color: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <li>Pre-booking allocations are final and reserved specifically for your account.</li>
+              <li>Estimated dispatch dates are based on expected launch timing.</li>
+              <li>In the event of production cancellation, a 100% full refund will be credited instantly.</li>
+              <li>Cash on Delivery is disabled for pre-booking releases to ensure reservation validity.</li>
+            </ul>
           </div>
         </div>
       )}

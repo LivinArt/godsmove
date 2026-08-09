@@ -1,0 +1,238 @@
+/* ==========================================================================
+   GODSMOVE — PRE-BOOKING BENEFITS MODAL (DARK LUXURY)
+   ========================================================================== */
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  background: #0d0d0f;
+  border: 1px solid rgba(200, 164, 106, 0.3);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Header */
+.modalHeader {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  color: #c8a46a;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.closeBtn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Body / List */
+.modalBody {
+  padding: 24px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.benefitItem {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.benefitItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.iconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  color: #c8a46a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.itemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itemIndex {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #c8a46a;
+}
+
+.itemTitle {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #f4f4f5;
+  text-transform: uppercase;
+}
+
+.itemDesc {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Footer */
+.modalFooter {
+  padding: 16px 28px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerNote {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+}
+
+.actionBtn {
+  background: #c8a46a;
+  color: #050505;
+  border: none;
+  font-family: var(--font-heading);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #d4b47a;
+}
+
+/* Mobile responsive bottom sheet style */
+@media (max-width: 639px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modalHeader {
+    padding: 20px 20px 14px;
+  }
+
+  .modalBody {
+    padding: 16px 20px;
+  }
+
+  .modalFooter {
+    padding: 14px 20px;
+  }
+}

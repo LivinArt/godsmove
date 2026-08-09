@@ -10,6 +10,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
 import { isCartItemAvailable } from '@/lib/cart-rules';
+import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { PurchaseMode } from '@/types/launch';
+import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import styles from './CartDrawer.module.css';
 
 const RESERVATION_MESSAGES = [
@@ -27,6 +30,7 @@ export default function CartDrawer() {
   const [reservationMsg, setReservationMsg] = useState('');
   const [showReservation, setShowReservation] = useState(false);
   const [editorialNotice, setEditorialNotice] = useState<string | null>(null);
+  const [isPreBookingTermsOpen, setIsPreBookingTermsOpen] = useState(false);
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reservationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -98,6 +102,9 @@ export default function CartDrawer() {
 
   const total = getCartTotal();
   const hasUnavailableItems = cart.some(item => !isCartItemAvailable(item));
+
+  const hasPreBookingItems = cart.some(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK);
+  const preBookingProduct = cart.find(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK)?.product;
 
   return (
     <>
@@ -222,6 +229,57 @@ export default function CartDrawer() {
 
         {cart.length > 0 && (
           <div className={styles.footer}>
+            {/* Pre-Booking Editorial Notice & Terms Modal Trigger */}
+            {hasPreBookingItems && (
+              <div style={{
+                background: 'rgba(200, 164, 106, 0.08)',
+                border: '1px solid rgba(200, 164, 106, 0.3)',
+                borderRadius: '2px',
+                padding: '12px 14px',
+                marginBottom: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    backgroundColor: '#c8a46a',
+                  }} />
+                  <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a46a' }}>
+                    PRE-BOOKING ALLOCATION
+                  </span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5, margin: 0 }}>
+                  This item is currently in Pre Booking. It will be dispatched according to the official launch schedule and will not ship together with immediately available products.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsPreBookingTermsOpen(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#c8a46a',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '3px',
+                    marginTop: '2px',
+                  }}
+                >
+                  Pre Booking Terms & Conditions →
+                </button>
+              </div>
+            )}
+
             <div className={styles.subtotal}>
               <span>Subtotal</span>
               <span>₹{total.toLocaleString('en-IN')}</span>
@@ -259,6 +317,13 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      {/* Pre Booking Terms Modal */}
+      <PreBookingTermsModal
+        isOpen={isPreBookingTermsOpen}
+        onClose={() => setIsPreBookingTermsOpen(false)}
+        product={preBookingProduct}
+      />
     </>
   );
 }

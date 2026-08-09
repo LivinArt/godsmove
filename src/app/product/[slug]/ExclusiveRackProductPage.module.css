@@ -59,6 +59,17 @@
   box-sizing: border-box;
 }
 
+/* 2 VERTICAL COLUMNS FOR PRE-BOOKING ONLY: PROMOTED REEL GALLERY (48%) | EXPANDED EDITORIAL INFO (52%) */
+.twoColPreBookingGrid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 48% 52%;
+  gap: 0;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
 /* COLUMN 1: LEFT (STATIC COVER IMAGE - PERFECT ASPECT MATCH) */
 .colLeft {
   position: relative;
@@ -129,6 +140,33 @@
   justify-content: center;
 }
 
+/* PROMOTED PRIMARY LEFT MEDIA COLUMN FOR PRE-BOOKING ONLY */
+.colPreBookingGallery {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #050505;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.colPreBookingGallery .reelContainer {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  right: 24px;
+  bottom: 16px;
+  width: calc(100% - 48px);
+  height: calc(100% - 32px);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
 .reelContainer {
   position: absolute;
   top: 14px;
@@ -192,92 +230,686 @@
   overflow: hidden; /* ZERO NESTED SCROLLBARS */
 }
 
-.collectionTag {
+/* EXPANDED EDITORIAL INFO COLUMN FOR PRE-BOOKING ONLY (VIEWPORT-BOUND SPLIT SCREEN COMPOSITION) */
+.colRightPreBooking {
+  width: 100%;
+  height: 100%;
+  padding: clamp(14px, 1.8vh, 24px) clamp(24px, 2.6vw, 44px);
+  box-sizing: border-box;
+  background: #050505;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden; /* ZERO DESKTOP SCROLLBARS — FULL DECISION AREA VISIBLE */
+}
+
+.preBookPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* 2. TOP EYEBROW */
+.preBookEyebrow {
   font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.3em;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #c8a46a;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: clamp(3px, 0.6vh, 6px);
+  flex-shrink: 0;
 }
 
-.productTitle {
+.preBookEyebrowDot {
+  font-size: 7px;
+  color: #c8a46a;
+  line-height: 1;
+}
+
+/* 3. PRODUCT TITLE + METADATA */
+.preBookTitleBlock {
+  margin-bottom: clamp(3px, 0.5vh, 6px);
+  flex-shrink: 0;
+}
+
+.preBookTitle {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 2.4vw, 36px);
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 450;
+  line-height: 1.06;
   color: #ffffff;
   margin: 0;
+  letter-spacing: -0.02em;
+  word-break: break-word;
 }
 
-.shortDesc {
+.preBookInlineMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8e8e93;
+  margin-left: 10px;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.preBookMetaDivider {
+  color: rgba(255, 255, 255, 0.2);
+  margin-right: 2px;
+}
+
+.preBookMetaDot {
+  color: #c8a46a;
+  font-size: 7px;
+}
+
+/* 4. DESCRIPTION */
+.preBookDesc {
   font-family: var(--font-body);
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #8e8e93;
+  margin: 0 0 clamp(5px, 0.8vh, 8px) 0;
+  max-width: 520px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-/* Price Box */
-.priceBox {
+/* 5. PRICE */
+.preBookPriceRow {
   display: flex;
   align-items: baseline;
-  gap: 14px;
-  padding: 14px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 10px;
+  margin-bottom: clamp(5px, 0.8vh, 8px);
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
-.sellingPrice {
+.preBookPriceCurrent {
   font-family: var(--font-heading);
-  font-size: 26px;
-  font-weight: 600;
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 500;
   letter-spacing: -0.02em;
-  color: #c8a46a;
+  color: #ffffff;
+  line-height: 1;
 }
 
-.comparePrice {
+.preBookPriceOld {
   font-family: var(--font-heading);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
+  color: #71717a;
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.4);
 }
 
-.discountBadge {
+.preBookDiscountBadge {
   font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  padding: 2px 8px;
-  background: rgba(200, 164, 106, 0.12);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1.5px 6px;
+  background: transparent;
   border: 1px solid rgba(200, 164, 106, 0.35);
   color: #c8a46a;
   border-radius: 2px;
+}
+
+/* 6. DIVIDER */
+.preBookDivider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: clamp(5px, 0.8vh, 8px);
+  flex-shrink: 0;
+}
+
+/* Dynamic Color Section */
+.preBookColorSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: clamp(4px, 0.6vh, 6px);
+  flex-shrink: 0;
+}
+
+.preBookSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.preBookSectionLabel {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+.preBookColorVal {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.preBookColorSwatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preBookColorDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.preBookColorDot:hover {
+  transform: scale(1.1);
+  border-color: rgba(200, 164, 106, 0.6);
+}
+
+.preBookColorDotActive {
+  border: 2px solid #c8a46a !important;
+  transform: scale(1.15);
+  box-shadow: 0 0 8px rgba(200, 164, 106, 0.4);
+}
+
+/* 7. SIZE SECTION */
+.preBookSizeSection {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: clamp(5px, 0.8vh, 8px);
+  flex-shrink: 0;
+}
+
+.preBookSizeChartBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #8e8e93;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.preBookSizeChartBtn:hover {
+  color: #c8a46a;
+}
+
+.preBookSizeGrid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preBookSizeBtn {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.preBookSizeBtn:hover:not(:disabled) {
+  border-color: rgba(200, 164, 106, 0.5);
+  color: #c8a46a;
+}
+
+.preBookSizeBtnActive {
+  border: 1px solid #c8a46a !important;
+  background: #111111 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(200, 164, 106, 0.2);
+}
+
+.preBookSizeBtnDisabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.preBookSizeError {
+  color: #ef4444;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 4px 0 0;
+}
+
+/* 8. QUANTITY */
+.preBookQtySection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: clamp(6px, 1vh, 10px);
+  flex-shrink: 0;
+}
+
+.preBookQtyControl {
+  display: flex;
+  align-items: center;
+  width: 140px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #0a0a0a;
+  border-radius: 2px;
+}
+
+.preBookQtyBtn {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: #8e8e93;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.preBookQtyBtn:hover {
+  color: #c8a46a;
+}
+
+.preBookQtyVal {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* 9. COUNTDOWN / ALLOCATION MODULE */
+.preBookReservationCard {
+  width: 100%;
+  border: 1px solid rgba(200, 164, 106, 0.28);
+  background: rgba(12, 12, 12, 0.7);
+  border-radius: 3px;
+  padding: clamp(7px, 1vh, 10px) clamp(10px, 1.2vw, 14px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 0.7vh, 8px);
+  margin-bottom: clamp(6px, 1vh, 10px);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.reservationCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reservationLaunchesIn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.reservationDot {
+  font-size: 6px;
+  color: #c8a46a;
+}
+
+.reservationHeaderBadgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reservationAllocationCountBadge {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8e8e93;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.reservationSpecialBadge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8a46a;
+  border: 1px solid rgba(200, 164, 106, 0.35);
+  padding: 1.5px 6px;
+  border-radius: 2px;
+}
+
+.reservationCardBody {
+  display: grid;
+  grid-template-columns: 1.15fr 1px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.countdownStack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.countdownDigitBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.countdownDigits {
+  font-family: var(--font-heading);
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 450;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.countdownDigitLabel {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 600;
+  color: #8e8e93;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.countdownVertLine {
+  width: 1px;
+  height: 22px;
+  background: rgba(200, 164, 106, 0.18);
+}
+
+.reservationCenterDivider {
+  width: 1px;
+  height: 100%;
+  min-height: 38px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.reservationRightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dispatchBox {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dispatchHeading {
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+.dispatchSubtext {
+  font-family: var(--font-heading);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #f4f4f5;
+  line-height: 1.2;
+}
+
+.trustCheckList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+}
+
+.trustCheckItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  color: #a1a1aa;
+  line-height: 1.2;
+}
+
+.trustCheckIcon {
+  font-size: 9px;
+  color: #c8a46a;
+}
+
+.reservationCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 5px;
+  margin-top: 1px;
+}
+
+.reservationFooterLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #c8a46a;
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.reservationFooterLinkSecondary {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #8e8e93;
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.reservationFooterLink:hover,
+.reservationFooterLinkSecondary:hover {
+  color: #ffffff;
+}
+
+/* 10. CTA */
+.preBookCtaWrap {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3px, 0.5vh, 5px);
+  width: 100%;
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+  flex-shrink: 0;
+}
+
+.preBookCtaButton {
+  width: 100%;
+  height: clamp(44px, 5vh, 48px);
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(200, 164, 106, 0.65);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.preBookCtaButton:hover:not(:disabled) {
+  background: rgba(200, 164, 106, 0.08);
+  border-color: #c8a46a;
+}
+
+.preBookCtaButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.preBookCtaLabel {
+  color: #ffffff;
+}
+
+.preBookCtaArrow {
+  color: #c8a46a;
+  font-size: 16px;
+  font-weight: 400;
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+.preBookCtaButton:hover:not(:disabled) .preBookCtaArrow {
+  transform: translateX(4px);
+}
+
+/* 11. CTA SUPPORTING MESSAGE */
+.preBookCtaSupportMsg {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #8e8e93;
+  text-align: center;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  letter-spacing: 0.01em;
+}
+
+.preBookCtaSupportIcon {
+  color: #c8a46a;
+  flex-shrink: 0;
+}
+
+/* 12. SECONDARY ACTIONS */
+.preBookSecondaryActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.preBookActionLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #8e8e93;
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.preBookActionLink:hover,
+.preBookActionLinkActive {
+  color: #c8a46a;
+}
+
+.preBookActionDivider {
+  color: rgba(255, 255, 255, 0.1);
+  font-size: 9.5px;
 }
 
 /* 2 Column Category & Collection metadata */
 .metaTwoCol {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 10px;
 }
 
 .metaBlockLabel {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 3px;
+  color: #8D8D8D;
+  margin-bottom: 2px;
 }
 
 .metaBlockVal {
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #ffffff;
 }
@@ -286,13 +918,13 @@
 .selectorRow {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 6px;
 }
 
 .selectorBlock {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .selectorLabelRow {
@@ -303,20 +935,20 @@
 
 .selectorTitle {
   font-family: var(--font-heading);
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: #8D8D8D;
 }
 
 .selectedValName {
   font-family: var(--font-heading);
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #c8a46a;
+  color: #D8B16C;
 }
 
 /* Size Chart Text Link with Gold Underline on Hover */
@@ -325,36 +957,36 @@
   border: none;
   color: #ffffff;
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: color 0.2s ease, border-color 0.2s ease;
   border-bottom: 1px solid transparent;
 }
 
 .sizeChartLinkBtn:hover {
-  color: #c8a46a;
-  border-bottom: 1px solid #c8a46a;
+  color: #D8B16C;
+  border-bottom: 1px solid #D8B16C;
 }
 
 /* Dynamic Tactile Color Swatches */
 .colorSwatches {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .colorDotBtn {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 210, 120, 0.25);
   cursor: pointer;
   padding: 0;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -363,31 +995,31 @@
 
 .colorDotBtn:hover {
   transform: scale(1.1);
-  border-color: rgba(200, 164, 106, 0.6);
+  border-color: rgba(216, 177, 108, 0.6);
 }
 
 .colorDotBtnActive {
-  border: 2px solid #c8a46a !important;
+  border: 2px solid #D8B16C !important;
   transform: scale(1.15);
-  box-shadow: 0 0 14px rgba(200, 164, 106, 0.4);
+  box-shadow: 0 0 10px rgba(216, 177, 108, 0.4);
 }
 
 /* Dynamic Substantial Size Boxes */
 .sizeBoxes {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .sizeBoxBtn {
-  min-width: 38px;
-  height: 38px;
-  padding: 0 10px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.85);
+  min-width: 34px;
+  height: 30px;
+  padding: 0 8px;
+  background: #111111;
+  border: 1px solid rgba(255, 210, 120, 0.2);
+  color: #FFFFFF;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
   display: flex;
@@ -400,31 +1032,38 @@
 }
 
 .sizeBoxBtn:hover:not(:disabled) {
-  border-color: rgba(200, 164, 106, 0.6);
-  color: #ffffff;
+  border-color: rgba(216, 177, 108, 0.6);
+  color: #D8B16C;
 }
 
 .sizeBoxBtnActive {
-  border-color: #c8a46a !important;
-  color: #c8a46a !important;
-  background: rgba(200, 164, 106, 0.12) !important;
-  box-shadow: 0 0 14px rgba(200, 164, 106, 0.25);
+  border-color: #D8B16C !important;
+  color: #D8B16C !important;
+  background: rgba(216, 177, 108, 0.12) !important;
+  box-shadow: 0 0 10px rgba(216, 177, 108, 0.25);
 }
 
 .sizeBoxBtnDisabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
   text-decoration: line-through;
 }
 
-/* Quantity Counter Box */
+/* Premium 50-54px Quantity Selector */
+.quantitySection {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .quantityBoxRow {
   display: flex;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  width: 140px;
-  height: 38px;
-  border-radius: 2px;
+  border: 1px solid rgba(255, 210, 120, 0.22);
+  background: #111111;
+  width: 130px;
+  height: 48px;
+  border-radius: 3px;
 }
 
 .qtyBtn {
@@ -432,40 +1071,412 @@
   height: 100%;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: #8D8D8D;
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.2s ease;
 }
 
 .qtyBtn:hover {
-  color: #c8a46a;
+  color: #D8B16C;
 }
 
 .qtyVal {
   flex: 1;
   text-align: center;
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: #FFFFFF;
 }
 
-/* REFINED HORIZONTAL CTA ROW: [ BUY NOW ] [ 👜 ] */
+/* Compact Luxury Pre-Booking Launch & Timer Module */
+.compactPreBookingModule {
+  padding: 10px 14px;
+  background: #111111;
+  border: 1px solid rgba(255, 210, 120, 0.18);
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  margin-top: 2px;
+}
+
+.compactTimerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.compactTimerLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compactTimerDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #D8B16C;
+  box-shadow: 0 0 6px #D8B16C;
+}
+
+.compactTimerTitle {
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #D8B16C;
+}
+
+.compactTimerBadgeGroup {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.compactAllocationBadge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8D8D8D;
+  padding: 1.5px 6px;
+  border-radius: 2px;
+}
+
+/* Top Eyebrow Row */
+.preBookEyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eyebrowDot {
+  color: #D4AF37;
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Compact Luxury Pre-Booking Launch & Timer Module */
+.compactPreBookingModule {
+  padding: 12px 16px;
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  margin-top: 2px;
+}
+
+.compactTimerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.compactTimerLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compactTimerDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #D4AF37;
+  box-shadow: 0 0 6px #D4AF37;
+}
+
+.compactTimerTitle {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #D4AF37;
+}
+
+.compactTimerBadgeGroup {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.compactAllocationBadge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9A9A9A;
+  padding: 1.5px 6px;
+  border-radius: 2px;
+}
+
+.compactSpecialBadge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #D4AF37;
+  padding: 1.5px 6px;
+  border-radius: 2px;
+}
+
+/* Split Card: Left Countdown Tiles | Right Expected Dispatch & Guarantees */
+.reservationCardSplit {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.countdownTilesStack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #090909;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 3px;
+  padding: 7px 10px;
+}
+
+.timerCellBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.timerNumLarge {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 500;
+  color: #F5F5F5;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.timerLabelSmall {
+  font-size: 7px;
+  font-weight: 700;
+  color: #D4AF37;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.timerDividerSmall {
+  color: rgba(212, 175, 55, 0.35);
+  font-size: 13px;
+  font-weight: 300;
+  user-select: none;
+}
+
+.reservationMetaCol {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dispatchMetaBox {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  padding: 3px 7px;
+}
+
+.dispatchLabel {
+  color: #9A9A9A;
+  font-size: 7.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.dispatchVal {
+  font-size: 9px;
+  font-weight: 600;
+  color: #F5F5F5;
+}
+
+/* Compact Reservation Notes */
+.compactNotesStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compactNoteRow {
+  font-size: 8.5px;
+  color: #9A9A9A;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.25;
+}
+
+.compactNoteBullet {
+  color: #D4AF37;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Compact Benefits Links in One Row */
+.compactLinksRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+  margin-top: 1px;
+}
+
+.compactLinkBtn {
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: #D4AF37;
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 0 1px;
+  transition: all 0.2s ease;
+}
+
+.compactLinkBtn:hover {
+  border-bottom-color: #D4AF37;
+  color: #dfba73;
+}
+
+.compactLinkBtnSecondary {
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: #9A9A9A;
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 0 1px;
+  transition: all 0.2s ease;
+}
+
+.compactLinkBtnSecondary:hover {
+  border-bottom-color: #F5F5F5;
+  color: #F5F5F5;
+}
+
+/* ==========================================================================
+   PRIMARY PRE BOOK NOW CTA (LUXURY RESERVE BUTTON — 58px, TRANSPARENT, GOLD BORDER)
+   ========================================================================== */
+.ctaContainerBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 4px;
+}
+
 .ctaHorizontalRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  margin-top: 6px;
 }
 
+.preBookReserveBtn {
+  width: 100%;
+  height: 58px;
+  background: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: #F5F5F5;
+  font-family: var(--font-heading);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.preBookReserveBtn:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.08);
+  border-color: #D4AF37;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2), 0 8px 28px rgba(0, 0, 0, 0.7);
+  transform: translateY(-1.5px);
+}
+
+.preBookReserveBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ctaText {
+  color: #F5F5F5;
+}
+
+.ctaArrow {
+  display: inline-block;
+  font-size: 18px;
+  color: #D4AF37;
+  transition: transform 0.25s ease;
+}
+
+.preBookReserveBtn:hover:not(:disabled) .ctaArrow {
+  transform: translateX(4px);
+}
+
+.ctaSubtext {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #9A9A9A;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fallback buyNow button for non-prebooking */
 .buyNowBtnCompact {
-  flex: 1;
+  width: 100%;
   height: 50px;
-  background: #c8a46a;
+  background: #D8B16C;
   border: none;
   color: #050505;
   font-family: var(--font-heading);
@@ -476,15 +1487,15 @@
   cursor: pointer;
   border-radius: 2px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 20px rgba(200, 164, 106, 0.25);
+  box-shadow: 0 4px 20px rgba(216, 177, 108, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .buyNowBtnCompact:hover:not(:disabled) {
-  background: #d8b47a;
-  box-shadow: 0 6px 28px rgba(200, 164, 106, 0.4);
+  background: #dfba73;
+  box-shadow: 0 6px 28px rgba(216, 177, 108, 0.4);
   transform: translateY(-1px);
 }
 
@@ -504,36 +1515,37 @@
 }
 
 .addToBagSquareBtn:hover:not(:disabled) {
-  border-color: #c8a46a;
-  color: #c8a46a;
-  background: rgba(200, 164, 106, 0.08);
+  border-color: #D8B16C;
+  color: #D8B16C;
+  background: rgba(216, 177, 108, 0.08);
   transform: translateY(-1px);
 }
 
-/* Icon Row with Hairline Dividers */
+/* 3-Column Supporting Actions Row */
 .iconRowThree {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px 0;
+  padding: 8px 0;
+  margin-top: 2px;
 }
 
 .iconRowBtn {
   background: transparent;
   border: none;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  color: #9A9A9A;
   font-family: var(--font-heading);
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   transition: color 0.2s ease;
 }
 
@@ -543,7 +1555,7 @@
 
 .iconRowBtn:hover,
 .iconRowBtnActive {
-  color: #c8a46a;
+  color: #D4AF37;
 }
 
 /* ==========================================================================
@@ -560,25 +1572,25 @@
   box-sizing: border-box;
 }
 
-/* REDESIGNED FULL-WIDTH EDITORIAL EXCLUSIVE RACK ALLOCATION DASHBOARD */
+/* REDESIGNED HORIZONTAL EDITORIAL EXCLUSIVE RACK ALLOCATION CARD (92-94% WIDTH, COMPACT HEIGHT) */
 .fullWidthAllocationSection {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto 90px;
-  padding: 0 40px;
+  width: 94%;
+  max-width: 1440px;
+  margin: 0 auto 50px;
+  padding: 0 16px;
   box-sizing: border-box;
 }
 
 .allocationDashboard {
   width: 100%;
   background: rgba(10, 10, 10, 0.6);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 40px 48px;
+  border: 1px solid rgba(200, 164, 106, 0.18);
+  border-radius: 3px;
+  padding: 24px 32px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 18px;
 }
 
 .allocationHeaderRow {
@@ -586,65 +1598,72 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 18px;
+  padding-bottom: 12px;
 }
 
 .allocationTitleGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .allocationTitleText {
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: #ffffff;
 }
 
 .allocationEditionTag {
   font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.15em;
   color: #c8a46a;
 }
 
-/* 3 LARGE EDITORIAL STATISTIC COLUMNS */
+/* 3 CLEAN EDITORIAL STATISTIC COLUMNS (HORIZONTAL COMPOSITION) */
 .editorialStatsThreeCol {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  padding: 10px 0;
+  gap: 20px;
+  padding: 4px 0;
 }
 
 .statColBlock {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding-right: 20px;
+}
+
+.statColBlock:last-child {
+  border-right: none;
+  padding-right: 0;
 }
 
 .statColLabel {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: #8e8e93;
 }
 
 .statColNumberRow {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
 }
 
 .statColBigNum {
   font-family: var(--font-heading);
-  font-size: 42px;
-  font-weight: 300;
+  font-size: clamp(30px, 2.5vw, 38px);
+  font-weight: 350;
   letter-spacing: -0.02em;
   color: #ffffff;
   line-height: 1;
@@ -652,22 +1671,22 @@
 
 .statColUnit {
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   color: #c8a46a;
 }
 
-/* FULL-WIDTH THIN GOLD PROGRESS BAR */
+/* THIN ARCHIVAL PROGRESS LINE (2-3px) */
 .progressVisualizationWrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .progressTrackLine {
   width: 100%;
-  height: 4px;
+  height: 2.5px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 100px;
   overflow: hidden;
@@ -678,131 +1697,503 @@
   background: #c8a46a;
   border-radius: 100px;
   transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 10px rgba(200, 164, 106, 0.5);
+  box-shadow: 0 0 8px rgba(200, 164, 106, 0.4);
 }
 
 .progressLabelMeta {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-heading);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  color: #8e8e93;
 }
 
-/* 5-COLUMN HORIZONTAL EDITORIAL STATUS TAGS */
+/* 5-COLUMN HORIZONTAL EDITORIAL METADATA ROW */
 .fiveTagEditorialRow {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  gap: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 24px;
+  padding-top: 14px;
 }
 
 .editorialTagCard {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding-right: 12px;
+}
+
+.editorialTagCard:last-child {
+  border-right: none;
+  padding-right: 0;
 }
 
 .editorialTagLabel {
   font-family: var(--font-heading);
   font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: #8e8e93;
 }
 
 .editorialTagVal {
   font-family: var(--font-heading);
   font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #f4f4f5;
+}
+
+/* ==========================================================================
+   PRE-BOOKING PRIVILEGES (LUXURY 3-COLUMN × 2-ROW ATELIER CATALOGUE GRID)
+   ========================================================================== */
+.preBookingPrivilegesSection {
+  width: 94%;
+  max-width: 1440px;
+  margin: 0 auto 70px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.privilegesContainer {
+  width: 100%;
+  background: transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 48px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  box-sizing: border-box;
+}
+
+.privilegesHeader {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.privilegesEyebrow {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #c8a46a;
-}
-
-/* PRODUCT DETAILS & SYMBOLISM */
-.editorialSection {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 40px;
-}
-
-.editorialHeader {
-  text-align: center;
-  margin-bottom: 48px;
-}
-
-.editorialEyebrow {
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: rgba(200, 164, 106, 0.7);
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
-.editorialTitle {
+.privilegesTitle {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 3.5vw, 40px);
-  font-weight: 200;
-  letter-spacing: -0.02em;
+  font-size: clamp(22px, 2.6vw, 34px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
   color: #ffffff;
-  margin: 0 0 16px;
+  margin: 0 0 8px;
+  text-transform: uppercase;
 }
 
-.editorialRule {
-  width: 40px;
+.privilegesSubtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #8e8e93;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.privilegesRule {
+  width: 36px;
   height: 1px;
   background: #c8a46a;
-  margin: 20px auto 0;
+  margin: 14px auto 0;
   opacity: 0.6;
 }
 
-.editorialNarrative {
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.85;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto 56px;
-}
-
-.specsGrid {
+/* 3-COLUMN × 2-ROW BARE EDITORIAL GRID */
+.privilegesGridThreeCol {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px 32px;
+  width: 100%;
+  padding: 10px 0;
 }
 
-.specCard {
-  border-top: 1px solid rgba(200, 164, 106, 0.2);
-  padding-top: 20px;
+.privilegeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 8px;
+  transition: transform 0.2s ease;
 }
 
-.specTitle {
+.privilegeItemTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.privilegeIndex {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #c8a46a;
+  opacity: 0.75;
+}
+
+.privilegeBareIcon {
+  color: #c8a46a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.privilegeItem:hover .privilegeBareIcon {
+  transform: scale(1.1);
+  color: #dfba73;
+}
+
+.privilegeTitle {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4f4f5;
+  margin: 0;
+  line-height: 1.35;
+  transition: color 0.2s ease;
+}
+
+.privilegeItem:hover .privilegeTitle {
+  color: #ffffff;
+}
+
+.privilegeDesc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #8e8e93;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* SUBTLE EDITORIAL TEXT LINKS FOOTER (NO HEAVY BUTTONS) */
+.privilegesFooter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+}
+
+.privilegeTextLink {
+  background: transparent;
+  border: none;
+  color: #8e8e93;
+  font-family: var(--font-heading);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+}
+
+.privilegeTextLink:hover {
+  color: #c8a46a;
+}
+
+.privilegeLinkArrow {
+  color: #c8a46a;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.privilegeTextLink:hover .privilegeLinkArrow {
+  transform: translateX(3px);
+}
+
+.privilegeLinkDivider {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 8px;
+}
+
+/* ==========================================================================
+   ATELIER / TECHNICAL SPECIFICATION ARCHIVE SECTION (90-94% WIDTH)
+   ========================================================================== */
+
+.atelierSection {
+  width: 94%;
+  max-width: 1400px;
+  margin: 0 auto 90px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.atelierContainer {
+  width: 100%;
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  padding: 48px 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.atelierHeader {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.atelierEyebrow {
   font-family: var(--font-heading);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   color: #c8a46a;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
-.specText {
+.atelierTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 2.6vw, 32px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+.atelierRule {
+  width: 36px;
+  height: 1px;
+  background: #c8a46a;
+  margin: 0 auto 14px;
+  opacity: 0.7;
+}
+
+.atelierShortDescLabel {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8e8e93;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.atelierNarrative {
   font-family: var(--font-body);
   font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.65);
   line-height: 1.7;
+  color: #a1a1aa;
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* 3 SPECIFICATION CARDS GRID */
+.atelierCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.atelierCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(200, 164, 106, 0.18);
+  border-radius: 2px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  box-sizing: border-box;
+}
+
+.atelierCard:hover {
+  background: rgba(200, 164, 106, 0.03);
+  border-color: rgba(200, 164, 106, 0.38);
+  transform: translateY(-2px);
+}
+
+.atelierCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.atelierCardIndex {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #c8a46a;
+}
+
+.atelierCardIconWrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.22);
+  color: #c8a46a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.atelierCardMicroLabel {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+.atelierCardTitle {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 500;
+  color: #ffffff;
   margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.atelierCardDesc {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: #a1a1aa;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 5. TECHNICAL ARCHIVE SUBSECTION */
+.techArchiveSection {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+
+.techArchiveDivider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.techArchiveHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.techArchiveHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.techArchiveEyebrow {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.techArchiveTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin: 0;
+}
+
+.techArchiveHeaderRight {
+  display: flex;
+  align-items: center;
+}
+
+.techArchiveBadge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+/* 6-COLUMN ARCHITECTURAL SPECIFICATION GRID */
+.techArchiveGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 20px;
+}
+
+.techArchiveCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding-right: 14px;
+}
+
+.techArchiveCell:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.techSpecLabel {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8e8e93;
+}
+
+.techSpecValue {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #f4f4f5;
+  line-height: 1.4;
 }
 
 .recentlyViewedVaultWrap {
@@ -815,17 +2206,32 @@
    MOBILE DEDICATED RESPONSIVE EXPERIENCE (< 1024px)
    ========================================================================== */
 
-.mobileOnlyHero {
+.mobileVerticalGallery {
   display: none;
 }
 
-.mobileBottomBar {
+.mobileScrollHint {
+  display: none;
+}
+
+.mobileFloatingCtaBar {
+  display: none;
+}
+
+.mobileFloatingCtaBarVisible {
+  display: none;
+}
+
+.mobileStickyBottomBar {
   display: none;
 }
 
 @media (max-width: 1023px) {
   .pageContainer {
-    padding-top: 60px;
+    padding-top: 56px;
+    /* Bottom padding is minimal by default; JS adds extra clearance when CTA is visible */
+    padding-bottom: 0;
+    overflow-x: hidden;
   }
 
   .heroScrollSection {
@@ -839,88 +2245,374 @@
     overflow: visible !important;
   }
 
-  .threeColGrid {
+  .threeColGrid, .twoColPreBookingGrid {
     display: flex;
     flex-direction: column;
     height: auto !important;
     width: 100% !important;
   }
 
-  .colLeft, .colCenter {
-    display: none;
+  .colLeft, .colCenter, .colPreBookingGallery {
+    display: none !important;
   }
 
-  .mobileOnlyHero {
+  /* ============================================================
+     1. MOBILE VERTICAL GALLERY STACK
+     Each image = one full-viewport cinematic frame.
+     Page scroll drives image progression — no horizontal swipe.
+     ============================================================ */
+
+  .mobileVerticalGallery {
     display: block;
-    position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
     background: #050505;
-    overflow: hidden;
+    /* No overflow-x, no scroll-snap-x, no horizontal scrolling */
   }
 
-  .mobileHeroImage {
+  /* One frame per image — each fills the viewport below the navbar */
+  .mobileGalleryFrame {
+    position: relative;
+    width: 100%;
+    /* 56px = mobile sticky navbar height */
+    height: calc(100svh - 56px);
+    /* Fallback for browsers without svh support */
+    height: calc(100vh - 56px);
+    /* Use svh which accounts for browser chrome — prevents scroll bars appearing */
+    height: calc(100svh - 56px);
+    overflow: hidden;
+    background: #050505;
+  }
+
+  .mobileGalleryFrameImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center top;
     display: block;
-    transition: opacity 0.6s ease;
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
-  .mobileScrollOverlay {
+  /* Per-frame image counter pill — sits above the scroll hint */
+  .mobileGalleryCounter {
     position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    bottom: 50px;
+    right: 16px;
+    background: rgba(5, 5, 5, 0.72);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    padding: 4px 10px;
     font-family: var(--font-heading);
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.15em;
+    color: #f4f4f5;
     pointer-events: none;
-    transition: opacity 0.5s ease;
-    animation: bounceSlow 2s infinite ease-in-out;
+    z-index: 5;
   }
 
-  @keyframes bounceSlow {
-    0%, 100% { transform: translate(-50%, 0); }
-    50% { transform: translate(-50%, 6px); }
+  /* Subtle editorial scroll hint — FIRST FRAME only, fades as user scrolls */
+  .mobileScrollHint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-heading);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(244, 244, 245, 0.5);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 6;
+    animation: mobileScrollHintFade 1.8s ease forwards;
   }
 
-  .colRight {
-    padding: 32px 20px;
+  @keyframes mobileScrollHintFade {
+    0%   { opacity: 0; }
+    30%  { opacity: 1; }
+    100% { opacity: 0.45; }
+  }
+
+  /* 2. PRODUCT DETAILS COLUMN — clean start below gallery */
+  .colRight, .colRightPreBooking {
+    padding: 28px 20px 0;
     height: auto !important;
     overflow: visible !important;
+    box-sizing: border-box;
+    width: 100%;
   }
 
-  .vaultUnlockedContent {
-    padding: 60px 0 100px;
+  .preBookPanel {
+    gap: 20px;
   }
 
-  .fullWidthAllocationSection {
-    padding: 0 20px;
+  .preBookEyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    color: #c8a46a;
   }
 
-  .allocationDashboard {
-    padding: 24px 20px;
+  .preBookTitle {
+    font-size: clamp(22px, 6vw, 30px);
+    line-height: 1.15;
+    word-break: break-word;
   }
 
-  .fiveTagEditorialRow {
-    grid-template-columns: 1fr 1fr;
+  .preBookInlineMeta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: #8e8e93;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .preBookMetaDivider {
+    display: none;
+  }
+
+  .preBookDesc {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8e8e93;
+    margin: 0;
+  }
+
+  /* 3. PRICE ROW */
+  .preBookPriceRow {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .preBookPriceCurrent {
+    font-size: clamp(26px, 7vw, 32px);
+    font-weight: 350;
+    color: #ffffff;
+  }
+
+  .preBookPriceOld {
+    font-size: 13px;
+    color: #8e8e93;
+    text-decoration: line-through;
+  }
+
+  .preBookDiscountBadge {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+
+  /* 4. SIZE & QUANTITY CONTROLS (>= 44px TOUCH TARGETS) */
+  .preBookSizeSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .preBookSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .preBookSizeChartBtn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #c8a46a;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .preBookSizeGrid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .preBookSizeBtn {
+    min-width: 48px;
+    min-height: 44px;
+    height: 44px;
+    font-size: 11px;
+  }
+
+  .preBookQtySection {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
   }
 
-  .editorialSection {
-    padding: 0 20px;
+  .preBookQtyControl {
+    width: 140px;
+    height: 44px;
   }
 
-  .mobileBottomBar {
+  .preBookQtyBtn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  /* 5. COUNTDOWN / RESERVATION MODULE */
+  .preBookReservationCard {
+    padding: 18px 16px;
+    gap: 14px;
+  }
+
+  .reservationCardBody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .countdownStack {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+  }
+
+  .countdownDigits {
+    font-size: 22px;
+  }
+
+  .countdownVertLine {
+    height: 24px;
+  }
+
+  .reservationCenterDivider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .reservationRightCol {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Hide inline duplicate CTA on mobile */
+  .preBookCtaWrap {
+    display: none;
+  }
+
+  /* 6. SECONDARY ACTIONS */
+  .preBookSecondaryActions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .preBookActionLink {
+    min-height: 40px;
+    font-size: 10px;
+  }
+
+  /* 7. ATELIER & TECHNICAL ARCHIVE */
+  .atelierSection, .fullWidthAllocationSection, .preBookingPrivilegesSection {
+    width: 100%;
+    padding: 0 16px;
+    margin-bottom: 40px;
+    box-sizing: border-box;
+  }
+
+  .atelierContainer {
+    padding: 28px 16px;
+    gap: 24px;
+  }
+
+  .atelierCardGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .techArchiveHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .techArchiveGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 12px;
+  }
+
+  .techArchiveCell {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  /* 8. EXCLUSIVE RACK ALLOCATION CARD */
+  .allocationDashboard {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .editorialStatsThreeCol {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .statColBlock {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .statColBigNum {
+    font-size: 24px;
+  }
+
+  .fiveTagEditorialRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 10px;
+  }
+
+  .editorialTagCard {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  /* 9. PRE-BOOKING PRIVILEGES (3x2 on tablet, 1x6 on mobile) */
+  .privilegesContainer {
+    padding: 32px 0 16px;
+    gap: 22px;
+  }
+
+  .privilegesGridThreeCol {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px 16px;
+  }
+
+  .privilegesFooter {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .privilegeLinkDivider {
+    display: none;
+  }
+
+  /* 10. FIXED FLOATING MOBILE PRE-BOOK CTA BAR
+     Hidden by default — revealed via .mobileFloatingCtaBarVisible when
+     IntersectionObserver detects product detail section entering viewport */
+  .mobileFloatingCtaBar {
     display: flex;
     position: fixed;
     bottom: 0;
@@ -928,6 +2620,75 @@
     right: 0;
     z-index: 100;
     padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: rgba(10, 10, 10, 0.88);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(200, 164, 106, 0.3);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.85);
+    /* Hidden by default — slides up from below when active */
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.3s ease;
+  }
+
+  /* Visible state — toggled by JS via showMobileCta state */
+  .mobileFloatingCtaBarVisible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobileFloatingCtaBtn {
+    width: 100%;
+    height: 54px;
+    background: #080808;
+    border: 1px solid rgba(200, 164, 106, 0.6);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .mobileFloatingCtaBtn:active {
+    opacity: 0.85;
+    border-color: #c8a46a;
+  }
+
+  .mobileFloatingCtaBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobileFloatingCtaLabel {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .mobileFloatingCtaArrow {
+    color: #c8a46a;
+    font-size: 14px;
+  }
+
+  /* Regular live product mobile bottom bar fallback */
+  .mobileStickyBottomBar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     background: rgba(10, 10, 10, 0.85);
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(200, 164, 106, 0.3);
@@ -981,5 +2742,35 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+  }
+}
+
+/* NARROW MOBILE SCREENS (< 640px) */
+@media (max-width: 639px) {
+  .privilegesGridThreeCol {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .privilegeItem {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding-bottom: 12px;
+  }
+
+  .privilegeItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .statColBigNum {
+    font-size: 20px;
+  }
+
+  .statColLabel {
+    font-size: 8.5px;
+  }
+
+  .statColUnit {
+    font-size: 9.5px;
   }
 }

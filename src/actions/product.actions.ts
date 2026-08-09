@@ -137,51 +137,21 @@ export async function getProductById(id: string) {
 
 
 export async function createProduct(input: CreateProductInput) {
-  await requireAdmin();
-  const data = CreateProductSchema.parse(input);
-
-  const product = await prisma.product.create({
-    data: {
-      ...data,
-      domain: domainFromChannel(data.channel),
-      publishedAt: data.status === 'ACTIVE' ? new Date() : null,
-    },
-  });
-
-  revalidatePath('/admin/products');
-  revalidatePath('/drops');
-  return product;
+  const payload: UpsertProductInput = {
+    ...input,
+    variants: (input as any).variants && (input as any).variants.length > 0
+      ? (input as any).variants
+      : [{ sku: `PROD-${Date.now().toString().slice(-6)}-M`, size: 'M', price: Number(input.mrp || 0), initialStock: 10, position: 0 }],
+  };
+  return upsertProductRecord(payload);
 }
 
 export async function updateProduct(input: UpdateProductInput) {
-  await requireAdmin();
-  const { id, ...data } = UpdateProductSchema.parse(input);
-
-  const existing = await prisma.product.findUnique({
-    where: { id },
-    select: { status: true },
-  });
-  const becomingActive =
-    existing?.status !== 'ACTIVE' && data.status === 'ACTIVE';
-
-  const channelChanged =
-    'channel' in data && data.channel !== undefined && data.channel !== null;
-
-  const product = await prisma.product.update({
-    where: { id },
-    data: {
-      ...data,
-      ...(channelChanged && data.channel != null
-        ? { domain: domainFromChannel(data.channel) }
-        : {}),
-      ...(becomingActive && { publishedAt: new Date() }),
-    },
-  });
-
-  revalidatePath('/admin/products');
-  revalidatePath(`/product/${product.slug}`);
-  revalidatePath('/drops');
-  return product;
+  const payload: UpsertProductInput = {
+    ...(input as any),
+    variants: (input as any).variants || [],
+  };
+  return upsertProductRecord(payload);
 }
 
 export async function deleteProduct(id: string): Promise<{ success: boolean; archived: boolean; message: string }> {
@@ -390,9 +360,40 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     const targetId = existing?.id || id;
     const becomingActive = existing?.status !== 'ACTIVE' && scalarFields.status === 'ACTIVE';
 
-    const productWrite = {
-      ...scalarFields,
+    // ─── Prisma 7 relation input rules ────────────────────────────────────────
+    // Prisma 7 with @prisma/adapter-pg enforces strict typed input for all operations.
+    //
+    // For update() → ProductUpdateInput:
+    //   • Must use relation syntax: category: { connect: { id } }
+    //   • Cannot pass scalar FK: categoryId (throws "Unknown argument categoryId")
+    //   • Optional relation cleared via: drop: { disconnect: true }
+    //
+    // For create() → ProductCreateInput:
+    //   • Must use relation syntax: category: { connect: { id } }
+    //   • Optional relation left null by simply OMITTING the field (no disconnect)
+    //   • drop: { disconnect: true } throws "Unknown argument disconnect" on create
+    //
+    // Solution: build separate payloads for create and update.
+    const { categoryId, dropId, ...nonRelationScalars } = scalarFields;
+
+    const sharedFields = {
+      ...nonRelationScalars,
       domain: domainFromChannel(scalarFields.channel),
+      category: { connect: { id: categoryId } },
+    };
+
+    const createPayload = {
+      ...sharedFields,
+      // On create: optional relation omitted = null (no disconnect needed)
+      ...(dropId ? { drop: { connect: { id: dropId } } } : {}),
+      publishedAt: scalarFields.status === 'ACTIVE' ? new Date() : null,
+    };
+
+    const updatePayload = {
+      ...sharedFields,
+      // On update: optional relation must be explicitly disconnected to clear it
+      ...(dropId ? { drop: { connect: { id: dropId } } } : { drop: { disconnect: true } }),
+      ...(becomingActive && { publishedAt: new Date() }),
     };
 
     console.log('===> [SERVER] STEP 5: Starting $transaction, targetId:', targetId);
@@ -403,18 +404,12 @@ export async function upsertProductRecord(input: UpsertProductInput) {
         console.log('===> [SERVER] STEP 5A: tx.product.update for targetId:', targetId);
         p = await tx.product.update({
           where: { id: targetId },
-          data: {
-            ...productWrite,
-            ...(becomingActive && { publishedAt: new Date() }),
-          },
+          data: updatePayload,
         });
       } else {
         console.log('===> [SERVER] STEP 5A: tx.product.create');
         p = await tx.product.create({
-          data: {
-            ...productWrite,
-            publishedAt: scalarFields.status === 'ACTIVE' ? new Date() : null,
-          },
+          data: createPayload,
         });
       }
 

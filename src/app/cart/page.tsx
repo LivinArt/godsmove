@@ -12,6 +12,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useStore } from '@/store/useStore';
 import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
+import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { PurchaseMode } from '@/types/launch';
+import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import styles from './page.module.css';
 
 export default function CartPage() {
@@ -78,14 +81,30 @@ export default function CartPage() {
     }, { type: 'checkout' });
   };
 
+  const [isPreBookingTermsOpen, setIsPreBookingTermsOpen] = useState(false);
+
+  const hasPreBookingItems = cart.some(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK);
+  const preBookingProduct = cart.find(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK)?.product;
+
   return (
     <>
       <Navbar />
       <CartDrawer />
 
-      <main className={styles.page}>
-        <div className="container">
-          <h1 className={`h1 ${styles.title}`}>Cart</h1>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Your Collection</h1>
+            {cart.length > 0 && (
+              <button 
+                type="button" 
+                className={styles.clearBtn} 
+                onClick={clearCart}
+              >
+                Clear Cart
+              </button>
+            )}
+          </div>
 
           {editorialNotice && (
             <div className={styles.inlineEditorialNotice}>
@@ -95,15 +114,15 @@ export default function CartPage() {
 
           {cart.length === 0 ? (
             <div className={styles.empty}>
-              <p className={styles.emptyText}>Your reserved selections are no longer available.</p>
+              <p className={styles.emptyText}>Your collection is currently empty.</p>
               <Link href="/drops" className="btn btn-primary">
-                Continue Discovery →
+                Discover Drops
               </Link>
             </div>
           ) : (
-            <div className={styles.layout}>
+            <div className={styles.content}>
               <div className={styles.items}>
-                <div className={styles.itemsHeader}>
+                <div className={styles.tableHeader}>
                   <span>Product</span>
                   <span>Quantity</span>
                   <span>Total</span>
@@ -177,6 +196,58 @@ export default function CartPage() {
 
               <div className={styles.summary}>
                 <h2 className={styles.summaryTitle}>Summary</h2>
+
+                {/* Pre Booking Notice inside Summary */}
+                {hasPreBookingItems && (
+                  <div style={{
+                    background: 'rgba(200, 164, 106, 0.08)',
+                    border: '1px solid rgba(200, 164, 106, 0.3)',
+                    borderRadius: '2px',
+                    padding: '12px 14px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        backgroundColor: '#c8a46a',
+                      }} />
+                      <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a46a' }}>
+                        PRE-BOOKING ALLOCATION
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5, margin: 0 }}>
+                      This item is currently in Pre Booking. It will be dispatched according to the official launch schedule and will not ship together with immediately available products.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsPreBookingTermsOpen(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#c8a46a',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        padding: 0,
+                        textAlign: 'left',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: '3px',
+                        marginTop: '2px',
+                      }}
+                    >
+                      Pre Booking Terms & Conditions →
+                    </button>
+                  </div>
+                )}
+
                 <div className={styles.summaryRow}>
                   <span>Subtotal</span>
                   <span>₹{total.toLocaleString('en-IN')}</span>
@@ -232,6 +303,13 @@ export default function CartPage() {
       </main>
 
       <Footer />
+
+      {/* Pre Booking Terms Modal */}
+      <PreBookingTermsModal
+        isOpen={isPreBookingTermsOpen}
+        onClose={() => setIsPreBookingTermsOpen(false)}
+        product={preBookingProduct}
+      />
     </>
   );
 }

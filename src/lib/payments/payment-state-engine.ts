@@ -166,6 +166,42 @@ export class PaymentStateEngine {
         update: {},
       }).catch(() => {});
 
+      // Grant / Activate GODSMOVE Membership idempotently for Pre-Booking orders
+      if (order.isPreBooking || order.orderType === 'PRE_BOOKING') {
+        let targetProfileId = order.profileId;
+        if (!targetProfileId && order.email) {
+          const prof = await tx.profile.findFirst({
+            where: { email: { equals: order.email, mode: 'insensitive' } },
+            select: { id: true },
+          });
+          if (prof) targetProfileId = prof.id;
+        }
+
+        if (targetProfileId) {
+          await tx.membership.upsert({
+            where: { profileId: targetProfileId },
+            create: {
+              profileId: targetProfileId,
+              status: 'ACTIVE',
+              source: 'PRE_BOOKING',
+              sourceOrderId: order.id,
+              tier: 'VIP',
+              activatedAt: order.paidAt || new Date(),
+            },
+            update: {
+              status: 'ACTIVE',
+              source: 'PRE_BOOKING',
+              sourceOrderId: order.id,
+            },
+          });
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: { membershipActivated: true, profileId: targetProfileId },
+          });
+        }
+      }
+
       // Atomic inventory deduction & movement ledger
       for (const item of order.items) {
         const inv = await tx.inventory.upsert({

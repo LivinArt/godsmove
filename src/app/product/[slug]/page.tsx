@@ -159,11 +159,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     // Guest
   }
 
-  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK') {
+  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK' || product.isPreBooking) {
     return (
       <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />
-        <Navbar variant="exclusive-rack" />
+        <Navbar variant={product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK' ? 'exclusive-rack' : undefined} />
         <CartDrawer />
         <ProductClient
           product={product}

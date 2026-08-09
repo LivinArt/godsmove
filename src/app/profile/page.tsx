@@ -55,6 +55,7 @@ import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
 import { resolveImageUrl, resolveOrderItemImageUrl } from '@/lib/image-resolver';
 import { uploadImage } from '@/lib/supabase/storage';
+import { useSynchronizedCountdown, formatExpectedDispatchText, getPreBookingLifecycleState, PreBookingLifecycleState } from '@/lib/launch-engine';
 import styles from './profile.module.css';
 
 const GOLDEN_LOADING_MESSAGES = [
@@ -165,11 +166,178 @@ function RenderSkeleton({ tab }: { tab: string }) {
   );
 }
 
+function ProfilePreBookingCard({ order, onTrackOrder }: { order: any; onTrackOrder: (order: any) => void }) {
+  const firstItem = order.items?.[0];
+  const product = firstItem?.variant?.product || firstItem?.product;
+  const launchDate = order.preBookingLaunchDate || product?.launchDateTime;
+  const countdown = useSynchronizedCountdown(launchDate);
+
+  const thumbUrl = resolveOrderItemImageUrl(firstItem);
+  const prodSlug = firstItem?.variant?.product?.slug || firstItem?.product?.slug || '';
+  const productHref = prodSlug ? `/product/${prodSlug}` : '#';
+
+  const lifecycleState = getPreBookingLifecycleState(order);
+
+  const isFailed = lifecycleState === PreBookingLifecycleState.PAYMENT_FAILED;
+  const isAwaitingLaunch = lifecycleState === PreBookingLifecycleState.AWAITING_LAUNCH;
+  const isShipped = lifecycleState === PreBookingLifecycleState.SHIPPED;
+  const isDelivered = lifecycleState === PreBookingLifecycleState.DELIVERED;
+  const isFulfillmentPhase = !isFailed && !isAwaitingLaunch;
+
+  // Format fulfillment status label
+  const rawStatus = String(order.fulfillmentStatus || order.status || 'CONFIRMED').toUpperCase();
+  const displayStatusLabel = (() => {
+    if (isDelivered) return 'Delivered';
+    if (isShipped) return 'Shipped';
+    if (rawStatus === 'PACKED') return 'Packed';
+    if (rawStatus === 'PROCESSING') return 'Processing';
+    return 'Ready for Fulfillment';
+  })();
+
+  return (
+    <div
+      className={styles.articleCard}
+      style={{
+        borderLeft: `3px solid ${isFailed ? '#dc2626' : isDelivered ? '#16a34a' : '#c8a46a'}`,
+        borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+        borderRight: '1px solid rgba(0, 0, 0, 0.08)',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        padding: '18px 22px',
+        background: '#ffffff',
+        borderRadius: '4px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+      }}
+    >
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Link
+          href={productHref}
+          style={{
+            width: '80px',
+            height: '100px',
+            flexShrink: 0,
+            position: 'relative',
+            overflow: 'hidden',
+            background: '#f4f4f5',
+            borderRadius: '4px',
+            display: 'block',
+            border: '1px solid rgba(0, 0, 0, 0.06)',
+          }}
+        >
+          <img
+            src={thumbUrl}
+            alt={firstItem?.productName || 'Pre Booking Product'}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Link>
+        <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: isFailed ? '#dc2626' : '#b8860b' }}>
+              {isFailed
+                ? 'PAYMENT FAILED'
+                : isFulfillmentPhase
+                ? 'PRE-BOOKING ALLOCATION • RELEASED'
+                : 'PRE-BOOKING ALLOCATION'}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: isDelivered ? '#16a34a' : isFailed ? '#dc2626' : '#b8860b' }}>
+              ● {displayStatusLabel}
+            </span>
+          </div>
+
+          <Link href={productHref} style={{ textDecoration: 'none', color: '#18181b' }}>
+            <h4 className={styles.articleTitle} style={{ margin: 0, color: '#18181b', fontWeight: 700 }}>
+              {firstItem?.productName || 'GODSMOVE Exclusive'}
+            </h4>
+          </Link>
+
+          <span className={styles.articleMeta} style={{ fontSize: '12px', color: '#52525b', fontWeight: 500 }}>
+            Order #{order.orderNumber} · {firstItem?.size ? `Size ${firstItem.size}` : ''} · Qty {firstItem?.quantity || 1} · ₹{Number(order.total).toLocaleString('en-IN')}
+          </span>
+
+          {isAwaitingLaunch ? (
+            <span style={{ fontSize: '11px', color: '#71717a', marginTop: '2px', fontWeight: 500 }}>
+              Expected Dispatch: {formatExpectedDispatchText(order.preBookingExpectedDispatch)}
+            </span>
+          ) : isFulfillmentPhase ? (
+            <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', fontWeight: 600 }}>
+              ✓ Official Release Live — Order In Fulfillment
+            </span>
+          ) : null}
+
+          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0, 0, 0, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            {isFailed ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
+                  Payment unresolved. Allocation context preserved.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (prodSlug) {
+                      window.location.href = `/product/${prodSlug}`;
+                    }
+                  }}
+                  className={styles.trackOrderBtn}
+                  style={{ backgroundColor: '#c8a46a', color: '#000000', padding: '6px 16px', border: 'none', fontWeight: 700, fontSize: '11px', letterSpacing: '0.08em' }}
+                >
+                  RE-BOOK
+                </button>
+              </div>
+            ) : isFulfillmentPhase ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => onTrackOrder(order)}
+                  className={styles.trackOrderBtn}
+                  style={{ padding: '6px 16px', fontSize: '11px', color: '#ffffff', backgroundColor: '#18181b', border: '1px solid #18181b', fontWeight: 700, letterSpacing: '0.05em' }}
+                >
+                  TRACK ORDER
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(`/api/invoice/download/${order.id}`, '_blank')}
+                  className={styles.trackOrderBtn}
+                  style={{ padding: '6px 14px', fontSize: '11px', color: '#18181b', backgroundColor: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.18)', fontWeight: 600 }}
+                >
+                  DOWNLOAD INVOICE
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#71717a' }}>
+                    LAUNCHES IN:
+                  </span>
+                  <div style={{ display: 'flex', gap: '10px', fontFamily: 'var(--font-heading)', fontSize: '14px', color: '#18181b' }}>
+                    <div><span style={{ fontWeight: 700, color: '#b8860b' }}>{String(countdown.days).padStart(2, '0')}</span><span style={{ fontSize: '9px', marginLeft: '2px', color: '#71717a', fontWeight: 600 }}>D</span></div>
+                    <div><span style={{ fontWeight: 700, color: '#b8860b' }}>{String(countdown.hours).padStart(2, '0')}</span><span style={{ fontSize: '9px', marginLeft: '2px', color: '#71717a', fontWeight: 600 }}>H</span></div>
+                    <div><span style={{ fontWeight: 700, color: '#b8860b' }}>{String(countdown.minutes).padStart(2, '0')}</span><span style={{ fontSize: '9px', marginLeft: '2px', color: '#71717a', fontWeight: 600 }}>M</span></div>
+                    <div><span style={{ fontWeight: 700, color: '#b8860b' }}>{String(countdown.seconds).padStart(2, '0')}</span><span style={{ fontSize: '9px', marginLeft: '2px', color: '#71717a', fontWeight: 600 }}>S</span></div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => window.open(`/api/invoice/download/${order.id}`, '_blank')}
+                  className={styles.trackOrderBtn}
+                  style={{ padding: '6px 14px', fontSize: '11px', color: '#18181b', backgroundColor: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.18)', fontWeight: 600 }}
+                >
+                  DOWNLOAD INVOICE
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useStore();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [preBookingSubFilter, setPreBookingSubFilter] = useState<'ALL' | 'ACTIVE' | 'FAILED' | 'COMPLETED'>('ALL');
   const [mobileView, setMobileView] = useState<'menu' | 'detail'>('menu');
   const [isLoading, setIsLoading] = useState(true);
   const [isCareModalOpen, setIsCareModalOpen] = useState(false);
@@ -595,6 +763,7 @@ export default function ProfilePage() {
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');
         const mapped = (tabParam === 'collection' || tabParam === 'orders') ? 'collection' :
+                       (tabParam === 'prebookings' || tabParam === 'pre-bookings' || tabParam === 'prebooking') ? 'prebookings' :
                        (tabParam === 'care' || tabParam === 'passport') ? 'passport' :
                        tabParam === 'personal' ? 'personal' :
                        tabParam === 'addresses' ? 'addresses' :
@@ -643,6 +812,7 @@ export default function ProfilePage() {
         }
       } else {
         const mapped = (tabParam === 'collection' || tabParam === 'orders') ? 'collection' :
+                       (tabParam === 'prebookings' || tabParam === 'pre-bookings' || tabParam === 'prebooking') ? 'prebookings' :
                        (tabParam === 'care' || tabParam === 'passport') ? 'passport' :
                        tabParam === 'personal' ? 'personal' :
                        tabParam === 'addresses' ? 'addresses' :
@@ -671,7 +841,7 @@ export default function ProfilePage() {
       if (tab === 'addresses') {
         const addrs = await getMyAddresses();
         setAddresses(addrs);
-      } else if (tab === 'collection') {
+      } else if (tab === 'collection' || tab === 'prebookings') {
         const orders = await getMyOrders();
         setCollection(orders);
       } else if (tab === 'returns') {
@@ -763,7 +933,7 @@ export default function ProfilePage() {
     try {
       await deleteAddress(id);
       setAddresses(addresses.filter(a => a.id !== id));
-      showToast('Address Deleted', 'Saved address removed.');
+      showToast('Address Deleted', 'Address removed from your profile.');
     } catch (err: any) {
       showToast('Delete Failed', err.message || 'Failed to delete address.');
     }
@@ -771,11 +941,11 @@ export default function ProfilePage() {
 
   const handleSetDefaultAddress = async (id: string) => {
     try {
-      await setDefaultAddress(id);
+      await updateAddress(id, { isDefault: true });
       setAddresses(addresses.map(a => ({ ...a, isDefault: a.id === id })));
-      showToast('Default Updated', 'Default delivery address changed.');
+      showToast('Default Updated', 'Primary delivery address set.');
     } catch (err: any) {
-      showToast('Update Failed', err.message || 'Failed to update default address.');
+      showToast('Update Failed', err.message || 'Failed to set default address.');
     }
   };
 
@@ -928,9 +1098,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleTabChange = (tab: string) => {
-    const t = (tab || '').toLowerCase().trim();
-    if (t === 'passport' || t === 'care') {
+  const handleTabChange = (t: string) => {
+    if (t === 'care' || t === 'passport') {
       setIsCareModalOpen(true);
       // Pre-load care tab data on modal open
       loadTabData('passport');
@@ -938,11 +1107,13 @@ export default function ProfilePage() {
     }
 
     const mapped = (t === 'collection' || t === 'orders') ? 'collection' :
+                   (t === 'prebookings' || t === 'pre-bookings' || t === 'prebooking') ? 'prebookings' :
                    (t === 'credits' || t === 'wallet') ? 'wallet' :
                    (t === 'profile' || t === 'personal') ? 'personal' :
                    (t === 'addresses') ? 'addresses' :
                    (t === 'returns') ? 'returns' :
-                   (t === 'settings' || t === 'preferences') ? 'settings' : 'personal';
+                   (t === 'settings' || t === 'preferences') ? 'settings' :
+                   (t === 'passport' || t === 'care') ? 'passport' : 'personal';
 
     setActiveTab(mapped);
     setMobileView('detail');
@@ -984,11 +1155,13 @@ export default function ProfilePage() {
           {/* Sidebar Navigation */}
           {(() => {
             const currentTab = (activeTab === 'orders' || activeTab === 'collection') ? 'collection' :
+                               (activeTab === 'prebookings' || activeTab === 'prebooking') ? 'prebookings' :
                                (activeTab === 'credits' || activeTab === 'wallet') ? 'wallet' :
                                (activeTab === 'profile' || activeTab === 'personal') ? 'personal' :
                                (activeTab === 'addresses') ? 'addresses' :
                                (activeTab === 'returns') ? 'returns' :
                                (activeTab === 'settings' || activeTab === 'preferences') ? 'settings' :
+                               (activeTab === 'passport' || activeTab === 'care') ? 'passport' :
                                (activeTab || 'personal');
 
             return (
@@ -1005,6 +1178,10 @@ export default function ProfilePage() {
                     <button className={styles.mobileTile} onClick={() => handleTabChange('collection')} id="profile-tile-collection">
                       <div className={styles.mobileTileIcon}><ShoppingBag size={22} /></div>
                       <span className={styles.mobileTileLabel}>Collection</span>
+                    </button>
+                    <button className={styles.mobileTile} onClick={() => handleTabChange('prebookings')} id="profile-tile-prebookings">
+                      <div className={styles.mobileTileIcon}><Clock size={22} /></div>
+                      <span className={styles.mobileTileLabel}>Pre Bookings</span>
                     </button>
                     <button className={styles.mobileTile} onClick={() => handleTabChange('addresses')} id="profile-tile-addresses">
                       <div className={styles.mobileTileIcon}><MapPin size={22} /></div>
@@ -1058,6 +1235,15 @@ export default function ProfilePage() {
                     >
                       <ShoppingBag size={18} />
                       <span>Your Collection</span>
+                      <ChevronRight size={16} className={styles.navChevron} />
+                    </button>
+
+                    <button
+                      className={`${styles.navItem} ${currentTab === 'prebookings' ? styles.active : ''}`}
+                      onClick={() => handleTabChange('prebookings')}
+                    >
+                      <Clock size={18} />
+                      <span>Pre Bookings</span>
                       <ChevronRight size={16} className={styles.navChevron} />
                     </button>
 
@@ -1368,16 +1554,23 @@ export default function ProfilePage() {
                     <span className={styles.taglineBadge}>Order Archive</span>
                   </div>
 
-                  {collection.length === 0 ? (
-                    <div className={styles.emptyState}>
-                      <ShoppingBag size={48} className={styles.emptyIcon} />
-                      <h3 className="h3">Your collection is empty.</h3>
-                      <p className={styles.emptyText}>When you acquire a piece, it will appear in this archive.</p>
-                      <Link href="/drops" className="btn btn-primary">Browse Drops</Link>
-                    </div>
-                  ) : (
-                    <div className={styles.ordersList}>
-                      {collection.map((order: any) => {
+                  {(() => {
+                    const regularOrders = collection.filter((order: any) => order.orderType !== 'PRE_BOOKING' && !order.isPreBooking);
+
+                    if (regularOrders.length === 0) {
+                      return (
+                        <div className={styles.emptyState}>
+                          <ShoppingBag size={48} className={styles.emptyIcon} />
+                          <h3 className="h3">Your collection is empty.</h3>
+                          <p className={styles.emptyText}>When you acquire a piece, it will appear in this archive.</p>
+                          <Link href="/drops" className="btn btn-primary">Browse Drops</Link>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className={styles.ordersList}>
+                        {regularOrders.map((order: any) => {
                         const isExpanded = !!expandedOrders[order.id];
                         const totalQuantity = order.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
                         
@@ -1717,8 +1910,83 @@ export default function ProfilePage() {
                         );
                       })}
                     </div>
-                  )}
-                  </>)}
+                  );
+                })()}
+                </>)}
+                </div>
+              )}
+
+              {/* Dedicated Pre Bookings Panel */}
+              {currentTab === 'prebookings' && (
+                <div className={styles.panel}>
+                  <div className={styles.panelHeaderRow} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+                    <div>
+                      <h2 className="h3">Pre-Booked Allocations</h2>
+                      <p className={styles.panelDesc}>Track your reserved releases and upcoming dispatch schedules.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+                      {(['ALL', 'ACTIVE', 'FAILED', 'COMPLETED'] as const).map((filter) => (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setPreBookingSubFilter(filter)}
+                          style={{
+                            padding: '6px 14px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            letterSpacing: '0.05em',
+                            borderRadius: '4px',
+                            border: preBookingSubFilter === filter ? '1px solid #c8a46a' : '1px solid rgba(0, 0, 0, 0.12)',
+                            background: preBookingSubFilter === filter ? 'rgba(200, 164, 106, 0.12)' : '#ffffff',
+                            color: preBookingSubFilter === filter ? '#18181b' : '#52525b',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(() => {
+                    let preBookingOrders = collection.filter(o => o.orderType === 'PRE_BOOKING' || o.isPreBooking);
+
+                    if (preBookingSubFilter === 'ACTIVE') {
+                      preBookingOrders = preBookingOrders.filter(o => ['PENDING', 'CONFIRMED', 'VERIFYING', 'AWAITING_LAUNCH', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(o.status) && o.paymentStatus !== 'FAILED');
+                    } else if (preBookingSubFilter === 'FAILED') {
+                      preBookingOrders = preBookingOrders.filter(o => ['FAILED', 'CANCELLED'].includes(o.status) || o.paymentStatus === 'FAILED');
+                    } else if (preBookingSubFilter === 'COMPLETED') {
+                      preBookingOrders = preBookingOrders.filter(o => ['COMPLETED', 'DELIVERED'].includes(o.status));
+                    }
+
+                    if (preBookingOrders.length === 0) {
+                      return (
+                        <div className={styles.emptyState}>
+                          <Clock size={48} className={styles.emptyIcon} />
+                          <h3 className="h3">No pre-booked releases found.</h3>
+                          <p className={styles.emptyText}>When you pre-book upcoming drops, your allocations will appear here with live launch countdowns.</p>
+                          <Link href="/drops" className={styles.reorderBtn} style={{ marginTop: '16px', display: 'inline-flex', alignItems: 'center' }}>
+                            Explore Scheduled Drops
+                          </Link>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className={styles.collectionList} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {preBookingOrders.map((order: any) => (
+                          <ProfilePreBookingCard
+                            key={order.id}
+                            order={order}
+                            onTrackOrder={(ord) => {
+                              setActiveTrackingOrder(ord);
+                              setTrackOrderOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

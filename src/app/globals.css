@@ -290,9 +290,10 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Scroll Reveal Defaults ── */
 .reveal {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity var(--duration-slow) var(--ease-cinematic),
-              transform var(--duration-slow) var(--ease-cinematic);
+  transform: translateY(12px);
+  will-change: opacity, transform;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reveal.visible {

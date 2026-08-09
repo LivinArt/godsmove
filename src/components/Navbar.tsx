@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, Heart, Menu, X, User, Home, Sparkles, Star, BookOpen } from 'lucide-react';
+import { ShoppingBag, Heart, Menu, X, User, Home, Sparkles, Star, BookOpen, Crown } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
@@ -30,7 +30,8 @@ interface NavbarProps {
 export default function Navbar({ variant = 'default' }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, openAuthModal, requireAuth } = useAuth();
+  const { user, profile, openAuthModal, requireAuth } = useAuth();
+  const isActiveMember = Boolean((profile as any)?.membership?.status === 'ACTIVE');
   const [scrolled, setScrolled] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const { isCartOpen, setCartOpen, isMobileMenuOpen, setMobileMenuOpen } = useStore();
@@ -167,6 +168,27 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
                   <User size={20} strokeWidth={1.8} />
                 </button>
                 <span className={styles.tooltip}>{user ? 'Your Profile' : 'Sign In'}</span>
+              </div>
+
+              {/* Membership Icon & Indicator */}
+              <div className={styles.actionWrapper}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (user) {
+                      router.push('/membership');
+                    } else {
+                      openAuthModal('membership');
+                    }
+                  }}
+                  className={`${styles.actionBtn} ${pathname.startsWith('/membership') ? styles.actionBtnActive : ''}`}
+                  aria-label="GODSMOVE Membership"
+                  id="nav-membership"
+                >
+                  <Crown size={20} strokeWidth={1.8} style={{ color: isActiveMember ? '#d4af37' : 'currentColor' }} />
+                  {isActiveMember && <span className={styles.memberDot} />}
+                </button>
+                <span className={styles.tooltip}>{isActiveMember ? 'GODSMOVE Member' : 'Membership'}</span>
               </div>
 
               <div className={styles.actionWrapper}>

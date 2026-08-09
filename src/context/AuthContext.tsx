@@ -86,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push('/checkout');
           } else if (pending.type === 'profile') {
             router.push('/profile');
+          } else if (pending.type === 'membership') {
+            router.push('/membership');
           } else if (pending.type === 'navigate' && pending.url) {
             router.push(pending.url);
           }

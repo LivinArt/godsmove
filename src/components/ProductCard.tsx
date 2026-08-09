@@ -12,9 +12,12 @@ import { resolveProductImages } from '@/lib/image-resolver';
 import QuickViewModal from './QuickViewModal';
 import MobileQuickAddSheet from './MobileQuickAddSheet';
 import { formatGA4Item, trackSelectItem } from '@/lib/gtag-ecommerce';
+import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { PurchaseMode } from '@/types/launch';
+import PreBookingProductCard, { type PreBookingProductCardProps } from './PreBookingProductCard';
 import styles from './ProductCard.module.css';
 
-interface ProductCardProps {
+export interface ProductCardProps {
   product: any;
   index?: number;
   /** High-contrast typography for cards on dark section backgrounds */
@@ -31,6 +34,22 @@ export default function ProductCard({
   showCta = false,
   isDominant = false,
 }: ProductCardProps) {
+  const purchaseMode = getEffectivePurchaseMode(product);
+  const isPreBooking = purchaseMode === PurchaseMode.PRE_BOOK || Boolean(product?.isPreBooking);
+
+  // Strictly isolate Pre-Booking cards to PreBookingProductCard
+  if (isPreBooking) {
+    return (
+      <PreBookingProductCard
+        product={product}
+        index={index}
+        theme={theme}
+        showCta={showCta}
+        isDominant={isDominant}
+      />
+    );
+  }
+
   const [mounted, setMounted] = useState(false);
   const { requireAuth } = useAuth();
   
@@ -181,7 +200,9 @@ export default function ProductCard({
 
         {/* Horizontal Non-Overlapping Tag & Badge System */}
         <div className={styles.tagContainer}>
-          {isNew && <span className={styles.tag}>New</span>}
+          {isNew ? (
+            <span className={styles.tag}>New</span>
+          ) : null}
           {product.isExclusiveRack ? (
             <span className={`${styles.featuredBadge} ${styles.exclusiveBadge}`}>
               {product.featuredBadge || 'Vault Edition'}

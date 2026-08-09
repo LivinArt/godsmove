@@ -40,7 +40,7 @@ export function CinematicSiteLoader() {
   const [boot, setBoot] = useState<BootState>('gone');
   const [routeFlash, setRouteFlash] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const dwellRef = useRef(1.6);
+  const dwellRef = useRef(1.2);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const prevPath = useRef<string | null>(null);
   const bootStarted = useRef(false);
@@ -59,21 +59,33 @@ export function CinematicSiteLoader() {
     return () => mq.removeEventListener('change', fn);
   }, []);
 
+  /* ── Fail-Safe Fallback: Guarantees loader veil ALWAYS dismisses within 1.8s ── */
+  useEffect(() => {
+    if (boot === 'gone') return;
+    const fallbackTimer = setTimeout(() => {
+      setBoot('gone');
+      document.documentElement.style.removeProperty('overflow');
+      document.documentElement.removeAttribute('data-gm-veil');
+    }, 1800);
+    return () => clearTimeout(fallbackTimer);
+  }, [boot]);
+
   /* ── Boot sequence (storefront only, first paint) ───────────── */
   useLayoutEffect(() => {
-    if (bootStarted.current) return;
-    bootStarted.current = true;
-    bootPathRef.current = pathname;
-
     if (shouldSkipBoot(pathname)) {
       setBoot('gone');
       return;
     }
 
+    // Avoid double scheduling if boot is already completed or in progress
+    if (bootStarted.current && timersRef.current.length > 0) return;
+    bootStarted.current = true;
+    bootPathRef.current = pathname;
+
     const rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setReduceMotion(rm);
 
-    const dwell = rm ? 0.12 : 1.2 + Math.random() * 1.0; /* ~1200–2200ms */
+    const dwell = rm ? 0.12 : 0.8; /* ~800ms dwell for responsive loading */
     dwellRef.current = dwell;
 
     setBoot('boot');
@@ -88,29 +100,33 @@ export function CinematicSiteLoader() {
       timersRef.current.push(id);
     };
 
+    clearAll();
+
     if (rm) {
       schedule(() => setBoot('dwell'), 0);
-      schedule(() => setBoot('leave'), 80);
+      schedule(() => setBoot('leave'), 60);
       schedule(() => {
         setBoot('gone');
         clearAll();
-      }, 220);
-      return clearAll;
+      }, 160);
+      return;
     }
 
-    schedule(() => setBoot('reveal'), 90);
-    schedule(() => setBoot('dwell'), 420);
-    schedule(() => setBoot('leave'), 420 + dwell * 1000);
+    schedule(() => setBoot('reveal'), 80);
+    schedule(() => setBoot('dwell'), 300);
+    schedule(() => setBoot('leave'), 300 + dwell * 1000);
     schedule(() => {
       setBoot('gone');
       clearAll();
-    }, 420 + dwell * 1000 + 980);
+    }, 300 + dwell * 1000 + 400);
 
-    return clearAll;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot runs once per session mount
+    return () => {
+      // Do not clear timers if boot is active so strict mode re-mounts don't freeze loader
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Homepage hero handoff (opacity only; #hero absent on other routes) ─ */
+  /* ── Homepage hero handoff ────────────────────────────────────────────── */
   useEffect(() => {
     const path = bootPathRef.current;
     if (!path || shouldSkipBoot(path)) return;
@@ -118,6 +134,7 @@ export function CinematicSiteLoader() {
     if (boot === 'gone') {
       const t = window.setTimeout(() => {
         document.documentElement.removeAttribute('data-gm-veil');
+        document.documentElement.style.removeProperty('overflow');
       }, 60);
       return () => clearTimeout(t);
     }

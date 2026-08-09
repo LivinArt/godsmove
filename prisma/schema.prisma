@@ -43,8 +43,40 @@ model Profile {
   exclusiveDrawWins      ExclusiveDrawWinner[]
   unlockAccessTokens     UnlockAccessToken[] @relation("UnlockTokenClaimedBy")
   careRequests           CareRequest[]
+  membership             Membership?
 
   @@map("profiles")
+}
+
+model Membership {
+  id            String           @id @default(cuid())
+  profileId     String           @unique
+  profile       Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  status        MembershipStatus @default(ACTIVE)
+  source        MembershipSource @default(PRE_BOOKING)
+  sourceOrderId String?
+  sourceOrder   Order?           @relation(fields: [sourceOrderId], references: [id], onDelete: SetNull)
+  activatedAt   DateTime         @default(now())
+  expiresAt     DateTime?
+  tier          UserTier         @default(VIP)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("memberships")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum MembershipSource {
+  PRE_BOOKING
+  DIRECT_PURCHASE
+  MANUAL
+  ADMIN_GRANT
 }
 
 enum UserRole {
@@ -156,6 +188,18 @@ model Product {
   featuredDescription      String?          // why it deserves to be featured
   editorStory              String?          @db.Text // long-form collection story
   
+  // Pre Booking & Scheduled Launch System
+  isPreBooking             Boolean          @default(false)
+  launchDateTime           DateTime?
+  preBookingOpenDateTime   DateTime?
+  expectedDispatch         String?          @default("IMMEDIATELY")
+  customExpectedDispatch   String?
+  maxPreBooking            Int?
+  currentPreBookings       Int              @default(0)
+  hasPreBookingOffer       Boolean          @default(false)
+  preBookingOfferType      String?
+  preBookingOfferValue     Float?
+
   // Curated Collection details
   collectionName           String?          // e.g., "Signature Collection"
   collectionBanner         String?          // background image URL
@@ -218,6 +262,7 @@ model Product {
   seoTwitterDesc    String?
   
   metadata          Json?            @default("{}")
+  storytelling      Json?            // Structured per-product storytelling blocks & specs
 
   // Style curation & association
   styleWithIds             String[]         @default([]) // Curated matching product IDs
@@ -510,6 +555,17 @@ model Order {
   paymentStatus PaymentStatus @default(UNPAID)
   paymentMethod PaymentMethod @default(RAZORPAY)
 
+  // Pre Booking & Scheduled Launch Metadata (Frozen Pricing)
+  orderType                  String           @default("REGULAR") // "REGULAR", "PRE_BOOKING"
+  isPreBooking               Boolean          @default(false)
+  preBookingLaunchDate       DateTime?
+  preBookingExpectedDispatch String?
+  lockedUnitPrice            Decimal?         @db.Decimal(10, 2)
+  lockedDiscountAmount       Decimal?         @db.Decimal(10, 2)
+  lockedOfferType            String?
+  lockedOfferValue           Float?
+  membershipActivated        Boolean          @default(false)
+
   // Financials (stored in paise-equivalent Decimal for accuracy)
   subtotal       Decimal @db.Decimal(10, 2)
   shippingCost   Decimal @db.Decimal(10, 2) @default(0)
@@ -556,6 +612,7 @@ model Order {
   checkoutSession CheckoutSession?
   paymentSessions PaymentSession[]
   transitionLogs  PaymentTransitionLog[]
+  memberships     Membership[]
 
   @@index([profileId])
   @@index([status])

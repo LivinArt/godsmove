@@ -21,6 +21,7 @@ import { PricingEngine } from '@/lib/pricing-engine';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { WalletService } from '@/lib/wallet-service';
 import { getCodSettings } from '@/actions/cod.actions';
+import { getPreBookingOfferDetails } from '@/lib/launch-engine-core';
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ export async function createOrder(input: CreateOrderInput) {
         where: { id: { in: variantIds } },
         include: {
           inventory: true,
-          product: { select: { name: true, status: true, channel: true } },
+          product: { select: { name: true, status: true, channel: true, gstPercentage: true, hasPreBookingOffer: true, preBookingOfferType: true, preBookingOfferValue: true } },
         },
       });
 
@@ -102,6 +103,31 @@ export async function createOrder(input: CreateOrderInput) {
         if (variant.product.status !== 'ACTIVE') {
           throw new Error(`Product "${variant.product.name}" is no longer available`);
         }
+
+        // Server-Side Pre-Booking Assertions
+        const prod = await tx.product.findUnique({ where: { id: variant.productId } });
+
+        if (data.orderType === 'PRE_BOOKING') {
+          if (data.items.length > 1) {
+            throw new Error('Pre-booking checkout permits only ONE product allocation per order.');
+          }
+          if (!prod || !prod.isPreBooking) {
+            throw new Error(`Product "${variant.product.name}" is not configured for Pre-Booking.`);
+          }
+          if (prod.preBookingOpenDateTime && new Date() < new Date(prod.preBookingOpenDateTime)) {
+            throw new Error(`Pre-Booking for "${variant.product.name}" has not opened yet.`);
+          }
+          if (prod.maxPreBooking && (prod.currentPreBookings + item.quantity) > prod.maxPreBooking) {
+            throw new Error(`Maximum Pre-Booking allocation limit reached for "${variant.product.name}".`);
+          }
+          if (data.paymentMethod === 'COD') {
+            throw new Error(`Cash on Delivery is not supported for Pre-Booking orders. Please use Secure Online Payment.`);
+          }
+        } else {
+          if (prod && prod.isPreBooking) {
+            throw new Error(`Pre-booking product "${variant.product.name}" cannot be purchased via standard cart checkout.`);
+          }
+        }
       }
 
       const orderNumber = generateOrderNumber();
@@ -110,11 +136,23 @@ export async function createOrder(input: CreateOrderInput) {
       // Step 6: Build pricing engine items
       const pricingItems = variants.map((v) => {
         const item = data.items.find((it) => it.variantId === v.id)!;
+        let effectivePrice = Number(v.price);
+        let comparePrice = v.comparePrice ? Number(v.comparePrice) : null;
+
+        if (data.orderType === 'PRE_BOOKING' && v.product) {
+          const offerDetails = getPreBookingOfferDetails(v.product, effectivePrice);
+          if (offerDetails && offerDetails.isOfferActive) {
+            comparePrice = offerDetails.originalPrice;
+            effectivePrice = offerDetails.effectivePrice;
+          }
+        }
+
         return {
-          price: Number(v.price),
-          comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
+          price: effectivePrice,
+          comparePrice: comparePrice,
           quantity: item.quantity,
           productName: v.product.name,
+          gstPercentage: v.product.gstPercentage,
         };
       });
 
@@ -163,6 +201,13 @@ export async function createOrder(input: CreateOrderInput) {
 
       // Step 8: Fetch COD Settings & Calculate final prices
       console.log('[CHECKOUT STEP 8] Fetching COD Settings & Running PricingEngine calculation...');
+
+      // Server-Side Pre-Booking Enforcement: Pre-Booking orders NEVER allow COD
+      const isPreBookingOrderInput = data.orderType === 'PRE_BOOKING';
+      if (isPreBookingOrderInput && data.paymentMethod === 'COD') {
+        throw new Error('Cash on Delivery is strictly prohibited for Pre-Booking orders.');
+      }
+
       const codConfig = await getCodSettings();
 
       if (data.paymentMethod === 'COD' && !codConfig.isEnabled) {
@@ -170,7 +215,7 @@ export async function createOrder(input: CreateOrderInput) {
       }
 
       let calculatedCodFee = 0;
-      if (data.paymentMethod === 'COD' && codConfig.isEnabled) {
+      if (data.paymentMethod === 'COD' && codConfig.isEnabled && !isPreBookingOrderInput) {
         const subtotalAfterCouponTemp = Math.max(0, rawSubtotal - couponDiscountVal);
         const shippingTemp = subtotalAfterCouponTemp >= 1999 || rawSubtotal === 0 ? 0 : 149;
         if (codConfig.chargeType === 'PERCENTAGE') {
@@ -188,10 +233,11 @@ export async function createOrder(input: CreateOrderInput) {
         walletAmountToUse: data.walletAmountToUse,
         shippingState,
         codFee: calculatedCodFee,
+        isPreBooking: isPreBookingOrderInput,
       });
 
       // Flow 6 Validation: Partial Wallet + COD is strictly forbidden
-      if (pricing.walletCredit > 0 && pricing.finalPayable > 0 && (data.paymentMethod === 'COD' || input.paymentMethod === 'COD')) {
+      if (pricing.walletCredit > 0 && pricing.finalPayable > 0 && data.paymentMethod === 'COD') {
         throw new Error('Cash on Delivery is not supported for partial wallet payments. Please pay the remaining amount via Secure Online Payment.');
       }
 
@@ -211,11 +257,45 @@ export async function createOrder(input: CreateOrderInput) {
         };
       });
 
-      // Step 9: Verify Profile FK safely
+      // Step 9: Verify Profile FK safely & Pre Booking metadata
       let validProfileId: string | null = null;
       if (user) {
         const prof = await tx.profile.findUnique({ where: { id: user.id }, select: { id: true } });
         if (prof) validProfileId = prof.id;
+      }
+
+      const isPreBookingOrder = data.orderType === 'PRE_BOOKING';
+      let preBookingLaunchDate: Date | null = null;
+      let preBookingExpectedDispatch: string | null = null;
+      let lockedOfferType: string | null = null;
+      let lockedOfferValue: number | null = null;
+
+      if (isPreBookingOrder && variants[0]?.productId) {
+        const prod = await tx.product.findUnique({
+          where: { id: variants[0].productId },
+        });
+        if (prod) {
+          preBookingLaunchDate = prod.launchDateTime;
+          preBookingExpectedDispatch = prod.customExpectedDispatch || prod.expectedDispatch;
+          if (prod.hasPreBookingOffer && prod.preBookingOfferValue) {
+            lockedOfferType = prod.preBookingOfferType;
+            lockedOfferValue = prod.preBookingOfferValue;
+          }
+          // Transactional concurrency safety: re-verify allocation before incrementing
+          const totalPreBookingQty = data.items.reduce((sum, item) => sum + item.quantity, 0);
+          const latestProd = await tx.product.findUnique({
+            where: { id: prod.id },
+            select: { maxPreBooking: true, currentPreBookings: true, name: true },
+          });
+          if (latestProd && latestProd.maxPreBooking && (latestProd.currentPreBookings + totalPreBookingQty) > latestProd.maxPreBooking) {
+            throw new Error(`Maximum Pre-Booking allocation limit reached for "${latestProd.name}".`);
+          }
+
+          await tx.product.update({
+            where: { id: prod.id },
+            data: { currentPreBookings: { increment: totalPreBookingQty } },
+          });
+        }
       }
 
       // Step 10: Create Order Record
@@ -230,7 +310,15 @@ export async function createOrder(input: CreateOrderInput) {
           status: isZeroPayable ? 'CONFIRMED' : 'PENDING',
           paymentStatus: isZeroPayable ? 'PAID' : 'UNPAID',
           paidAt: isZeroPayable ? new Date() : null,
-          paymentMethod: isZeroPayable && data.paymentMethod === 'COD' ? 'WALLET' : (data.paymentMethod as any),
+          paymentMethod: isZeroPayable ? 'WALLET' : (pricing.walletCredit > 0 ? 'MIXED' : (data.paymentMethod as any)),
+          orderType: data.orderType || 'REGULAR',
+          isPreBooking: isPreBookingOrder,
+          preBookingLaunchDate,
+          preBookingExpectedDispatch,
+          lockedUnitPrice: isPreBookingOrder ? pricing.subtotal : null,
+          lockedDiscountAmount: isPreBookingOrder ? pricing.couponDiscount : null,
+          lockedOfferType,
+          lockedOfferValue,
           subtotal: pricing.subtotal,
           shippingCost: pricing.shippingCost,
           codFee: pricing.codFee,
@@ -238,7 +326,7 @@ export async function createOrder(input: CreateOrderInput) {
           walletCredit: pricing.walletCredit,
           taxableAmount: pricing.taxableAmount,
           gstAmount: pricing.gstAmount,
-          total: pricing.finalPayable,
+          total: pricing.grandTotal,
           discountId,
           shippingAddress: data.shippingAddress,
           items: {
@@ -248,6 +336,42 @@ export async function createOrder(input: CreateOrderInput) {
       });
 
       console.log(`✅ [CHECKOUT SUCCESS] Order #${order.orderNumber} created in DB! ID: ${order.id}`);
+
+      // Grant / Activate GODSMOVE Membership immediately for Zero-Payable Pre-Booking orders (100% credit payment)
+      if (isZeroPayable && isPreBookingOrder) {
+        let targetProfileId = validProfileId;
+        if (!targetProfileId && data.shippingAddress.email) {
+          const prof = await tx.profile.findFirst({
+            where: { email: { equals: data.shippingAddress.email, mode: 'insensitive' } },
+            select: { id: true },
+          });
+          if (prof) targetProfileId = prof.id;
+        }
+
+        if (targetProfileId) {
+          await tx.membership.upsert({
+            where: { profileId: targetProfileId },
+            create: {
+              profileId: targetProfileId,
+              status: 'ACTIVE',
+              source: 'PRE_BOOKING',
+              sourceOrderId: order.id,
+              tier: 'VIP',
+              activatedAt: new Date(),
+            },
+            update: {
+              status: 'ACTIVE',
+              source: 'PRE_BOOKING',
+              sourceOrderId: order.id,
+            },
+          });
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: { membershipActivated: true, profileId: targetProfileId },
+          });
+        }
+      }
 
       // Step 11: Debit wallet credits if applicable
       if (pricing.walletCredit > 0 && validProfileId) {
@@ -650,6 +774,20 @@ export async function getMyOrders() {
     include: {
       items: {
         include: {
+          variant: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                  isPreBooking: true,
+                  launchDateTime: true,
+                  preBookingOpenDateTime: true,
+                },
+              },
+            },
+          },
           returnItems: {
             include: {
               returnReq: {

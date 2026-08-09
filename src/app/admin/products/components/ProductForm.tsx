@@ -31,6 +31,7 @@ import { ProductIdentity } from './ProductIdentity';
 import { VariantManager } from './VariantManager';
 import { Merchandising } from './Merchandising';
 import { MediaManager } from './MediaManager';
+import { ProductStory } from './ProductStory';
 
 interface ProductFormProps {
   initialData?: any;
@@ -53,9 +54,9 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     });
   }, []);
 
-  // Active PIM navigation step (5 chapters)
+  // Active PIM navigation step (6 chapters)
   const [activeStep, setActiveStep] = useState<
-    'identity' | 'variants' | 'merchandising' | 'media' | 'audit'
+    'identity' | 'variants' | 'merchandising' | 'media' | 'storytelling' | 'audit'
   >('identity');
 
   // Sidebar collapsing toggle (Responsiveness)
@@ -107,6 +108,29 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     featuredUntil: initialData?.featuredUntil ? new Date(initialData.featuredUntil).toISOString().slice(0, 16) : '',
     theme: initialData?.theme || 'Black',
 
+    // Pre Booking & Scheduled Launch System
+    isPreBooking: initialData?.isPreBooking || false,
+    launchDate: initialData?.launchDateTime
+      ? new Date(initialData.launchDateTime).toISOString().slice(0, 10)
+      : '',
+    launchTime: initialData?.launchDateTime
+      ? new Date(initialData.launchDateTime).toISOString().slice(11, 16)
+      : '',
+    timezone: initialData?.timezone || 'IST',
+    preBookingAvailabilityType: initialData?.preBookingOpenDateTime ? 'CUSTOM' : 'IMMEDIATELY',
+    preBookingOpenDate: initialData?.preBookingOpenDateTime
+      ? new Date(initialData.preBookingOpenDateTime).toISOString().slice(0, 10)
+      : '',
+    preBookingOpenTime: initialData?.preBookingOpenDateTime
+      ? new Date(initialData.preBookingOpenDateTime).toISOString().slice(11, 16)
+      : '',
+    expectedDispatch: initialData?.expectedDispatch || 'IMMEDIATELY',
+    customExpectedDispatch: initialData?.customExpectedDispatch || '',
+    maxPreBooking: initialData?.maxPreBooking ?? '',
+    hasPreBookingOffer: initialData?.hasPreBookingOffer || false,
+    preBookingOfferType: initialData?.preBookingOfferType || 'PERCENTAGE',
+    preBookingOfferValue: initialData?.preBookingOfferValue ?? '',
+
     // Technical Specs
     material: initialData?.material || '',
     fit: initialData?.fit || '',
@@ -133,6 +157,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     currency: initialData?.currency || 'INR',
 
     styleWithIds: initialData?.styleWithIds || [],
+    storytelling: initialData?.storytelling || null,
   });
 
   const [images, setImages] = useState<ProductImageInput[]>(() =>
@@ -480,11 +505,34 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       const parsedFrom = formData.featuredFrom ? new Date(formData.featuredFrom) : null;
       const parsedUntil = formData.featuredUntil ? new Date(formData.featuredUntil) : null;
 
+      // Construct launchDateTime ISO Date
+      let launchDateTime: Date | null = null;
+      if (formData.isPreBooking && formData.launchDate) {
+        const timeStr = formData.launchTime || '00:00';
+        launchDateTime = new Date(`${formData.launchDate}T${timeStr}:00`);
+      }
+
+      // Construct preBookingOpenDateTime ISO Date
+      let preBookingOpenDateTime: Date | null = null;
+      if (formData.isPreBooking && formData.preBookingAvailabilityType === 'CUSTOM' && formData.preBookingOpenDate) {
+        const openTimeStr = formData.preBookingOpenTime || '00:00';
+        preBookingOpenDateTime = new Date(`${formData.preBookingOpenDate}T${openTimeStr}:00`);
+      }
+
       const productSellingPrice = Number(formData.mrp || 0);
       const productComparePrice = formData.comparePrice ? Number(formData.comparePrice) : null;
 
       const payload: UpsertProductInput = {
         ...formData,
+        isPreBooking: Boolean(formData.isPreBooking),
+        launchDateTime,
+        preBookingOpenDateTime,
+        expectedDispatch: formData.expectedDispatch || 'IMMEDIATELY',
+        customExpectedDispatch: formData.customExpectedDispatch || null,
+        maxPreBooking: formData.maxPreBooking ? Number(formData.maxPreBooking) : null,
+        hasPreBookingOffer: Boolean(formData.hasPreBookingOffer),
+        preBookingOfferType: formData.preBookingOfferType || 'PERCENTAGE',
+        preBookingOfferValue: formData.preBookingOfferValue ? Number(formData.preBookingOfferValue) : null,
         mrp: productSellingPrice,
         costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
         gstPercentage: Number(formData.gstPercentage || 18.0),
@@ -521,7 +569,8 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     { id: 'variants', title: 'Variant Manager', number: 2 },
     { id: 'merchandising', title: 'Merchandising', number: 3 },
     { id: 'media', title: 'Media Manager', number: 4 },
-    { id: 'audit', title: 'Review & Publish', number: 5 },
+    { id: 'storytelling', title: 'Storytelling', number: 5 },
+    { id: 'audit', title: 'Review & Publish', number: 6 },
   ] as const;
 
   const currentStepIndex = steps.findIndex(s => s.id === activeStep);
@@ -565,7 +614,7 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
               {initialData ? 'Modify Product' : 'Create Product Listing'}
             </h1>
             <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Step {currentStepIndex + 1} of 5 — {steps[currentStepIndex].title}
+              Step {currentStepIndex + 1} of {steps.length} — {steps[currentStepIndex].title}
             </span>
           </div>
         </div>
@@ -888,7 +937,16 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
             />
           )}
 
-          {/* STEP 5: Audit & Review */}
+          {/* STEP 5: Storytelling */}
+          {activeStep === 'storytelling' && (
+            <ProductStory
+              formData={formData}
+              onChange={handleChange}
+              setFormData={setFormData}
+            />
+          )}
+
+          {/* STEP 6: Audit & Review */}
           {activeStep === 'audit' && (
             <section className="admin-card" style={{ padding: '32px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '24px', color: '#fff' }}>

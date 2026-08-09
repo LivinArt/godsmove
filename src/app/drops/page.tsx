@@ -19,7 +19,7 @@ export const metadata: Metadata = constructMetadata({
 
 export default async function ShopPage() {
   const [products, drops, categories] = await Promise.all([
-    getStorefrontProducts(),
+    getStorefrontProducts({ isExclusiveRack: false }),
     getStorefrontDrops(),
     getStorefrontCategories(),
   ]);

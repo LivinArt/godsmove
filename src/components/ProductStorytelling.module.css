@@ -1,0 +1,451 @@
+/* ==========================================================================
+   GODSMOVE — UNIVERSAL PRODUCT STORYTELLING SYSTEM
+   Dark Theme (Exclusive Rack) + Light Theme (Drops)
+   ========================================================================== */
+
+/* ── BASE CONTAINER ── */
+.storytellingSection {
+  width: 94%;
+  max-width: 1400px;
+  margin: 0 auto 90px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+}
+
+.storytellingContainer {
+  width: 100%;
+  border-radius: 3px;
+  padding: 48px 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ── DARK THEME (EXCLUSIVE RACK) ── */
+.darkTheme .storytellingContainer {
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.darkTheme .eyebrow {
+  color: #c8a46a;
+}
+
+.darkTheme .title {
+  color: #ffffff;
+}
+
+.darkTheme .rule {
+  background: #c8a46a;
+  opacity: 0.7;
+}
+
+.darkTheme .subLabel {
+  color: #8e8e93;
+}
+
+.darkTheme .narrative {
+  color: #8e8e93;
+}
+
+.darkTheme .card {
+  background: rgba(18, 18, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.darkTheme .cardIndex {
+  color: #c8a46a;
+}
+
+.darkTheme .cardIconWrap {
+  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.2);
+}
+
+.darkTheme .cardMicroLabel {
+  color: #8e8e93;
+}
+
+.darkTheme .cardTitle {
+  color: #f4f4f5;
+}
+
+.darkTheme .cardDesc {
+  color: #8e8e93;
+}
+
+.darkTheme .archiveDivider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.darkTheme .archiveEyebrow {
+  color: #c8a46a;
+}
+
+.darkTheme .archiveTitle {
+  color: #ffffff;
+}
+
+.darkTheme .archiveBadge {
+  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.08);
+  border: 1px solid rgba(200, 164, 106, 0.2);
+}
+
+.darkTheme .specCell {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.darkTheme .specLabel {
+  color: #8e8e93;
+}
+
+.darkTheme .specValue {
+  color: #f4f4f5;
+}
+
+/* ── LIGHT THEME (DROPS) ── */
+.lightTheme .storytellingContainer {
+  background: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #18181b;
+}
+
+.lightTheme .eyebrow {
+  color: #b89255;
+}
+
+.lightTheme .title {
+  color: #09090b;
+}
+
+.lightTheme .rule {
+  background: #b89255;
+  opacity: 0.6;
+}
+
+.lightTheme .subLabel {
+  color: #71717a;
+}
+
+.lightTheme .narrative {
+  color: #52525b;
+}
+
+.lightTheme .card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+}
+
+.lightTheme .cardIndex {
+  color: #b89255;
+}
+
+.lightTheme .cardIconWrap {
+  color: #b89255;
+  background: rgba(184, 146, 85, 0.1);
+  border: 1px solid rgba(184, 146, 85, 0.25);
+}
+
+.lightTheme .cardMicroLabel {
+  color: #71717a;
+}
+
+.lightTheme .cardTitle {
+  color: #09090b;
+}
+
+.lightTheme .cardDesc {
+  color: #52525b;
+}
+
+.lightTheme .archiveDivider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.lightTheme .archiveEyebrow {
+  color: #b89255;
+}
+
+.lightTheme .archiveTitle {
+  color: #09090b;
+}
+
+.lightTheme .archiveBadge {
+  color: #8a703d;
+  background: rgba(184, 146, 85, 0.08);
+  border: 1px solid rgba(184, 146, 85, 0.2);
+}
+
+.lightTheme .specCell {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.lightTheme .specLabel {
+  color: #71717a;
+}
+
+.lightTheme .specValue {
+  color: #18181b;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eyebrow {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 2.6vw, 32px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+.rule {
+  width: 36px;
+  height: 1px;
+  margin: 0 auto 14px;
+}
+
+.subLabel {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ── NARRATIVE / INTRO ── */
+.narrative {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.narrative p {
+  font-size: 13.5px;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* ── CONTENT CARDS GRID ── */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.card {
+  border-radius: 3px;
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cardIndex {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.cardIconWrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardMicroLabel {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cardTitle {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0 0 10px;
+  line-height: 1.3;
+}
+
+.cardDesc {
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── TECHNICAL ARCHIVE SECTION ── */
+.archiveSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.archiveDivider {
+  width: 100%;
+  height: 1px;
+}
+
+.archiveHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.archiveHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.archiveEyebrow {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.archiveTitle {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.archiveBadge {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* ── TECHNICAL SPECIFICATION GRID ── */
+.specGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px 24px;
+  width: 100%;
+}
+
+.specCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+
+.specLabel {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.specValue {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+/* ── RESPONSIVE MEDIA QUERIES ── */
+@media (max-width: 1023px) {
+  .storytellingSection {
+    width: 100%;
+    padding: 0 16px;
+    margin-bottom: 50px;
+  }
+
+  .storytellingContainer {
+    padding: 32px 20px;
+    gap: 28px;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .specGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 12px;
+  }
+}
+
+@media (max-width: 639px) {
+  .storytellingContainer {
+    padding: 24px 16px;
+    gap: 24px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .archiveHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .specGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

@@ -1,466 +1,391 @@
 /* ==========================================================================
-   GODSMOVE — OUR STORY (COFFEE-TABLE FASHION BOOK DESIGN SYSTEM)
+   GODSMOVE — OUR STORY (HIGH-FASHION EDITORIAL JOURNAL)
    ========================================================================== */
 
-.coffeeTableBookPage {
-  background-color: #0a0a0a !important;
-  color: #f5f1e8 !important;
+.storyPage {
+  background: #050507;
+  color: #ffffff;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* ── COVER SPREAD HERO ── */
-.coverHero {
+/* 1. HERO SPREAD */
+.heroSpread {
   position: relative;
-  height: 90vh;
-  min-height: 600px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background-color: #0a0a0a;
-}
-
-.coverImageWrap {
-  position: absolute;
-  inset: 0;
-}
-
-.coverImage {
-  object-fit: cover;
   width: 100%;
-  height: 100%;
-  filter: brightness(0.85);
+  height: 85vh;
+  min-height: 560px;
+  display: flex;
+  align-items: flex-end;
+  padding: 80px 48px;
+  box-sizing: border-box;
 }
 
-.coverGradientOverlay {
+.heroMediaWrap {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.heroImage {
+  object-fit: cover;
+  object-position: center 30%;
+  filter: brightness(0.7);
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(
     180deg,
-    rgba(10, 10, 10, 0.4) 0%,
-    rgba(10, 10, 10, 0.75) 70%,
-    rgba(10, 10, 10, 1) 100%
+    rgba(5, 5, 7, 0.4) 0%,
+    rgba(5, 5, 7, 0.7) 60%,
+    #050507 100%
   );
 }
 
-.coverHeroContent {
+.heroContent {
   position: relative;
   z-index: 2;
-  text-align: center;
-  padding: 0 var(--container-padding, 24px);
-  max-width: 900px;
-  margin-top: 40px;
+  max-width: 800px;
 }
 
-.volumeBadge {
-  display: inline-block;
+.volumeTag {
   font-family: var(--font-heading);
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.32em;
   color: #c8a46a;
-  margin-bottom: 20px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 16px;
 }
 
-.coverTitle {
+.brandTitle {
   font-family: var(--font-heading);
-  font-weight: 300;
-  font-size: clamp(48px, 9vw, 110px);
-  line-height: 0.95;
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 400;
   letter-spacing: -0.02em;
-  color: #f5f1e8 !important;
-  margin: 0 0 24px;
+  color: #ffffff;
+  margin: 0 0 12px;
+  line-height: 1;
 }
 
-.coverSubtitle {
+.heroManifesto {
   font-family: var(--font-heading);
-  font-size: clamp(16px, 2.2vw, 22px);
-  font-style: italic;
-  color: #c8a46a !important;
-  letter-spacing: 0.02em;
-  margin: 0 0 36px;
+  font-size: clamp(22px, 3.5vw, 42px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #f4f4f5;
+  margin: 0 0 16px;
+  line-height: 1.2;
 }
 
-.goldLineDivider {
-  width: 60px;
-  height: 1px;
-  background: #c8a46a;
-  margin: 0 auto;
-  opacity: 0.6;
+.heroSubText {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.04em;
+  margin: 0;
 }
 
-/* ── CHAPTER SECTIONS & SPREADS ── */
-.chapterSection {
-  padding: 120px 0;
-  background-color: #0a0a0a;
+/* 2. OUR BELIEF */
+.beliefSection {
+  padding: 100px 0;
+  background: #08080a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.chapterContainer {
-  max-width: 1360px;
+.beliefContent {
+  max-width: 860px;
   margin: 0 auto;
-  padding: 0 var(--container-padding, 24px);
+  text-align: center;
 }
 
-.editorialSpreadRow {
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
+.sectionEyebrow {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: #c8a46a;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.statementTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 400;
+  line-height: 1.45;
+  color: #ffffff;
+  margin: 0 0 28px;
+  letter-spacing: -0.01em;
+}
+
+.statementLead {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* 3. THE HANDS BEHIND THE GARMENT */
+.handsSection {
+  padding: 120px 0;
+  background: #050507;
+}
+
+.handsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
   align-items: center;
 }
 
-@media (min-width: 992px) {
-  .editorialSpreadRow {
-    flex-direction: row;
-    gap: 90px;
-  }
-
-  .rowReverse {
-    flex-direction: row-reverse;
-  }
-}
-
-.editorialTextCol {
-  flex: 1;
+.handsTextCol {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.chapterHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.chapterTag {
+.sectionHeading {
   font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: #c8a46a !important;
-}
-
-.editorialHeading {
-  font-family: var(--font-heading);
-  font-size: clamp(32px, 4.5vw, 56px);
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: #f5f1e8 !important;
-  margin: 0;
-  line-height: 1.1;
-}
-
-.leadParagraph {
-  font-size: clamp(16px, 1.8vw, 20px);
-  line-height: 1.6;
-  color: #f5f1e8 !important;
-  margin: 0;
+  font-size: clamp(26px, 3.5vw, 40px);
   font-weight: 400;
-}
-
-.editorialBodyText {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #d4d0c8 !important;
+  letter-spacing: -0.01em;
+  color: #ffffff;
   margin: 0;
 }
 
-.quoteCardInline {
-  margin-top: 16px;
-  padding: 20px 24px;
+.bodyParagraph {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.quoteCard {
+  margin-top: 12px;
+  padding: 24px;
+  background: rgba(200, 164, 106, 0.05);
   border-left: 2px solid #c8a46a;
-  background: rgba(200, 164, 106, 0.08);
 }
 
-.quoteTextInline {
+.quoteText {
   font-family: var(--font-heading);
+  font-size: 16px;
   font-style: italic;
-  font-size: 15px;
-  color: #c8a46a !important;
+  color: #c8a46a;
   margin: 0;
+  line-height: 1.5;
 }
 
-/* Editorial Media Col */
-.editorialMediaCol {
-  flex: 1;
-  width: 100%;
-}
-
-.editorialPhotoFrame {
+.photoFrame {
   position: relative;
   width: 100%;
-  background: #121212;
-  border-radius: 2px;
+  aspect-ratio: 700 / 900;
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.magazinePhoto {
+.photo {
   width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 5;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.magazinePhotoSquare {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  display: block;
-}
-
-.photoCaptionBar {
+.captionBar {
+  padding: 12px 16px;
+  background: #0a0a0c;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 18px;
-  background: rgba(18, 18, 18, 0.95);
-  font-size: 10px;
   font-family: var(--font-heading);
-  letter-spacing: 0.15em;
-  color: #c8a46a !important;
-  border-top: 1px solid rgba(200, 164, 106, 0.2);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.45);
 }
 
-/* Spec Triple Grid */
-.specTripleGrid {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+/* 4. THE CRAFT */
+.craftSection {
+  padding: 110px 0;
+  background: #09090b;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  contain: layout style;
 }
 
-.miniSpecBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.specNum {
-  font-family: var(--font-heading);
-  font-size: 24px;
-  font-weight: 300;
-  color: #c8a46a !important;
-}
-
-.specName {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  color: #b8b2a6 !important;
-}
-
-.specTripleGridDivider {
-  width: 1px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* ── PHILOSOPHY DARK BANNER ── */
-.philosophyDarkBanner {
-  padding: 140px 0;
-  background-color: #050505;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.craftHeader {
   text-align: center;
+  margin-bottom: 64px;
 }
 
-.bannerContainer {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 var(--container-padding, 24px);
+.craftTripleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
 
-.philosophyCenterContent {
+.craftCard {
+  background: #050507;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 36px 28px;
+  border-radius: 3px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  gap: 16px;
+  will-change: opacity, transform;
 }
 
-.philosophyTag {
+.cardNum {
   font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   color: #c8a46a;
 }
 
-.philosophyMainTitle {
+.craftCard h3 {
   font-family: var(--font-heading);
-  font-size: clamp(32px, 5.5vw, 68px);
-  font-weight: 300;
-  font-style: italic;
-  color: #f5f1e8;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #ffffff;
   margin: 0;
-  line-height: 1.15;
 }
 
-.philosophyDesc {
-  font-size: 17px;
-  line-height: 1.8;
-  color: var(--text-secondary, #aaa);
+.craftCard p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.65;
   margin: 0;
-  max-width: 680px;
 }
 
-/* ── MANIFESTO DARK SECTION ── */
+/* 5. THE MANIFESTO DARK SECTION */
 .manifestoDarkSection {
   padding: 120px 0;
-  background-color: #0b0b0b;
+  background: linear-gradient(180deg, #050507 0%, #000000 100%);
+  border-top: 1px solid rgba(200, 164, 106, 0.2);
+  text-align: center;
 }
 
-.manifestoCard {
+.manifestoInner {
   max-width: 800px;
   margin: 0 auto;
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
 }
 
-.manifestoEyebrow {
+.manifestoTag {
   font-family: var(--font-heading);
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.25em;
+  font-weight: 700;
+  letter-spacing: 0.3em;
   color: #c8a46a;
+  text-transform: uppercase;
 }
 
 .manifestoHeading {
   font-family: var(--font-heading);
-  font-size: clamp(36px, 6vw, 72px);
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: #f5f1e8;
+  font-size: clamp(24px, 3.5vw, 38px);
+  font-weight: 400;
+  line-height: 1.4;
+  color: #ffffff;
   margin: 0;
 }
 
-.manifestoParagraphs {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-size: 18px;
+.manifestoDesc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
   line-height: 1.7;
-  color: var(--text-secondary, #bbb);
-  max-width: 640px;
+  margin: 0;
 }
 
-.manifestoSignatureBlock {
+.ctaGroup {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
-.goldLineShort {
-  width: 40px;
-  height: 1px;
+.primaryCta {
   background: #c8a46a;
+  color: #050505;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 14px 28px;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: background 0.2s ease;
 }
 
-.manifestoSignatureText {
+.primaryCta:hover {
+  background: #d4b47a;
+}
+
+.secondaryCta {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 14px 28px;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.secondaryCta:hover {
+  border-color: #c8a46a;
   color: #c8a46a;
-  margin: 0;
 }
 
-/* ── EXPLORE ALL DROPS (1 x 6 PRODUCT GRID) ── */
-.exploreDropsSection {
-  padding: 120px 0 140px;
-  background: #000000;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.exploreHeader {
-  text-align: center;
-  margin-bottom: 60px;
-}
-
-.exploreEyebrow {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.25em;
-  color: #c8a46a;
-  margin-bottom: 12px;
-}
-
-.exploreTitle {
-  font-family: var(--font-heading);
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f5f1e8;
-  margin: 0 0 16px;
-}
-
-.exploreSubtitle {
-  font-size: 14px;
-  color: var(--text-muted, #888);
-  margin: 0;
-}
-
-/* 1 x 6 Product Grid */
-.exploreGrid6 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-@media (min-width: 640px) {
-  .exploreGrid6 {
-    grid-template-columns: repeat(3, 1fr);
+/* Responsive */
+@media (max-width: 1023px) {
+  .handsGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
-}
 
-@media (min-width: 1200px) {
-  .exploreGrid6 {
-    grid-template-columns: repeat(6, 1fr);
+  .craftTripleGrid {
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 }
 
-.exploreCtaRow {
-  display: flex;
-  justify-content: center;
-  margin-top: 56px;
-}
+@media (max-width: 639px) {
+  .heroSpread {
+    padding: 40px 20px;
+    height: 70vh;
+  }
 
-.exploreAllBtn {
-  display: inline-flex;
-  align-items: center;
-  padding: 16px 40px;
-  background: transparent;
-  border: 1px solid #c8a46a;
-  color: #c8a46a;
-  font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+  .beliefSection,
+  .handsSection,
+  .craftSection,
+  .manifestoDarkSection {
+    padding: 60px 0;
+  }
 
-.exploreAllBtn:hover {
-  background: #c8a46a;
-  color: #0a0a0a;
+  .ctaGroup {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .primaryCta,
+  .secondaryCta {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

@@ -505,4 +505,118 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Vault Pre-Booking Extras & Visual Arrow Stability
+   ───────────────────────────────────────────────────────────── */
+.galleryArrow:active,
+.galleryArrow:focus {
+  transform: translateY(-50%) !important;
+  outline: none;
+}
+
+.compactVaultCountdown {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  border-radius: 2px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.vaultCountdownLabel {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #c8a46a;
+  text-transform: uppercase;
+}
+
+.vaultCountdownValue {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+.vaultPreBookBenefitsArea {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vaultBenefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.vaultBenefitCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+}
+
+.vaultBenefitIcon {
+  color: #c8a46a;
+  flex-shrink: 0;
+}
+
+.vaultPreBookLinks {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vaultLinkBtn {
+  background: none;
+  border: none;
+  color: #c8a46a;
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s ease;
+}
+
+.vaultLinkBtn:hover {
+  opacity: 0.8;
+}
+
+.vaultLinkBtnSecondary {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.vaultLinkBtnSecondary:hover {
+  color: #ffffff;
+}
+
+
 

@@ -170,7 +170,7 @@ export class NotificationService {
     const payload = {
       customerName: recipientName,
       orderNumber: order.orderNumber,
-      invoiceNumber: invoiceResult.invoiceRecord.invoiceNumber,
+      invoiceNumber: invoiceResult.invoiceNumber,
       orderDate: new Date(order.createdAt).toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'long',

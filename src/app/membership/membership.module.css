@@ -1,0 +1,373 @@
+.main {
+  min-height: 100vh;
+  background-color: #050505;
+  color: #f5f5f0;
+  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  padding-top: 100px;
+  padding-bottom: 120px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Header Section */
+.heroHeader {
+  text-align: center;
+  margin-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  padding: 6px 14px;
+  border-radius: 100px;
+}
+
+.title {
+  font-family: var(--font-heading, serif);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: rgba(245, 245, 240, 0.65);
+  max-width: 600px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Options Grid for Non-Members */
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  margin-bottom: 60px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 36px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.cardActive {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.06) 0%, rgba(10, 10, 10, 0.4) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.cardActive:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 12px 40px rgba(212, 175, 55, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardDisabled {
+  opacity: 0.7;
+  background: rgba(255, 255, 255, 0.01);
+  border-style: dashed;
+}
+
+.cardBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.cardBadgeActive {
+  background: #d4af37;
+  color: #000000;
+}
+
+.cardBadgeDisabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.cardTop {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.cardIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4af37;
+}
+
+.cardIconDisabled {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.cardTitle {
+  font-family: var(--font-heading, serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  margin: 0;
+  color: #ffffff;
+}
+
+.cardDesc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(245, 245, 240, 0.65);
+  margin: 0;
+}
+
+.ctaBtnActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #d4af37;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ctaBtnActive:hover {
+  background: #e5be48;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+}
+
+.ctaBtnDisabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* Active Member Dashboard */
+.memberDashboard {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.08) 0%, rgba(10, 10, 10, 0.8) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 8px;
+  padding: 44px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+.memberHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 36px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.memberInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memberStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+.memberMetaRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 36px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 240, 0.5);
+}
+
+.metaValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.perksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.perkCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.perkIcon {
+  color: #d4af37;
+  flex-shrink: 0;
+}
+
+.perkText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.perkTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.perkDesc {
+  font-size: 12px;
+  color: rgba(245, 245, 240, 0.6);
+  line-height: 1.5;
+}
+
+.memberActions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.memberPrimaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #d4af37;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.memberPrimaryBtn:hover {
+  background: #e5be48;
+}
+
+.memberSecondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.memberSecondaryBtn:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+
+  .memberDashboard {
+    padding: 24px 20px;
+  }
+
+  .optionsGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -23,6 +23,9 @@ import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
+import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { PurchaseMode } from '@/types/launch';
+import ProductStorytelling from '@/components/ProductStorytelling';
 import ExclusiveRackProductPage from './ExclusiveRackProductPage';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
@@ -40,7 +43,12 @@ export default function ProductClient({
   coverImage?: string | null;
   profile?: any;
 }) {
-  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK') {
+  if (
+    product.isExclusiveRack ||
+    product.channel === 'EXCLUSIVE_RACK' ||
+    product.isPreBooking ||
+    getEffectivePurchaseMode(product) === PurchaseMode.PRE_BOOK
+  ) {
     return (
       <ExclusiveRackProductPage
         product={product}
@@ -506,77 +514,9 @@ export default function ProductClient({
       </div>
 
       {/* ==================================================
-          SECTION: PRODUCT DETAILS & SPECIFICATIONS
+          UNIVERSAL PRODUCT STORYTELLING
           ================================================== */}
-      <section className={styles.editorialMagazineSection}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 var(--space-xl)' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-2xl)' }}>
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(200, 164, 106, 0.7)', display: 'block', marginBottom: '16px' }}>
-              DESIGN SPECIFICATION
-            </span>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 200, letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: '0 0 16px' }}>
-              PRODUCT DETAILS & SYMBOLISM
-            </h2>
-            <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '20px auto 0', opacity: 0.6 }} />
-          </div>
-
-          {/* Detailed Narrative */}
-          {product.description && (
-            <div style={{ marginBottom: 'var(--space-2xl)', textAlign: 'center' }}>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.85, letterSpacing: '0.01em', textAlign: 'center', maxWidth: '720px', margin: '0 auto' }}>
-                {product.description}
-              </p>
-            </div>
-          )}
-
-          {/* Specifications Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-xl)' }}>
-            {product.material && (
-              <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
-                  MATERIAL & FABRIC
-                </span>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
-                  {product.material}
-                </p>
-              </div>
-            )}
-
-            {product.fit && (
-              <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
-                  SILHOUETTE & FIT
-                </span>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
-                  {product.fit}
-                </p>
-              </div>
-            )}
-
-            {product.country && (
-              <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
-                  ORIGIN
-                </span>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
-                  Crafted in {product.country}
-                </p>
-              </div>
-            )}
-
-            {product.washCare && (
-              <div style={{ borderTop: '1px solid rgba(200, 164, 106, 0.2)', paddingTop: 'var(--space-lg)' }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a46a', display: 'block', marginBottom: '12px' }}>
-                  CARE INSTRUCTIONS
-                </span>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
-                  {product.washCare}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <ProductStorytelling product={product} />
 
       {/* Browsing history list */}
       {profile && <RecentlyViewed />}

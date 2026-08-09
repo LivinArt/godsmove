@@ -3,9 +3,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Heart, ArrowLeftRight, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, ArrowLeftRight, ShoppingBag, ShieldCheck, Tag, Rocket } from 'lucide-react';
 import { useCommerceActions } from '@/hooks/useCommerceActions';
 import { resolveProductImages } from '@/lib/image-resolver';
+import { getEffectivePurchaseMode, useSynchronizedCountdown } from '@/lib/launch-engine';
+import { PurchaseMode } from '@/types/launch';
+import PreBookingBenefitsModal from '@/components/PreBookingBenefitsModal';
+import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import styles from './VaultProductCard.module.css';
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -33,7 +37,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
   const availableSizes = useMemo<string[]>(() => {
     if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
       const variantSizes = product.variants
-        .map((v: any) => typeof v === 'string' ? v : (typeof v?.size === 'string' ? v.size : ''))
+        .map((v: any) => (typeof v === 'string' ? v : typeof v?.size === 'string' ? v.size : ''))
         .filter((s: string) => Boolean(s));
       if (variantSizes.length > 0) {
         return Array.from(new Set(variantSizes));
@@ -44,20 +48,30 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
 
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0] || 'M');
 
+  // Calculate actual stock across all active variants
+  const actualAvailableStock = useMemo(() => {
+    if (Array.isArray(product.variants) && product.variants.length > 0) {
+      return product.variants.reduce((sum: number, v: any) => {
+        const stock = v.inventory?.totalStock ?? 0;
+        return sum + (stock > 0 ? stock : 0);
+      }, 0);
+    }
+    return product.initialStock || 0;
+  }, [product]);
+
   // Ensure base price is a valid number > 0
   const basePrice = useMemo(() => {
     const rawPrice = product.variants?.[0]?.price ?? product.price ?? 0;
     return Number(rawPrice) > 0 ? Number(rawPrice) : 2999;
   }, [product]);
 
-  // Construct complete production product payload to prevent ₹0 price bug
-  const completeProduct = useMemo(() => {
-    const existingVariants = Array.isArray(product.variants) && product.variants.length > 0 
-      ? product.variants 
-      : [];
+  const formattedPrice = useMemo(() => `₹${basePrice.toLocaleString('en-IN')}`, [basePrice]);
 
+  // Construct complete production product payload
+  const completeProduct = useMemo(() => {
+    const existingVariants = Array.isArray(product.variants) && product.variants.length > 0 ? product.variants : [];
     const hasSelectedSizeVariant = existingVariants.some((v: any) => v.size === selectedSize);
-    
+
     const normalizedVariants = hasSelectedSizeVariant
       ? existingVariants.map((v: any) => ({
           ...v,
@@ -69,8 +83,8 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
             id: `${product.id}-${selectedSize}`,
             size: selectedSize,
             price: basePrice,
-            inventory: { totalStock: 100, reservedStock: 0, soldStock: 32 }
-          }
+            inventory: { totalStock: actualAvailableStock || 10, reservedStock: 0, soldStock: 0 },
+          },
         ];
 
     return {
@@ -78,7 +92,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
       price: basePrice,
       variants: normalizedVariants,
     };
-  }, [product, selectedSize, basePrice]);
+  }, [product, selectedSize, basePrice, actualAvailableStock]);
 
   const triggerInlineFeedback = (msg: string) => {
     setInlineFeedback(msg);
@@ -172,20 +186,29 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
     }
   };
 
-  const formattedPrice = `₹${basePrice.toLocaleString('en-IN')}`;
+  const purchaseMode = getEffectivePurchaseMode(product);
+  const isPreBookingMode = purchaseMode === PurchaseMode.PRE_BOOK;
+  const countdown = useSynchronizedCountdown(product.launchDateTime);
+  const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+
+  const maxPreBookingLimit = product.maxPreBooking != null ? Number(product.maxPreBooking) : 100;
+  const currentPreBooked = Number(product.currentPreBookings || 0);
+  const preBookingRemaining = Math.max(0, maxPreBookingLimit - currentPreBooked);
+  const preBookingPercent = Math.min(100, Math.round((currentPreBooked / maxPreBookingLimit) * 100));
 
   return (
     <div className={`${styles.exclusiveRow} ${isEven ? styles.rowNormal : styles.rowReverse}`}>
-      {/* Hidden gallery image preloader for zero-delay instant switching */}
+      {/* Hidden gallery image preloader */}
       <div style={{ display: 'none' }} aria-hidden="true">
         {galleryUrls.map((url) => (
           <Image key={url} src={url} alt="" width={10} height={10} priority />
         ))}
       </div>
 
-      {/* 1. Fixed Image Gallery Container */}
+      {/* 1. Clean Product Image Container (No heavy overlays over image) */}
       <div className={styles.exclusiveImgPanel}>
-        <div 
+        <div
           className={styles.exclusiveImageContainer}
           tabIndex={0}
           onKeyDown={handleKeyDown}
@@ -195,11 +218,11 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
         >
           <Link href={`/product/${product.slug}`} tabIndex={-1}>
             {galleryUrls.map((url, idx) => (
-              <Image 
+              <Image
                 key={url}
-                src={url} 
-                alt={`${product.name} view ${idx + 1}`} 
-                fill 
+                src={url}
+                alt={`${product.name} view ${idx + 1}`}
+                fill
                 sizes="(max-width: 768px) 100vw, 440px"
                 className={`${styles.exclusiveImg} ${currentImageIndex === idx ? styles.activeImg : styles.hiddenImg}`}
                 priority={idx === 0 && isEven}
@@ -207,9 +230,11 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
             ))}
           </Link>
 
-          {product.featuredBadge && (
+          {isPreBookingMode ? (
+            <span className={styles.exclusiveCardBadge}>PRE-BOOKING OPEN</span>
+          ) : product.featuredBadge ? (
             <span className={styles.exclusiveCardBadge}>{product.featuredBadge}</span>
-          )}
+          ) : null}
 
           {/* Fixed Position Gallery Navigation Arrows */}
           {totalImages > 1 && (
@@ -259,28 +284,36 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
           )}
         </div>
       </div>
-      
+
       {/* 2. Product Information Area */}
       <div className={styles.exclusiveInfoPanel}>
         {/* Collection Eyebrow */}
         <span className={styles.exclusiveGoldLabel}>
-          {product.collectionName || product.category?.name || 'EXCLUSIVE RACK'}
+          {isPreBookingMode ? 'PRE-BOOKING ALLOCATION' : product.collectionName || product.category?.name || 'EXCLUSIVE RACK'}
         </span>
-        
+
         {/* Product Title */}
         <h3 className={styles.exclusiveItemTitle}>
           <Link href={`/product/${product.slug}`}>{product.name}</Link>
         </h3>
-        
+
         {/* Description */}
         <p className={styles.exclusiveItemDesc}>
           {product.tagline || product.shortDesc || 'Curated silhouette in limited production.'}
         </p>
-        
+
         {/* Price */}
-        <div className={styles.exclusivePrice}>
-          {formattedPrice}
-        </div>
+        <div className={styles.exclusivePrice}>{formattedPrice}</div>
+
+        {/* Compact Horizontal Countdown for Pre-Booking Vault items */}
+        {isPreBookingMode && !countdown.isCompleted && (
+          <div className={styles.compactVaultCountdown}>
+            <span className={styles.vaultCountdownLabel}>LAUNCHES IN</span>
+            <span className={styles.vaultCountdownValue}>
+              {countdown.days}D {countdown.hours}H {countdown.minutes}M {countdown.seconds}S
+            </span>
+          </div>
+        )}
 
         {/* Minimal Size Selector */}
         <div className={styles.sizeSelectionBlock}>
@@ -302,75 +335,141 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
           </div>
         </div>
 
-        {/* Limited Edition Block */}
+        {/* Inventory & Allocation Block */}
         <div className={styles.editionBlock}>
           <div className={styles.editionHeader}>
-            <span className={styles.editionTitle}>LIMITED EDITION</span>
-            <span className={styles.noRestockTag}>NO RESTOCKING</span>
+            <span className={styles.editionTitle}>
+              {isPreBookingMode ? 'ALLOCATION CUSTODY' : 'LIMITED EDITION'}
+            </span>
+            <span className={styles.noRestockTag}>
+              {isPreBookingMode ? 'RESERVE BEFORE LAUNCH' : 'NO RESTOCKING'}
+            </span>
           </div>
           <div className={styles.editionMetaRow}>
-            <span>Edition of 100</span>
-            <span className={styles.editionDot}>•</span>
-            <span>68 pieces remain</span>
+            {isPreBookingMode ? (
+              <>
+                <span>Allocation of {maxPreBookingLimit}</span>
+                <span className={styles.editionDot}>•</span>
+                <span style={{ color: '#c8a46a', fontWeight: 600 }}>{preBookingRemaining} allocations remain</span>
+              </>
+            ) : (
+              <>
+                <span>Edition of {product.maxEdition || 100}</span>
+                <span className={styles.editionDot}>•</span>
+                <span>{actualAvailableStock > 0 ? `${actualAvailableStock} PIECES REMAIN` : 'SOLD OUT'}</span>
+              </>
+            )}
           </div>
           <div className={styles.stockProgressBar}>
-            <div className={styles.stockProgressFill} />
+            <div
+              className={styles.stockProgressFill}
+              style={{
+                width: `${isPreBookingMode ? preBookingPercent : Math.min(100, Math.max(10, (actualAvailableStock / 100) * 100))}%`,
+              }}
+            />
           </div>
         </div>
 
         {/* Non-intrusive Inline Editorial Feedback */}
-        {inlineFeedback && (
-          <div className={styles.inlineFeedbackMessage}>
-            {inlineFeedback}
-          </div>
-        )}
+        {inlineFeedback && <div className={styles.inlineFeedbackMessage}>{inlineFeedback}</div>}
 
-        {/* 3. Product Actions Row ([ BUY NOW ] | ♡ | ⇄ | 👜) */}
+        {/* Product Actions Row */}
         <div className={styles.actionsRow}>
-          <button 
+          <button
             type="button"
             className={styles.buyNowButton}
             onClick={handleBuyNow}
+            style={{ width: isPreBookingMode ? '100%' : undefined }}
           >
-            BUY NOW
+            {isPreBookingMode ? 'PRE BOOK NOW' : 'BUY NOW'}
           </button>
 
-          <div className={styles.iconActionsGroup}>
-            {/* Wishlist Button */}
-            <button
-              type="button"
-              className={`${styles.iconActionButton} ${wishlisted ? styles.iconActive : ''}`}
-              onClick={handleWishlist}
-              aria-label="Add to wishlist"
-              title="Add to Wishlist"
-            >
-              <Heart size={16} className={wishlisted ? styles.heartFilled : ''} />
-            </button>
+          {!isPreBookingMode && (
+            <div className={styles.iconActionsGroup}>
+              {/* Wishlist Button */}
+              <button
+                type="button"
+                className={`${styles.iconActionButton} ${wishlisted ? styles.iconActive : ''}`}
+                onClick={handleWishlist}
+                aria-label="Add to wishlist"
+                title="Add to Wishlist"
+              >
+                <Heart size={16} className={wishlisted ? styles.heartFilled : ''} />
+              </button>
 
-            {/* Compare Button (PUBLIC — NO AUTH REQUIRED) */}
-            <button
-              type="button"
-              className={`${styles.iconActionButton} ${inCompare ? styles.iconActive : ''}`}
-              onClick={handleCompare}
-              aria-label="Add to compare"
-              title="Compare Product"
-            >
-              <ArrowLeftRight size={16} />
-            </button>
+              {/* Compare Button */}
+              <button
+                type="button"
+                className={`${styles.iconActionButton} ${inCompare ? styles.iconActive : ''}`}
+                onClick={handleCompare}
+                aria-label="Add to compare"
+                title="Compare Product"
+              >
+                <ArrowLeftRight size={16} />
+              </button>
 
-            {/* Add to Cart Button */}
-            <button
-              type="button"
-              className={styles.iconActionButton}
-              onClick={handleAddToCart}
-              aria-label="Add to cart"
-              title="Add to Cart"
-            >
-              <ShoppingBag size={16} />
-            </button>
-          </div>
+              {/* Add to Cart Button */}
+              <button
+                type="button"
+                className={styles.iconActionButton}
+                onClick={handleAddToCart}
+                aria-label="Add to cart"
+                title="Add to Cart"
+              >
+                <ShoppingBag size={16} />
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Pre-Booking 3 Benefit Icons & Modal Trigger */}
+        {isPreBookingMode && (
+          <div className={styles.vaultPreBookBenefitsArea}>
+            <div className={styles.vaultBenefitsGrid}>
+              <div className={styles.vaultBenefitCell}>
+                <ShieldCheck size={13} className={styles.vaultBenefitIcon} />
+                <span>SECURED ALLOCATION</span>
+              </div>
+              <div className={styles.vaultBenefitCell}>
+                <Tag size={13} className={styles.vaultBenefitIcon} />
+                <span>PRE-BOOK PRICE</span>
+              </div>
+              <div className={styles.vaultBenefitCell}>
+                <Rocket size={13} className={styles.vaultBenefitIcon} />
+                <span>EARLY DISPATCH</span>
+              </div>
+            </div>
+
+            <div className={styles.vaultPreBookLinks}>
+              <button
+                type="button"
+                onClick={() => setIsBenefitsModalOpen(true)}
+                className={styles.vaultLinkBtn}
+              >
+                PRE-BOOKING BENEFITS →
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className={styles.vaultLinkBtnSecondary}
+              >
+                TERMS & CONDITIONS →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Benefits & Terms Modals */}
+      <PreBookingBenefitsModal
+        isOpen={isBenefitsModalOpen}
+        onClose={() => setIsBenefitsModalOpen(false)}
+        productName={product.name}
+      />
+      <PreBookingTermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+      />
     </div>
   );
 }

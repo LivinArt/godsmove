@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://godsmove.in';
+
 // Helper to write simulated emails locally for UAT inspection
 function saveSimulatedEmail(to: string, subject: string, htmlContent: string) {
   try {
@@ -175,7 +177,7 @@ export const NotificationService = {
       </table>
       
       <p style="margin-top: 24px;">Our logistics team is preparing your allocation.</p>
-      <a href="http://localhost:3000/profile?tab=orders" class="btn">View Order Details</a>
+      <a href="${APP_BASE_URL}/profile?tab=orders" class="btn">View Order Details</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -206,14 +208,14 @@ export const NotificationService = {
     const bodyHtml = isDelivered ? `
       <p>Hello ${customerName},</p>
       <p>Your GODSMOVE piece has arrived.</p>
-      <a href="http://localhost:3000/profile?tab=orders" class="btn">View Order Details</a>
+      <a href="${APP_BASE_URL}/profile?tab=orders" class="btn">View Order Details</a>
     ` : `
       <p>Hello ${customerName},</p>
       <p>Your package status (AWB: <strong>${trackingNumber}</strong>) has changed to: <strong>${status}</strong></p>
       <p>Location: <strong>${location}</strong></p>
       <p>Details: <strong>${description}</strong></p>
       
-      <a href="http://localhost:3000/profile?tab=orders" class="btn">Track in Dashboard</a>
+      <a href="${APP_BASE_URL}/profile?tab=orders" class="btn">Track in Dashboard</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -228,7 +230,7 @@ export const NotificationService = {
       <p>We've received your return request for Order <strong>#${orderNumber}</strong>.</p>
       <p>You can follow the approval and pickup milestones in your profile returns portal.</p>
       
-      <a href="http://localhost:3000/profile?tab=returns" class="btn">View Return Milestones</a>
+      <a href="${APP_BASE_URL}/profile?tab=returns" class="btn">View Return Milestones</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -245,7 +247,7 @@ export const NotificationService = {
       <p>AWB Tracking Number: <strong>${trackingNumber}</strong></p>
       <p>Please keep the item folded in its original premium packaging sleeve ready for hand-off to the logistics agent.</p>
       
-      <a href="http://localhost:3000/profile?tab=returns" class="btn">Track Return status</a>
+      <a href="${APP_BASE_URL}/profile?tab=returns" class="btn">Track Return status</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -286,7 +288,7 @@ export const NotificationService = {
       </table>
       
       <p style="margin-top: 24px;">These credits are ready to use instantly at checkout on any future purchase.</p>
-      <a href="http://localhost:3000/profile?tab=wallet" class="btn">View Ledger Wallet</a>
+      <a href="${APP_BASE_URL}/profile?tab=wallet" class="btn">View Ledger Wallet</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -312,7 +314,7 @@ export const NotificationService = {
       <p>Hello ${customerName},</p>
       <p>Your GODSMOVE Care request for the article <strong>${productName}</strong> (Category: ${category}) has been logged in our digital registry.</p>
       <p>Our craftsmanship team will inspect your diagnostic summary and provide service estimates shortly.</p>
-      <a href="http://localhost:3000/profile?tab=care" class="btn">Track Care Progress</a>
+      <a href="${APP_BASE_URL}/profile?tab=care" class="btn">Track Care Progress</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -327,7 +329,7 @@ export const NotificationService = {
       <p>Your GODSMOVE Care request has been approved by our tailors.</p>
       <p>Estimate Service Fee: <strong>${totalCharge}</strong></p>
       <p>Please log in to your profile to settle the service invoice and schedule doorstep pickup.</p>
-      <a href="http://localhost:3000/profile?tab=care" class="btn">View Invoice & Settle</a>
+      <a href="${APP_BASE_URL}/profile?tab=care" class="btn">View Invoice & Settle</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -356,7 +358,7 @@ export const NotificationService = {
       <p>Hello ${customerName},</p>
       <p>We have acknowledged payment of <strong>₹${amount}</strong> for your Care request.</p>
       <p>We are coordinating the logistics partner pickup. Please keep the garment ready for dispatch.</p>
-      <a href="http://localhost:3000/profile?tab=care" class="btn">View Request</a>
+      <a href="${APP_BASE_URL}/profile?tab=care" class="btn">View Request</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);
@@ -370,7 +372,7 @@ export const NotificationService = {
       <p>Hello ${customerName},</p>
       <p>Your garment restoration status has been updated: <strong>${status}</strong></p>
       <p>Details: <strong>${description}</strong></p>
-      <a href="http://localhost:3000/profile?tab=care" class="btn">View Timeline</a>
+      <a href="${APP_BASE_URL}/profile?tab=care" class="btn">View Timeline</a>
     `;
     const html = buildLuxuryEmailTemplate(title, bodyHtml);
     saveSimulatedEmail(to, title, html);

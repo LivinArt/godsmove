@@ -40,6 +40,7 @@ export interface InstantCheckoutSession {
   size: string;
   color?: string;
   quantity: number;
+  orderType?: string;    // 'REGULAR' | 'PRE_BOOKING'
   createdAt: number;     // Date.now()
 }
 
@@ -76,7 +77,7 @@ interface StoreState {
    * Buy Now: atomically writes INSTANT mode + fresh session in one set() call.
    * Always overwrites any previous session. No pre-clear required.
    */
-  beginInstantCheckout: (params: { product: any; size: string; quantity: number; color?: string }) => void;
+  beginInstantCheckout: (params: { product: any; size: string; quantity: number; color?: string; orderType?: string }) => void;
   /**
    * Cart Checkout: atomically sets CART mode and clears any instant session.
    */
@@ -124,6 +125,10 @@ export const useStore = create<StoreState>()(
       cart: [],
 
       addToCart: (product, size, quantity = 1, color?: string) => {
+        if (product?.isPreBooking) {
+          get().showToast('Pre-Booking Product', 'Pre-booking products cannot be added to the bag. Click PRE-BOOK NOW for direct checkout.');
+          return;
+        }
         const { cart } = get();
 
         const existing = cart.find(
@@ -270,7 +275,7 @@ export const useStore = create<StoreState>()(
       checkoutMode: null,
       instantCheckoutSession: null,
 
-      beginInstantCheckout: ({ product, size, quantity }) => {
+      beginInstantCheckout: ({ product, size, quantity, color, orderType }) => {
         // Enforce quantity=1 for exclusive channel products.
         const effectiveQuantity = isExclusiveChannel(product?.channel) ? 1 : quantity;
 
@@ -281,10 +286,12 @@ export const useStore = create<StoreState>()(
         set({
           checkoutMode: 'INSTANT',
           instantCheckoutSession: {
-            sessionId: crypto.randomUUID(),
+            sessionId: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
             product: { ...product },
             size,
+            color,
             quantity: effectiveQuantity,
+            orderType: orderType || 'REGULAR',
             createdAt: Date.now(),
           },
         });

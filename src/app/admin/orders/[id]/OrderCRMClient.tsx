@@ -28,10 +28,17 @@ interface OrderDetail {
   discountAmount: number;
   shippingCost: number;
   walletCredit: number;
+  codFee?: number;
+  taxableAmount?: number;
+  gstAmount?: number;
   total: number;
   status: string;
   paymentStatus: string;
   paymentMethod: string;
+  orderType?: string;
+  isPreBooking?: boolean;
+  lockedUnitPrice?: number | null;
+  lockedDiscountAmount?: number | null;
   trackingNumber: string | null;
   carrier: string | null;
   createdAt: string;
@@ -271,31 +278,114 @@ export default function OrderCRMClient({
             </tbody>
           </table>
 
-          {/* Totals */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, marginLeft: 'auto', width: 280, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--admin-muted)' }}>Subtotal</span><span>{formatINR(order.subtotal)}</span></div>
-            {Number(order.discountAmount) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-danger)' }}><span>Discount</span><span>-{formatINR(order.discountAmount)}</span></div>}
-            {Number(order.shippingCost) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Shipping</span><span>{formatINR(order.shippingCost)}</span></div>}
-            {Number(order.walletCredit) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-info)' }}><span>GODSMOVE Credits</span><span>-{formatINR(order.walletCredit)}</span></div>}
+          {/* Canonical Order Pricing Breakdown */}
+          {(() => {
+            const isPreBooking = order.orderType === 'PRE_BOOKING' || order.isPreBooking;
+            const originalValue = isPreBooking && Number(order.lockedUnitPrice) > 0 
+              ? Number(order.lockedUnitPrice) 
+              : Number(order.subtotal || 0);
+            const discountVal = isPreBooking && Number(order.lockedDiscountAmount) > 0
+              ? Number(order.lockedDiscountAmount)
+              : Number(order.discountAmount || 0);
+            const netSellingPrice = Math.max(0, originalValue - discountVal);
             
-            {/* Indian GST splits */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)', borderTop: '1px dashed var(--admin-border)', paddingTop: 6 }}>
-              <span>Taxable Value</span>
-              <span>{formatINR(Number(order.total) / 1.12)}</span>
-            </div>
-            {(order.shippingAddress?.state || 'Haryana').trim().toUpperCase() === 'HARYANA' ? (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)' }}><span>CGST</span><span>{formatINR((Number(order.total) - Number(order.total) / 1.12) / 2)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)' }}><span>SGST</span><span>{formatINR((Number(order.total) - Number(order.total) / 1.12) / 2)}</span></div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)' }}><span>IGST</span><span>{formatINR(Number(order.total) - Number(order.total) / 1.12)}</span></div>
-            )}
+            const shippingVal = Number(order.shippingCost || 0);
+            const codVal = isPreBooking ? 0 : Number(order.codFee || 0);
+            
+            const storedTaxable = Number(order.taxableAmount || 0);
+            const taxableVal = storedTaxable > 0 ? storedTaxable : Math.round((netSellingPrice / 1.12) * 100) / 100;
+            
+            const storedGst = Number(order.gstAmount || 0);
+            const gstVal = storedGst > 0 ? storedGst : Number((netSellingPrice - taxableVal).toFixed(2));
+            
+            const grandTotalVal = Number(order.total || 0) > 0 ? Number(order.total) : (netSellingPrice + shippingVal + codVal);
+            const creditsVal = Number(order.walletCredit || 0);
+            const finalPayableVal = Math.max(0, grandTotalVal - creditsVal);
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderTop: '1px solid var(--admin-border)', paddingTop: 10, fontSize: 16 }}>
-              <span>Grand Total</span><span style={{ color: 'var(--admin-accent)' }}>{formatINR(order.total)}</span>
-            </div>
-          </div>
+            const shippingState = (order.shippingAddress?.state || 'Haryana').trim().toUpperCase();
+            const isLocal = shippingState === 'HARYANA';
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, marginLeft: 'auto', width: 300, borderTop: '1px solid var(--admin-border)', paddingTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-accent)', marginBottom: 4 }}>
+                  ORDER PRICING BREAKDOWN {isPreBooking ? '• PRE-BOOKING' : ''}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-muted)' }}>Original Item Value</span>
+                  <span>{formatINR(originalValue)}</span>
+                </div>
+
+                {discountVal > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#c8a46a' }}>
+                    <span>{isPreBooking ? 'Pre-Booking Discount' : 'Discount'}</span>
+                    <span>-{formatINR(discountVal)}</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                  <span>Net Selling Price</span>
+                  <span>{formatINR(netSellingPrice)}</span>
+                </div>
+
+                {/* Tax Breakdown */}
+                <div style={{ borderTop: '1px dashed var(--admin-border)', borderBottom: '1px dashed var(--admin-border)', padding: '6px 0', margin: '4px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)', fontSize: 12 }}>
+                    <span>Taxable Value (Base)</span>
+                    <span>{formatINR(taxableVal)}</span>
+                  </div>
+                  {isLocal ? (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)', fontSize: 12 }}>
+                        <span>CGST</span>
+                        <span>{formatINR(gstVal / 2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)', fontSize: 12 }}>
+                        <span>SGST</span>
+                        <span>{formatINR(gstVal / 2)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-muted)', fontSize: 12 }}>
+                      <span>IGST</span>
+                      <span>{formatINR(gstVal)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-muted)' }}>Shipping</span>
+                  <span>{shippingVal === 0 ? 'FREE' : formatINR(shippingVal)}</span>
+                </div>
+
+                {codVal > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#c8a46a' }}>
+                    <span>COD Handling Fee</span>
+                    <span>+{formatINR(codVal)}</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderTop: '1px solid var(--admin-border)', paddingTop: 8, fontSize: 15 }}>
+                  <span>Grand Total</span>
+                  <span style={{ color: 'var(--admin-accent)' }}>{formatINR(grandTotalVal)}</span>
+                </div>
+
+                {creditsVal > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#22c55e', fontSize: 12 }}>
+                    <span>Credits Applied</span>
+                    <span>-{formatINR(creditsVal)}</span>
+                  </div>
+                )}
+
+                {creditsVal > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'var(--admin-text)', fontSize: 14 }}>
+                    <span>Final Payable</span>
+                    <span>{formatINR(finalPayableVal)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
