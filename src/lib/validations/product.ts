@@ -161,6 +161,11 @@ export const CreateProductSchema = z.object({
 
   // Storytelling & Atelier Technical Archive Data
   storytelling: z.any().optional().nullable(),
+
+  // Member-Only Product Discount
+  hasMemberDiscount: z.boolean().default(false),
+  memberDiscountType: z.string().optional().nullable().default('PERCENTAGE'),
+  memberDiscountValue: z.preprocess(emptyStringToNull, z.coerce.number().min(0).optional().nullable()),
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({

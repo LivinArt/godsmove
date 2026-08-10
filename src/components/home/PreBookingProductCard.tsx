@@ -1,11 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Tag, Rocket } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Tag, Rocket, Bell } from 'lucide-react';
 import { useSynchronizedCountdown } from '@/lib/launch-engine';
+import { useAuth } from '@/context/AuthContext';
+import { useStore } from '@/store/useStore';
+import { PreBookingNotifyButton } from '@/components/PreBookingNotifyButton';
 import styles from './PreBookingProductCard.module.css';
+
 
 interface PreBookingProductCardProps {
   product: any;
@@ -18,7 +22,46 @@ export default function PreBookingProductCard({
   onOpenBenefits,
   onPreBookClick,
 }: PreBookingProductCardProps) {
+  const [isBellRegistered, setIsBellRegistered] = useState(false);
+  const { requireAuth } = useAuth();
+  const showToast = useStore((s) => s.showToast);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (product?.id) {
+      import('@/actions/prebooking-interest.actions').then(({ checkPreBookingInterestAction }) => {
+        checkPreBookingInterestAction(product.id).then((res) => {
+          if (!isCancelled && res.isRegistered) {
+            setIsBellRegistered(true);
+          }
+        });
+      });
+    }
+    return () => { isCancelled = true; };
+  }, [product?.id]);
+
+  const handleNotifyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(
+      'notify',
+      async () => {
+        const { togglePreBookingInterestAction } = await import('@/actions/prebooking-interest.actions');
+        const res = await togglePreBookingInterestAction(product.id);
+        if (res.success) {
+          setIsBellRegistered(true);
+          showToast(
+            res.alreadyRegistered ? "Already Registered" : "Interest Received",
+            res.message || "YOUR INTEREST HAS BEEN RECEIVED."
+          );
+        }
+      },
+      { type: 'notify', product }
+    );
+  };
+
   if (!product) return null;
+
 
   const countdown = useSynchronizedCountdown(product.launchDateTime);
 
@@ -103,24 +146,22 @@ export default function PreBookingProductCard({
           </div>
         )}
 
-        {/* 4. Action CTA Buttons */}
+        {/* 4. Action CTA Buttons: PRE-BOOK NOW + Square Bell Icon */}
         <div className={styles.ctaRow}>
           <button
             type="button"
             className={styles.primaryCta}
             onClick={() => onPreBookClick?.(product)}
+            style={{ flex: 1 }}
           >
             <span>PRE-BOOK NOW</span>
             <ArrowRight size={13} />
           </button>
-          <button
-            type="button"
-            className={styles.benefitsCta}
-            onClick={() => onOpenBenefits?.(product.name)}
-          >
-            BENEFITS
-          </button>
+          <PreBookingNotifyButton product={product} showSubText={true} />
         </div>
+
+
+
 
         {/* 5. 3 Benefit Icons Underneath CTA */}
         <div className={styles.benefitsRow}>

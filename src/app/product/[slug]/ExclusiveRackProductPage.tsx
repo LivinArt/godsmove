@@ -28,6 +28,8 @@ import {
   Users,
   Archive,
   Clock,
+  Bell,
+
   Sparkles,
   Layers,
   Scissors,
@@ -38,7 +40,9 @@ import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
+import { PreBookingNotifyButton } from '@/components/PreBookingNotifyButton';
 import { formatGA4Item, trackViewItem } from '@/lib/gtag-ecommerce';
+
 import {
   getEffectivePurchaseMode,
   getPreBookingOfferDetails,
@@ -169,9 +173,12 @@ export default function ExclusiveRackProductPage({
     ? colorFilteredImages[0].url
     : (product.frontImageUrl || coverImage || activeGalleryUrls[0]);
 
-  // Mobile vertical gallery — array of per-frame refs for IntersectionObserver
+  // Mobile vertical gallery — array of per-frame refs for IntersectionObserver & container ref
   const [activeMobileImageIdx, setActiveMobileImageIdx] = useState(0);
   const mobileFrameRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mobileGalleryRef = useRef<HTMLDivElement | null>(null);
+  const productDetailsSectionRef = useRef<HTMLDivElement | null>(null);
+
 
   // Size chart entries extraction
   const sizeChartEntries: SizeChartEntry[] = (() => {
@@ -197,6 +204,8 @@ export default function ExclusiveRackProductPage({
   const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
+
+
 
   // PRE-BOOKING LUXURY 6-ITEM ATELIER COLLECTOR PRIVILEGES (3x2 GRID)
   const privilegeItems = [
@@ -265,35 +274,36 @@ export default function ExclusiveRackProductPage({
     }
   }, [product, selectedSize]);
 
-  // Scroll listener — also dismisses scroll hint once user has scrolled meaningfully
+  // Scroll listener & persistent mobile CTA once user scrolls past gallery into product details
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 50);
-      // Dismiss scroll hint after user has scrolled past the first gallery frame
-      if (scrollY > 80) setShowScrollHint(false);
+
+      if (window.innerWidth < 1024) {
+        const detailsEl = productDetailsSectionRef.current || productDetailRef.current;
+        if (detailsEl) {
+          const rect = detailsEl.getBoundingClientRect();
+          // CTA appears as soon as the Product Detail Section STARTS ENTERING the viewport
+          // Reverse scroll: Remains visible throughout details and disappears when returning to gallery top
+          setShowMobileCta((prev) => (prev ? rect.top <= window.innerHeight + 80 : rect.top <= window.innerHeight));
+        } else {
+          const galleryEl = mobileGalleryRef.current;
+          if (galleryEl) {
+            const rect = galleryEl.getBoundingClientRect();
+            setShowMobileCta((prev) => (prev ? rect.bottom <= window.innerHeight : rect.bottom <= window.innerHeight - 80));
+          }
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [activeGalleryUrls.length]);
 
-  // IntersectionObserver: show floating mobile CTA only when product details are in viewport
-  useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
-    if (!productDetailRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowMobileCta(entry.isIntersecting);
-        if (entry.isIntersecting) setShowScrollHint(false);
-      },
-      { root: null, threshold: 0.1 }
-    );
-
-    observer.observe(productDetailRef.current);
-    return () => observer.disconnect();
-  }, [productDetailRef.current]);
 
   // IntersectionObserver: track which gallery frame is in view (updates image counter)
   useEffect(() => {
@@ -431,45 +441,40 @@ export default function ExclusiveRackProductPage({
       }
     >
       
-      {/* =======================================================
-          MOBILE VERTICAL GALLERY STACK (PRE-BOOKING ONLY)
-          Each image occupies one full mobile viewport as an
-          independent cinematic frame. Page scroll advances images.
-          NO horizontal swipe. NO carousel. NO overflow-x.
-          ======================================================= */}
-      {isPreBookingMode && (
-        <div className={styles.mobileVerticalGallery}>
-          {activeGalleryUrls.map((url: string, idx: number) => (
-            <div
-              key={url + idx}
-              className={styles.mobileGalleryFrame}
-              ref={(el) => { mobileFrameRefs.current[idx] = el; }}
-            >
-              <img
-                src={url}
-                alt={`${product.name} Gallery ${idx + 1}`}
-                className={styles.mobileGalleryFrameImage}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                draggable={false}
-              />
+      {/* MOBILE VERTICAL GALLERY STACK (FOR ALL EXCLUSIVE RACK PRODUCTS ON MOBILE) */}
+      <div className={styles.mobileVerticalGallery} ref={mobileGalleryRef}>
+        {activeGalleryUrls.map((url: string, idx: number) => (
+          <div
+            key={url + idx}
+            className={styles.mobileGalleryFrame}
+            ref={(el) => { mobileFrameRefs.current[idx] = el; }}
+          >
+            <img
+              src={url}
+              alt={`${product.name} Gallery ${idx + 1}`}
+              className={styles.mobileGalleryFrameImage}
+              loading={idx === 0 ? 'eager' : 'lazy'}
+              draggable={false}
+            />
 
-              {/* Per-frame image counter — updates naturally as frames scroll into view */}
-              {activeGalleryUrls.length > 1 && (
-                <div className={styles.mobileGalleryCounter}>
-                  {String(idx + 1).padStart(2, '0')} — {String(activeGalleryUrls.length).padStart(2, '0')}
-                </div>
-              )}
+            {/* Per-frame image counter — updates naturally as frames scroll into view */}
+            {activeGalleryUrls.length > 1 && (
+              <div className={styles.mobileGalleryCounter}>
+                {String(idx + 1).padStart(2, '0')} — {String(activeGalleryUrls.length).padStart(2, '0')}
+              </div>
+            )}
 
-              {/* "Scroll for Details" hint — ONLY on the first frame, fades after scroll */}
-              {idx === 0 && showScrollHint && (
-                <div className={styles.mobileScrollHint} aria-hidden="true">
-                  SCROLL FOR DETAILS
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            {/* "Scroll for Details" hint — ONLY on the first frame */}
+            {idx === 0 && showScrollHint && (
+              <div className={styles.mobileScrollHint} aria-hidden="true">
+                <span>SCROLL FOR DETAILS</span>
+                <span className={styles.mobileScrollHintArrow}>↓</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
 
       {/* DESKTOP HERO: 3-COLUMN VIEWPORT LAYOUT WITH SYMMETRICAL 50/50 IMAGES */}
       <section className={styles.heroScrollSection}>
@@ -748,25 +753,27 @@ export default function ExclusiveRackProductPage({
                     </div>
                   )}
 
-                  {/* 10. CTA */}
-                  <div className={styles.preBookCtaWrap}>
+                  <div className={styles.preBookCtaContainer} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <button
                       type="button"
                       className={styles.preBookCtaButton}
                       onClick={handleBuyNow}
                       id="vault-prebook-cta"
                       disabled={availableStock === 0}
+                      style={{ flex: 1 }}
                     >
                       <span className={styles.preBookCtaLabel}>PRE BOOK NOW</span>
                       <span className={styles.preBookCtaArrow}>→</span>
                     </button>
-
-                    {/* 11. CTA SUPPORTING MESSAGE */}
-                    <p className={styles.preBookCtaSupportMsg}>
-                      <ShieldCheck size={13} strokeWidth={1.8} className={styles.preBookCtaSupportIcon} />
-                      <span>Secure your allocation before public launch</span>
-                    </p>
+                    <PreBookingNotifyButton product={product} showSubText={true} />
                   </div>
+
+                  {/* 11. CTA SUPPORTING MESSAGE */}
+                  <p className={styles.preBookCtaSupportMsg}>
+                    <ShieldCheck size={13} strokeWidth={1.8} className={styles.preBookCtaSupportIcon} />
+                    <span>Secure your allocation before public launch</span>
+                  </p>
+
 
                   {/* 12. SECONDARY ACTIONS */}
                   <div className={styles.preBookSecondaryActions}>
@@ -775,6 +782,7 @@ export default function ExclusiveRackProductPage({
                       className={`${styles.preBookActionLink} ${wishlisted ? styles.preBookActionLinkActive : ''}`}
                       onClick={() => requireAuth('wishlist', () => toggleWishlist(product), { type: 'wishlist', product })}
                     >
+
                       <Heart size={12} fill={wishlisted ? 'currentColor' : 'none'} strokeWidth={1.7} />
                       <span>WISHLIST</span>
                     </button>
@@ -802,6 +810,7 @@ export default function ExclusiveRackProductPage({
                     </button>
                   </div>
                 </div>
+
               ) : (
                 /* Non-prebooking regular Exclusive Rack product panel */
                 <>
@@ -934,8 +943,8 @@ export default function ExclusiveRackProductPage({
                     </div>
                   </div>
 
-                  {/* CTA Block */}
-                  <div className={styles.ctaContainerBlock}>
+                  {/* CTA Block (Desktop Only - on mobile, persistent bottom sticky bar is the single purchase CTA) */}
+                  <div className={`${styles.ctaContainerBlock} ${styles.desktopOnlyCtaBlock}`}>
                     <div className={styles.ctaHorizontalRow}>
                       <button
                         type="button"
@@ -961,6 +970,7 @@ export default function ExclusiveRackProductPage({
                       </button>
                     </div>
                   </div>
+
 
                   {/* Supporting Actions */}
                   <div className={styles.iconRowThree}>

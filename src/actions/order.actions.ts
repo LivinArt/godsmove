@@ -281,7 +281,7 @@ export async function createOrder(input: CreateOrderInput) {
             lockedOfferType = prod.preBookingOfferType;
             lockedOfferValue = prod.preBookingOfferValue;
           }
-          // Transactional concurrency safety: re-verify allocation before incrementing
+          // Transactional concurrency safety: re-verify allocation limit before proceeding
           const totalPreBookingQty = data.items.reduce((sum, item) => sum + item.quantity, 0);
           const latestProd = await tx.product.findUnique({
             where: { id: prod.id },
@@ -291,12 +291,18 @@ export async function createOrder(input: CreateOrderInput) {
             throw new Error(`Maximum Pre-Booking allocation limit reached for "${latestProd.name}".`);
           }
 
-          await tx.product.update({
-            where: { id: prod.id },
-            data: { currentPreBookings: { increment: totalPreBookingQty } },
-          });
+          // Increment currentPreBookings immediately ONLY if order is 100% credit zero-payable (PAID immediately)
+          // For Razorpay online payments, currentPreBookings will be incremented atomically upon payment verification in payment-state-engine.
+          const isZeroPayableCheck = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0) - couponDiscountVal - data.walletAmountToUse <= 0;
+          if (isZeroPayableCheck) {
+            await tx.product.update({
+              where: { id: prod.id },
+              data: { currentPreBookings: { increment: totalPreBookingQty } },
+            });
+          }
         }
       }
+
 
       // Step 10: Create Order Record
       console.log('[CHECKOUT STEP 10] Inserting Order into Database...');
@@ -349,6 +355,10 @@ export async function createOrder(input: CreateOrderInput) {
         }
 
         if (targetProfileId) {
+          const actDate = new Date();
+          const expDate = new Date(actDate);
+          expDate.setFullYear(expDate.getFullYear() + 1);
+
           await tx.membership.upsert({
             where: { profileId: targetProfileId },
             create: {
@@ -357,12 +367,14 @@ export async function createOrder(input: CreateOrderInput) {
               source: 'PRE_BOOKING',
               sourceOrderId: order.id,
               tier: 'VIP',
-              activatedAt: new Date(),
+              activatedAt: actDate,
+              expiresAt: expDate,
             },
             update: {
               status: 'ACTIVE',
               source: 'PRE_BOOKING',
               sourceOrderId: order.id,
+              expiresAt: expDate,
             },
           });
 
@@ -455,6 +467,9 @@ export async function createOrder(input: CreateOrderInput) {
               fullOrder.id
             );
             await NotificationService.sendOrderConfirmationForOrder(fullOrder, true);
+            if (fullOrder.isPreBooking || fullOrder.orderType === 'PRE_BOOKING') {
+              await NotificationService.sendPreBookingConfirmedForOrder(fullOrder).catch(() => {});
+            }
             if (Number(fullOrder.walletCredit) > 0 && fullOrder.profileId) {
               const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
               const remBalance = Number(wallet?.balance || 0);

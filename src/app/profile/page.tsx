@@ -231,13 +231,20 @@ function ProfilePreBookingCard({ order, onTrackOrder }: { order: any; onTrackOrd
         </Link>
         <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: isFailed ? '#dc2626' : '#b8860b' }}>
-              {isFailed
-                ? 'PAYMENT FAILED'
-                : isFulfillmentPhase
-                ? 'PRE-BOOKING ALLOCATION • RELEASED'
-                : 'PRE-BOOKING ALLOCATION'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: isFailed ? '#dc2626' : '#b8860b' }}>
+                {isFailed
+                  ? 'PAYMENT FAILED'
+                  : isFulfillmentPhase
+                  ? 'PRE-BOOKING ALLOCATION • RELEASED'
+                  : 'PRE-BOOKING ALLOCATION'}
+              </span>
+              {order.paymentStatus === 'PAID' && (
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '2px', backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.25)', letterSpacing: '0.08em' }}>
+                  PAID
+                </span>
+              )}
+            </div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: isDelivered ? '#16a34a' : isFailed ? '#dc2626' : '#b8860b' }}>
               ● {displayStatusLabel}
             </span>
@@ -1948,7 +1955,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {(() => {
+                  {tabLoading['prebookings'] ? (
+                    <RenderSkeleton tab="prebookings" />
+                  ) : (() => {
                     let preBookingOrders = collection.filter(o => o.orderType === 'PRE_BOOKING' || o.isPreBooking);
 
                     if (preBookingSubFilter === 'ACTIVE') {

@@ -249,6 +249,62 @@ export function ProductIdentity({
             </select>
           </div>
         </div>
+
+        {/* Member-Only Product Discount Controls */}
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <input
+              type="checkbox"
+              id="hasMemberDiscount"
+              name="hasMemberDiscount"
+              checked={Boolean(formData.hasMemberDiscount)}
+              onChange={(e) => {
+                setFormData((prev: any) => ({
+                  ...prev,
+                  hasMemberDiscount: e.target.checked,
+                }));
+              }}
+              style={{ width: '16px', height: '16px', accentColor: '#c8a46a', cursor: 'pointer' }}
+            />
+            <label htmlFor="hasMemberDiscount" style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', cursor: 'pointer', margin: 0 }}>
+              Enable Member-Only Exclusive Discount
+            </label>
+          </div>
+
+          {formData.hasMemberDiscount && (
+            <div style={{ background: 'rgba(200, 164, 106, 0.06)', border: '1px solid rgba(200, 164, 106, 0.25)', borderRadius: '6px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label className="form-label" style={{ fontSize: '11px', color: '#c8a46a' }}>Discount Type</label>
+                <select
+                  name="memberDiscountType"
+                  value={formData.memberDiscountType || 'PERCENTAGE'}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, memberDiscountType: e.target.value }))}
+                  className="admin-input admin-select"
+                >
+                  <option value="PERCENTAGE">Percentage (%) Off</option>
+                  <option value="FIXED">Fixed Amount (₹) Off</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: '11px', color: '#c8a46a' }}>Discount Value</label>
+                <input
+                  type="number"
+                  name="memberDiscountValue"
+                  value={formData.memberDiscountValue ?? 10}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, memberDiscountValue: Number(e.target.value) }))}
+                  className="admin-input"
+                  placeholder="e.g. 10 or 500"
+                  min={0}
+                />
+              </div>
+              {(formData.isPreBooking || formData.isPreBookingMode) && (
+                <div style={{ gridColumn: '1 / -1', fontSize: '11px', color: '#eab308', fontStyle: 'italic' }}>
+                  ⚠️ Note: Pricing Engine strictly enforces ₹0 member discount for Pre-Booking products.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

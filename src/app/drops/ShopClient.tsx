@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Search, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import MobileCategoryCarousel from '@/components/MobileCategoryCarousel';
@@ -274,9 +275,10 @@ export default function ShopClient({
 
         <div className={styles.searchAndSortRow}>
           <div className={styles.searchBox}>
+            <Search size={14} className={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search the Archive..."
+              placeholder="Search by piece or motif..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchField}
@@ -284,6 +286,7 @@ export default function ShopClient({
             />
           </div>
           <div className={styles.sortBox}>
+            <SlidersHorizontal size={14} className={styles.sortIcon} />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOption)}

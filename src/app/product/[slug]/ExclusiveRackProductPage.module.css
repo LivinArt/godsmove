@@ -2257,17 +2257,16 @@
   }
 
   /* ============================================================
-     1. MOBILE VERTICAL GALLERY STACK
-     Each image = one full-viewport cinematic frame.
-     Page scroll drives image progression — no horizontal swipe.
      ============================================================ */
 
   .mobileVerticalGallery {
     display: block;
     width: 100%;
     background: #050505;
-    /* No overflow-x, no scroll-snap-x, no horizontal scrolling */
+    scroll-snap-type: y proximity;
+    -webkit-overflow-scrolling: touch;
   }
+
 
   /* One frame per image — each fills the viewport below the navbar */
   .mobileGalleryFrame {
@@ -2277,10 +2276,10 @@
     height: calc(100svh - 56px);
     /* Fallback for browsers without svh support */
     height: calc(100vh - 56px);
-    /* Use svh which accounts for browser chrome — prevents scroll bars appearing */
-    height: calc(100svh - 56px);
     overflow: hidden;
     background: #050505;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
   }
 
   .mobileGalleryFrameImage {
@@ -2312,29 +2311,39 @@
     z-index: 5;
   }
 
-  /* Subtle editorial scroll hint — FIRST FRAME only, fades as user scrolls */
+  /* Subtle editorial scroll hint — FIRST FRAME only */
   .mobileScrollHint {
     position: absolute;
-    bottom: 20px;
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
     font-family: var(--font-heading);
     font-size: 9px;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(244, 244, 245, 0.5);
+    color: rgba(244, 244, 245, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
     white-space: nowrap;
     pointer-events: none;
     z-index: 6;
-    animation: mobileScrollHintFade 1.8s ease forwards;
+    animation: mobileScrollHintPulse 2.4s ease-in-out infinite;
   }
 
-  @keyframes mobileScrollHintFade {
-    0%   { opacity: 0; }
-    30%  { opacity: 1; }
-    100% { opacity: 0.45; }
+  .mobileScrollHintArrow {
+    font-size: 10px;
+    opacity: 0.75;
   }
+
+  @keyframes mobileScrollHintPulse {
+    0%, 100% { opacity: 0.55; transform: translate(-50%, 0); }
+    50%      { opacity: 0.85; transform: translate(-50%, 3px); }
+  }
+
+
+
 
   /* 2. PRODUCT DETAILS COLUMN — clean start below gallery */
   .colRight, .colRightPreBooking {
@@ -2745,32 +2754,35 @@
   }
 }
 
-/* NARROW MOBILE SCREENS (< 640px) */
-@media (max-width: 639px) {
-  .privilegesGridThreeCol {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .privilegeItem {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    padding-bottom: 12px;
-  }
-
-  .privilegeItem:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  .statColBigNum {
-    font-size: 20px;
-  }
-
-  .statColLabel {
-    font-size: 8.5px;
-  }
-
-  .statColUnit {
-    font-size: 9.5px;
+/* Desktop Only CTA Block (hidden on mobile where sticky bottom bar is single CTA) */
+@media (max-width: 1024px) {
+  .desktopOnlyCtaBlock {
+    display: none !important;
   }
 }
+
+/* Toned down luxury GODSMOVE desktop CTA styles */
+.buyNowBtnCompact,
+.preBookCtaButton {
+  background: #080808;
+  border: 1px solid rgba(197, 160, 89, 0.5);
+  color: #ffffff;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+}
+
+.buyNowBtnCompact:hover:not(:disabled),
+.preBookCtaButton:hover:not(:disabled) {
+  background: rgba(197, 160, 89, 0.1);
+  border-color: #c5a059;
+  color: #ffffff;
+  box-shadow: none !important;
+}
+
+.mobileBarBuyNow {
+  background: #c5a059 !important;
+  color: #050505 !important;
+  font-weight: 700;
+  box-shadow: none !important;
+}
+

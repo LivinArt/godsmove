@@ -15,15 +15,19 @@ import {
   Lock,
   Minus,
   Plus,
-  User
+  User,
+  Bell
 } from 'lucide-react';
+
 import SizeSelector from '@/components/SizeSelector';
 import SizeChartModal, { type SizeChartEntry } from '@/components/SizeChartModal';
 import ImageGallery from '@/components/ImageGallery';
 import QuantitySelector from '@/components/QuantitySelector';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import MobileQuickAddSheet from '@/components/MobileQuickAddSheet';
+import { PreBookingNotifyButton } from '@/components/PreBookingNotifyButton';
 import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+
 import { PurchaseMode } from '@/types/launch';
 import ProductStorytelling from '@/components/ProductStorytelling';
 import ExclusiveRackProductPage from './ExclusiveRackProductPage';
@@ -45,9 +49,7 @@ export default function ProductClient({
 }) {
   if (
     product.isExclusiveRack ||
-    product.channel === 'EXCLUSIVE_RACK' ||
-    product.isPreBooking ||
-    getEffectivePurchaseMode(product) === PurchaseMode.PRE_BOOK
+    product.channel === 'EXCLUSIVE_RACK'
   ) {
     return (
       <ExclusiveRackProductPage
@@ -66,6 +68,9 @@ export default function ProductClient({
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileSheetAction, setMobileSheetAction] = useState<'add' | 'buy'>('add');
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+
+  const purchaseMode = getEffectivePurchaseMode(product);
+  const isPreBookingMode = purchaseMode === PurchaseMode.PRE_BOOK || Boolean(product?.isPreBooking);
 
   // Extract size chart entries ONLY from database records entered by Admin
   const sizeChartEntries: SizeChartEntry[] = (() => {
@@ -118,6 +123,8 @@ export default function ProductClient({
   const { addToCart, beginInstantCheckout, toggleWishlist, isInWishlist, toggleCompare, isInCompare, showToast } = useStore();
   const wishlisted = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
+
+
 
   // ── COLOR VARIANTS PIPELINE ──
   const rawColors = (product.variants || [])
@@ -182,6 +189,10 @@ export default function ProductClient({
     addToCart(product, selectedSize, quantity);
   };
 
+  const isPreBookingProduct = Boolean(
+    product.isPreBooking || getEffectivePurchaseMode(product) === PurchaseMode.PRE_BOOK
+  );
+
   const handleBuyNow = () => {
     if (!selectedSize) {
       if (typeof window !== 'undefined' && window.innerWidth <= 767) {
@@ -193,13 +204,14 @@ export default function ProductClient({
       return;
     }
     setSizeError(false);
+    const orderType = isPreBookingProduct ? 'PRE_BOOKING' : 'REGULAR';
     requireAuth(
       'checkout',
       () => {
-        beginInstantCheckout({ product, size: selectedSize, quantity });
+        beginInstantCheckout({ product, size: selectedSize, quantity, orderType });
         router.push('/checkout');
       },
-      { type: 'checkout', product, size: selectedSize, quantity }
+      { type: 'checkout', product, size: selectedSize, quantity, orderType }
     );
   };
 
@@ -292,9 +304,18 @@ export default function ProductClient({
                 <span className={styles.heroDiscountBadge}>{discountPercent}% OFF</span>
               )}
             </div>
-            <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '4px', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>
+            <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '4px', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>
               Price inclusive of GST
             </div>
+
+            {product.hasMemberDiscount && !isPreBookingMode && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '16px', fontSize: '11px', fontWeight: 600, color: '#c8a46a', background: 'rgba(200, 164, 106, 0.08)', padding: '6px 12px', borderRadius: '4px', border: '1px solid rgba(200, 164, 106, 0.25)' }}>
+                <span>★ GODSMOVE Member Special Price Available at Checkout</span>
+                <Link href="/membership" style={{ color: '#c8a46a', textDecoration: 'none', fontWeight: 800 }} title="View Membership Benefits">
+                  ⓘ
+                </Link>
+              </div>
+            )}
 
             <div className={styles.heroDivider} />
 
@@ -460,24 +481,35 @@ export default function ProductClient({
 
             {/* CTA Stack */}
             <div className={styles.heroActions}>
-              <button
-                className={styles.buyNowBtn}
-                onClick={handleBuyNow}
-                id="pdp-buy-now"
-                disabled={availableStock === 0}
-              >
-                Buy Now
-              </button>
+              <div style={{ display: 'flex', gap: '12px', width: '100%', alignItems: 'flex-start' }}>
+                <button
+                  className={styles.buyNowBtn}
+                  onClick={handleBuyNow}
+                  id="pdp-buy-now"
+                  disabled={availableStock === 0}
+                  style={{ flex: 1 }}
+                >
+                  {isPreBookingProduct ? 'PRE-BOOK NOW' : 'Buy Now'}
+                </button>
+                {isPreBookingProduct && (
+                  <PreBookingNotifyButton product={product} showSubText={true} />
+                )}
+              </div>
               
-              <button
-                className={styles.addToBagBtn}
-                onClick={handleAddToCart}
-                id="pdp-add-to-bag"
-                disabled={availableStock === 0}
-              >
-                <ShoppingBag size={14} style={{ marginRight: 8 }} />
-                Add to Bag
-              </button>
+              {!isPreBookingProduct && (
+                <button
+                  className={styles.addToBagBtn}
+                  onClick={handleAddToCart}
+                  id="pdp-add-to-bag"
+                  disabled={availableStock === 0}
+                >
+                  <ShoppingBag size={14} style={{ marginRight: 8 }} />
+                  Add to Bag
+                </button>
+              )}
+
+
+
 
               <div className={styles.utilitySquareActions}>
                 <button

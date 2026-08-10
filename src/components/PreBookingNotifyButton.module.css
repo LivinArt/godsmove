@@ -1,0 +1,103 @@
+.bellWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 44px;
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.bellButton {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  border-radius: 4px; /* SQUARE CONTROL - NO CIRCLE */
+  background: #0d0d0f;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  outline: none;
+  user-select: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.bellButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(197, 160, 89, 0.5);
+  color: #c5a059;
+}
+
+.bellButton:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.bellActive {
+  background: rgba(197, 160, 89, 0.12) !important;
+  border-color: #c5a059 !important;
+  color: #c5a059 !important;
+}
+
+.bellIcon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bellButton:hover:not(:disabled) .bellIcon {
+  transform: scale(1.08);
+}
+
+/* Status Notice Container strictly positioned outside CTA row grid calculation */
+.noticeContainer {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 240px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.noticeText {
+  font-family: var(--font-body);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+  text-align: right;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  animation: fadeInNotice 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.noticeActive {
+  color: #c5a059;
+}
+
+.noticeInactive {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes fadeInNotice {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

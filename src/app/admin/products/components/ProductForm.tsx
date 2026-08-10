@@ -131,6 +131,11 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
     preBookingOfferType: initialData?.preBookingOfferType || 'PERCENTAGE',
     preBookingOfferValue: initialData?.preBookingOfferValue ?? '',
 
+    // Member-Only Product Discount
+    hasMemberDiscount: initialData?.hasMemberDiscount || false,
+    memberDiscountType: initialData?.memberDiscountType || 'PERCENTAGE',
+    memberDiscountValue: initialData?.memberDiscountValue ?? 10,
+
     // Technical Specs
     material: initialData?.material || '',
     fit: initialData?.fit || '',

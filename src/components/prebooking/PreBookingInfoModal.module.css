@@ -1,0 +1,219 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal {
+  width: 100%;
+  max-width: 580px;
+  background: #0d0d0f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow: hidden;
+  position: relative;
+  color: #ffffff;
+}
+
+/* Header */
+.header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c5a059;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease, background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: #121215;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #a1a1aa;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tabActive {
+  color: #c5a059;
+  border-bottom-color: #c5a059;
+  background: #0d0d0f;
+}
+
+.tab:hover:not(.tabActive) {
+  color: #ffffff;
+}
+
+/* Content Body */
+.body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.benefitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.benefitCard {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+
+.checkIcon {
+  color: #c5a059;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.benefitTitle {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.benefitDesc {
+  font-size: 11.5px;
+  color: #a1a1aa;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.badgeVal {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: rgba(197, 160, 89, 0.15);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  color: #c5a059;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 3px;
+}
+
+.termsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.termItem {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #d4d4d8;
+  line-height: 1.5;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 12px 16px;
+}
+
+.termNum {
+  font-family: monospace;
+  color: #c5a059;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 88vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .header {
+    padding: 18px 20px 14px;
+  }
+
+  .body {
+    padding: 18px 20px;
+  }
+}

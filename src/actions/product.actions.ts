@@ -329,6 +329,18 @@ export async function upsertProductRecord(input: UpsertProductInput) {
 
     const { id, variants, images, comparePrice, ...scalarFields } = parsedData;
 
+    // Pre-Booking Allocation Validation: maxPreBooking cannot exceed Total Physical Inventory
+    const totalPhysicalStock = variants && variants.length > 0
+      ? variants.reduce((sum, v) => sum + Number(v.initialStock || 0), 0)
+      : 0;
+
+    const isPreBookingProduct = Boolean(scalarFields.isPreBooking || (scalarFields as any).purchaseMode === 'PRE_BOOK');
+    const alloc = scalarFields.maxPreBooking != null ? Number(scalarFields.maxPreBooking) : 0;
+
+    if (isPreBookingProduct && alloc > 0 && totalPhysicalStock > 0 && alloc > totalPhysicalStock) {
+      throw new Error(`Pre-Booking allocation (${alloc}) cannot exceed total physical inventory (${totalPhysicalStock}).`);
+    }
+
     // Sync visibility flags and channels
     if (scalarFields.channel === 'DROP') {
       scalarFields.isFeatured = scalarFields.showOnHomepage;
@@ -543,6 +555,12 @@ export async function upsertProductRecord(input: UpsertProductInput) {
       console.log('===> [SERVER] STEP 7: Syncing exclusive draw');
       const { syncExclusiveDrawForProduct } = await import('@/actions/exclusive.actions');
       await syncExclusiveDrawForProduct(product.id);
+    }
+
+    if (existing?.isPreBooking === true && scalarFields.isPreBooking === false) {
+      console.log('===> [SERVER] Pre-booking closed for product:', product.id, '. Dispatching launch emails...');
+      const { NotificationService } = await import('@/notifications/notification.service');
+      await NotificationService.triggerPreBookingLaunchNotifications(product.id).catch(() => {});
     }
 
     console.log('===> [SERVER] STEP 8: Revalidating paths');

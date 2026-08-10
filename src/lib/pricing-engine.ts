@@ -12,15 +12,19 @@ export interface PricingItem {
   quantity: number;
   productName: string;
   gstPercentage?: number | null;  // configured GST percentage (e.g. 12 or 18)
+  hasMemberDiscount?: boolean;
+  memberDiscountType?: string | null;  // 'PERCENT' | 'FIXED_PRICE'
+  memberDiscountValue?: number | null;
 }
 
 export interface PricingResult {
   productTotal: number;         // gross catalog retail value (MRP sum)
   productDiscount: number;      // markdown discount (productTotal - subtotal)
-  subtotal: number;             // selling price before coupon / pre-booking savings
+  subtotal: number;             // selling price before coupon / pre-booking savings / member discount
   couponCode: string | null;
-  couponDiscount: number;       // total discount applied (coupon or prebooking offer)
-  netSellingPrice: number;      // net selling price (subtotal - couponDiscount)
+  couponDiscount: number;       // total coupon discount applied
+  memberDiscount: number;       // total member discount applied
+  netSellingPrice: number;      // net selling price (subtotal - couponDiscount - memberDiscount)
   walletCredit: number;         // vault credits applied (<= grandTotal)
   shippingCost: number;         // concierge shipping charges
   codFee: number;               // Cash on Delivery handling fee
@@ -55,6 +59,8 @@ export const PricingEngine = {
     shippingState = 'Haryana',
     codFee = 0,
     isPreBooking = false,
+    hasActiveMembership = false,
+    memberDiscountAmount,
   }: {
     items: PricingItem[];
     couponCode?: string | null;
@@ -63,6 +69,8 @@ export const PricingEngine = {
     shippingState?: string;
     codFee?: number;
     isPreBooking?: boolean;
+    hasActiveMembership?: boolean;
+    memberDiscountAmount?: number;
   }): PricingResult {
     // Enforcement: Pre-Booking orders NEVER allow COD fee
     const effectiveCodFee = isPreBooking ? 0 : codFee;
@@ -81,7 +89,29 @@ export const PricingEngine = {
 
     // Ensure coupon discount does not exceed subtotal
     const actualCouponDiscount = Math.min(couponDiscount, subtotal);
-    const netSellingPrice = Math.max(0, subtotal - actualCouponDiscount);
+
+    // Enforcement: Member discount strictly 0 for Pre-Booking orders (Directive D)
+    let calculatedMemberDiscount = 0;
+    if (hasActiveMembership && !isPreBooking) {
+      if (typeof memberDiscountAmount === 'number' && memberDiscountAmount > 0) {
+        calculatedMemberDiscount = memberDiscountAmount;
+      } else {
+        items.forEach((item) => {
+          if (item.hasMemberDiscount && item.memberDiscountValue) {
+            if (item.memberDiscountType === 'PERCENT') {
+              const d = (item.price * item.quantity * item.memberDiscountValue) / 100;
+              calculatedMemberDiscount += d;
+            } else if (item.memberDiscountType === 'FIXED_PRICE') {
+              const d = Math.min(item.price * item.quantity, item.memberDiscountValue * item.quantity);
+              calculatedMemberDiscount += d;
+            }
+          }
+        });
+      }
+    }
+
+    const actualMemberDiscount = Math.min(calculatedMemberDiscount, Math.max(0, subtotal - actualCouponDiscount));
+    const netSellingPrice = Math.max(0, subtotal - actualCouponDiscount - actualMemberDiscount);
 
     // 2. Concierge Shipping calculation (free shipping on net orders >= 1999 or 0 subtotal)
     const shippingCost = netSellingPrice >= 1999 || subtotal === 0 ? 0 : 149;
@@ -109,8 +139,9 @@ export const PricingEngine = {
       const lineSubtotal = item.price * item.quantity;
       
       // Pro-rate discount across items based on subtotal share
+      const totalCombinedDiscount = actualCouponDiscount + actualMemberDiscount;
       const share = subtotal > 0 ? lineSubtotal / subtotal : 0;
-      const itemProDiscount = actualCouponDiscount * share;
+      const itemProDiscount = totalCombinedDiscount * share;
       const itemNetLineValue = Math.max(0, lineSubtotal - itemProDiscount);
 
       const split = GSTService.calculateInclusiveItemGst(
@@ -160,6 +191,7 @@ export const PricingEngine = {
       subtotal,
       couponCode,
       couponDiscount: actualCouponDiscount,
+      memberDiscount: actualMemberDiscount,
       netSellingPrice,
       walletCredit: actualWalletCredit,
       shippingCost,

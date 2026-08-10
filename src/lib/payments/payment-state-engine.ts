@@ -166,8 +166,37 @@ export class PaymentStateEngine {
         update: {},
       }).catch(() => {});
 
-      // Grant / Activate GODSMOVE Membership idempotently for Pre-Booking orders
+      // Atomically increment product currentPreBookings allocation & grant GODSMOVE Membership for Pre-Booking orders
       if (order.isPreBooking || order.orderType === 'PRE_BOOKING') {
+        for (const item of order.items) {
+          if (item.variantId) {
+            const vr = await tx.productVariant.findUnique({
+              where: { id: item.variantId },
+              select: { productId: true },
+            });
+            if (vr?.productId) {
+              const targetProd = await tx.product.findUnique({
+                where: { id: vr.productId },
+                select: { maxPreBooking: true, currentPreBookings: true },
+              });
+              if (
+                targetProd?.maxPreBooking != null &&
+                targetProd.currentPreBookings + item.quantity > targetProd.maxPreBooking
+              ) {
+                throw new InvalidStateTransitionError(
+                  `Pre-Booking allocation capacity (${targetProd.maxPreBooking}) exceeded for product.`
+                );
+              }
+              await tx.product.update({
+                where: { id: vr.productId },
+                data: { currentPreBookings: { increment: item.quantity } },
+              });
+            }
+          }
+        }
+
+
+
         let targetProfileId = order.profileId;
         if (!targetProfileId && order.email) {
           const prof = await tx.profile.findFirst({
@@ -178,6 +207,10 @@ export class PaymentStateEngine {
         }
 
         if (targetProfileId) {
+          const actDate = order.paidAt || new Date();
+          const expDate = new Date(actDate);
+          expDate.setFullYear(expDate.getFullYear() + 1);
+
           await tx.membership.upsert({
             where: { profileId: targetProfileId },
             create: {
@@ -186,12 +219,14 @@ export class PaymentStateEngine {
               source: 'PRE_BOOKING',
               sourceOrderId: order.id,
               tier: 'VIP',
-              activatedAt: order.paidAt || new Date(),
+              activatedAt: actDate,
+              expiresAt: expDate,
             },
             update: {
               status: 'ACTIVE',
               source: 'PRE_BOOKING',
               sourceOrderId: order.id,
+              expiresAt: expDate,
             },
           });
 
@@ -201,6 +236,7 @@ export class PaymentStateEngine {
           });
         }
       }
+
 
       // Atomic inventory deduction & movement ledger
       for (const item of order.items) {
@@ -261,6 +297,16 @@ export class PaymentStateEngine {
         ).catch(() => {});
 
         await NotificationService.sendOrderConfirmationForOrder(fullOrder, true).catch(() => {});
+
+        if (fullOrder.isPreBooking || fullOrder.orderType === 'PRE_BOOKING') {
+          await NotificationService.sendPreBookingConfirmedForOrder(fullOrder).catch(() => {});
+        }
+
+        if (Number(fullOrder.walletCredit || 0) > 0 && fullOrder.profileId) {
+          const wallet = await prisma.wallet.findUnique({ where: { profileId: fullOrder.profileId } });
+          const remBalance = Number(wallet?.balance || 0);
+          await NotificationService.sendWalletDebited(fullOrder.email, custName, Number(fullOrder.walletCredit), remBalance).catch(() => {});
+        }
       }
     } catch (sideEffectErr) {
       console.error('[PAYMENT_STATE_ENGINE] Side-effects warning:', sideEffectErr);

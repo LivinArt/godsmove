@@ -3,14 +3,18 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Heart, ArrowLeftRight, ShoppingBag, ShieldCheck, Tag, Rocket } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, ArrowLeftRight, ShoppingBag, ShieldCheck, Tag, Rocket, Bell } from 'lucide-react';
 import { useCommerceActions } from '@/hooks/useCommerceActions';
+import { useAuth } from '@/context/AuthContext';
+import { useStore } from '@/store/useStore';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { getEffectivePurchaseMode, useSynchronizedCountdown } from '@/lib/launch-engine';
 import { PurchaseMode } from '@/types/launch';
 import PreBookingBenefitsModal from '@/components/PreBookingBenefitsModal';
 import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
+import { PreBookingNotifyButton } from '../PreBookingNotifyButton';
 import styles from './VaultProductCard.module.css';
+
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -23,17 +27,50 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
   const [mounted, setMounted] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [inlineFeedback, setInlineFeedback] = useState<string | null>(null);
+  const [isBellRegistered, setIsBellRegistered] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const feedbackTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const { requireAuth } = useAuth();
+  const showToast = useStore((s) => s.showToast);
+
   useEffect(() => {
     setMounted(true);
-    return () => {
-      if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-    };
-  }, []);
+    let isCancelled = false;
+    if (product?.id) {
+      import('@/actions/prebooking-interest.actions').then(({ checkPreBookingInterestAction }) => {
+        checkPreBookingInterestAction(product.id).then((res) => {
+          if (!isCancelled && res.isRegistered) {
+            setIsBellRegistered(true);
+          }
+        });
+      });
+    }
+    return () => { isCancelled = true; };
+  }, [product?.id]);
+
+  const handleNotifyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(
+      'notify',
+      async () => {
+        const { togglePreBookingInterestAction } = await import('@/actions/prebooking-interest.actions');
+        const res = await togglePreBookingInterestAction(product.id);
+        if (res.success) {
+          setIsBellRegistered(true);
+          showToast(
+            res.alreadyRegistered ? "Already Registered" : "Interest Received",
+            res.message || "YOUR INTEREST HAS BEEN RECEIVED."
+          );
+        }
+      },
+      { type: 'notify', product }
+    );
+  };
 
   // Extract available sizes from variants or default list
+
   const availableSizes = useMemo<string[]>(() => {
     if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
       const variantSizes = product.variants
@@ -204,9 +241,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
         {galleryUrls.map((url) => (
           <Image key={url} src={url} alt="" width={10} height={10} priority />
         ))}
-      </div>
-
-      {/* 1. Clean Product Image Container (No heavy overlays over image) */}
+      </div>      {/* 1. Clean Product Image Container */}
       <div className={styles.exclusiveImgPanel}>
         <div
           className={styles.exclusiveImageContainer}
@@ -231,58 +266,68 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
           </Link>
 
           {isPreBookingMode ? (
+            <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}>
+              <PreBookingNotifyButton product={product} showSubText={false} />
+            </div>
+          ) : null}
+
+          {isPreBookingMode ? (
             <span className={styles.exclusiveCardBadge}>PRE-BOOKING OPEN</span>
           ) : product.featuredBadge ? (
             <span className={styles.exclusiveCardBadge}>{product.featuredBadge}</span>
           ) : null}
+
 
           {/* Fixed Position Gallery Navigation Arrows */}
           {totalImages > 1 && (
             <>
               <button
                 type="button"
-                className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
+                className={`${styles.galleryNavBtn} ${styles.prevBtn}`}
                 onClick={handlePrevImage}
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                aria-label="Previous image"
+                aria-label="Previous Image"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
               <button
                 type="button"
-                className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
+                className={`${styles.galleryNavBtn} ${styles.nextBtn}`}
                 onClick={handleNextImage}
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                aria-label="Next image"
+                aria-label="Next Image"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
 
-              {/* Fixed Gallery Indicators */}
-              <div className={styles.galleryIndicators}>
+              <div className={styles.galleryDots}>
                 {galleryUrls.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    className={`${styles.indicatorDot} ${currentImageIndex === idx ? styles.indicatorActive : ''}`}
+                    className={`${styles.dot} ${currentImageIndex === idx ? styles.activeDot : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
                       setCurrentImageIndex(idx);
                     }}
-                    aria-label={`Go to image ${idx + 1}`}
+                    aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
               </div>
             </>
           )}
         </div>
+
+        {/* 1.5 Integrated Countdown Strip Directly Below Product Image for Pre-Booking items */}
+        {isPreBookingMode && !countdown.isCompleted && (
+          <div className={styles.integratedImageTimerStrip}>
+            <span className={styles.timerStripLabel}>
+              <span className={styles.liveDot} /> LAUNCHES IN
+            </span>
+            <span className={styles.timerStripValue}>
+              {String(countdown.days).padStart(2, '0')}D : {String(countdown.hours).padStart(2, '0')}H : {String(countdown.minutes).padStart(2, '0')}M : {String(countdown.seconds).padStart(2, '0')}S
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 2. Product Information Area */}
@@ -304,16 +349,6 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
 
         {/* Price */}
         <div className={styles.exclusivePrice}>{formattedPrice}</div>
-
-        {/* Compact Horizontal Countdown for Pre-Booking Vault items */}
-        {isPreBookingMode && !countdown.isCompleted && (
-          <div className={styles.compactVaultCountdown}>
-            <span className={styles.vaultCountdownLabel}>LAUNCHES IN</span>
-            <span className={styles.vaultCountdownValue}>
-              {countdown.days}D {countdown.hours}H {countdown.minutes}M {countdown.seconds}S
-            </span>
-          </div>
-        )}
 
         {/* Minimal Size Selector */}
         <div className={styles.sizeSelectionBlock}>
@@ -373,13 +408,13 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
         {/* Non-intrusive Inline Editorial Feedback */}
         {inlineFeedback && <div className={styles.inlineFeedbackMessage}>{inlineFeedback}</div>}
 
-        {/* Product Actions Row */}
+        {/* Product Actions Row (Pre-Booking: PRE-BOOK NOW + Bell Icon | Normal: BUY NOW + Wishlist) */}
         <div className={styles.actionsRow}>
           <button
             type="button"
             className={styles.buyNowButton}
             onClick={handleBuyNow}
-            style={{ width: isPreBookingMode ? '100%' : undefined }}
+            style={{ flex: 1 }}
           >
             {isPreBookingMode ? 'PRE BOOK NOW' : 'BUY NOW'}
           </button>
@@ -426,6 +461,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
         {isPreBookingMode && (
           <div className={styles.vaultPreBookBenefitsArea}>
             <div className={styles.vaultBenefitsGrid}>
+
               <div className={styles.vaultBenefitCell}>
                 <ShieldCheck size={13} className={styles.vaultBenefitIcon} />
                 <span>SECURED ALLOCATION</span>
@@ -458,6 +494,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
             </div>
           </div>
         )}
+
       </div>
 
       {/* Benefits & Terms Modals */}

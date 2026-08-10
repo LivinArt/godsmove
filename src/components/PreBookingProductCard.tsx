@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Share2, ArrowRight, Truck, ShieldCheck, Check } from 'lucide-react';
+import { Heart, Share2, ArrowRight, Truck, ShieldCheck, Check, Bell } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
 import { resolveProductImages } from '@/lib/image-resolver';
@@ -13,7 +13,10 @@ import {
   formatExpectedDispatchText,
 } from '@/lib/launch-engine';
 import { PreBookingBenefitsModal } from '@/components/prebooking/PreBookingModals';
+import PreBookingQuickSelectModal from '@/components/home/PreBookingQuickSelectModal';
+import { PreBookingNotifyButton } from './PreBookingNotifyButton';
 import styles from './PreBookingProductCard.module.css';
+
 
 export interface PreBookingProductCardProps {
   product: any;
@@ -30,14 +33,25 @@ export default function PreBookingProductCard({
   const [mounted, setMounted] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [benefitsModalOpen, setBenefitsModalOpen] = useState(false);
+  const [quickSelectOpen, setQuickSelectOpen] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [isBellRegistered, setIsBellRegistered] = useState(false);
 
   const { toggleWishlist, isInWishlist, showToast } = useStore();
   const { requireAuth } = useAuth();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    let isCancelled = false;
+    import('@/actions/prebooking-interest.actions').then(({ checkPreBookingInterestAction }) => {
+      checkPreBookingInterestAction(product.id).then((res) => {
+        if (!isCancelled && res.isRegistered) {
+          setIsBellRegistered(true);
+        }
+      });
+    });
+    return () => { isCancelled = true; };
+  }, [product.id]);
 
   const wishlisted = mounted ? isInWishlist(product.id) : false;
 
@@ -139,18 +153,8 @@ export default function PreBookingProductCard({
           PRE BOOKING
         </span>
 
-        {/* Top Right: Wishlist & Share Action Buttons */}
+        {/* Top Right: Share Action Button */}
         <div className={styles.topActions}>
-          <button
-            type="button"
-            className={`${styles.iconBtn} ${wishlisted ? styles.iconActive : ''}`}
-            onClick={handleWishlist}
-            aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            title="Wishlist"
-          >
-            <Heart size={13} fill={wishlisted ? 'currentColor' : 'none'} />
-          </button>
-
           <button
             type="button"
             className={`${styles.iconBtn} ${copiedShare ? styles.iconActive : ''}`}
@@ -162,10 +166,11 @@ export default function PreBookingProductCard({
           </button>
         </div>
 
-        {/* Bottom Image Overlay: Premium Reservation & Countdown Panel */}
+
+        {/* Bottom Image Overlay: Simplified Translucent Reservation & Countdown Panel */}
         <div className={styles.reservationPanel}>
           <div className={styles.panelTopRow}>
-            {/* Left: LAUNCHES IN + 4 Countdown Tiles */}
+            {/* Left: LAUNCHES IN + Countdown Tiles */}
             <div className={styles.countdownBlock}>
               <span className={styles.countdownLabel}>
                 <span className={styles.liveDot} />
@@ -191,32 +196,16 @@ export default function PreBookingProductCard({
               </div>
             </div>
 
-            {/* Right: Allocation Scarcity Counters */}
+            {/* Right: Allocation Scarcity Counter (X / MAX RESERVED) */}
             <div className={styles.allocationBlock}>
               <span className={styles.allocationReserved}>
-                {currentPreBooked} / {maxPreBookingLimit} Reserved
+                {currentPreBooked} / {maxPreBookingLimit} RESERVED
               </span>
-              <span className={styles.allocationRemaining}>
-                {allocationsRemaining} Remaining
-              </span>
-            </div>
-          </div>
-
-          {/* Luxury Progress Bar */}
-          <div className={styles.progressBarWrap}>
-            <div className={styles.progressTrack}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${preBookingPercent}%` }}
-              />
-            </div>
-            <div className={styles.progressMetaRow}>
-              <span>{preBookingPercent}% Reserved</span>
-              <span className={styles.limitedTag}>LIMITED ALLOCATION</span>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* 2. PRODUCT DETAILS (BELOW IMAGE) */}
       <div className={styles.details}>
@@ -265,34 +254,56 @@ export default function PreBookingProductCard({
           </div>
         </div>
 
-        {/* 3. CTA BUTTONS ROW (BENEFITS & PRE BOOK NOW) */}
-        <div className={styles.ctaRow}>
+        {/* Benefits & Terms Modal Trigger Link */}
+        <div className={styles.benefitsTriggerRow}>
           <button
             type="button"
-            className={styles.benefitsBtn}
+            className={styles.benefitsTriggerLink}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setBenefitsModalOpen(true);
             }}
           >
-            BENEFITS
+            <ShieldCheck size={12} className={styles.benefitsTriggerIcon} />
+            <span>BENEFITS & TERMS</span>
+            <span className={styles.benefitsTriggerArrow}>→</span>
           </button>
+        </div>
 
-          <Link
-            href={`/product/${product.slug}`}
+        {/* 3. Primary Action Row: PRE-BOOK NOW + Single Square Bell Icon */}
+        <div className={styles.primaryActionRow}>
+          <button
+            type="button"
             className={styles.preBookBtn}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setQuickSelectOpen(true);
+            }}
           >
             <span>PRE BOOK NOW</span>
             <ArrowRight size={13} strokeWidth={2.5} />
-          </Link>
+          </button>
+          <PreBookingNotifyButton product={product} showSubText={true} />
         </div>
       </div>
+
+
+
+
 
       {/* Render Luxury Benefits Modal */}
       <PreBookingBenefitsModal
         isOpen={benefitsModalOpen}
         onClose={() => setBenefitsModalOpen(false)}
+        product={product}
+      />
+
+      {/* Render Quick Size Select Drawer */}
+      <PreBookingQuickSelectModal
+        isOpen={quickSelectOpen}
+        onClose={() => setQuickSelectOpen(false)}
         product={product}
       />
     </div>

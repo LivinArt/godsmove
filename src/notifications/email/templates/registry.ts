@@ -41,6 +41,8 @@ import ProfileUpdatedTemplate from './ProfileUpdatedTemplate';
 import PaymentConfirmationTemplate from './PaymentConfirmationTemplate';
 import ReturnPickupScheduledTemplate from './ReturnPickupScheduledTemplate';
 import ReturnRefundCompletedTemplate from './ReturnRefundCompletedTemplate';
+import PreBookingConfirmedTemplate from './PreBookingConfirmedTemplate';
+import PreBookingLaunchedTemplate from './PreBookingLaunchedTemplate';
 
 export interface EmailTemplateDefinition {
   component: React.ComponentType<any>;
@@ -99,6 +101,16 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   PAYMENT_FAILED: {
     component: OrderCancelledTemplate,
     subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
+    senderConfig: DEFAULT_SENDER,
+  },
+  PRE_BOOKING_CONFIRMED: {
+    component: PreBookingConfirmedTemplate,
+    subjectBuilder: (p) => `Pre-Booking Confirmed: ${p.productName || 'Statement Piece'} | GODSMOVE`.trim(),
+    senderConfig: DEFAULT_SENDER,
+  },
+  PRE_BOOKING_LAUNCHED: {
+    component: PreBookingLaunchedTemplate,
+    subjectBuilder: (p) => `YOUR PRE-BOOKED PIECE IS NOW LIVE: ${p.productName || 'Statement Piece'} | GODSMOVE`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PROFILE_UPDATED: {

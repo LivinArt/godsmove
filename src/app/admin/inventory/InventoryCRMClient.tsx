@@ -7,12 +7,19 @@ import { adjustInventoryStock } from '@/actions/admin-operations.actions';
 interface InventoryItem {
   id: string;
   variantId: string;
+  productId?: string;
   sku: string;
   size: string;
   color: string | null;
   productName: string;
   productSlug: string;
   productStatus: string;
+  isPreBooking?: boolean;
+  preBookingAllocation?: number;
+  paidPreBookings?: number;
+  remainingPreBookingAllocation?: number;
+  normalLaunchAvailable?: number;
+  launchDateTime?: string | null;
   type: string;
   totalStock: number;
   reservedStock: number;
@@ -41,6 +48,7 @@ export default function InventoryCRMClient({
   initialInventory: InventoryItem[];
 }) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'ALL' | 'NORMAL' | 'PRE_BOOKING'>('ALL');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -58,8 +66,12 @@ export default function InventoryCRMClient({
     }).format(new Date(dateStr));
   };
 
-  // Search filter
+  // Tab & Search Filtering
   const filteredInventory = initialInventory.filter((item) => {
+    const isPb = Boolean(item.isPreBooking);
+    if (activeTab === 'NORMAL' && isPb) return false;
+    if (activeTab === 'PRE_BOOKING' && !isPb) return false;
+
     const term = search.toLowerCase();
     return (
       item.productName.toLowerCase().includes(term) ||
@@ -68,6 +80,14 @@ export default function InventoryCRMClient({
       (item.warehouse && item.warehouse.toLowerCase().includes(term))
     );
   });
+
+  // Summary Metrics for PRE_BOOKING Tab
+  const preBookingItems = initialInventory.filter((item) => Boolean(item.isPreBooking));
+  const totalPbPhysicalStock = preBookingItems.reduce((sum, item) => sum + item.totalStock, 0);
+  const totalPbAllocation = preBookingItems.reduce((sum, item) => sum + (item.preBookingAllocation || 0), 0);
+  const totalPbPaidBookings = preBookingItems.reduce((sum, item) => sum + (item.paidPreBookings || 0), 0);
+  const totalPbRemainingAlloc = Math.max(0, totalPbAllocation - totalPbPaidBookings);
+  const totalPbNormalLaunchAvailable = Math.max(0, totalPbPhysicalStock - totalPbPaidBookings);
 
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,9 +118,116 @@ export default function InventoryCRMClient({
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">Inventory Control</h1>
-          <p className="page-sub">Track stock counts, warehouse locations, damages, and replenishment ETAs</p>
+          <p className="page-sub">Track stock counts, physical allocations, Pre-Booking metrics, and warehouse availability</p>
         </div>
       </div>
+
+      {/* Segmented Category Navigation */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--admin-border)', paddingBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ALL')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: activeTab === 'ALL' ? '1px solid #c5a059' : '1px solid var(--admin-border)',
+            background: activeTab === 'ALL' ? 'rgba(197, 160, 89, 0.15)' : 'var(--admin-surface)',
+            color: activeTab === 'ALL' ? '#c5a059' : 'var(--admin-muted)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          ALL INVENTORY ({initialInventory.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('NORMAL')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: activeTab === 'NORMAL' ? '1px solid #c5a059' : '1px solid var(--admin-border)',
+            background: activeTab === 'NORMAL' ? 'rgba(197, 160, 89, 0.15)' : 'var(--admin-surface)',
+            color: activeTab === 'NORMAL' ? '#c5a059' : 'var(--admin-muted)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          NORMAL INVENTORY ({initialInventory.length - preBookingItems.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('PRE_BOOKING')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: activeTab === 'PRE_BOOKING' ? '1px solid #c5a059' : '1px solid var(--admin-border)',
+            background: activeTab === 'PRE_BOOKING' ? 'rgba(197, 160, 89, 0.15)' : 'var(--admin-surface)',
+            color: activeTab === 'PRE_BOOKING' ? '#c5a059' : 'var(--admin-muted)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          PRE-BOOKING ({preBookingItems.length})
+        </button>
+      </div>
+
+      {/* Summary Metric Cards when PRE_BOOKING Category is Active */}
+      {activeTab === 'PRE_BOOKING' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+          <div className="admin-card" style={{ padding: '16px', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+              TOTAL PHYSICAL INVENTORY
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', marginTop: 4 }}>
+              {totalPbPhysicalStock} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--admin-muted)' }}>Pcs</span>
+            </div>
+          </div>
+
+          <div className="admin-card" style={{ padding: '16px', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+              PRE-BOOKING ALLOCATION
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#c5a059', marginTop: 4 }}>
+              {totalPbAllocation} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--admin-muted)' }}>Cap</span>
+            </div>
+          </div>
+
+          <div className="admin-card" style={{ padding: '16px', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+              PAID PRE-BOOKINGS
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#22c55e', marginTop: 4 }}>
+              {totalPbPaidBookings} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--admin-muted)' }}>Confirmed</span>
+            </div>
+          </div>
+
+          <div className="admin-card" style={{ padding: '16px', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+              REMAINING ALLOCATION
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#eab308', marginTop: 4 }}>
+              {totalPbRemainingAlloc} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--admin-muted)' }}>Slots</span>
+            </div>
+          </div>
+
+          <div className="admin-card" style={{ padding: '16px', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+              NORMAL LAUNCH AVAILABLE
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#3b82f6', marginTop: 4 }}>
+              {totalPbNormalLaunchAvailable} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--admin-muted)' }}>Available</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toolbar Search */}
       <div style={{ marginBottom: 20 }}>
@@ -130,11 +257,18 @@ export default function InventoryCRMClient({
                 <th>Product / SKU</th>
                 <th>Warehouse</th>
                 <th>Supplier</th>
-                <th style={{ textAlign: 'center' }}>Total</th>
+                <th style={{ textAlign: 'center' }}>Total Physical</th>
+                {activeTab === 'PRE_BOOKING' && (
+                  <>
+                    <th style={{ textAlign: 'center' }}>PB Allocation</th>
+                    <th style={{ textAlign: 'center' }}>Paid Bookings</th>
+                    <th style={{ textAlign: 'center' }}>Remaining Alloc</th>
+                    <th style={{ textAlign: 'center' }}>Launch Avail</th>
+                  </>
+                )}
                 <th style={{ textAlign: 'center' }}>Reserved</th>
                 <th style={{ textAlign: 'center' }}>Sold</th>
                 <th style={{ textAlign: 'center' }}>Damaged</th>
-                <th style={{ textAlign: 'center' }}>Incoming</th>
                 <th style={{ textAlign: 'center' }}>Available</th>
                 <th>Status</th>
                 <th></th>
@@ -143,18 +277,27 @@ export default function InventoryCRMClient({
             <tbody>
               {filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>
-                    No matching inventory rows found.
+                  <td colSpan={activeTab === 'PRE_BOOKING' ? 14 : 11} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>
+                    No matching inventory rows found for category tab.
                   </td>
                 </tr>
               ) : (
                 filteredInventory.map((inv) => {
                   const isOut = inv.availableStock <= 0;
                   const isLow = inv.availableStock <= inv.minThreshold && inv.availableStock > 0;
+                  const isPb = Boolean(inv.isPreBooking);
+
                   return (
                     <tr key={inv.id} style={selectedInv?.id === inv.id ? { background: 'var(--admin-surface-2)' } : {}}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{inv.productName}</div>
+                        <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>{inv.productName}</span>
+                          {isPb && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#c5a059', background: 'rgba(197, 160, 89, 0.15)', padding: '1px 5px', borderRadius: 3, border: '1px solid rgba(197, 160, 89, 0.3)' }}>
+                              PRE-BOOKING
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: 11, color: 'var(--admin-muted)', marginTop: 2 }}>
                           <span className="mono">{inv.sku}</span> • Size {inv.size} {inv.color ? `• ${inv.color}` : ''}
                         </div>
@@ -162,18 +305,28 @@ export default function InventoryCRMClient({
                       <td style={{ color: 'var(--admin-muted)' }}>{inv.warehouse || 'Main'}</td>
                       <td style={{ color: 'var(--admin-muted)' }}>{inv.supplier || 'GODSMOVE'}</td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{inv.totalStock}</td>
+
+                      {activeTab === 'PRE_BOOKING' && (
+                        <>
+                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#c5a059' }}>
+                            {inv.preBookingAllocation || 0}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#22c55e' }}>
+                            {inv.paidPreBookings || 0}
+                          </td>
+                          <td style={{ textAlign: 'center', color: '#eab308' }}>
+                            {inv.remainingPreBookingAllocation || 0}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#3b82f6' }}>
+                            {inv.normalLaunchAvailable || 0}
+                          </td>
+                        </>
+                      )}
+
                       <td style={{ textAlign: 'center', color: 'var(--admin-muted)' }}>{inv.reservedStock}</td>
                       <td style={{ textAlign: 'center', color: 'var(--admin-muted)' }}>{inv.soldStock}</td>
                       <td style={{ textAlign: 'center', color: inv.damagedStock > 0 ? 'var(--admin-danger)' : 'var(--admin-muted)' }}>
                         {inv.damagedStock}
-                      </td>
-                      <td style={{ textAlign: 'center', color: 'var(--admin-info)' }}>
-                        {inv.incomingStock}
-                        {inv.restockEta && (
-                          <div style={{ fontSize: 9, color: 'var(--admin-muted)', marginTop: 2 }}>
-                            ETA: {formatDate(inv.restockEta)}
-                          </div>
-                        )}
                       </td>
                       <td
                         style={{
@@ -186,9 +339,11 @@ export default function InventoryCRMClient({
                       </td>
                       <td>
                         {isOut ? (
-                          <span className="badge badge-red">OUT</span>
+                          <span className="badge badge-red">SOLD OUT</span>
                         ) : isLow ? (
                           <span className="badge badge-yellow">LOW</span>
+                        ) : isPb && (inv.remainingPreBookingAllocation || 0) === 0 && (inv.preBookingAllocation || 0) > 0 ? (
+                          <span className="badge badge-yellow">ALLOC FULL</span>
                         ) : (
                           <span className="badge badge-green">OK</span>
                         )}

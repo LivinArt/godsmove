@@ -470,7 +470,211 @@ export class NotificationService {
     return this.dispatch({
       event: 'WALLET_DEBITED',
       recipient: { email, name },
-      payload: { amount, newBalance, customerName: name, entityId: `WLT_DR_${Date.now()}` },
+      payload: { amount, newBalance, remainingBalance: newBalance, customerName: name, entityId: `WLT_DR_${Date.now()}` },
     });
+  }
+
+  /**
+   * Send dedicated Premium Pre-Booking Confirmation email (Idempotent per order)
+   */
+  static async sendPreBookingConfirmedForOrder(order: any) {
+    if (!order || !order.id) return { success: false, error: 'Invalid order' };
+
+    // Assert pre-booking order
+    const isPreBooking = Boolean(order.isPreBooking || order.orderType === 'PRE_BOOKING');
+    if (!isPreBooking) return { success: true, message: 'Not a pre-booking order' };
+
+    let fullOrder = order;
+    if (!Array.isArray(order.items) || order.items.length === 0 || !order.items[0]?.variant) {
+      try {
+        const fetched = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: {
+            items: {
+              include: {
+                variant: {
+                  include: { product: true }
+                }
+              }
+            },
+            profile: true
+          },
+        });
+        if (fetched) fullOrder = fetched;
+      } catch (err: any) {
+        console.warn('⚠️ [PRE-BOOKING EMAIL] Order fetch warning:', err?.message);
+      }
+    }
+
+    const addr = typeof fullOrder.shippingAddress === 'string'
+      ? JSON.parse(fullOrder.shippingAddress)
+      : (fullOrder.shippingAddress || {});
+
+    const recipientName = addr.firstName
+      ? `${addr.firstName} ${addr.lastName || ''}`.trim()
+      : 'Valued Collector';
+
+    const firstItem = fullOrder.items?.[0] || {};
+    const product = firstItem.variant?.product || firstItem.product || {};
+
+    const launchDate = fullOrder.preBookingLaunchDate || product.launchDateTime;
+    const launchDateObj = launchDate ? new Date(launchDate) : null;
+
+    let countdownText = 'Launch Date Announced Soon';
+    if (launchDateObj) {
+      const diffMs = launchDateObj.getTime() - Date.now();
+      if (diffMs > 0) {
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        countdownText = `Launches in ${days} days, ${hours} hours`;
+      } else {
+        countdownText = 'Officially Released';
+      }
+    }
+
+    const { formatExpectedDispatchText } = await import('@/lib/launch-engine-core');
+    const expectedDispatchText = formatExpectedDispatchText(
+      product.expectedDispatch || fullOrder.preBookingExpectedDispatch,
+      product.customExpectedDispatch
+    );
+
+    const bookingDateText = fullOrder.createdAt
+      ? new Date(fullOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const launchDateTextStr = launchDateObj
+      ? launchDateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : 'TBA';
+
+    const launchTimeTextStr = launchDateObj
+      ? launchDateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      : 'TBA';
+
+    const payload = {
+      customerName: recipientName,
+      orderNumber: fullOrder.orderNumber,
+      orderId: fullOrder.id,
+      productName: firstItem.productName || product.name || 'GODSMOVE Statement Piece',
+      productImage: product.frontImageUrl || product.images?.[0]?.url || null,
+      size: firstItem.size || 'L',
+      quantity: Number(firstItem.quantity || 1),
+      price: Number(fullOrder.total || firstItem.price || 0),
+      bookingDate: bookingDateText,
+      launchDateText: launchDateTextStr,
+      launchTimeText: launchTimeTextStr,
+      countdownText,
+      expectedDispatchText,
+      entityId: `PREBOOK_CONF_${fullOrder.orderNumber || fullOrder.id}`,
+    };
+
+    return this.dispatch({
+      event: 'PRE_BOOKING_CONFIRMED',
+      recipient: {
+        email: fullOrder.email || addr.email,
+        name: recipientName,
+        userId: fullOrder.profileId || undefined,
+      },
+      payload,
+    });
+  }
+
+  /**
+   * Send Product Launch Email when pre-booked item goes live (Idempotent per order)
+   */
+  static async sendPreBookingLaunchedForOrder(order: any, product: any) {
+    if (!order || !order.id) return { success: false, error: 'Invalid order' };
+
+    const addr = typeof order.shippingAddress === 'string'
+      ? JSON.parse(order.shippingAddress)
+      : (order.shippingAddress || {});
+
+    const recipientName = addr.firstName
+      ? `${addr.firstName} ${addr.lastName || ''}`.trim()
+      : 'Valued Collector';
+
+    const firstItem = order.items?.[0] || {};
+    const prod = product || firstItem.variant?.product || {};
+
+    // Stock availability assertion across variants
+    const variants = Array.isArray(prod.variants) ? prod.variants : [];
+    const totalStockAvailable = variants.reduce((sum: number, v: any) => {
+      const inv = v.inventory;
+      return sum + (inv ? Math.max(0, inv.totalStock - inv.soldStock - inv.reservedStock) : 0);
+    }, 0);
+
+    const hasExtraStock = totalStockAvailable > 0;
+
+    const { formatExpectedDispatchText } = await import('@/lib/launch-engine-core');
+    const expectedDispatchText = formatExpectedDispatchText(
+      prod.expectedDispatch,
+      prod.customExpectedDispatch
+    );
+
+    const launchDateTextStr = prod.launchDateTime
+      ? new Date(prod.launchDateTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const payload = {
+      customerName: recipientName,
+      orderNumber: order.orderNumber,
+      productName: prod.name || firstItem.productName || 'GODSMOVE Statement Piece',
+      productSlug: prod.slug || 'statement-piece',
+      productImage: prod.frontImageUrl || prod.images?.[0]?.url || null,
+      size: firstItem.size || 'L',
+      launchDateText: launchDateTextStr,
+      expectedDispatchText,
+      hasExtraStock,
+      entityId: `PREBOOK_LAUNCH_${order.orderNumber || order.id}`,
+    };
+
+    return this.dispatch({
+      event: 'PRE_BOOKING_LAUNCHED',
+      recipient: {
+        email: order.email || addr.email,
+        name: recipientName,
+        userId: order.profileId || undefined,
+      },
+      payload,
+    });
+  }
+
+  /**
+   * Batch trigger launch notifications for all confirmed pre-booking orders of a product
+   */
+  static async triggerPreBookingLaunchNotifications(productId: string) {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          variants: {
+            include: { inventory: true }
+          }
+        }
+      });
+      if (!product) return;
+
+      const preOrders = await prisma.order.findMany({
+        where: {
+          isPreBooking: true,
+          status: 'CONFIRMED',
+          items: {
+            some: {
+              variant: { productId }
+            }
+          }
+        },
+        include: { items: true }
+      });
+
+      console.log(`[PRE-BOOKING LAUNCH] Dispatching launch emails for Product "${product.name}" to ${preOrders.length} confirmed collectors...`);
+
+      for (const order of preOrders) {
+        await this.sendPreBookingLaunchedForOrder(order, product).catch((err) => {
+          console.error(`[PRE-BOOKING LAUNCH EMAIL ERROR] Order #${order.orderNumber}:`, err);
+        });
+      }
+    } catch (err: any) {
+      console.error('[triggerPreBookingLaunchNotifications] Error:', err);
+    }
   }
 }

@@ -6,18 +6,21 @@ import { CTAButton } from '../components/CTAButton';
 export interface WalletDebitedTemplateProps {
   customerName: string;
   amount: number;
-  remainingBalance: number;
-  reason: string;
+  remainingBalance?: number;
+  newBalance?: number;
+  reason?: string;
   walletUrl?: string;
 }
 
 export const WalletDebitedTemplate: React.FC<WalletDebitedTemplateProps> = ({
   customerName = 'Valued Collector',
   amount = 500,
-  remainingBalance = 1000,
+  remainingBalance,
+  newBalance,
   reason = 'Applied to Order Checkout',
   walletUrl = 'https://godsmove.in/profile',
 }) => {
+  const actualRemaining = remainingBalance ?? newBalance ?? 0;
   const previewText = `₹${amount.toLocaleString('en-IN')} Applied from your GODSMOVE Account`;
 
   return (
@@ -34,7 +37,7 @@ export const WalletDebitedTemplate: React.FC<WalletDebitedTemplateProps> = ({
         <Text style={amountStyle}>- ₹{amount.toLocaleString('en-IN')}</Text>
 
         <Text style={cardLabel}>REMAINING VAULT BALANCE</Text>
-        <Text style={balanceStyle}>₹{remainingBalance.toLocaleString('en-IN')}</Text>
+        <Text style={balanceStyle}>₹{actualRemaining.toLocaleString('en-IN')}</Text>
 
         <Text style={cardLabel}>TRANSACTION REFERENCE</Text>
         <Text style={reasonStyle}>{reason}</Text>

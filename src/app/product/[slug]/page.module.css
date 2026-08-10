@@ -39,6 +39,16 @@
   text-transform: uppercase;
 }
 
+@media (max-width: 767px) {
+  .page {
+    padding-top: calc(var(--nav-height) + 12px);
+  }
+  .breadcrumb {
+    padding-top: 8px;
+    margin-bottom: 20px;
+  }
+}
+
 .breadcrumb a {
   transition: color var(--duration-fast) var(--ease-smooth);
 }

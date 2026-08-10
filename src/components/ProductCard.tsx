@@ -288,6 +288,15 @@ export default function ProductCard({
           <span className={styles.discountBadge}>{discountPercent}% OFF</span>
         )}
 
+        {product.hasMemberDiscount && !isPreBooking && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontSize: '10px', fontWeight: 700, color: '#c8a46a', background: 'rgba(200, 164, 106, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(200, 164, 106, 0.25)', width: 'fit-content' }}>
+            <span>★ Member Discount Available</span>
+            <Link href="/membership" onClick={(e) => e.stopPropagation()} style={{ color: '#c8a46a', textDecoration: 'none', marginLeft: '2px', fontWeight: 800 }} title="View Membership Benefits">
+              ⓘ
+            </Link>
+          </div>
+        )}
+
         {isDark ? (
           <>
             <div className={styles.priceBlock}>

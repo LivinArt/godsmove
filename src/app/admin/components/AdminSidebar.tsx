@@ -9,6 +9,7 @@ const navGroups = [
     items: [
       { href: '/admin', label: 'Overview', icon: GridIcon, exact: true },
       { href: '/admin/orders', label: 'Orders', icon: PackageIcon },
+      { href: '/admin/pre-bookings', label: 'Pre-Bookings', icon: ClockIcon },
       { href: '/admin/inventory', label: 'Inventory', icon: LayersIcon },
       { href: '/admin/returns', label: 'Returns', icon: ArrowLeftIcon },
       { href: '/admin/care', label: 'GODSMOVE Care', icon: HeartIcon },
@@ -245,6 +246,15 @@ function MegaphoneIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M3 11l18-5v12L3 13v-2z" />
       <path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }

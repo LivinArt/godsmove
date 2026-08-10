@@ -644,9 +644,14 @@ export async function getAdminInventory() {
         include: {
           product: {
             select: {
+              id: true,
               name: true,
               slug: true,
               status: true,
+              isPreBooking: true,
+              maxPreBooking: true,
+              currentPreBookings: true,
+              launchDateTime: true,
             },
           },
         },
@@ -660,16 +665,30 @@ export async function getAdminInventory() {
   });
 
   return inventory.map((inv) => {
-    const available = inv.totalStock - inv.soldStock - inv.reservedStock;
+    const p = inv.variant.product;
+    const available = Math.max(0, inv.totalStock - inv.soldStock - inv.reservedStock);
+    const isPreBooking = Boolean(p.isPreBooking || p.maxPreBooking);
+    const preBookingAllocation = p.maxPreBooking != null ? Number(p.maxPreBooking) : 0;
+    const paidPreBookings = p.currentPreBookings != null ? Number(p.currentPreBookings) : 0;
+    const remainingPreBookingAllocation = Math.max(0, preBookingAllocation - paidPreBookings);
+    const normalLaunchAvailable = Math.max(0, inv.totalStock - inv.soldStock - inv.reservedStock);
+
     return {
       id: inv.id,
       variantId: inv.variantId,
+      productId: p.id,
       sku: inv.variant.sku,
       size: inv.variant.size,
       color: inv.variant.color,
-      productName: inv.variant.product.name,
-      productSlug: inv.variant.product.slug,
-      productStatus: inv.variant.product.status,
+      productName: p.name,
+      productSlug: p.slug,
+      productStatus: p.status,
+      isPreBooking,
+      preBookingAllocation,
+      paidPreBookings,
+      remainingPreBookingAllocation,
+      normalLaunchAvailable,
+      launchDateTime: p.launchDateTime ? p.launchDateTime.toISOString() : null,
       type: inv.type,
       totalStock: inv.totalStock,
       reservedStock: inv.reservedStock,
@@ -693,6 +712,7 @@ export async function getAdminInventory() {
     };
   });
 }
+
 
 export async function adjustInventoryStock(
   inventoryId: string,

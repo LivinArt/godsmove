@@ -1,8 +1,7 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { X, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
@@ -86,25 +85,46 @@ export default function PreBookingQuickSelectModal({
     );
   };
 
-  const modalContent = (
-    <div
-      className={styles.backdrop}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <div className={styles.titleGroup}>
-            <span className={styles.eyebrow}>SELECT ALLOCATION SIZE</span>
-            <h3 className={styles.title}>{product.name}</h3>
+    const productImage = product.frontImageUrl || product.images?.[0]?.url || '/images/placeholder.svg';
+    const displayPrice = product.mrp
+      ? Number(product.mrp)
+      : product.variants?.[0]?.price
+      ? Number(product.variants[0].price)
+      : 0;
+
+    const modalContent = (
+      <div
+        className={styles.backdrop}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className={styles.modal}>
+          <div className={styles.header}>
+            <div className={styles.productHeaderRow}>
+              <div className={styles.thumbWrapper}>
+                <Image src={productImage} alt={product.name} fill className={styles.thumbImage} />
+              </div>
+              <div className={styles.titleGroup}>
+                <span className={styles.eyebrow}>
+                  <ShieldCheck size={11} style={{ marginRight: 4 }} />
+                  PRE-BOOK THIS PIECE
+                </span>
+                <h3 className={styles.title}>{product.name}</h3>
+                <span className={styles.priceTag}>₹{displayPrice.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">
+              <X size={15} />
+            </button>
           </div>
-          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">
-            <X size={15} />
-          </button>
-        </div>
+
+          <div className={styles.selectLabelRow}>
+            <span>Select Your Size</span>
+            <span className={styles.guaranteeText}>1 Year Complimentary Membership Included</span>
+          </div>
 
         <div className={styles.sizeGrid}>
           {sizes.map((s: any) => {

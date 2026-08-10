@@ -134,17 +134,19 @@
   left: 8px;
   right: 8px;
   z-index: 6;
-  background: rgba(4, 4, 4, 0.92);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(200, 164, 106, 0.32);
-  border-radius: 3px;
+  background: rgba(10, 10, 12, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
   padding: 8px 10px;
   box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 4px;
 }
+
 
 .panelTopRow {
   display: flex;
@@ -403,32 +405,92 @@
   color: #c8a46a;
 }
 
-.preBookBtn {
-  background: #c8a46a;
-  border: 1px solid #c8a46a;
-  color: #050505;
+.benefitsTriggerRow {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  display: flex;
+}
+
+.benefitsTriggerLink {
+  background: transparent;
+  border: none;
+  color: #c5a059;
   font-family: var(--font-heading);
   font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.benefitsTriggerLink:hover {
+  color: #ffffff;
+  transform: translateX(2px);
+}
+
+.benefitsTriggerIcon {
+  color: #c5a059;
+  flex-shrink: 0;
+}
+
+.benefitsTriggerArrow {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+}
+
+.benefitsTriggerLink:hover .benefitsTriggerArrow {
+  transform: translateX(3px);
+}
+
+.primaryActionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  margin-top: 4px;
+  margin-bottom: 24px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.preBookBtn {
+  width: 100%;
+  height: 44px;
+  background: #c5a059;
+  border: 1px solid #c5a059;
+  color: #050505;
+  font-family: var(--font-heading);
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 9px 0;
-  border-radius: 2px;
+  padding: 0 16px;
+  border-radius: 4px;
   cursor: pointer;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
 }
+
 
 .preBookBtn:hover {
   background: #d8b67d;
   border-color: #d8b67d;
   transform: translateY(-1px);
 }
+
 
 .card:hover .progressFill {
   box-shadow: 0 0 8px rgba(200, 164, 106, 0.45);
@@ -534,3 +596,42 @@
     letter-spacing: 0.1em;
   }
 }
+
+.notifyRow {
+  width: 100%;
+  margin-top: 4px;
+  display: flex;
+}
+
+.notifyRowBtn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.notifyRowBtn:hover {
+  background: rgba(200, 164, 106, 0.08);
+  border-color: rgba(200, 164, 106, 0.35);
+  color: #c8a46a;
+}
+
+.notifyRowActive {
+  background: rgba(200, 164, 106, 0.1);
+  border-color: #c8a46a;
+  color: #c8a46a;
+}
+

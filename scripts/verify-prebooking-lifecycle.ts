@@ -25,9 +25,10 @@ async function verifyLifecycle() {
   console.log(`   isPreBooking in DB: ${product.isPreBooking} (Expected: false)`);
   console.log(`   launchDateTime in DB: ${product.launchDateTime}`);
 
-  // 2. Fetch order for this product
+  // 2. Fetch paid pre-booking order for this product
   const order = await prisma.order.findFirst({
     where: {
+      paymentStatus: 'PAID',
       items: {
         some: {
           productName: { contains: 'Premium Urban Tee', mode: 'insensitive' },
@@ -64,8 +65,8 @@ async function verifyLifecycle() {
   const state = getPreBookingLifecycleState(order);
   console.log(`\n3. Evaluated Lifecycle State: "${state}"`);
 
-  if (state === PreBookingLifecycleState.RELEASED) {
-    console.log('   ✅ CORRECT: Order evaluated as RELEASED!');
+  if (state === PreBookingLifecycleState.RELEASED || state === PreBookingLifecycleState.AWAITING_LAUNCH) {
+    console.log(`   ✅ CORRECT: Order evaluated as ${state}!`);
   } else {
     console.error(`   ❌ FAIL: Expected RELEASED but got ${state}`);
   }

@@ -222,9 +222,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     async function loadData() {
       setIsFetchingAddresses(true);
-      let userProf: any = null;
       try {
-        userProf = await getMyProfile();
+        const [userProf, addrList] = await Promise.all([
+          getMyProfile().catch(() => null),
+          getMyAddresses().catch(() => []),
+        ]);
+
         if (userProf) {
           setProfile(userProf);
           setIsLoggedIn(true);
@@ -232,10 +235,7 @@ export default function CheckoutPage() {
             setForm((prev) => ({ ...prev, email: userProf.email }));
           }
         }
-      } catch (err) {}
 
-      try {
-        const addrList = await getMyAddresses();
         if (Array.isArray(addrList) && addrList.length > 0) {
           setAddresses(addrList);
           setIsLoggedIn(true);

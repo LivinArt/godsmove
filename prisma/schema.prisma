@@ -44,6 +44,7 @@ model Profile {
   unlockAccessTokens     UnlockAccessToken[] @relation("UnlockTokenClaimedBy")
   careRequests           CareRequest[]
   membership             Membership?
+  preBookingInterests    PreBookingInterest[]
 
   @@map("profiles")
 }
@@ -200,6 +201,11 @@ model Product {
   preBookingOfferType      String?
   preBookingOfferValue     Float?
 
+  // Member-Only Special Discount System (Normal Drops & Exclusive Rack only)
+  hasMemberDiscount        Boolean          @default(false)
+  memberDiscountType       String?          // "PERCENT" | "FIXED_PRICE"
+  memberDiscountValue      Float?
+
   // Curated Collection details
   collectionName           String?          // e.g., "Signature Collection"
   collectionBanner         String?          // background image URL
@@ -272,6 +278,7 @@ model Product {
   images           ProductImage[]
   tags             ProductTag[]
   wishlistItems    WishlistItem[]
+  interests        PreBookingInterest[]
   // Per-product Size Chart Configuration
   sizeChart Json?
 
@@ -1500,6 +1507,20 @@ model CodConfig {
   updatedAt    DateTime @updatedAt
 
   @@map("cod_configs")
+}
+
+model PreBookingInterest {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([productId, profileId])
+  @@index([productId])
+  @@index([profileId])
+  @@map("prebooking_interests")
 }
 
 

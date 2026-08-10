@@ -88,7 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push('/profile');
           } else if (pending.type === 'membership') {
             router.push('/membership');
+          } else if (pending.type === 'notify' && pending.product) {
+            import('@/actions/prebooking-interest.actions').then(({ togglePreBookingInterestAction }) => {
+              togglePreBookingInterestAction(pending.product.id).then((res) => {
+                if (res.success && typeof window !== 'undefined') {
+                  window.dispatchEvent(
+                    new CustomEvent('gm_notify_interest_updated', {
+                      detail: { productId: pending.product.id, registered: true, alreadyRegistered: Boolean(res.alreadyRegistered) },
+                    })
+                  );
+                }
+              });
+            });
           } else if (pending.type === 'navigate' && pending.url) {
+
             router.push(pending.url);
           }
         } catch (e) {

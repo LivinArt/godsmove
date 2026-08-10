@@ -4,7 +4,7 @@ import { Button } from '@react-email/components';
 interface CTAButtonProps {
   href: string;
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'gold';
+  variant?: 'primary' | 'secondary' | 'gold' | 'outline';
   style?: React.CSSProperties;
 }
 
@@ -17,6 +17,7 @@ export const CTAButton: React.FC<CTAButtonProps> = ({
   let buttonStyle = goldButtonStyle;
   if (variant === 'primary') buttonStyle = primaryButtonStyle;
   if (variant === 'secondary') buttonStyle = secondaryButtonStyle;
+  if (variant === 'outline') buttonStyle = outlineButtonStyle;
 
   return (
     <Button href={href} style={{ ...buttonStyle, ...style }}>
@@ -56,4 +57,11 @@ const secondaryButtonStyle: React.CSSProperties = {
   backgroundColor: 'transparent',
   color: '#ffffff',
   border: '1px solid rgba(255, 255, 255, 0.2)',
+};
+
+const outlineButtonStyle: React.CSSProperties = {
+  ...baseStyle,
+  backgroundColor: 'transparent',
+  color: '#ffffff',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
 };

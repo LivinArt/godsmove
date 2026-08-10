@@ -37,6 +37,9 @@ interface OrderDetail {
   paymentMethod: string;
   orderType?: string;
   isPreBooking?: boolean;
+  preBookingLaunchDate?: any;
+  preBookingExpectedDispatch?: string | null;
+  fulfillmentStatus?: string;
   lockedUnitPrice?: number | null;
   lockedDiscountAmount?: number | null;
   trackingNumber: string | null;
@@ -195,6 +198,50 @@ export default function OrderCRMClient({
         </Link>
 
         <div className="admin-card" style={{ padding: 32 }}>
+          {/* Pre-Booking Compact Launch Countdown & Metadata Header */}
+          {(order.isPreBooking || order.orderType === 'PRE_BOOKING') && (
+            <div style={{ background: 'linear-gradient(135deg, rgba(200, 164, 106, 0.08) 0%, rgba(13, 13, 15, 0.95) 100%)', border: '1px solid rgba(200, 164, 106, 0.3)', borderRadius: 8, padding: 20, marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#c8a46a', textTransform: 'uppercase' }}>
+                    PRE-BOOKING ALLOCATION DETAILED VIEW
+                  </span>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>
+                    PRE-BOOKING — {order.paymentStatus === 'PAID' ? 'PAID' : order.paymentStatus}
+                  </div>
+                </div>
+                {order.preBookingLaunchDate && (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'rgba(0, 0, 0, 0.4)', padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(200, 164, 106, 0.2)' }}>
+                    <span style={{ fontSize: 10, color: '#c8a46a', fontWeight: 700, letterSpacing: '0.1em' }}>LAUNCH TIMELINE:</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', fontFamily: 'monospace' }}>
+                      {new Date(order.preBookingLaunchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: 12, borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: 14 }}>
+                <div>
+                  <span style={{ color: 'var(--admin-muted)', fontSize: 10, textTransform: 'uppercase', display: 'block' }}>Expected Dispatch</span>
+                  <strong style={{ color: '#ffffff' }}>{order.preBookingExpectedDispatch || 'Within 24 Hours of Launch'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--admin-muted)', fontSize: 10, textTransform: 'uppercase', display: 'block' }}>Booking Timestamp</span>
+                  <strong style={{ color: '#ffffff' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--admin-muted)', fontSize: 10, textTransform: 'uppercase', display: 'block' }}>Payment Status</span>
+                  <strong style={{ color: order.paymentStatus === 'PAID' ? '#16a34a' : '#ef4444' }}>
+                    ● {order.paymentStatus === 'PAID' ? 'PAID & VERIFIED' : order.paymentStatus}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--admin-muted)', fontSize: 10, textTransform: 'uppercase', display: 'block' }}>Fulfillment State</span>
+                  <strong style={{ color: '#c8a46a' }}>{order.fulfillmentStatus || 'UNFULFILLED'}</strong>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Header Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
