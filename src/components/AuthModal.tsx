@@ -101,7 +101,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess, redirectPath, fo
     setError(null);
     setLoading(true);
     try {
-      const destination = redirectPath ||
+      let pendingReturnUrl: string | undefined;
+      if (typeof window !== 'undefined') {
+        const pendingStr = sessionStorage.getItem('godsmove_pending_action');
+        if (pendingStr) {
+          try {
+            const pending = JSON.parse(pendingStr);
+            if (pending.type === 'checkout' || pending.type === 'BUY_NOW' || pending.redirect === '/checkout') {
+              pendingReturnUrl = '/checkout';
+            } else if (pending.type === 'profile') {
+              pendingReturnUrl = '/profile';
+            } else if (pending.type === 'membership') {
+              pendingReturnUrl = '/membership';
+            } else if (pending.url) {
+              pendingReturnUrl = pending.url;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
+      const destination = redirectPath || pendingReturnUrl ||
         (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/profile');
       const { error } = await initiateGoogleOAuth(supabase, destination);
       if (error) throw error;

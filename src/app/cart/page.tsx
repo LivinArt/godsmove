@@ -78,7 +78,7 @@ export default function CartPage() {
     requireAuth('checkout', () => {
       beginCartCheckout();
       router.push('/checkout');
-    }, { type: 'checkout' });
+    }, { type: 'checkout', redirect: '/checkout' });
   };
 
   const [isPreBookingTermsOpen, setIsPreBookingTermsOpen] = useState(false);

@@ -32,6 +32,7 @@ export default function CheckoutPage() {
     checkoutMode,
     instantCheckoutSession,
     clearCheckoutSession,
+    beginCartCheckout,
     updateQuantity,
     removeFromCart,
     showExclusiveCartToast,
@@ -43,23 +44,21 @@ export default function CheckoutPage() {
   // CART mode: sync live catalogue on mount to validate availability.
   useEffect(() => {
     if (checkoutMode === 'CART') {
-      syncCartLive().then(() => cleanCartUnavailableItems());
+      cleanCartUnavailableItems();
+      syncCartLive();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [checkoutMode, cleanCartUnavailableItems, syncCartLive]);
 
   // INVALID STATE RECOVERY — must be in useEffect, never in render body.
-  // If checkoutMode is null or INSTANT+missing session, redirect gracefully.
-  //
-  // NOTE: No unmount cleanup calling clearCheckoutSession() is registered here.
-  // That was the regression: React Strict Mode (Next.js dev) mounts→unmounts→remounts
-  // every component. The cleanup fired on first unmount, wiping checkoutMode to null
-  // before the second mount — making every checkout attempt see a null mode and fail.
-  // The cleanup is architecturally unnecessary: beginInstantCheckout() generates a
-  // new sessionId on every click, and success handlers explicitly call clearCheckoutSession().
-  // DO NOT re-add an unmount cleanup here.
+  // If checkoutMode is null, check if cart contains items and set CART mode automatically;
+  // otherwise if cart is truly empty or INSTANT session missing, redirect gracefully to home.
   useEffect(() => {
     if (checkoutMode === null) {
-      console.warn('[CHECKOUT] No checkoutMode set. Redirecting to home.');
+      if (cart.length > 0) {
+        beginCartCheckout();
+        return;
+      }
+      console.warn('[CHECKOUT] No checkoutMode set and cart is empty. Redirecting to home.');
       router.replace('/');
       return;
     }
@@ -71,7 +70,7 @@ export default function CheckoutPage() {
       clearCheckoutSession();
       router.replace('/');
     }
-  }, [checkoutMode, instantCheckoutSession, clearCheckoutSession, router]);
+  }, [checkoutMode, instantCheckoutSession, cart.length, beginCartCheckout, clearCheckoutSession, router]);
 
   // ─────────────────────────────────────────────────────────────────
   // EXPLICIT PIPELINE GATE — no implicit fallback, no render-phase side effects

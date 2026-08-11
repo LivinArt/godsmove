@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addToCart = useStore((s) => s.addToCart);
   const toggleWishlist = useStore((s) => s.toggleWishlist);
   const beginInstantCheckout = useStore((s) => s.beginInstantCheckout);
+  const beginCartCheckout = useStore((s) => s.beginCartCheckout);
 
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -85,7 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (pending.type === 'cart') {
-            addToCart(pending.product, pending.size, pending.quantity || 1);
+            if (pending.product) {
+              addToCart(pending.product, pending.size, pending.quantity || 1);
+            }
+            if (pending.redirect === '/checkout') {
+              beginCartCheckout();
+              router.push('/checkout');
+            }
           } else if (pending.type === 'wishlist') {
             if (pending.product) {
               toggleWishlist(pending.product);
@@ -95,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else if (pending.type === 'checkout' || pending.type === 'BUY_NOW') {
             if (pending.product) {
               beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+            } else {
+              beginCartCheckout();
             }
             router.push('/checkout');
           } else if (pending.type === 'profile') {
@@ -121,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [user, loading, profile, addToCart, toggleWishlist, beginInstantCheckout, router]);
+  }, [user, loading, profile, addToCart, toggleWishlist, beginInstantCheckout, beginCartCheckout, router]);
 
   useEffect(() => {
     // Initial Session check via Supabase Auth
@@ -215,7 +224,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (pending.timestamp && Date.now() - pending.timestamp > 15 * 60 * 1000) {
             // Expired
           } else if (pending.type === 'cart') {
-            addToCart(pending.product, pending.size, pending.quantity || 1);
+            if (pending.product) {
+              addToCart(pending.product, pending.size, pending.quantity || 1);
+            }
+            if (pending.redirect === '/checkout') {
+              beginCartCheckout();
+              router.push('/checkout');
+            }
           } else if (pending.type === 'wishlist') {
             if (pending.product) {
               toggleWishlist(pending.product);
@@ -225,10 +240,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else if (pending.type === 'checkout' || pending.type === 'BUY_NOW') {
             if (pending.product) {
               beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
+            } else {
+              beginCartCheckout();
             }
             router.push('/checkout');
           } else if (pending.type === 'profile') {
             router.push('/profile');
+          } else if (pending.type === 'membership') {
+            router.push('/membership');
+          } else if (pending.type === 'notify' && pending.product) {
+            import('@/actions/prebooking-interest.actions').then(({ togglePreBookingInterestAction }) => {
+              togglePreBookingInterestAction(pending.product.id).then((res) => {
+                if (res.success && typeof window !== 'undefined') {
+                  window.dispatchEvent(
+                    new CustomEvent('gm_notify_interest_updated', {
+                      detail: { productId: pending.product.id, registered: true, alreadyRegistered: Boolean(res.alreadyRegistered) },
+                    })
+                  );
+                }
+              });
+            });
           } else if (pending.type === 'navigate' && pending.url) {
             router.push(pending.url);
           }

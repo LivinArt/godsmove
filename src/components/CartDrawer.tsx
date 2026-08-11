@@ -308,7 +308,7 @@ export default function CartDrawer() {
                   beginCartCheckout();
                   setCartOpen(false);
                   router.push('/checkout');
-                }, { type: 'checkout' });
+                }, { type: 'checkout', redirect: '/checkout' });
               }}
             >
               Checkout
