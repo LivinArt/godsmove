@@ -308,6 +308,7 @@
 /* ── Product Grid & Layout ── */
 .gridSection {
   margin-top: 56px;
+  width: 100%;
 }
 
 .gridHeader {
@@ -327,6 +328,46 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* 2 products per row on mobile */
   gap: 20px 14px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+@media (max-width: 767px) {
+  .controlsSection {
+    margin-bottom: 32px;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .searchAndSortRow {
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    gap: 12px;
+  }
+
+  .dropTabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .dropTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gridSection {
+    margin-top: 32px;
+    width: 100%;
+  }
+
+  .productGrid {
+    width: 100%;
+    margin-inline: auto;
+  }
 }
 
 @media (min-width: 768px) {

@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useStore } from '@/store/useStore';
 import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
-import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { getEffectivePurchaseMode, isPreBookingActive } from '@/lib/launch-engine';
 import { PurchaseMode } from '@/types/launch';
 import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import styles from './page.module.css';
@@ -24,9 +24,13 @@ export default function CartPage() {
   const [isClient, setIsClient] = useState(false);
   const [editorialNotice, setEditorialNotice] = useState<string | null>(null);
 
+  // CART mode: sync live catalogue on mount to validate availability.
   useEffect(() => {
     setIsClient(true);
-    syncCartLive();
+    syncCartLive().then(() => cleanCartUnavailableItems());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (cart.length > 0) {
       try {
         const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
@@ -58,18 +62,17 @@ export default function CartPage() {
   }, 0);
 
   const handleCheckoutClick = () => {
-    const removedCount = cleanCartUnavailableItems();
-    if (removedCount > 0) {
+    // 1. Sanity check availability before allowing route change
+    const unavailableItems = cart.filter((item) => !isCartItemAvailable(item));
+    if (unavailableItems.length > 0) {
+      cleanCartUnavailableItems();
       setEditorialNotice('One or more items are no longer available and have been removed from your checkout.');
-    }
-
-    const activeCart = useStore.getState().cart;
-    if (activeCart.length === 0) {
       return;
     }
 
+    // 2. Track GA4
     try {
-      const gaItems = activeCart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
+      const gaItems = cart.map((item, idx) => formatGA4Item(item.product, item.size, item.quantity, idx));
       trackBeginCheckout(gaItems, total);
     } catch (e) {
       // ignore
@@ -83,8 +86,8 @@ export default function CartPage() {
 
   const [isPreBookingTermsOpen, setIsPreBookingTermsOpen] = useState(false);
 
-  const hasPreBookingItems = cart.some(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK);
-  const preBookingProduct = cart.find(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK)?.product;
+  const hasPreBookingItems = cart.some(item => isPreBookingActive(item.product));
+  const preBookingProduct = cart.find(item => isPreBookingActive(item.product))?.product;
 
   return (
     <>

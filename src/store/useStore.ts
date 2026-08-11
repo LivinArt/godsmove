@@ -12,6 +12,7 @@ import {
 } from '@/lib/cart-rules';
 import { formatGA4Item, trackAddToCart, trackRemoveFromCart } from '@/lib/gtag-ecommerce';
 import { refreshCartProducts } from '@/actions/product.actions';
+import { isPreBookingActive } from '@/lib/launch-engine-core';
 
 export interface CartItem {
   product: any; // Prisma Product with images and variants
@@ -125,7 +126,7 @@ export const useStore = create<StoreState>()(
       cart: [],
 
       addToCart: (product, size, quantity = 1, color?: string) => {
-        if (product?.isPreBooking) {
+        if (isPreBookingActive(product)) {
           get().showToast('Pre-Booking Product', 'Pre-booking products cannot be added to the bag. Click PRE-BOOK NOW for direct checkout.');
           return;
         }

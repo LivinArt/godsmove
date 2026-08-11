@@ -35,7 +35,7 @@ export default function ProductCard({
   isDominant = false,
 }: ProductCardProps) {
   const purchaseMode = getEffectivePurchaseMode(product);
-  const isPreBooking = purchaseMode === PurchaseMode.PRE_BOOK || Boolean(product?.isPreBooking);
+  const isPreBooking = purchaseMode === PurchaseMode.PRE_BOOK;
 
   // Strictly isolate Pre-Booking cards to PreBookingProductCard
   if (isPreBooking) {

@@ -154,3 +154,69 @@ export async function setDefaultAddress(id: string) {
     return address;
   });
 }
+
+/**
+ * Unified, single-roundtrip server action to load all checkout data concurrently.
+ * Eliminates client-side waterfalls, sequential fetches, and duplicate auth calls.
+ */
+export async function getCheckoutData() {
+  let user: any = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (e) {
+    // Outside Next.js request scope (e.g. CLI test environment)
+  }
+
+  const codConfigPromise = prisma.codConfig.findFirst().then((cfg) => {
+    if (!cfg) {
+      return { isEnabled: true, chargeType: 'FIXED' as const, chargeValue: 0, displayLabel: 'Cash on Delivery' };
+    }
+    return {
+      isEnabled: cfg.isEnabled,
+      chargeType: (cfg.chargeType === 'PERCENTAGE' ? 'PERCENTAGE' : 'FIXED') as 'PERCENTAGE' | 'FIXED',
+      chargeValue: Number(cfg.chargeValue),
+      displayLabel: cfg.displayLabel,
+    };
+  }).catch(() => ({
+    isEnabled: true,
+    chargeType: 'FIXED' as const,
+    chargeValue: 0,
+    displayLabel: 'Cash on Delivery',
+  }));
+
+  const discountsPromise = prisma.discount.findMany({
+    where: { isActive: true, status: 'ACTIVE' },
+    orderBy: { createdAt: 'desc' },
+  }).catch(() => []);
+
+  if (!user) {
+    const [codConfig, discounts] = await Promise.all([codConfigPromise, discountsPromise]);
+    return {
+      user: null,
+      profile: null,
+      addresses: [],
+      walletBalance: 0,
+      codConfig,
+      availableDiscounts: JSON.parse(JSON.stringify(discounts)),
+    };
+  }
+
+  const [profile, addresses, wallet, codConfig, discounts] = await Promise.all([
+    prisma.profile.findUnique({ where: { id: user.id } }),
+    prisma.address.findMany({ where: { profileId: user.id }, orderBy: { isDefault: 'desc' } }),
+    prisma.wallet.findUnique({ where: { profileId: user.id } }),
+    codConfigPromise,
+    discountsPromise,
+  ]);
+
+  return {
+    user: { id: user.id, email: user.email },
+    profile: profile ? JSON.parse(JSON.stringify(profile)) : null,
+    addresses: Array.isArray(addresses) ? JSON.parse(JSON.stringify(addresses)) : [],
+    walletBalance: wallet ? Number(wallet.balance) : 0,
+    codConfig,
+    availableDiscounts: JSON.parse(JSON.stringify(discounts)),
+  };
+}

@@ -21,7 +21,7 @@ import { PricingEngine } from '@/lib/pricing-engine';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { WalletService } from '@/lib/wallet-service';
 import { getCodSettings } from '@/actions/cod.actions';
-import { getPreBookingOfferDetails } from '@/lib/launch-engine-core';
+import { getPreBookingOfferDetails, isPreBookingActive } from '@/lib/launch-engine-core';
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -91,7 +91,7 @@ export async function createOrder(input: CreateOrderInput) {
         where: { id: { in: variantIds } },
         include: {
           inventory: true,
-          product: { select: { name: true, status: true, channel: true, gstPercentage: true, hasPreBookingOffer: true, preBookingOfferType: true, preBookingOfferValue: true } },
+          product: { select: { name: true, status: true, channel: true, gstPercentage: true, hasPreBookingOffer: true, preBookingOfferType: true, preBookingOfferValue: true, isPreBooking: true, preBookingOpenDateTime: true, maxPreBooking: true, currentPreBookings: true, launchDateTime: true, expectedDispatch: true, customExpectedDispatch: true } },
         },
       });
 
@@ -109,13 +109,13 @@ export async function createOrder(input: CreateOrderInput) {
         }
 
         // Server-Side Pre-Booking Assertions
-        const prod = await tx.product.findUnique({ where: { id: variant.productId } });
+        const prod = variant.product;
 
         if (data.orderType === 'PRE_BOOKING') {
           if (data.items.length > 1) {
             throw new Error('Pre-booking checkout permits only ONE product allocation per order.');
           }
-          if (!prod || !prod.isPreBooking) {
+          if (!prod || !isPreBookingActive(prod)) {
             throw new Error(`Product "${variant.product.name}" is not configured for Pre-Booking.`);
           }
           if (prod.preBookingOpenDateTime && new Date() < new Date(prod.preBookingOpenDateTime)) {
@@ -128,7 +128,7 @@ export async function createOrder(input: CreateOrderInput) {
             throw new Error(`Cash on Delivery is not supported for Pre-Booking orders. Please use Secure Online Payment.`);
           }
         } else {
-          if (prod && prod.isPreBooking) {
+          if (prod && isPreBookingActive(prod)) {
             throw new Error(`Pre-booking product "${variant.product.name}" cannot be purchased via standard cart checkout.`);
           }
         }

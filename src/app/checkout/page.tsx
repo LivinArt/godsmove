@@ -13,7 +13,7 @@ import { isCartItemAvailable, isExclusiveChannel } from '@/lib/cart-rules';
 import { useStore } from '@/store/useStore';
 import { loadRazorpaySDKScript } from '@/hooks/useRazorpay';
 import { setCheckoutSessionToken, getCheckoutSessionToken, clearCheckoutSessionToken } from '@/lib/checkout-session';
-import { getMyAddresses, createAddress, updateAddress } from '@/actions/address.actions';
+import { getMyAddresses, createAddress, updateAddress, getCheckoutData } from '@/actions/address.actions';
 import { getMyWallet, validateDiscount, getAvailableDiscounts } from '@/actions/wallet.actions';
 import { getMyProfile } from '@/actions/profile.actions';
 import { createOrder, confirmOrder, notifyPaymentFailed, getActiveCheckoutSession } from '@/actions/order.actions';
@@ -140,70 +140,7 @@ export default function CheckoutPage() {
     displayLabel: 'Cash on Delivery',
   });
 
-  // Load COD configuration live
   const isPreBookingCheckout = checkoutMode === 'INSTANT' && instantCheckoutSession?.orderType === 'PRE_BOOKING';
-
-  useEffect(() => {
-    async function loadCodSettings() {
-      try {
-        const cfg = await getCodSettings();
-        setCodConfig(cfg);
-        if ((!cfg.isEnabled || isPreBookingCheckout) && paymentMethod === 'cod') {
-          setPaymentMethod('razorpay');
-        }
-      } catch (err) {
-        // Continue
-      }
-    }
-    loadCodSettings();
-  }, [isPreBookingCheckout, paymentMethod]);
-
-  // Load active discounts and auto-apply best fit
-  useEffect(() => {
-    async function loadDiscounts() {
-      try {
-        const list = await getAvailableDiscounts();
-        setAvailableCoupons(list);
-
-        let bestAmt = 0;
-        let bestCode: string | null = null;
-        let bestObj: any = null;
-
-        for (const item of list) {
-          const minVal = item.minimumOrderValue ? Number(item.minimumOrderValue) : 0;
-          if (subtotal < minVal) continue;
-
-          let amt = 0;
-          if (item.type === 'PERCENTAGE') {
-            amt = (subtotal * Number(item.value)) / 100;
-            if (item.maximumDiscount) {
-              amt = Math.min(amt, Number(item.maximumDiscount));
-            }
-          } else if (item.type === 'FIXED_AMOUNT') {
-            amt = Math.min(Number(item.value), subtotal);
-          }
-
-          if (amt > bestAmt) {
-            bestAmt = amt;
-            bestCode = item.code;
-            bestObj = item;
-          }
-        }
-
-        if (bestCode && bestAmt > 0 && !useCredits) {
-          setAppliedCoupon(bestCode);
-          setDiscountAmount(bestAmt);
-          setBestCouponDetected(bestObj);
-        }
-      } catch (err) {
-        console.error('Failed to load active discounts:', err);
-      }
-    }
-    
-    if (!useCredits) {
-      loadDiscounts();
-    }
-  }, [subtotal, useCredits]);
 
   // Processing & Payments Simulation States
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
@@ -218,18 +155,34 @@ export default function CheckoutPage() {
   const [editingCheckoutAddressId, setEditingCheckoutAddressId] = useState<string | null>(null);
   const [isFetchingAddresses, setIsFetchingAddresses] = useState(true);
 
+  // UNIFIED CHECKOUT HYDRATION — Single-roundtrip server action for profile, addresses, wallet, COD, and discounts
   useEffect(() => {
-    async function loadData() {
+    async function initCheckoutData() {
       setIsFetchingAddresses(true);
       try {
-        const [userProf, addrList] = await Promise.all([
-          getMyProfile().catch(() => null),
-          getMyAddresses().catch(() => []),
-        ]);
+        const data = await getCheckoutData();
+        if (data.codConfig) {
+          setCodConfig(data.codConfig);
+          if ((!data.codConfig.isEnabled || isPreBookingCheckout) && paymentMethod === 'cod') {
+            setPaymentMethod('razorpay');
+          }
+        }
 
+        if (Array.isArray(data.availableDiscounts)) {
+          setAvailableCoupons(data.availableDiscounts);
+        }
+
+        if (data.user) {
+          setIsLoggedIn(true);
+        }
+
+        if (data.walletBalance !== undefined) {
+          setWalletBalance(data.walletBalance);
+        }
+
+        const userProf = data.profile;
         if (userProf) {
           setProfile(userProf);
-          setIsLoggedIn(true);
           setForm((prev) => ({
             ...prev,
             email: userProf.email || prev.email,
@@ -239,9 +192,9 @@ export default function CheckoutPage() {
           }));
         }
 
+        const addrList = data.addresses;
         if (Array.isArray(addrList) && addrList.length > 0) {
           setAddresses(addrList);
-          setIsLoggedIn(true);
           const defaultAddr = addrList.find((a: any) => a.isDefault) || addrList[0];
           setSelectedAddressId(defaultAddr.id);
           const userEmail = userProf?.email || '';
@@ -258,24 +211,50 @@ export default function CheckoutPage() {
         } else {
           setSelectedAddressId('new');
         }
+
+        // Auto-apply best coupon if applicable
+        if (Array.isArray(data.availableDiscounts) && !useCredits) {
+          let bestAmt = 0;
+          let bestCode: string | null = null;
+          let bestObj: any = null;
+
+          for (const item of data.availableDiscounts) {
+            const minVal = item.minimumOrderValue ? Number(item.minimumOrderValue) : 0;
+            if (subtotal < minVal) continue;
+
+            let amt = 0;
+            if (item.type === 'PERCENTAGE') {
+              amt = (subtotal * Number(item.value)) / 100;
+              if (item.maximumDiscount) {
+                amt = Math.min(amt, Number(item.maximumDiscount));
+              }
+            } else if (item.type === 'FIXED_AMOUNT') {
+              amt = Math.min(Number(item.value), subtotal);
+            }
+
+            if (amt > bestAmt) {
+              bestAmt = amt;
+              bestCode = item.code;
+              bestObj = item;
+            }
+          }
+
+          if (bestCode && bestAmt > 0) {
+            setAppliedCoupon(bestCode);
+            setDiscountAmount(bestAmt);
+            setBestCouponDetected(bestObj);
+          }
+        }
       } catch (err) {
+        console.error('[CHECKOUT] Hydration error:', err);
         setSelectedAddressId('new');
       } finally {
         setIsFetchingAddresses(false);
       }
-
-      try {
-        const w = await getMyWallet();
-        if (w && w.balance !== undefined) {
-          setWalletBalance(Number(w.balance));
-          setIsLoggedIn(true);
-        }
-      } catch (err) {
-        // Wallet load error
-      }
     }
-    loadData();
-  }, []);
+
+    initCheckoutData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-reset payment method away from COD for Pre-Booking checkouts
   useEffect(() => {

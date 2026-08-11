@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { formatGA4Item, trackViewCart, trackBeginCheckout } from '@/lib/gtag-ecommerce';
 import { isCartItemAvailable } from '@/lib/cart-rules';
-import { getEffectivePurchaseMode } from '@/lib/launch-engine';
+import { getEffectivePurchaseMode, isPreBookingActive } from '@/lib/launch-engine';
 import { PurchaseMode } from '@/types/launch';
 import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import styles from './CartDrawer.module.css';
@@ -103,8 +103,8 @@ export default function CartDrawer() {
   const total = getCartTotal();
   const hasUnavailableItems = cart.some(item => !isCartItemAvailable(item));
 
-  const hasPreBookingItems = cart.some(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK);
-  const preBookingProduct = cart.find(item => Boolean(item.product?.isPreBooking) || getEffectivePurchaseMode(item.product) === PurchaseMode.PRE_BOOK)?.product;
+  const hasPreBookingItems = cart.some(item => isPreBookingActive(item.product));
+  const preBookingProduct = cart.find(item => isPreBookingActive(item.product))?.product;
 
   return (
     <>

@@ -16,6 +16,7 @@ import { Metadata } from 'next';
 import { constructMetadata } from '@/lib/seo-metadata';
 import JsonLd from '@/components/JsonLd';
 import { getProductSchema, getBreadcrumbSchema } from '@/lib/json-ld';
+import { isPreBookingActive } from '@/lib/launch-engine-core';
 import styles from './page.module.css';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -159,7 +160,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     // Guest
   }
 
-  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK' || product.isPreBooking) {
+  if (product.isExclusiveRack || product.channel === 'EXCLUSIVE_RACK' || isPreBookingActive(product)) {
     return (
       <div style={{ backgroundColor: '#050505', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <JsonLd schema={[productJsonLd, breadcrumbJsonLd]} />

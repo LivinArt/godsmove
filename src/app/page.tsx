@@ -18,6 +18,7 @@ import {
 } from '@/actions/storefront.actions';
 import { getProfileSummary } from '@/actions/profile.actions';
 import { getHomepageFeatureCardsData } from '@/actions/feature-cards.actions';
+import { isPreBookingActive } from '@/lib/launch-engine-core';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,7 @@ export default async function Home() {
       : FALLBACK_HERO_SLIDES;
 
   // Filter products for dedicated sections
-  const preBookingProducts = allProducts.filter((p) => p && p.isPreBooking);
+  const preBookingProducts = allProducts.filter((p) => p && isPreBookingActive(p));
   const dropsProducts = allProducts.filter((p) => p && !p.isExclusiveRack).slice(0, 4);
 
   // 2. Retrieve User Credentials for Personalized Curation

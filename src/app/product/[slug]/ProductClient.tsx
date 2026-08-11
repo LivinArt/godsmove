@@ -70,7 +70,7 @@ export default function ProductClient({
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
   const purchaseMode = getEffectivePurchaseMode(product);
-  const isPreBookingMode = purchaseMode === PurchaseMode.PRE_BOOK || Boolean(product?.isPreBooking);
+  const isPreBookingMode = purchaseMode === PurchaseMode.PRE_BOOK;
 
   // Extract size chart entries ONLY from database records entered by Admin
   const sizeChartEntries: SizeChartEntry[] = (() => {
@@ -189,9 +189,7 @@ export default function ProductClient({
     addToCart(product, selectedSize, quantity);
   };
 
-  const isPreBookingProduct = Boolean(
-    product.isPreBooking || getEffectivePurchaseMode(product) === PurchaseMode.PRE_BOOK
-  );
+  const isPreBookingProduct = purchaseMode === PurchaseMode.PRE_BOOK;
 
   const handleBuyNow = () => {
     if (!selectedSize) {

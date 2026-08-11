@@ -1,138 +1,133 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-dotenv.config({ path: '.env' });
 
-import { getPreBookingLifecycleState, PreBookingLifecycleState } from '../src/lib/launch-engine-core';
-
-async function verifyLifecycle() {
+async function verifyPreBookingLifecycleArchitecture() {
   const { prisma } = await import('../src/lib/prisma');
+  const { isPreBookingActive, getProductLaunchState, getPurchaseMode } = await import('../src/lib/launch-engine-core');
+  const { LaunchState, PurchaseMode } = await import('../src/types/launch');
 
   console.log('====================================================');
-  console.log('VERIFYING PRE-BOOKING LIFECYCLE & DATA HYDRATION');
+  console.log('GODSMOVE — PRE-BOOKING LIFECYCLE & COMMERCE QA');
   console.log('====================================================\n');
 
-  // 1. Fetch exact product: "Premium Urban Tee, Drop Shoulder Tee, Drop1"
-  const product = await prisma.product.findFirst({
-    where: { name: { contains: 'Premium Urban Tee', mode: 'insensitive' } },
-  });
+  let passed = 0;
+  let failed = 0;
 
-  if (!product) {
-    console.error('❌ Product not found!');
-    process.exit(1);
+  function assert(condition: boolean, testName: string, detail?: string) {
+    if (condition) {
+      console.log(`[PASS] ${testName}${detail ? ` (${detail})` : ''}`);
+      passed++;
+    } else {
+      console.error(`[FAIL] ${testName}${detail ? ` (${detail})` : ''}`);
+      failed++;
+    }
   }
 
-  console.log(`1. Product: "${product.name}"`);
-  console.log(`   isPreBooking in DB: ${product.isPreBooking} (Expected: false)`);
-  console.log(`   launchDateTime in DB: ${product.launchDateTime}`);
+  // 1. Test Past Launch Date Product (Expired Pre-Booking -> LIVE)
+  const expiredProduct = {
+    id: 'prod-expired-1',
+    name: 'Premium Urban Tee, Drop Shoulder Tee, Drop1',
+    isPreBooking: true,
+    launchDateTime: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
+    preBookingOpenDateTime: new Date(Date.now() - 48 * 60 * 60 * 1000),
+    status: 'ACTIVE',
+  };
 
-  // 2. Fetch paid pre-booking order for this product
-  const order = await prisma.order.findFirst({
+  const expiredLaunchState = getProductLaunchState(expiredProduct);
+  const expiredPurchaseMode = getPurchaseMode(expiredProduct);
+  const expiredIsActive = isPreBookingActive(expiredProduct);
+
+  assert(
+    expiredLaunchState === LaunchState.LIVE,
+    'TEST 1: Expired Pre-Booking Product evaluates LaunchState as LIVE',
+    `Received: ${expiredLaunchState}`
+  );
+  assert(
+    expiredPurchaseMode === PurchaseMode.BUY_NOW,
+    'TEST 2: Expired Pre-Booking Product evaluates PurchaseMode as BUY_NOW',
+    `Received: ${expiredPurchaseMode}`
+  );
+  assert(
+    expiredIsActive === false,
+    'TEST 3: Expired Pre-Booking Product evaluates isPreBookingActive as FALSE',
+    `Received: ${expiredIsActive}`
+  );
+
+  // 2. Test Future Launch Date Product (Active Pre-Booking)
+  const activePreBookProduct = {
+    id: 'prod-active-1',
+    name: 'Future Drop Hoodie',
+    isPreBooking: true,
+    launchDateTime: new Date(Date.now() + 72 * 60 * 60 * 1000), // 3 days in future
+    preBookingOpenDateTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    status: 'ACTIVE',
+  };
+
+  const activeLaunchState = getProductLaunchState(activePreBookProduct);
+  const activePurchaseMode = getPurchaseMode(activePreBookProduct);
+  const activeIsActive = isPreBookingActive(activePreBookProduct);
+
+  assert(
+    activeLaunchState === LaunchState.PRE_BOOKING,
+    'TEST 4: Future Pre-Booking Product evaluates LaunchState as PRE_BOOKING',
+    `Received: ${activeLaunchState}`
+  );
+  assert(
+    activePurchaseMode === PurchaseMode.PRE_BOOK,
+    'TEST 5: Future Pre-Booking Product evaluates PurchaseMode as PRE_BOOK',
+    `Received: ${activePurchaseMode}`
+  );
+  assert(
+    activeIsActive === true,
+    'TEST 6: Future Pre-Booking Product evaluates isPreBookingActive as TRUE',
+    `Received: ${activeIsActive}`
+  );
+
+  // 3. Test Database Query for Target Product: "Premium Urban Tee, Drop Shoulder Tee, Drop1"
+  const targetProduct = await prisma.product.findFirst({
     where: {
-      paymentStatus: 'PAID',
-      items: {
-        some: {
-          productName: { contains: 'Premium Urban Tee', mode: 'insensitive' },
-        },
-      },
+      slug: 'premium-urban-tee-drop-shoulder-tee-drop1',
     },
     include: {
-      items: {
-        include: {
-          variant: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      },
-      shipments: true,
+      category: true,
+      variants: { include: { inventory: true } },
     },
   });
 
-  if (!order) {
-    console.error('❌ Order not found!');
-    process.exit(1);
-  }
+  if (targetProduct) {
+    const liveState = getProductLaunchState(targetProduct);
+    const liveMode = getPurchaseMode(targetProduct);
+    const liveActive = isPreBookingActive(targetProduct);
 
-  console.log(`\n2. Order #${order.orderNumber} (ID: ${order.id})`);
-  console.log(`   orderType: "${order.orderType}" (Expected: PRE_BOOKING)`);
-  console.log(`   isPreBooking flag: ${order.isPreBooking}`);
-  console.log(`   status: "${order.status}"`);
-  console.log(`   paymentStatus: "${order.paymentStatus}"`);
-  console.log(`   fulfillmentStatus: "${order.fulfillmentStatus}"`);
+    console.log('\n--- TARGET DB PRODUCT AUDIT ---');
+    console.log(`ID: ${targetProduct.id}`);
+    console.log(`Name: ${targetProduct.name}`);
+    console.log(`Slug: ${targetProduct.slug}`);
+    console.log(`DB isPreBooking flag: ${targetProduct.isPreBooking}`);
+    console.log(`DB launchDateTime: ${targetProduct.launchDateTime}`);
+    console.log(`Calculated LaunchState: ${liveState}`);
+    console.log(`Calculated PurchaseMode: ${liveMode}`);
+    console.log(`Calculated isPreBookingActive: ${liveActive}`);
 
-  // 3. Evaluate Lifecycle State
-  const state = getPreBookingLifecycleState(order);
-  console.log(`\n3. Evaluated Lifecycle State: "${state}"`);
-
-  if (state === PreBookingLifecycleState.RELEASED || state === PreBookingLifecycleState.AWAITING_LAUNCH) {
-    console.log(`   ✅ CORRECT: Order evaluated as ${state}!`);
+    assert(
+      liveState === LaunchState.LIVE,
+      'TEST 7: Target DB Product "Premium Urban Tee" evaluates as LIVE in database audit'
+    );
+    assert(
+      liveActive === false,
+      'TEST 8: Target DB Product "Premium Urban Tee" isPreBookingActive evaluates as FALSE'
+    );
   } else {
-    console.error(`   ❌ FAIL: Expected RELEASED but got ${state}`);
-  }
-
-  // 4. Test Case H (Reopening Pre-Booking for product in future)
-  console.log('\n4. Testing Case H: Reopening Pre-Booking for product while order is in fulfillment...');
-  const simulatedOrderInFulfillment = {
-    ...order,
-    status: 'PROCESSING',
-    fulfillmentStatus: 'PROCESSING',
-    items: [
-      {
-        ...order.items[0],
-        variant: {
-          ...order.items[0].variant,
-          product: {
-            ...order.items[0].variant.product,
-            isPreBooking: true, // Admin re-opened pre-booking for product
-            launchDateTime: new Date(Date.now() + 864000000).toISOString(), // future date
-          },
-        },
-      },
-    ],
-  };
-
-  const stateReopened = getPreBookingLifecycleState(simulatedOrderInFulfillment);
-  console.log(`   State after Admin re-opened Pre-Booking for product: "${stateReopened}"`);
-  if (stateReopened === PreBookingLifecycleState.RELEASED || stateReopened === PreBookingLifecycleState.SHIPPED || stateReopened === PreBookingLifecycleState.DELIVERED) {
-    console.log('   ✅ CORRECT: Order stayed in fulfillment/RELEASED state and did NOT revert to launch countdown!');
-  } else {
-    console.error(`   ❌ FAIL: Order incorrectly reverted to ${stateReopened}`);
-  }
-
-  // 5. Test Active Pre-Booking Order (Product still in pre-booking, launch in future)
-  console.log('\n5. Testing Active Pre-Booking Order (Product pre-booking open & future launch date)...');
-  const simulatedActivePreBookingOrder = {
-    ...order,
-    status: 'CONFIRMED',
-    fulfillmentStatus: 'UNFULFILLED',
-    preBookingLaunchDate: new Date(Date.now() + 864000000).toISOString(),
-    items: [
-      {
-        ...order.items[0],
-        variant: {
-          ...order.items[0].variant,
-          product: {
-            ...order.items[0].variant.product,
-            isPreBooking: true,
-            launchDateTime: new Date(Date.now() + 864000000).toISOString(),
-          },
-        },
-      },
-    ],
-  };
-
-  const stateActive = getPreBookingLifecycleState(simulatedActivePreBookingOrder);
-  console.log(`   State for active pre-booking order: "${stateActive}"`);
-  if (stateActive === PreBookingLifecycleState.AWAITING_LAUNCH) {
-    console.log('   ✅ CORRECT: Active pre-booking order evaluated as AWAITING_LAUNCH (countdown visible, Track Order hidden)!');
-  } else {
-    console.error(`   ❌ FAIL: Expected AWAITING_LAUNCH but got ${stateActive}`);
+    console.warn('[WARN] Target product slug "premium-urban-tee-drop-shoulder-tee-drop1" not found in local DB');
   }
 
   console.log('\n====================================================');
-  console.log('LIFECYCLE VERIFICATION COMPLETED SUCCESSFULLY');
-  console.log('====================================================');
+  console.log(`PRE-BOOKING LIFECYCLE QA: ${passed} PASSED | ${failed} FAILED`);
+  console.log('====================================================\n');
+
+  if (failed > 0) {
+    process.exit(1);
+  }
 }
 
-verifyLifecycle().catch(console.error);
+verifyPreBookingLifecycleArchitecture();

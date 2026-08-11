@@ -108,6 +108,15 @@ export function getProductLaunchState(product: any): LaunchState {
 }
 
 /**
+ * Canonical check if a product is CURRENTLY in an active pre-booking window.
+ * Returns true ONLY IF product is configured for pre-booking AND current time is before launchDateTime.
+ */
+export function isPreBookingActive(product: any): boolean {
+  if (!product) return false;
+  return getProductLaunchState(product) === LaunchState.PRE_BOOKING;
+}
+
+/**
  * Determines how a product can currently be purchased.
  * Consumed by all storefront CTAs (BUY NOW, PRE BOOK NOW, SOLD OUT, COMING SOON).
  */
@@ -139,7 +148,7 @@ export function getEffectivePurchaseMode(product: any): PurchaseMode {
  * Calculates effective pre-booking promotional price, savings, and display text.
  */
 export function getPreBookingOfferDetails(product: any, variantBasePrice: number) {
-  if (!product || !product.isPreBooking || !product.hasPreBookingOffer) {
+  if (!product || !isPreBookingActive(product) || !product.hasPreBookingOffer) {
     return {
       isOfferActive: false,
       effectivePrice: variantBasePrice,

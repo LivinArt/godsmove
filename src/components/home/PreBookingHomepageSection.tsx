@@ -8,6 +8,7 @@ import PreBookingQuickSelectModal from './PreBookingQuickSelectModal';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/context/AuthContext';
+import { isPreBookingActive } from '@/lib/launch-engine';
 import styles from './PreBookingHomepageSection.module.css';
 
 interface PreBookingHomepageSectionProps {
@@ -27,7 +28,7 @@ export default function PreBookingHomepageSection({ products }: PreBookingHomepa
 
   // Filter products where pre-booking is open
   const openPreBookingProducts = Array.isArray(products)
-    ? products.filter((p) => p && p.isPreBooking)
+    ? products.filter((p) => p && isPreBookingActive(p))
     : [];
 
   // Gracefully hide section if no active pre-booking products
