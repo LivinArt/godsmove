@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { NotificationService } from '@/notifications/notification.service';
+import { VALID_GENDERS, GenderOption } from '@/lib/profile-utils';
 
 async function getCurrentUser() {
   const supabase = await createClient();
@@ -16,6 +17,7 @@ export async function updateMyProfile(data: {
   lastName: string;
   phone: string;
   dob?: string | null;
+  gender?: string | null;
 }) {
   const user = await getCurrentUser();
   if (!user) throw new Error('UNAUTHORIZED');
@@ -27,6 +29,7 @@ export async function updateMyProfile(data: {
       lastName: data.lastName,
       phone: data.phone,
       dob: data.dob ? new Date(data.dob) : null,
+      gender: data.gender || null,
     },
   });
 
@@ -39,6 +42,54 @@ export async function updateMyProfile(data: {
 
   revalidatePath('/profile');
   return updated;
+}
+
+export async function updateMyProfileOnboarding(data: {
+  firstName: string;
+  phone: string;
+  dob: string;
+  gender: string;
+}) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('UNAUTHORIZED');
+
+  const name = (data.firstName || '').trim();
+  if (!name || name.length < 2) {
+    throw new Error('Please enter a valid full name.');
+  }
+
+  const rawPhone = (data.phone || '').replace(/\D/g, '');
+  const cleanPhone = rawPhone.length === 12 && rawPhone.startsWith('91') ? rawPhone.slice(2) : rawPhone;
+  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+    throw new Error('Please enter a valid 10-digit Indian mobile number.');
+  }
+
+  const normalizedPhone = `+91${cleanPhone}`;
+
+  let parsedDob: Date | null = null;
+  if (data.dob) {
+    parsedDob = new Date(data.dob);
+    if (isNaN(parsedDob.getTime()) || parsedDob > new Date()) {
+      throw new Error('Please enter a valid date of birth.');
+    }
+  } else {
+    throw new Error('Date of birth is required.');
+  }
+
+  const gender = VALID_GENDERS.includes(data.gender as GenderOption) ? data.gender : 'Prefer not to say';
+
+  const updated = await prisma.profile.update({
+    where: { id: user.id },
+    data: {
+      firstName: name,
+      phone: normalizedPhone,
+      dob: parsedDob,
+      gender: gender,
+    },
+  });
+
+  revalidatePath('/profile');
+  return { success: true, profile: updated };
 }
 
 export async function getMyProfile() {

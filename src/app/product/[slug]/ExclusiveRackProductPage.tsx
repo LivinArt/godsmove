@@ -51,6 +51,7 @@ import {
 } from '@/lib/launch-engine';
 import { PurchaseMode } from '@/types/launch';
 import { PreBookingBenefitsModal, PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
+import { calculateProductInventoryState, getStorefrontInventoryDisplay } from '@/lib/inventory-service';
 import styles from './ExclusiveRackProductPage.module.css';
 
 interface ExclusiveRackProductPageProps {
@@ -247,15 +248,17 @@ export default function ExclusiveRackProductPage({
     },
   ];
 
-  // SCARCITY & ALLOCATION DYNAMIC CALCULATIONS
-  const totalStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.totalStock ?? 25), 0);
-  const soldStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.soldStock ?? 0), 0);
-  const reservedStockSum = adminVariants.reduce((acc: number, v: any) => acc + (v.inventory?.reservedStock ?? 0), 0);
-  const allocatedCount = soldStockSum + reservedStockSum;
-  const editionTotal = totalStockSum > 0 ? totalStockSum : 400;
-  const remainingCount = Math.max(0, editionTotal - allocatedCount);
+  // SCARCITY & ALLOCATION DYNAMIC CALCULATIONS (Canonical Single Source of Truth)
+  const disp = getStorefrontInventoryDisplay(product);
+  const invState = calculateProductInventoryState(product);
+  const totalStockSum = invState.totalInventory;
+  const soldStockSum = disp.numerator;
+  const reservedStockSum = invState.totalReserved;
+  const allocatedCount = disp.numerator;
+  const editionTotal = disp.denominator;
+  const remainingCount = disp.remaining;
   const editionNumber = Math.min(editionTotal, Math.max(1, allocatedCount + 1));
-  const scarcityPercent = Math.min(100, Math.max(0, Math.round((remainingCount / editionTotal) * 100)));
+  const scarcityPercent = editionTotal > 0 ? Math.min(100, Math.max(0, Math.round((disp.numerator / editionTotal) * 100))) : 0;
 
   useEffect(() => {
     try {
@@ -1023,38 +1026,72 @@ export default function ExclusiveRackProductPage({
             <div className={styles.allocationHeaderRow}>
               <div className={styles.allocationTitleGroup}>
                 <Award size={16} color="#c8a46a" />
-                <span className={styles.allocationTitleText}>EXCLUSIVE RACK ALLOCATION</span>
+                <span className={styles.allocationTitleText}>
+                  {disp.isPreBookingActive ? 'PRE-BOOKING ALLOCATION' : 'EXCLUSIVE RACK ALLOCATION'}
+                </span>
               </div>
               <span className={styles.allocationEditionTag}>
-                EDITION {editionNumber} / {editionTotal}
+                {disp.isPreBookingActive
+                  ? `${disp.numerator} / ${disp.denominator} PRE-BOOKED`
+                  : `EDITION ${editionNumber} / ${editionTotal}`}
               </span>
             </div>
 
             {/* 3 LARGE EDITORIAL STATISTIC COLUMNS */}
             <div className={styles.editorialStatsThreeCol}>
-              <div className={styles.statColBlock}>
-                <span className={styles.statColLabel}>AVAILABLE</span>
-                <div className={styles.statColNumberRow}>
-                  <span className={styles.statColBigNum}>{remainingCount}</span>
-                  <span className={styles.statColUnit}>PCS</span>
-                </div>
-              </div>
+              {disp.isPreBookingActive ? (
+                <>
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>TOTAL ALLOCATION</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{disp.denominator}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
 
-              <div className={styles.statColBlock}>
-                <span className={styles.statColLabel}>SOLD</span>
-                <div className={styles.statColNumberRow}>
-                  <span className={styles.statColBigNum}>{allocatedCount}</span>
-                  <span className={styles.statColUnit}>PCS</span>
-                </div>
-              </div>
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>PRE-BOOKED</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{disp.numerator}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
 
-              <div className={styles.statColBlock}>
-                <span className={styles.statColLabel}>TOTAL</span>
-                <div className={styles.statColNumberRow}>
-                  <span className={styles.statColBigNum}>{editionTotal}</span>
-                  <span className={styles.statColUnit}>PCS</span>
-                </div>
-              </div>
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>REMAINING ALLOCATION</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{disp.remaining}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>AVAILABLE</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{remainingCount}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>SOLD</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{allocatedCount}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.statColBlock}>
+                    <span className={styles.statColLabel}>TOTAL</span>
+                    <div className={styles.statColNumberRow}>
+                      <span className={styles.statColBigNum}>{editionTotal}</span>
+                      <span className={styles.statColUnit}>PCS</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* FULL-WIDTH THIN GOLD PROGRESS BAR */}

@@ -1,6 +1,6 @@
 /* ── Flagship Container ── */
 .flagshipMain {
-  background-color: var(--bg-primary); /* warm off-white */
+  background-color: #050507;
   color: var(--text-primary);
 }
 

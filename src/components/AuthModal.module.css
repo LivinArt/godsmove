@@ -277,3 +277,166 @@
     font-size: 11px;
   }
 }
+
+/* ==================================================
+   FIRST-TIME PROFILE ONBOARDING FORM STYLES
+   ================================================== */
+.onboardingForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.inputLabel {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c8a46a;
+}
+
+.inputField {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(250, 248, 245, 0.14);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #FAF8F5;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.inputField:focus {
+  border-color: #c8a46a;
+  background: rgba(200, 164, 106, 0.05);
+}
+
+.inputField::placeholder {
+  color: rgba(250, 248, 245, 0.35);
+}
+
+.phoneInputWrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(250, 248, 245, 0.14);
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.phoneInputWrap:focus-within {
+  border-color: #c8a46a;
+  background: rgba(200, 164, 106, 0.05);
+}
+
+.phonePrefix {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 12px 12px 14px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8a46a;
+  background: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(250, 248, 245, 0.1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.phoneField {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 14px;
+}
+
+.phoneField:focus {
+  background: transparent;
+  border-color: transparent;
+}
+
+.genderGroup {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.genderOption {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(250, 248, 245, 0.14);
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(250, 248, 245, 0.7);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.genderOption:hover {
+  border-color: rgba(200, 164, 106, 0.5);
+  color: #FAF8F5;
+}
+
+.genderOptionActive {
+  background: rgba(200, 164, 106, 0.15);
+  border-color: #c8a46a;
+  color: #c8a46a;
+}
+
+.btnSubmit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #c8a46a;
+  color: #0c0c0c;
+  border: 1px solid #c8a46a;
+  padding: 15px 24px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(200, 164, 106, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+
+.btnSubmit:hover {
+  background: #d4b47d;
+  border-color: #d4b47d;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(200, 164, 106, 0.35);
+}
+
+.btnSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}

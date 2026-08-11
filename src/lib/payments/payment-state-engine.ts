@@ -207,28 +207,54 @@ export class PaymentStateEngine {
         }
 
         if (targetProfileId) {
-          const actDate = order.paidAt || new Date();
-          const expDate = new Date(actDate);
-          expDate.setFullYear(expDate.getFullYear() + 1);
-
-          await tx.membership.upsert({
+          const existingMembership = await tx.membership.findUnique({
             where: { profileId: targetProfileId },
-            create: {
-              profileId: targetProfileId,
-              status: 'ACTIVE',
-              source: 'PRE_BOOKING',
-              sourceOrderId: order.id,
-              tier: 'VIP',
-              activatedAt: actDate,
-              expiresAt: expDate,
-            },
-            update: {
-              status: 'ACTIVE',
-              source: 'PRE_BOOKING',
-              sourceOrderId: order.id,
-              expiresAt: expDate,
-            },
           });
+
+          const now = new Date();
+          const isCurrentlyActive = existingMembership &&
+            existingMembership.status === 'ACTIVE' &&
+            existingMembership.expiresAt &&
+            existingMembership.expiresAt > now;
+
+          if (!existingMembership) {
+            // First Pre-Booking -> Activate 1-year Membership
+            const actDate = order.paidAt || now;
+            const expDate = new Date(actDate);
+            expDate.setFullYear(expDate.getFullYear() + 1);
+
+            await tx.membership.create({
+              data: {
+                profileId: targetProfileId,
+                status: 'ACTIVE',
+                source: 'PRE_BOOKING',
+                sourceOrderId: order.id,
+                tier: 'VIP',
+                activatedAt: actDate,
+                expiresAt: expDate,
+              },
+            });
+          } else if (!isCurrentlyActive) {
+            // Expired or cancelled membership -> Reactivate for 1 year from new pre-booking
+            const actDate = order.paidAt || now;
+            const expDate = new Date(actDate);
+            expDate.setFullYear(expDate.getFullYear() + 1);
+
+            await tx.membership.update({
+              where: { profileId: targetProfileId },
+              data: {
+                status: 'ACTIVE',
+                source: 'PRE_BOOKING',
+                sourceOrderId: order.id,
+                tier: 'VIP',
+                activatedAt: actDate,
+                expiresAt: expDate,
+              },
+            });
+          } else {
+            // Currently active membership exists -> DO NOT extend expiresAt, DO NOT reset activatedAt
+            console.log(`[Membership] User ${targetProfileId} already has active membership until ${existingMembership.expiresAt?.toISOString()}. Multiple pre-booking duration extension ignored.`);
+          }
 
           await tx.order.update({
             where: { id: order.id },

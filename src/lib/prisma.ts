@@ -37,4 +37,8 @@ export const prisma = global.prisma ?? createPrismaClient();
 
 if (!global.prisma) {
   global.prisma = prisma;
+  if (process.env.NODE_ENV === 'development') {
+    const fields = Object.keys((prisma as any).profile?.fields || {});
+    console.log(`[PROFILE PRISMA RUNTIME DIAGNOSTIC] gender field present in model: ${fields.includes('gender')}`);
+  }
 }

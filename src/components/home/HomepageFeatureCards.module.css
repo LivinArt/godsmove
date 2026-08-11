@@ -13,7 +13,7 @@
   overflow: hidden;
   background-color: #070709;
   padding: 0;
-  margin-bottom: var(--space-xl);
+  margin-bottom: 0;
 }
 
 /* Horizontal Luxury Split Container */

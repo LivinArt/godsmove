@@ -154,7 +154,8 @@ export default function PreBookingProductCard({
             onClick={() => onPreBookClick?.(product)}
             style={{ flex: 1 }}
           >
-            <span>PRE-BOOK NOW</span>
+            <span className={styles.desktopCtaText}>PRE-BOOK NOW</span>
+            <span className={styles.mobileCtaText}>PRE-BOOK</span>
             <ArrowRight size={13} />
           </button>
           <PreBookingNotifyButton product={product} showSubText={true} />

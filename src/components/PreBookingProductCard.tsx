@@ -16,6 +16,7 @@ import { PreBookingBenefitsModal } from '@/components/prebooking/PreBookingModal
 import PreBookingQuickSelectModal from '@/components/home/PreBookingQuickSelectModal';
 import { PreBookingNotifyButton } from './PreBookingNotifyButton';
 import styles from './PreBookingProductCard.module.css';
+import { calculateProductInventoryState, getStorefrontInventoryDisplay } from '@/lib/inventory-service';
 
 
 export interface PreBookingProductCardProps {
@@ -75,11 +76,14 @@ export default function PreBookingProductCard({
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
-  // Allocation & Scarcity metrics (using authentic launch engine data)
-  const maxPreBookingLimit = product.maxPreBooking != null ? Number(product.maxPreBooking) : 1000;
-  const currentPreBooked = Number(product.currentPreBookings || 0);
-  const allocationsRemaining = Math.max(0, maxPreBookingLimit - currentPreBooked);
-  const preBookingPercent = Math.min(100, Math.max(8, Math.round((currentPreBooked / maxPreBookingLimit) * 100)));
+  // Allocation & Scarcity metrics (using authentic storefront display service)
+  const disp = getStorefrontInventoryDisplay(product);
+  const maxPreBookingLimit = disp.denominator;
+  const currentPreBooked = disp.numerator;
+  const allocationsRemaining = disp.remaining;
+  const preBookingPercent = disp.denominator > 0
+    ? Math.min(100, Math.max(8, Math.round((currentPreBooked / disp.denominator) * 100)))
+    : 0;
 
   // Image resolution
   const { enableImageToggle, defaultImageSide } = product;
@@ -196,10 +200,10 @@ export default function PreBookingProductCard({
               </div>
             </div>
 
-            {/* Right: Allocation Scarcity Counter (X / MAX RESERVED) */}
+            {/* Right: Allocation Scarcity Counter */}
             <div className={styles.allocationBlock}>
               <span className={styles.allocationReserved}>
-                {currentPreBooked} / {maxPreBookingLimit} RESERVED
+                {disp.formattedText}
               </span>
             </div>
           </div>
@@ -282,7 +286,8 @@ export default function PreBookingProductCard({
               setQuickSelectOpen(true);
             }}
           >
-            <span>PRE BOOK NOW</span>
+            <span className={styles.desktopCtaText}>PRE BOOK NOW</span>
+            <span className={styles.mobileCtaText}>PRE-BOOK</span>
             <ArrowRight size={13} strokeWidth={2.5} />
           </button>
           <PreBookingNotifyButton product={product} showSubText={true} />

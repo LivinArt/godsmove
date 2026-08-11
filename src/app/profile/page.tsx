@@ -361,7 +361,7 @@ export default function ProfilePage() {
   const [tabLoading, setTabLoading] = useState<Record<string, boolean>>({});
 
   // Form States
-  const [personalForm, setPersonalForm] = useState({ firstName: '', lastName: '', phone: '', dob: '' });
+  const [personalForm, setPersonalForm] = useState({ firstName: '', lastName: '', phone: '', dob: '', gender: '' });
   const [personalLoading, setPersonalLoading] = useState(false);
 
   const [addressForm, setAddressForm] = useState({
@@ -763,7 +763,8 @@ export default function ProfilePage() {
           firstName: prof?.firstName || '',
           lastName: prof?.lastName || '',
           phone: prof?.phone || '',
-          dob: formattedDob
+          dob: formattedDob,
+          gender: prof?.gender || 'Prefer not to say',
         });
 
         const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
@@ -1375,6 +1376,25 @@ export default function ProfilePage() {
                         value={personalForm.dob}
                         onChange={(e) => setPersonalForm({ ...personalForm, dob: e.target.value })}
                       />
+                    </div>
+
+                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                      <label>Gender</label>
+                      <select
+                        className={styles.input}
+                        value={personalForm.gender}
+                        onChange={(e) => setPersonalForm({ ...personalForm, gender: e.target.value })}
+                        style={{
+                          appearance: 'auto',
+                          color: 'var(--text-primary, #121212)',
+                          backgroundColor: 'var(--bg-primary, #F4F0EA)',
+                          borderColor: 'var(--border-medium, rgba(18, 18, 18, 0.15))',
+                        }}
+                      >
+                        <option value="Prefer not to say" style={{ background: '#121212', color: '#FAF8F5' }}>Prefer not to say</option>
+                        <option value="Male" style={{ background: '#121212', color: '#FAF8F5' }}>Male</option>
+                        <option value="Female" style={{ background: '#121212', color: '#FAF8F5' }}>Female</option>
+                      </select>
                     </div>
                     
                     <button type="submit" disabled={personalLoading} className="btn btn-primary" style={{ gridColumn: '1 / -1', marginTop: 'var(--space-md)' }}>

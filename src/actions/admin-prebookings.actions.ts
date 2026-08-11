@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { isSuperAdminEmail } from '@/lib/admin-auth';
+import { calculateProductInventoryState } from '@/lib/inventory-service';
 
 export async function getAdminPreBookingsData() {
   try {
@@ -83,8 +84,9 @@ export async function getAdminPreBookingsData() {
     const formattedProducts = products.map(p => {
       const launchTime = p.launchDateTime ? new Date(p.launchDateTime) : null;
       const openTime = p.preBookingOpenDateTime ? new Date(p.preBookingOpenDateTime) : null;
-      const maxLimit = p.maxPreBooking ?? 1000;
-      const currentBooked = p.currentPreBookings ?? 0;
+      const invState = calculateProductInventoryState(p);
+      const maxLimit = invState.preBookingAllocation;
+      const currentBooked = invState.paidPreBookings;
 
       let computedStatus: 'UPCOMING' | 'OPEN' | 'SOLD_OUT' | 'CLOSED' | 'LAUNCHED' = 'CLOSED';
 
@@ -250,8 +252,8 @@ export async function getProductPreBookingInsightAction(productId: string) {
         frontImageUrl: product.frontImageUrl,
         price: product.variants?.[0]?.price ? Number(product.variants[0].price) : 0,
         launchDateTime: product.launchDateTime ? product.launchDateTime.toISOString() : null,
-        maxPreBooking: product.maxPreBooking ?? 1000,
-        currentPreBookings: product.currentPreBookings ?? 0,
+        maxPreBooking: calculateProductInventoryState(product).preBookingAllocation,
+        currentPreBookings: calculateProductInventoryState(product).paidPreBookings,
       },
       paidCustomers: paidOrders.map(o => ({
         id: o.id,

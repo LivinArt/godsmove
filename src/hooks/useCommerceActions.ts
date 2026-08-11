@@ -42,28 +42,23 @@ export function useCommerceActions({
     requireAuth(
       'checkout',
       () => {
-        // Single atomic write: new sessionId + checkoutMode='INSTANT' + product snapshot.
-        // One set() call — no pre-clear, no race condition, no React batching dependency.
         beginInstantCheckout({ product, size: selectedSize, quantity });
         router.push('/checkout');
       },
-      { type: 'checkout', product, size: selectedSize, quantity }
+      { type: 'checkout', product, size: selectedSize, quantity, returnUrl: '/checkout' }
     );
   };
 
-  // 2. QUICK ADD / CART — Cart Drawer Integration
+  // 2. QUICK ADD / CART — Guest Allowed (No Login Required)
   const handleAddToCart = () => {
     if (!selectedSize) {
       if (onRequireSize) onRequireSize();
       return;
     }
-    requireAuth(
-      'cart',
-      () => {
-        addToCart(product, selectedSize, quantity);
-      },
-      { type: 'cart', product, size: selectedSize, quantity }
-    );
+    addToCart(product, selectedSize, quantity);
+    if (onSuccessMessage) {
+      onSuccessMessage('Added to Bag');
+    }
   };
 
   // 3. WISHLIST — Toggle Wishlist

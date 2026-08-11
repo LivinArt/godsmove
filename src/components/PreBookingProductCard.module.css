@@ -635,3 +635,20 @@
   color: #c8a46a;
 }
 
+.desktopCtaText {
+  display: inline;
+}
+
+.mobileCtaText {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktopCtaText {
+    display: none;
+  }
+  .mobileCtaText {
+    display: inline;
+  }
+}
+

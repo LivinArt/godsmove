@@ -14,6 +14,7 @@ import PreBookingBenefitsModal from '@/components/PreBookingBenefitsModal';
 import { PreBookingTermsModal } from '@/components/prebooking/PreBookingModals';
 import { PreBookingNotifyButton } from '../PreBookingNotifyButton';
 import styles from './VaultProductCard.module.css';
+import { calculateProductInventoryState, getStorefrontInventoryDisplay } from '@/lib/inventory-service';
 
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -229,10 +230,13 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
   const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
-  const maxPreBookingLimit = product.maxPreBooking != null ? Number(product.maxPreBooking) : 100;
-  const currentPreBooked = Number(product.currentPreBookings || 0);
-  const preBookingRemaining = Math.max(0, maxPreBookingLimit - currentPreBooked);
-  const preBookingPercent = Math.min(100, Math.round((currentPreBooked / maxPreBookingLimit) * 100));
+  const disp = getStorefrontInventoryDisplay(product);
+  const maxPreBookingLimit = disp.denominator;
+  const currentPreBooked = disp.numerator;
+  const preBookingRemaining = disp.remaining;
+  const preBookingPercent = disp.denominator > 0
+    ? Math.min(100, Math.round((currentPreBooked / disp.denominator) * 100))
+    : 0;
 
   return (
     <div className={`${styles.exclusiveRow} ${isEven ? styles.rowNormal : styles.rowReverse}`}>
@@ -381,17 +385,17 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
             </span>
           </div>
           <div className={styles.editionMetaRow}>
-            {isPreBookingMode ? (
+            {disp.isPreBookingActive ? (
               <>
-                <span>Allocation of {maxPreBookingLimit}</span>
+                <span>{disp.numerator} / {disp.denominator} RESERVED</span>
                 <span className={styles.editionDot}>•</span>
-                <span style={{ color: '#c8a46a', fontWeight: 600 }}>{preBookingRemaining} allocations remain</span>
+                <span style={{ color: '#c8a46a', fontWeight: 600 }}>{disp.remaining} allocations remain</span>
               </>
             ) : (
               <>
-                <span>Edition of {product.maxEdition || 100}</span>
+                <span>{disp.numerator} / {disp.denominator} SOLD</span>
                 <span className={styles.editionDot}>•</span>
-                <span>{actualAvailableStock > 0 ? `${actualAvailableStock} PIECES REMAIN` : 'SOLD OUT'}</span>
+                <span>{disp.remaining > 0 ? `${disp.remaining} PIECES REMAIN` : 'SOLD OUT'}</span>
               </>
             )}
           </div>

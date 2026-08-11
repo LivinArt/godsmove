@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Crown } from 'lucide-react';
 import {
   saveAdminCustomerNotes,
   adjustCustomerWallet,
   updateCustomerSecurity,
   adminAddressCrud,
 } from '@/actions/admin-customer.actions';
+import { endAdminMembership, renewAdminMembership } from '@/actions/membership.actions';
 
 interface Address {
   id: string;
@@ -122,6 +124,8 @@ interface CustomerDetail {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  dob?: string | Date | null;
+  gender?: string | null;
   createdAt: string;
   adminNotes: string | null;
   emailConfirmed: boolean;
@@ -135,6 +139,14 @@ interface CustomerDetail {
   returns: ReturnReq[];
   careRequests?: CareRequestItem[];
   timeline: TimelineItem[];
+  membership?: {
+    id: string;
+    status: string;
+    source: string;
+    activatedAt: string | Date | null;
+    expiresAt: string | Date | null;
+    sourceOrder?: { orderNumber: string } | null;
+  } | null;
 }
 
 export default function CustomerCRMClient({
@@ -143,7 +155,7 @@ export default function CustomerCRMClient({
   customer: CustomerDetail;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'notes' | 'addresses' | 'orders' | 'credits' | 'wishlist' | 'security' | 'care'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'membership' | 'addresses' | 'orders' | 'credits' | 'wishlist' | 'security' | 'care'>('notes');
 
   // Notes state
   const [notes, setNotes] = useState(customer.adminNotes ?? '');
@@ -339,7 +351,10 @@ export default function CustomerCRMClient({
               {(customer.firstName?.[0] || customer.email[0]).toUpperCase()}
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {customer.membership?.status === 'ACTIVE' && customer.membership?.expiresAt && new Date(customer.membership.expiresAt) > new Date() && (
+                  <Crown size={16} style={{ color: '#c5a059' }} />
+                )}
                 {customer.firstName || customer.lastName
                   ? `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
                   : 'Unnamed Customer'}
@@ -360,6 +375,14 @@ export default function CustomerCRMClient({
             <div>
               <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Phone</span>
               <span>{customer.phone || 'Not provided'}</span>
+            </div>
+            <div>
+              <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Date of Birth</span>
+              <span>{customer.dob ? new Date(customer.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not provided'}</span>
+            </div>
+            <div>
+              <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Gender</span>
+              <span>{customer.gender || 'Not provided'}</span>
             </div>
             <div>
               <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Verification Status</span>
@@ -393,6 +416,7 @@ export default function CustomerCRMClient({
           {(
             [
               { key: 'notes', label: 'Notes & Timeline' },
+              { key: 'membership', label: 'GODSMOVE Membership' },
               { key: 'addresses', label: `Address Book (${customer.addresses.length})` },
               { key: 'orders', label: `Order Logs (${customer.orders.length})` },
               { key: 'credits', label: `Credits Ledger (${formatINR(customer.wallet?.balance ?? 0)})` },
@@ -978,6 +1002,101 @@ export default function CustomerCRMClient({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* TAB: GODSMOVE Membership */}
+        {activeTab === 'membership' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Crown size={18} style={{ color: '#c5a059' }} /> GODSMOVE MEMBERSHIP
+              </h3>
+              {customer.membership && (
+                <div>
+                  {customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? (
+                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(197, 160, 89, 0.15)', color: '#c5a059', border: '1px solid rgba(197, 160, 89, 0.3)', padding: '4px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.05em' }}>
+                      <Crown size={14} /> ACTIVE
+                    </span>
+                  ) : customer.membership.status === 'CANCELLED' ? (
+                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(255, 255, 255, 0.08)', color: '#a1a1aa', border: '1px solid var(--admin-border)', padding: '4px 12px', borderRadius: 100, letterSpacing: '0.05em' }}>
+                      CANCELLED
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(255, 59, 48, 0.15)', color: '#ff3b30', border: '1px solid rgba(255, 59, 48, 0.3)', padding: '4px 12px', borderRadius: 100, letterSpacing: '0.05em' }}>
+                      EXPIRED
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {customer.membership ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 650, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Membership Status</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? '#4cd964' : '#ff3b30' }}>
+                      ● {customer.membership.status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Source</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#c5a059' }}>
+                      {customer.membership.source === 'PRE_BOOKING' ? 'PRE-BOOKING' : customer.membership.source}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Member Since</span>
+                    <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>
+                      {customer.membership.activatedAt ? new Date(customer.membership.activatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Membership Ends</span>
+                    <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>
+                      {customer.membership.expiresAt ? new Date(customer.membership.expiresAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Remaining</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#c5a059' }}>
+                      {(() => {
+                        if (customer.membership.status === 'CANCELLED') return 'CANCELLED';
+                        if (!customer.membership.expiresAt) return '—';
+                        const diffMs = new Date(customer.membership.expiresAt).getTime() - new Date().getTime();
+                        if (diffMs <= 0) return 'EXPIRED';
+                        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                        return `${days} DAYS`;
+                      })()}
+                    </span>
+                  </div>
+
+                  {customer.membership.sourceOrder && (
+                    <div>
+                      <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Source Order</span>
+                      <Link href={`/admin/orders?search=${customer.membership.sourceOrder.orderNumber}`} style={{ color: '#c5a059', fontSize: 14, fontWeight: 600, textDecoration: 'underline' }}>
+                        #{customer.membership.sourceOrder.orderNumber}
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--admin-border)', paddingTop: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <Link href="/admin/members" className="btn-secondary" style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none' }}>
+                    Manage in Members Panel →
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--admin-muted)', background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 10 }}>
+                No active or historical membership record exists for this customer.
+              </div>
+            )}
           </div>
         )}
 

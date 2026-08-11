@@ -20,6 +20,14 @@ export interface CustomerRecord {
   dob: string | null; // ISO string (Date of Birth)
   tier: string; // STANDARD, VIP, INNER_CIRCLE
   lastPurchaseDate: string | null; // ISO string
+  isMemberActive?: boolean;
+  membership?: {
+    id: string;
+    status: string;
+    source: string;
+    activatedAt: string | Date | null;
+    expiresAt: string | Date | null;
+  } | null;
 }
 
 export const CustomerSegmentService = {

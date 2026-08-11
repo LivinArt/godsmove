@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { Crown } from 'lucide-react';
 
 function formatINR(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
@@ -45,7 +46,7 @@ export default async function OrdersPage({
     prisma.order.findMany({
       where: whereClause,
       include: {
-        profile: { select: { firstName: true, lastName: true } },
+        profile: { select: { firstName: true, lastName: true, membership: { select: { status: true, expiresAt: true } } } },
         items: { select: { productName: true, quantity: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -142,12 +143,27 @@ export default async function OrdersPage({
             {orders.length === 0 && (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>No orders found</td></tr>
             )}
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td><span className="mono" style={{ color: 'var(--admin-accent)' }}>{order.orderNumber}</span></td>
-                <td style={{ fontSize: 13 }}>
-                  {order.profile ? `${order.profile.firstName ?? ''} ${order.profile.lastName ?? ''}`.trim() : order.email}
-                </td>
+            {orders.map((order) => {
+              const isOrderMemberActive = Boolean(
+                order.profile?.membership &&
+                  order.profile.membership.status === 'ACTIVE' &&
+                  order.profile.membership.expiresAt &&
+                  new Date(order.profile.membership.expiresAt) > new Date()
+              );
+
+              return (
+                <tr key={order.id}>
+                  <td><span className="mono" style={{ color: 'var(--admin-accent)' }}>{order.orderNumber}</span></td>
+                  <td style={{ fontSize: 13 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {isOrderMemberActive && (
+                        <Crown size={13} style={{ color: '#c5a059', flexShrink: 0 }} />
+                      )}
+                      <span>
+                        {order.profile ? `${order.profile.firstName ?? ''} ${order.profile.lastName ?? ''}`.trim() || order.email : order.email}
+                      </span>
+                    </div>
+                  </td>
                 <td style={{ fontSize: 12, color: 'var(--admin-muted)' }}>
                   {order.items.map(i => `${i.productName} ×${i.quantity}`).join(', ').slice(0, 40)}
                 </td>
@@ -172,7 +188,8 @@ export default async function OrdersPage({
                   </Link>
                 </td>
               </tr>
-            ))}
+            );
+          })}
           </tbody>
         </table>
       </div>

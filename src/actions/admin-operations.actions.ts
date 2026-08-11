@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { NotificationService } from '@/notifications/notification.service';
 import { LogisticsService, calculateETA } from '@/lib/logistics';
+import { calculateProductInventoryState } from '@/lib/inventory-service';
 
 function safeRevalidate(path: string) {
   try {
@@ -654,6 +655,28 @@ export async function getAdminInventory() {
               launchDateTime: true,
             },
           },
+          orderItems: {
+            include: {
+              order: {
+                select: {
+                  id: true,
+                  paymentStatus: true,
+                  isPreBooking: true,
+                  orderType: true,
+                },
+              },
+              returnItems: {
+                include: {
+                  returnReq: {
+                    select: {
+                      id: true,
+                      status: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       movements: {
@@ -666,12 +689,61 @@ export async function getAdminInventory() {
 
   return inventory.map((inv) => {
     const p = inv.variant.product;
-    const available = Math.max(0, inv.totalStock - inv.soldStock - inv.reservedStock);
-    const isPreBooking = Boolean(p.isPreBooking || p.maxPreBooking);
-    const preBookingAllocation = p.maxPreBooking != null ? Number(p.maxPreBooking) : 0;
-    const paidPreBookings = p.currentPreBookings != null ? Number(p.currentPreBookings) : 0;
-    const remainingPreBookingAllocation = Math.max(0, preBookingAllocation - paidPreBookings);
-    const normalLaunchAvailable = Math.max(0, inv.totalStock - inv.soldStock - inv.reservedStock);
+    const isPreBooking = Boolean(p.isPreBooking);
+
+    // 1. Calculate Pre-Book Allocation
+    const preBookAllocation = isPreBooking
+      ? (p.maxPreBooking != null ? Number(p.maxPreBooking) : inv.totalStock)
+      : 0;
+
+    // 2. Breakdown variant orders & returns
+    let preBookReserved = 0;
+    let normalOrders = 0;
+    let returnUnits = 0;
+
+    if (Array.isArray(inv.variant.orderItems)) {
+      inv.variant.orderItems.forEach((item: any) => {
+        if (item.order?.paymentStatus === 'PAID') {
+          const isPbOrder = Boolean(item.order.isPreBooking || item.order.orderType === 'PRE_BOOKING');
+          if (isPbOrder) {
+            preBookReserved += item.quantity;
+          } else {
+            normalOrders += item.quantity;
+          }
+        }
+
+        if (Array.isArray(item.returnItems)) {
+          item.returnItems.forEach((ri: any) => {
+            const reqStatus = ri.returnReq?.status;
+            if (['RECEIVED', 'INSPECTION', 'REFUND_PROCESSED', 'WALLET_CREDITED', 'COMPLETED'].includes(reqStatus)) {
+              returnUnits += ri.quantity;
+            }
+          });
+        }
+      });
+    }
+
+    // Fallback for preBookReserved if currentPreBookings exists on Product
+    if (preBookReserved === 0 && p.currentPreBookings != null && p.currentPreBookings > 0) {
+      preBookReserved = Number(p.currentPreBookings);
+    }
+
+    // Fallback for normalOrders if soldStock > preBookReserved
+    if (normalOrders === 0 && inv.soldStock > preBookReserved) {
+      normalOrders = inv.soldStock - preBookReserved;
+    }
+
+    // 3. Formulas: SOLD = PRE-BOOK RESERVED + ORDERS
+    const sold = preBookReserved + normalOrders;
+
+    // 4. Formulas: AVAILABLE = TOTAL - SOLD + RETURN
+    const available = Math.max(0, inv.totalStock - sold + returnUnits);
+
+    const remainingPreBookingAllocation = isPreBooking || preBookAllocation > 0
+      ? Math.max(0, preBookAllocation - preBookReserved)
+      : 0;
+
+    const normalLaunchAvailable = Math.max(0, inv.totalStock - preBookReserved - normalOrders + returnUnits);
 
     return {
       id: inv.id,
@@ -684,15 +756,20 @@ export async function getAdminInventory() {
       productSlug: p.slug,
       productStatus: p.status,
       isPreBooking,
-      preBookingAllocation,
-      paidPreBookings,
+      preBookingAllocation: preBookAllocation,
+      paidPreBookings: preBookReserved,
+      preBookAllocation,
+      preBookReserved,
+      normalOrders,
+      sold,
+      returnUnits,
       remainingPreBookingAllocation,
       normalLaunchAvailable,
       launchDateTime: p.launchDateTime ? p.launchDateTime.toISOString() : null,
       type: inv.type,
       totalStock: inv.totalStock,
       reservedStock: inv.reservedStock,
-      soldStock: inv.soldStock,
+      soldStock: sold,
       damagedStock: inv.damagedStock,
       incomingStock: inv.incomingStock,
       lowStockAt: inv.lowStockAt,

@@ -257,19 +257,14 @@ export default function InventoryCRMClient({
                 <th>Product / SKU</th>
                 <th>Warehouse</th>
                 <th>Supplier</th>
-                <th style={{ textAlign: 'center' }}>Total Physical</th>
-                {activeTab === 'PRE_BOOKING' && (
-                  <>
-                    <th style={{ textAlign: 'center' }}>PB Allocation</th>
-                    <th style={{ textAlign: 'center' }}>Paid Bookings</th>
-                    <th style={{ textAlign: 'center' }}>Remaining Alloc</th>
-                    <th style={{ textAlign: 'center' }}>Launch Avail</th>
-                  </>
-                )}
-                <th style={{ textAlign: 'center' }}>Reserved</th>
-                <th style={{ textAlign: 'center' }}>Sold</th>
-                <th style={{ textAlign: 'center' }}>Damaged</th>
-                <th style={{ textAlign: 'center' }}>Available</th>
+                <th style={{ textAlign: 'center' }}>Total</th>
+                <th style={{ textAlign: 'center' }}>PRE-BOOK ALLOCATION</th>
+                <th style={{ textAlign: 'center' }}>PRE-BOOK RESERVED</th>
+                <th style={{ textAlign: 'center' }}>ORDERS</th>
+                <th style={{ textAlign: 'center' }}>SOLD</th>
+                <th style={{ textAlign: 'center' }}>RETURN</th>
+                <th style={{ textAlign: 'center' }}>Incoming</th>
+                <th style={{ textAlign: 'center' }}>AVAILABLE</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -277,15 +272,21 @@ export default function InventoryCRMClient({
             <tbody>
               {filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan={activeTab === 'PRE_BOOKING' ? 14 : 11} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>
+                  <td colSpan={13} style={{ textAlign: 'center', padding: 40, color: 'var(--admin-muted)' }}>
                     No matching inventory rows found for category tab.
                   </td>
                 </tr>
               ) : (
-                filteredInventory.map((inv) => {
+                filteredInventory.map((inv: any) => {
                   const isOut = inv.availableStock <= 0;
                   const isLow = inv.availableStock <= inv.minThreshold && inv.availableStock > 0;
                   const isPb = Boolean(inv.isPreBooking);
+                  const preBookAlloc = inv.preBookAllocation ?? inv.preBookingAllocation ?? 0;
+                  const preBookRes = inv.preBookReserved ?? inv.paidPreBookings ?? 0;
+                  const normalOrd = inv.normalOrders ?? 0;
+                  const soldUnits = inv.sold ?? (preBookRes + normalOrd);
+                  const retUnits = inv.returnUnits ?? 0;
+                  const availStock = inv.availableStock ?? (inv.totalStock - soldUnits + retUnits);
 
                   return (
                     <tr key={inv.id} style={selectedInv?.id === inv.id ? { background: 'var(--admin-surface-2)' } : {}}>
@@ -306,27 +307,23 @@ export default function InventoryCRMClient({
                       <td style={{ color: 'var(--admin-muted)' }}>{inv.supplier || 'GODSMOVE'}</td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{inv.totalStock}</td>
 
-                      {activeTab === 'PRE_BOOKING' && (
-                        <>
-                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#c5a059' }}>
-                            {inv.preBookingAllocation || 0}
-                          </td>
-                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#22c55e' }}>
-                            {inv.paidPreBookings || 0}
-                          </td>
-                          <td style={{ textAlign: 'center', color: '#eab308' }}>
-                            {inv.remainingPreBookingAllocation || 0}
-                          </td>
-                          <td style={{ textAlign: 'center', fontWeight: 700, color: '#3b82f6' }}>
-                            {inv.normalLaunchAvailable || 0}
-                          </td>
-                        </>
-                      )}
-
-                      <td style={{ textAlign: 'center', color: 'var(--admin-muted)' }}>{inv.reservedStock}</td>
-                      <td style={{ textAlign: 'center', color: 'var(--admin-muted)' }}>{inv.soldStock}</td>
-                      <td style={{ textAlign: 'center', color: inv.damagedStock > 0 ? 'var(--admin-danger)' : 'var(--admin-muted)' }}>
-                        {inv.damagedStock}
+                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#c5a059' }}>
+                        {preBookAlloc}
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#22c55e' }}>
+                        {preBookRes}
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 600, color: '#3b82f6' }}>
+                        {normalOrd}
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#ffffff' }}>
+                        {soldUnits}
+                      </td>
+                      <td style={{ textAlign: 'center', color: retUnits > 0 ? '#eab308' : 'var(--admin-muted)' }}>
+                        {retUnits}
+                      </td>
+                      <td style={{ textAlign: 'center', color: 'var(--admin-muted)' }}>
+                        {inv.incomingStock ?? 0}
                       </td>
                       <td
                         style={{
@@ -335,14 +332,14 @@ export default function InventoryCRMClient({
                           color: isOut ? 'var(--admin-danger)' : isLow ? 'var(--admin-warning)' : 'var(--admin-accent)',
                         }}
                       >
-                        {inv.availableStock}
+                        {availStock}
                       </td>
                       <td>
                         {isOut ? (
                           <span className="badge badge-red">SOLD OUT</span>
                         ) : isLow ? (
                           <span className="badge badge-yellow">LOW</span>
-                        ) : isPb && (inv.remainingPreBookingAllocation || 0) === 0 && (inv.preBookingAllocation || 0) > 0 ? (
+                        ) : isPb && (inv.remainingPreBookingAllocation || 0) === 0 && preBookAlloc > 0 ? (
                           <span className="badge badge-yellow">ALLOC FULL</span>
                         ) : (
                           <span className="badge badge-green">OK</span>

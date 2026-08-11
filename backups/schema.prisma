@@ -23,6 +23,7 @@ model Profile {
   firstName String?
   lastName  String?
   phone     String?
+  gender    String?
   role      UserRole @default(CUSTOMER)
   tier      UserTier @default(STANDARD)
   createdAt DateTime @default(now())

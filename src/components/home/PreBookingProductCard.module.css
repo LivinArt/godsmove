@@ -275,6 +275,23 @@
 }
 
 /* Responsive fixes */
+.desktopCtaText {
+  display: inline;
+}
+
+.mobileCtaText {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktopCtaText {
+    display: none;
+  }
+  .mobileCtaText {
+    display: inline;
+  }
+}
+
 @media (max-width: 639px) {
   .infoPanel {
     padding: 16px 14px 18px;
@@ -286,7 +303,7 @@
   }
 
   .ctaRow {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr) 40px;
   }
 
   .benefitsCta {

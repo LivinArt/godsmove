@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { Crown } from 'lucide-react';
 import { CustomerSegmentService } from '@/lib/customer-segment-service';
 import { bulkAddWalletCredits, bulkSendCampaign, bulkTagCustomers } from '@/actions/admin-customer.actions';
 
@@ -23,6 +24,7 @@ interface Customer {
   dob: string | null;
   tier: string;
   lastPurchaseDate: string | null;
+  isMemberActive?: boolean;
 }
 
 const FILTER_OPTIONS = [
@@ -479,11 +481,19 @@ export default function CustomersListClient({
                             </div>
                             <div>
                               <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {c.isMemberActive && (
+                                  <Crown size={14} style={{ color: '#c5a059', flexShrink: 0 }} />
+                                )}
                                 <span>
                                   {c.firstName || c.lastName
                                     ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()
                                     : 'Unnamed Account'}
                                 </span>
+                                {c.isMemberActive && (
+                                  <span style={{ fontSize: 9, fontWeight: 800, background: 'rgba(197, 160, 89, 0.15)', border: '1px solid rgba(197, 160, 89, 0.3)', color: '#c5a059', padding: '1px 6px', borderRadius: 100, letterSpacing: '0.05em' }}>
+                                    MEMBER
+                                  </span>
+                                )}
                                 {c.godsmoveId && (
                                   <span className="mono" style={{ fontSize: 10, background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', color: 'var(--admin-accent)', padding: '1px 5px', borderRadius: 4 }}>
                                     {c.godsmoveId}

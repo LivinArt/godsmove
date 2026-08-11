@@ -231,9 +231,13 @@ export default function CheckoutPage() {
         if (userProf) {
           setProfile(userProf);
           setIsLoggedIn(true);
-          if (userProf.email) {
-            setForm((prev) => ({ ...prev, email: userProf.email }));
-          }
+          setForm((prev) => ({
+            ...prev,
+            email: userProf.email || prev.email,
+            firstName: userProf.firstName || prev.firstName,
+            lastName: userProf.lastName || prev.lastName,
+            phone: userProf.phone ? userProf.phone.replace(/^\+91/, '').trim() : prev.phone,
+          }));
         }
 
         if (Array.isArray(addrList) && addrList.length > 0) {
@@ -243,10 +247,10 @@ export default function CheckoutPage() {
           setSelectedAddressId(defaultAddr.id);
           const userEmail = userProf?.email || '';
           setForm({
-            firstName: defaultAddr.firstName || '',
-            lastName: defaultAddr.lastName || '',
+            firstName: defaultAddr.firstName || userProf?.firstName || '',
+            lastName: defaultAddr.lastName || userProf?.lastName || '',
             email: userEmail,
-            phone: (defaultAddr.phone || '').replace(/\D/g, '').slice(-10),
+            phone: (defaultAddr.phone || userProf?.phone || '').replace(/\D/g, '').slice(-10),
             address: defaultAddr.line1 || '',
             city: defaultAddr.city || '',
             state: defaultAddr.state || '',

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { isProfileComplete } from '@/lib/profile-utils';
 
 interface Profile {
   id: string;
@@ -17,6 +18,7 @@ interface Profile {
   role: string;
   tier: string;
   dob: string | null;
+  gender: string | null;
 }
 
 interface AuthContextType {
@@ -62,14 +64,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Resume Pending Action on authentication
+  // Resume Pending Action on authentication & ensure profile completion
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && profile) {
+      const isComplete = isProfileComplete(profile);
+
+      if (!isComplete) {
+        setIsModalOpen(true);
+        return;
+      }
+
       const pendingStr = sessionStorage.getItem('godsmove_pending_action');
       if (pendingStr) {
         try {
           const pending = JSON.parse(pendingStr);
           sessionStorage.removeItem('godsmove_pending_action');
+
+          if (pending.timestamp && Date.now() - pending.timestamp > 15 * 60 * 1000) {
+            return;
+          }
 
           if (pending.type === 'cart') {
             addToCart(pending.product, pending.size, pending.quantity || 1);
@@ -79,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
               router.push('/wishlist');
             }
-          } else if (pending.type === 'checkout') {
+          } else if (pending.type === 'checkout' || pending.type === 'BUY_NOW') {
             if (pending.product) {
               beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
             }
@@ -101,7 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
             });
           } else if (pending.type === 'navigate' && pending.url) {
-
             router.push(pending.url);
           }
         } catch (e) {
@@ -109,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [user, loading, addToCart, toggleWishlist, beginInstantCheckout, router]);
+  }, [user, loading, profile, addToCart, toggleWishlist, beginInstantCheckout, router]);
 
   useEffect(() => {
     // Initial Session check via Supabase Auth
@@ -118,9 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       if (currentUser) {
         fetchProfile(currentUser.id);
-      } else {
-        clearCart();
-        clearWishlist();
       }
       setLoading(false);
     });
@@ -133,8 +142,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchProfile(currentUser.id);
       } else {
         setProfile(null);
-        clearCart();
-        clearWishlist();
       }
       setLoading(false);
       router.refresh();
@@ -150,7 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       callback();
     } else {
       const details = pendingDetails || { type: action };
-      sessionStorage.setItem('godsmove_pending_action', JSON.stringify(details));
+      const payload = {
+        ...details,
+        timestamp: Date.now(),
+      };
+      sessionStorage.setItem('godsmove_pending_action', JSON.stringify(payload));
       setModalAction(action);
       setOnSuccessCallback(() => callback);
       setIsModalOpen(true);
@@ -159,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function openAuthModal(action?: string) {
     if (action) {
-      sessionStorage.setItem('godsmove_pending_action', JSON.stringify({ type: action }));
+      sessionStorage.setItem('godsmove_pending_action', JSON.stringify({ type: action, timestamp: Date.now() }));
     }
     setModalAction(action || null);
     setIsModalOpen(true);
@@ -170,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsModalOpen(false);
     setOnSuccessCallback(null);
     setModalAction(null);
+    sessionStorage.removeItem('godsmove_pending_action');
 
     // 2. Clear local states immediately
     setUser(null);
@@ -200,7 +212,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const pending = JSON.parse(pendingStr);
           sessionStorage.removeItem('godsmove_pending_action');
-          if (pending.type === 'cart') {
+          if (pending.timestamp && Date.now() - pending.timestamp > 15 * 60 * 1000) {
+            // Expired
+          } else if (pending.type === 'cart') {
             addToCart(pending.product, pending.size, pending.quantity || 1);
           } else if (pending.type === 'wishlist') {
             if (pending.product) {
@@ -208,7 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
               router.push('/wishlist');
             }
-          } else if (pending.type === 'checkout') {
+          } else if (pending.type === 'checkout' || pending.type === 'BUY_NOW') {
             if (pending.product) {
               beginInstantCheckout({ product: pending.product, size: pending.size, quantity: pending.quantity || 1 });
             }
@@ -247,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsModalOpen(false);
           setOnSuccessCallback(null);
           setModalAction(null);
+          sessionStorage.removeItem('godsmove_pending_action');
         }}
         onSuccess={handleModalSuccess}
         redirectPath={modalAction === 'profile' ? '/profile' : undefined}
