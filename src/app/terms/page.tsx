@@ -33,6 +33,8 @@ const TOC_SECTIONS: TocSection[] = [
   { id: 'privacy-policy-ref', title: '10. Privacy Integration' },
   { id: 'jurisdiction', title: '11. Governing Law & Jurisdiction' },
   { id: 'force-majeure', title: '12. Force Majeure' },
+  { id: 'pre-booking-terms', title: '13. Pre-Booking Terms & Conditions' },
+  { id: 'membership-terms', title: '14. GODSMOVE Membership Terms & Conditions' },
 ];
 
 export default function TermsPage() {
@@ -153,6 +155,76 @@ export default function TermsPage() {
             <p>
               GODSMOVE shall not be held liable for failure or delay in performance caused by acts of God, extreme weather, logistics strikes, governmental restrictions, pandemics, or unforeseen infrastructure outages beyond reasonable control.
             </p>
+          </section>
+
+          <section id="pre-booking-terms">
+            <h2>13. Pre-Booking Terms &amp; Conditions</h2>
+            <p>
+              Pre-booking allows customers to reserve limited allocations for upcoming product drops prior to standard live releases.
+            </p>
+            <ul>
+              <li>
+                <strong>13.1 Nature of Reservation:</strong> A pre-booking constitutes a confirmed garment allocation and becomes a binding order only upon successful online payment confirmation.
+              </li>
+              <li>
+                <strong>13.2 Payment Requirements:</strong> Pre-booking transactions require full online payment via Credit/Debit Cards, Net Banking, UPI, or GODSMOVE Wallet store credits. <strong>Cash on Delivery (COD) is strictly unavailable</strong> for pre-booking orders.
+              </li>
+              <li>
+                <strong>13.3 Allocation Limits:</strong> Pre-bookings are subject to quantitative limits set for each drop. Once the configured allocation limit is reached, additional pre-bookings will not be accepted.
+              </li>
+              <li>
+                <strong>13.4 Inventory Accounting:</strong> Pre-booked units are actual paid orders and consume stock directly from the product&apos;s total physical inventory pool. They are not treated as separate physical stock.
+              </li>
+              <li>
+                <strong>13.5 Canonical Inventory Calculation:</strong> Stock availability is governed by our canonical formula: <code>AVAILABLE = TOTAL PHYSICAL INVENTORY - SOLD + RETURN</code>. Units reserved under pre-booking count directly toward <code>SOLD</code>.
+              </li>
+              <li>
+                <strong>13.6 Launch Transition:</strong> When the configured pre-booking timer reaches its launch threshold, the product seamlessly transitions to the live purchase flow. Any remaining unused allocation automatically becomes available as live inventory.
+              </li>
+              <li>
+                <strong>13.7 Sold Out Display Policy:</strong> When available inventory reaches zero (<code>AVAILABLE = 0</code>), the product remains visible on the storefront displaying a <strong>SOLD OUT</strong> badge. Products are never automatically deleted or hidden unless explicitly unpublished by Admin.
+              </li>
+              <li>
+                <strong>13.8 Pre-Booking Benefits:</strong> Qualifying pre-booking customers receive a complimentary 1-year GODSMOVE Membership, exclusive drop allocation, priority dispatch upon release, and drop-specific promotional benefits.
+              </li>
+              <li>
+                <strong>13.9 Returns &amp; Store Credit:</strong> Pre-booked items are covered by our standard 7-day return policy following physical delivery. Approved returns yield store credit credited directly to the customer&apos;s GODSMOVE Wallet.
+              </li>
+            </ul>
+          </section>
+
+          <section id="membership-terms">
+            <h2>14. GODSMOVE Membership Terms &amp; Conditions</h2>
+            <p>
+              The GODSMOVE Membership program offers exclusive access, priority services, and privileges for dedicated brand patrons.
+            </p>
+            <ul>
+              <li>
+                <strong>14.1 Membership Start &amp; Activation:</strong> Complimentary membership is activated automatically upon completion of a customer&apos;s first qualifying pre-booking or purchase.
+              </li>
+              <li>
+                <strong>14.2 Duration:</strong> Granted memberships remain active for exactly <strong>1 YEAR (365 days)</strong> from the date of activation.
+              </li>
+              <li>
+                <strong>14.3 Subsequent Pre-Bookings:</strong> Making additional pre-bookings or purchases during an active membership period does not automatically extend or stack the existing expiration date.
+              </li>
+              <li>
+                <strong>14.4 Membership Benefits:</strong> Active members enjoy exclusive privileges including:
+                <ul>
+                  <li>GODSMOVE Membership status badge on account profile</li>
+                  <li>Pre-launch drop access and early reservation privileges</li>
+                  <li>Priority Dispatch processing for all fulfilled orders</li>
+                  <li>Access to GODSMOVE Care concierge services</li>
+                  <li>Members-only discounts and private archival event invitations</li>
+                </ul>
+              </li>
+              <li>
+                <strong>14.5 Membership Expiration &amp; Admin Renewal:</strong> Membership automatically becomes inactive upon reaching its 1-year end date. Administrators reserve the right to grant manual renewals or extensions via the CRM engine.
+              </li>
+              <li>
+                <strong>14.6 Security &amp; Non-Transferability:</strong> GODSMOVE Memberships are personal, non-transferable, and bound to the registered customer account. Any fraudulent activity or misuse will result in immediate membership revocation.
+              </li>
+            </ul>
           </section>
         </LegalPageLayout>
       </main>

@@ -121,26 +121,30 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 2: HELP */}
+          {/* Column 2: ACCOUNT */}
           <div className={styles.col}>
-            <h3 className={styles.colTitle}>Help</h3>
+            <h3 className={styles.colTitle}>Account</h3>
             <ul className={styles.colList}>
-              <li><Link href="/contact">Contact Us</Link></li>
-              <li><Link href="/shipping-exchange-policy">Shipping & Exchange</Link></li>
-              <li><Link href="/cancellation-refund-policy">Returns & Refunds</Link></li>
-              <li><span className={styles.inactiveLink}>Track Order (Coming Soon)</span></li>
-              <li><span className={styles.inactiveLink}>FAQ (Coming Soon)</span></li>
+              <li><Link href="/profile">My Profile</Link></li>
+              <li><Link href="/profile?tab=collection">Your Collection</Link></li>
+              <li><Link href="/profile?tab=prebookings">My Pre-Bookings</Link></li>
+              <li><Link href="/profile?tab=returns">Returns & Exchanges</Link></li>
+              <li><Link href="/profile?tab=credits">GODSMOVE Credits</Link></li>
+              <li><Link href="/profile?tab=care">GODSMOVE Care</Link></li>
+              <li><Link href="/wishlist">Wishlist</Link></li>
             </ul>
           </div>
 
           {/* Column 3: LEGAL */}
           <div className={styles.col}>
-            <h3 className={styles.colTitle}>Legal</h3>
+            <h3 className={styles.colTitle}>Legal & Policies</h3>
             <ul className={styles.colList}>
               <li><Link href="/terms">Terms & Conditions</Link></li>
               <li><Link href="/privacy">Privacy Policy</Link></li>
-              <li><Link href="/cancellation-refund-policy">Cancellation & Refund Policy</Link></li>
+              <li><Link href="/terms#pre-booking-terms">Pre-Booking Terms</Link></li>
+              <li><Link href="/terms#membership-terms">Membership Terms</Link></li>
               <li><Link href="/shipping-exchange-policy">Shipping & Exchange Policy</Link></li>
+              <li><Link href="/cancellation-refund-policy">Cancellation & Refund Policy</Link></li>
             </ul>
           </div>
 
@@ -150,7 +154,7 @@ export default function Footer() {
             <ul className={styles.colList}>
               <li><Link href="/our-story">Our Story</Link></li>
               <li><Link href="/our-story">Craftsmanship</Link></li>
-              <li><span className={styles.inactiveLink}>Journal (Coming Soon)</span></li>
+              <li><Link href="/contact">Concierge Support</Link></li>
             </ul>
           </div>
 
