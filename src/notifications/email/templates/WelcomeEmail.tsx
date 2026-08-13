@@ -1,6 +1,7 @@
 import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEditorialEmailLayout } from '../components/LuxuryEditorialEmailLayout';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface WelcomeEmailProps {
   customerName?: string;
@@ -11,13 +12,13 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
   customerName = 'Valued Collector',
   email = 'support@godsmove.in',
 }) => {
-  const editorialNote = `Welcome to GODSMOVE. You are no longer simply a customer—you are now part of an archival movement built around craftsmanship, permanence and intentional design. We are genuinely excited to have you with us.`;
+  const editorialNote = `Welcome to ${GODSMOVE_WORDMARK}. You are no longer simply a customer—you are now part of an archival movement built around craftsmanship, permanence and intentional design. We are genuinely excited to have you with us.`;
 
   return (
     <LuxuryEditorialEmailLayout
-      previewText="Welcome to the GODSMOVE Archival Movement — Account Registration Confirmed"
+      previewText={`Welcome to the ${GODSMOVE_WORDMARK} Archival Movement — Account Registration Confirmed`}
       issueTag="ACCOUNT REGISTRATION // WELCOME PRIVILEGE"
-      headline="Welcome to the GODSMOVE Archival Circle"
+      headline={`Welcome to the ${GODSMOVE_WORDMARK} Archival Circle`}
       customerName={customerName}
       editorialNote={editorialNote}
       ctaText="EXPLORE ARCHIVAL COLLECTION"

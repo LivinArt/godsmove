@@ -44,6 +44,8 @@ import ReturnRefundCompletedTemplate from './ReturnRefundCompletedTemplate';
 import PreBookingConfirmedTemplate from './PreBookingConfirmedTemplate';
 import PreBookingLaunchedTemplate from './PreBookingLaunchedTemplate';
 
+import { GODSMOVE_WORDMARK } from '../brand';
+
 export interface EmailTemplateDefinition {
   component: React.ComponentType<any>;
   subjectBuilder: (payload: any) => string;
@@ -52,7 +54,7 @@ export interface EmailTemplateDefinition {
 
 // Default mailbox settings (GoDaddy Webmail hosted verified domain)
 const DEFAULT_SENDER: EmailSenderConfig = {
-  from: 'GODSMOVE <support@godsmove.in>',
+  from: `${GODSMOVE_WORDMARK} <support@godsmove.in>`,
   replyTo: 'support@godsmove.in',
 };
 
@@ -65,107 +67,107 @@ const DEFAULT_SENDER: EmailSenderConfig = {
 export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinition> = {
   ORDER_CREATED: {
     component: OrderConfirmationTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_CONFIRMED: {
     component: OrderConfirmationTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Order ${p.orderNumber ? `#${p.orderNumber}` : ''} is Confirmed`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_SHIPPED: {
     component: OrderShippedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Shipped`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Shipped`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_DELIVERED: {
     component: OrderDeliveredTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Delivered`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Order ${p.orderNumber ? `#${p.orderNumber}` : ''} has been Delivered`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   ORDER_CANCELLED: {
     component: OrderCancelledTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Order ${p.orderNumber ? `#${p.orderNumber}` : ''} Cancellation Notice`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Order ${p.orderNumber ? `#${p.orderNumber}` : ''} Cancellation Notice`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_CONFIRMED: {
     component: PaymentConfirmationTemplate,
-    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | ${GODSMOVE_WORDMARK}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_SUCCESSFUL: {
     component: PaymentConfirmationTemplate,
-    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
+    subjectBuilder: (p) => `Payment Confirmed: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | ${GODSMOVE_WORDMARK}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PAYMENT_FAILED: {
     component: OrderCancelledTemplate,
-    subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | GODSMOVE`.trim(),
+    subjectBuilder: (p) => `Payment Issue Notice: Order ${p.orderNumber ? `#${p.orderNumber}` : ''} | ${GODSMOVE_WORDMARK}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PRE_BOOKING_CONFIRMED: {
     component: PreBookingConfirmedTemplate,
-    subjectBuilder: (p) => `Pre-Booking Confirmed: ${p.productName || 'Statement Piece'} | GODSMOVE`.trim(),
+    subjectBuilder: (p) => `Pre-Booking Confirmed: ${p.productName || 'Statement Piece'} | ${GODSMOVE_WORDMARK}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PRE_BOOKING_LAUNCHED: {
     component: PreBookingLaunchedTemplate,
-    subjectBuilder: (p) => `YOUR PRE-BOOKED PIECE IS NOW LIVE: ${p.productName || 'Statement Piece'} | GODSMOVE`.trim(),
+    subjectBuilder: (p) => `YOUR PRE-BOOKED PIECE IS NOW LIVE: ${p.productName || 'Statement Piece'} | ${GODSMOVE_WORDMARK}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   PROFILE_UPDATED: {
     component: ProfileUpdatedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Profile was Updated ${p.entityId ? `(#${String(p.entityId).slice(-7).toUpperCase()})` : ''}`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Profile was Updated ${p.entityId ? `(#${String(p.entityId).slice(-7).toUpperCase()})` : ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REQUESTED: {
     component: ReturnRequestedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Request ${p.returnId ? `#${p.returnId}` : ''} Received`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Request ${p.returnId ? `#${p.returnId}` : ''} Received`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_APPROVED: {
     component: ReturnApprovedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return ${p.returnId ? `#${p.returnId}` : ''} has been Approved`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return ${p.returnId ? `#${p.returnId}` : ''} has been Approved`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REJECTED: {
     component: ReturnRejectedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Request Notice: ${p.returnId || ''}`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Request Notice: ${p.returnId || ''}`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_PICKUP_SCHEDULED: {
     component: ReturnPickupScheduledTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Pickup Scheduled for ${p.pickupDate || 'Soon'} (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Pickup Scheduled for ${p.pickupDate || 'Soon'} (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_PICKUP_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Package Received at Warehouse (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Package Received at Warehouse (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_REFUND_COMPLETED: {
     component: ReturnRefundCompletedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Refund Settlement Completed (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Refund Settlement Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   RETURN_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Return Case Completed (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Return Case Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   REFUND_INITIATED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Refund Settlement Initiated (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Refund Settlement Initiated (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   REFUND_COMPLETED: {
     component: ReturnCompletedTemplate,
-    subjectBuilder: (p) => `Your GODSMOVE Refund Settlement Completed (${p.returnId || ''})`.trim(),
+    subjectBuilder: (p) => `Your ${GODSMOVE_WORDMARK} Refund Settlement Completed (${p.returnId || ''})`.trim(),
     senderConfig: DEFAULT_SENDER,
   },
   INACTIVE_USER: {
     component: WelcomeTemplate,
-    subjectBuilder: () => `Explore the Archival Collection | GODSMOVE`,
+    subjectBuilder: () => `Explore the Archival Collection | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   WALLET_CREDITED: {
@@ -180,139 +182,139 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   },
   PASSWORD_RESET: {
     component: PasswordResetTemplate,
-    subjectBuilder: () => `Password Reset Instructions | GODSMOVE`,
+    subjectBuilder: () => `Password Reset Instructions | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   EMAIL_VERIFICATION: {
     component: PasswordResetTemplate,
-    subjectBuilder: () => `Verify Your Email Address | GODSMOVE`,
+    subjectBuilder: () => `Verify Your Email Address | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   WELCOME: {
     component: WelcomeTemplate,
-    subjectBuilder: () => `Welcome to the GODSMOVE Archival Circle`,
+    subjectBuilder: () => `Welcome to the ${GODSMOVE_WORDMARK} Archival Circle`,
     senderConfig: DEFAULT_SENDER,
   },
   FIRST_TIME_REGISTRATION: {
     component: WelcomeTemplate,
-    subjectBuilder: () => `Welcome to the GODSMOVE Archival Circle`,
+    subjectBuilder: () => `Welcome to the ${GODSMOVE_WORDMARK} Archival Circle`,
     senderConfig: DEFAULT_SENDER,
   },
   ACCOUNT_UPDATED: {
     component: WelcomeTemplate,
-    subjectBuilder: () => `Account Security & Profile Updated | GODSMOVE`,
+    subjectBuilder: () => `Account Security & Profile Updated | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   INVOICE_REQUEST: {
     component: InvoiceRequestTemplate,
-    subjectBuilder: () => `Your GODSMOVE Tax Invoice`,
+    subjectBuilder: () => `Your ${GODSMOVE_WORDMARK} Tax Invoice`,
     senderConfig: DEFAULT_SENDER,
   },
   NEWSLETTER: {
     component: NewsletterTemplate,
-    subjectBuilder: (p) => p.headline || `Archival Dispatch | GODSMOVE`,
+    subjectBuilder: (p) => p.headline || `Archival Dispatch | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   NEW_DROP: {
     component: NewDropTemplate,
-    subjectBuilder: (p) => `New Drop Allocation Released: ${p.dropName || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `New Drop Allocation Released: ${p.dropName || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   COUPON: {
     component: CouponTemplate,
-    subjectBuilder: (p) => `Exclusive Privilege Pass: ${p.couponCode || ''} | GODSMOVE`,
+    subjectBuilder: (p) => `Exclusive Privilege Pass: ${p.couponCode || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
 
   // Marketing Campaign Library Maps
   CAMPAIGN_NEWSLETTER: {
     component: NewsletterMarketingTemplate,
-    subjectBuilder: (p) => p.subject || p.headline || 'Archival Newsletter Dispatch | GODSMOVE',
+    subjectBuilder: (p) => p.subject || p.headline || `Archival Newsletter Dispatch | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_NEW_DROP: {
     component: NewDropMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `New Drop Allocation: ${p.dropTitle || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `New Drop Allocation: ${p.dropTitle || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_COLLECTION_LAUNCH: {
     component: CollectionLaunchMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Collection Launch: ${p.collectionName || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Collection Launch: ${p.collectionName || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_LIMITED_EDITION: {
     component: LimitedEditionMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Limited Series Release: ${p.editionName || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Limited Series Release: ${p.editionName || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_COUPON: {
     component: CouponMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Exclusive Privilege Code: ${p.couponCode || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Exclusive Privilege Code: ${p.couponCode || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_FLASH_SALE: {
     component: FlashSaleMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Flash Allocation Window: ${p.saleTitle || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Flash Allocation Window: ${p.saleTitle || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_BIRTHDAY: {
     component: BirthdayMarketingTemplate,
-    subjectBuilder: () => `Happy Birthday from GODSMOVE Archival Concierge`,
+    subjectBuilder: () => `Happy Birthday from ${GODSMOVE_WORDMARK} Archival Concierge`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_FESTIVAL: {
     component: FestivalMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Festive Season Greetings | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Festive Season Greetings | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_REFERRAL: {
     component: ReferralMarketingTemplate,
-    subjectBuilder: () => `Invite Fellow Collectors to GODSMOVE`,
+    subjectBuilder: () => `Invite Fellow Collectors to ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_LOYALTY_UPGRADE: {
     component: LoyaltyUpgradeMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Status Elevation: ${p.newTier || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Status Elevation: ${p.newTier || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_WISHLIST_REMINDER: {
     component: WishlistReminderMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Low Stock Alert: ${p.productName || 'Saved Piece'} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Low Stock Alert: ${p.productName || 'Saved Piece'} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_ABANDONED_CART: {
     component: AbandonedCartMarketingTemplate,
-    subjectBuilder: () => `Your Archival Piece is Reserved in Cart | GODSMOVE`,
+    subjectBuilder: () => `Your Archival Piece is Reserved in Cart | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_BACK_IN_STOCK: {
     component: BackInStockMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Back in Stock: ${p.productName || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Back in Stock: ${p.productName || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_PRICE_DROP: {
     component: PriceDropMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `Price Adjustment Alert: ${p.productName || ''} | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `Price Adjustment Alert: ${p.productName || ''} | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_RECOMMENDATION: {
     component: RecommendationMarketingTemplate,
-    subjectBuilder: () => `Curated Archival Recommendations for You | GODSMOVE`,
+    subjectBuilder: () => `Curated Archival Recommendations for You | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_VIP_EARLY_ACCESS: {
     component: VipEarlyAccessMarketingTemplate,
-    subjectBuilder: (p) => p.subject || `VIP Early Access Pass | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || `VIP Early Access Pass | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_MEMBERSHIP_INVITATION: {
     component: MembershipInvitationMarketingTemplate,
-    subjectBuilder: () => `Private Collector Circle Invitation | GODSMOVE`,
+    subjectBuilder: () => `Private Collector Circle Invitation | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
   CAMPAIGN_SEASONAL: {
     component: SeasonalMarketingTemplate,
-    subjectBuilder: (p) => p.subject || p.seasonTitle || `Seasonal Editorial Dispatch | GODSMOVE`,
+    subjectBuilder: (p) => p.subject || p.seasonTitle || `Seasonal Editorial Dispatch | ${GODSMOVE_WORDMARK}`,
     senderConfig: DEFAULT_SENDER,
   },
 };

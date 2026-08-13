@@ -1,5 +1,6 @@
 import React from 'react';
 import { Section, Text, Link, Hr } from '@react-email/components';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 interface FooterProps {
   supportEmail?: string;
@@ -32,7 +33,7 @@ export const Footer: React.FC<FooterProps> = ({
       </Text>
 
       <Text style={copyrightStyle}>
-        © {new Date().getFullYear()} GODSMOVE. ALL RIGHTS RESERVED.
+        © {new Date().getFullYear()} {GODSMOVE_WORDMARK}. ALL RIGHTS RESERVED.
       </Text>
 
       <Text style={poweredByStyle}>

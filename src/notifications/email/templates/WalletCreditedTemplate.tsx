@@ -2,6 +2,7 @@ import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEmailLayout } from '../layouts/LuxuryEmailLayout';
 import { CTAButton } from '../components/CTAButton';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface WalletCreditedTemplateProps {
   customerName: string;
@@ -18,14 +19,14 @@ export const WalletCreditedTemplate: React.FC<WalletCreditedTemplateProps> = ({
   reason = 'Member Privilege Refund',
   walletUrl = 'https://godsmove.in/profile',
 }) => {
-  const previewText = `₹${amount.toLocaleString('en-IN')} Credited to your GODSMOVE Account`;
+  const previewText = `₹${amount.toLocaleString('en-IN')} Credited to your ${GODSMOVE_WORDMARK} Account`;
 
   return (
     <LuxuryEmailLayout previewText={previewText}>
       <Section style={{ marginBottom: '24px' }}>
-        <Text style={greetingStyle}>GODSMOVE PRIVILEGE CREDITS</Text>
+        <Text style={greetingStyle}>{GODSMOVE_WORDMARK} PRIVILEGE CREDITS</Text>
         <Text style={bodyStyle}>
-          Dear {customerName.toUpperCase()}, your GODSMOVE Archival Vault has been credited with store privileges.
+          Dear {customerName.toUpperCase()}, your {GODSMOVE_WORDMARK} Archival Vault has been credited with store privileges.
         </Text>
       </Section>
 

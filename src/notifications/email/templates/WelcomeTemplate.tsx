@@ -2,6 +2,7 @@ import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEmailLayout } from '../layouts/LuxuryEmailLayout';
 import { CTAButton } from '../components/CTAButton';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface WelcomeTemplateProps {
   customerName: string;
@@ -12,14 +13,14 @@ export const WelcomeTemplate: React.FC<WelcomeTemplateProps> = ({
   customerName = 'Valued Collector',
   exploreUrl = 'https://godsmove.in/drops',
 }) => {
-  const previewText = 'Welcome to the GODSMOVE Archival Movement';
+  const previewText = `Welcome to the ${GODSMOVE_WORDMARK} Archival Movement`;
 
   return (
     <LuxuryEmailLayout previewText={previewText}>
       <Section style={{ marginBottom: '24px' }}>
-        <Text style={greetingStyle}>WELCOME TO GODSMOVE</Text>
+        <Text style={greetingStyle}>WELCOME TO {GODSMOVE_WORDMARK}</Text>
         <Text style={bodyStyle}>
-          Dear {customerName.toUpperCase()}, welcome to GODSMOVE. You are now part of our archival collective, with priority access to limited drop allocations, member-only racks, and bespoke storytelling.
+          Dear {customerName.toUpperCase()}, welcome to {GODSMOVE_WORDMARK}. You are now part of our archival collective, with priority access to limited drop allocations, member-only racks, and bespoke storytelling.
         </Text>
       </Section>
 

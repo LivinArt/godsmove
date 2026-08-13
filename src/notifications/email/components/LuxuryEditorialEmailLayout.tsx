@@ -11,6 +11,8 @@ import {
   Img,
 } from '@react-email/components';
 
+import { GODSMOVE_WORDMARK } from '../brand';
+
 export interface LuxuryEditorialEmailLayoutProps {
   previewText?: string;
   issueTag?: string;
@@ -53,7 +55,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
   return (
     <Html lang="en">
       <Head>
-        <title>{headline} — GODSMOVE</title>
+        <title>{`${headline} — ${GODSMOVE_WORDMARK}`}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
@@ -69,7 +71,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
           <Section style={headerSectionStyle}>
             <Img
               src={logoDataUri}
-              alt="GODSMOVE"
+              alt={GODSMOVE_WORDMARK}
               width="240"
               height="34"
               style={logoImgStyle}
@@ -89,7 +91,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
                 <Text style={{ ...salutationStyle, color: primaryText }}>Dear {customerName},</Text>
               )}
               <Text style={{ ...editorialBodyStyle, color: bodyText }}>{editorialNote}</Text>
-              <Text style={signoffStyle}>— The GODSMOVE Archival Team</Text>
+              <Text style={signoffStyle}>— The {GODSMOVE_WORDMARK} Archival Team</Text>
             </div>
           </Section>
 
@@ -118,7 +120,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
 
           {/* BRAND FOOTER */}
           <Section style={footerSectionStyle}>
-            <Text style={{ ...footerLogoStyle, color: primaryText }}>GODSMOVE ARCHIVAL DIVISION</Text>
+            <Text style={{ ...footerLogoStyle, color: primaryText }}>{GODSMOVE_WORDMARK} ARCHIVAL DIVISION</Text>
             <Text style={{ ...footerSubStyle, color: bodyText }}>
               Built around craftsmanship, permanence and intentional design.
             </Text>
@@ -126,7 +128,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
               Mumbai • Tokyo • London | Concierge Support: support@godsmove.in
             </Text>
             <Text style={footerCopyrightStyle}>
-              © {new Date().getFullYear()} GODSMOVE CLOTHING PRIVATE LIMITED. All rights reserved.
+              © {new Date().getFullYear()} {GODSMOVE_WORDMARK} CLOTHING PRIVATE LIMITED. All rights reserved.
             </Text>
           </Section>
         </Container>

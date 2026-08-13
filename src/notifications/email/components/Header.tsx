@@ -1,5 +1,6 @@
 import React from 'react';
 import { Section, Text, Link } from '@react-email/components';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 interface HeaderProps {
   logoUrl?: string;
@@ -14,7 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
     <Section style={headerStyle}>
       <Text style={taglineStyle}>STATEMENT APPAREL & ARCHIVAL CUTS</Text>
       <Link href={baseUrl} style={brandStyle}>
-        GODSMOVE
+        {GODSMOVE_WORDMARK}
       </Link>
       <Section style={goldDividerStyle} />
     </Section>

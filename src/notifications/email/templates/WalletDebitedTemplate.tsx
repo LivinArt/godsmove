@@ -2,6 +2,7 @@ import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEmailLayout } from '../layouts/LuxuryEmailLayout';
 import { CTAButton } from '../components/CTAButton';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface WalletDebitedTemplateProps {
   customerName: string;
@@ -21,12 +22,12 @@ export const WalletDebitedTemplate: React.FC<WalletDebitedTemplateProps> = ({
   walletUrl = 'https://godsmove.in/profile',
 }) => {
   const actualRemaining = remainingBalance ?? newBalance ?? 0;
-  const previewText = `₹${amount.toLocaleString('en-IN')} Applied from your GODSMOVE Account`;
+  const previewText = `₹${amount.toLocaleString('en-IN')} Applied from your ${GODSMOVE_WORDMARK} Account`;
 
   return (
     <LuxuryEmailLayout previewText={previewText}>
       <Section style={{ marginBottom: '24px' }}>
-        <Text style={greetingStyle}>GODSMOVE VAULT DEBIT</Text>
+        <Text style={greetingStyle}>{GODSMOVE_WORDMARK} VAULT DEBIT</Text>
         <Text style={bodyStyle}>
           Dear {customerName.toUpperCase()}, store credits have been applied from your Archival Vault.
         </Text>

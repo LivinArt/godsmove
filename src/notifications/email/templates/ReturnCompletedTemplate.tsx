@@ -2,6 +2,7 @@ import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEmailLayout } from '../layouts/LuxuryEmailLayout';
 import { CTAButton } from '../components/CTAButton';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface ReturnCompletedTemplateProps {
   customerName: string;
@@ -15,7 +16,7 @@ export const ReturnCompletedTemplate: React.FC<ReturnCompletedTemplateProps> = (
   customerName = 'Valued Collector',
   returnId = 'RET-001',
   refundAmount = 2999,
-  refundDestination = 'Original Payment Source / GODSMOVE Archival Vault',
+  refundDestination = `Original Payment Source / ${GODSMOVE_WORDMARK} Archival Vault`,
   walletUrl = 'https://godsmove.in/profile',
 }) => {
   const previewText = `Return Settlement Completed: ${returnId}`;

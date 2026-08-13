@@ -122,14 +122,14 @@ function buildLuxuryEmailTemplate(title: string, bodyHtml: string): string {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">GODSMOVE</div>
+            <div class="logo">GODSMOVƎ</div>
           </div>
           <div class="content">
             ${bodyHtml}
           </div>
           <div class="footer">
-            <div class="footer-logo">GODSMOVE</div>
-            <p>You are receiving this communication regarding your digital purchase account.<br>&copy; ${new Date().getFullYear()} GODSMOVE. All rights reserved.</p>
+            <div class="footer-logo">GODSMOVƎ</div>
+            <p>You are receiving this communication regarding your digital purchase account.<br>&copy; ${new Date().getFullYear()} GODSMOVƎ. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -204,10 +204,10 @@ export const NotificationService = {
   async sendShipmentStatusUpdate(to: string, orderNumber: string, trackingNumber: string, status: string, location: string, description: string) {
     const customerName = await getCustomerFirstName(to);
     const isDelivered = status === 'DELIVERED' || description.toLowerCase().includes('delivered');
-    const title = isDelivered ? `Your GODSMOVE piece has arrived` : `Shipment Event: ${status} for Order #${orderNumber}`;
+    const title = isDelivered ? `Your GODSMOVƎ piece has arrived` : `Shipment Event: ${status} for Order #${orderNumber}`;
     const bodyHtml = isDelivered ? `
       <p>Hello ${customerName},</p>
-      <p>Your GODSMOVE piece has arrived.</p>
+      <p>Your GODSMOVƎ piece has arrived.</p>
       <a href="${APP_BASE_URL}/profile?tab=orders" class="btn">View Order Details</a>
     ` : `
       <p>Hello ${customerName},</p>
@@ -242,7 +242,7 @@ export const NotificationService = {
     const title = `Return Request Approved - #${returnId}`;
     const bodyHtml = `
       <p>Hello ${customerName},</p>
-      <p>Your return request (ID: <strong>${returnId}</strong>) has been approved by the GODSMOVE team.</p>
+      <p>Your return request (ID: <strong>${returnId}</strong>) has been approved by the GODSMOVƎ team.</p>
       <p>We have scheduled a reverse pickup with <strong>${carrier}</strong>.</p>
       <p>AWB Tracking Number: <strong>${trackingNumber}</strong></p>
       <p>Please keep the item folded in its original premium packaging sleeve ready for hand-off to the logistics agent.</p>
@@ -312,7 +312,7 @@ export const NotificationService = {
     const title = `Care Request Logged - #${requestId.substring(0,8).toUpperCase()}`;
     const bodyHtml = `
       <p>Hello ${customerName},</p>
-      <p>Your GODSMOVE Care request for the article <strong>${productName}</strong> (Category: ${category}) has been logged in our digital registry.</p>
+      <p>Your GODSMOVƎ Care request for the article <strong>${productName}</strong> (Category: ${category}) has been logged in our digital registry.</p>
       <p>Our craftsmanship team will inspect your diagnostic summary and provide service estimates shortly.</p>
       <a href="${APP_BASE_URL}/profile?tab=care" class="btn">Track Care Progress</a>
     `;
@@ -326,7 +326,7 @@ export const NotificationService = {
     const title = `Atelier Service Approved - #${requestId.substring(0,8).toUpperCase()}`;
     const bodyHtml = `
       <p>Hello ${customerName},</p>
-      <p>Your GODSMOVE Care request has been approved by our tailors.</p>
+      <p>Your GODSMOVƎ Care request has been approved by our tailors.</p>
       <p>Estimate Service Fee: <strong>${totalCharge}</strong></p>
       <p>Please log in to your profile to settle the service invoice and schedule doorstep pickup.</p>
       <a href="${APP_BASE_URL}/profile?tab=care" class="btn">View Invoice & Settle</a>

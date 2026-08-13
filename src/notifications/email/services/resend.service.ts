@@ -1,11 +1,12 @@
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 const resendApiKey = process.env.RESEND_API_KEY;
 
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-export const DEFAULT_SENDER = 'GODSMOVE <support@godsmove.in>';
+export const DEFAULT_SENDER = `${GODSMOVE_WORDMARK} <support@godsmove.in>`;
 export const DEFAULT_REPLY_TO = 'support@godsmove.in';
 
 export interface EmailAttachment {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Section, Text } from '@react-email/components';
 import { LuxuryEmailLayout } from '../layouts/LuxuryEmailLayout';
 import { CTAButton } from '../components/CTAButton';
+import { GODSMOVE_WORDMARK } from '../brand';
 
 export interface ReturnRefundCompletedTemplateProps {
   customerName?: string;
@@ -17,7 +18,7 @@ export const ReturnRefundCompletedTemplate: React.FC<ReturnRefundCompletedTempla
   amount = 4499,
   walletUrl = 'https://godsmove.in/profile?tab=wallet',
 }) => {
-  const previewText = `Return Refund Completed: ${returnId} | GODSMOVE`;
+  const previewText = `Return Refund Completed: ${returnId} | ${GODSMOVE_WORDMARK}`;
 
   const formattedAmount = typeof amount === 'number'
     ? `₹${amount.toLocaleString('en-IN')}`
@@ -29,7 +30,7 @@ export const ReturnRefundCompletedTemplate: React.FC<ReturnRefundCompletedTempla
         <Text style={greetingStyle}>RETURN REFUND COMPLETED</Text>
         <Text style={bodyStyle}>
           Dear {customerName.toUpperCase()}, the refund for return request{' '}
-          <strong style={{ color: '#ffffff' }}>{returnId}</strong> has been finalized and credited to your GODSMOVE Archival Privilege Vault.
+          <strong style={{ color: '#ffffff' }}>{returnId}</strong> has been finalized and credited to your {GODSMOVE_WORDMARK} Archival Privilege Vault.
         </Text>
       </Section>
 
@@ -38,7 +39,7 @@ export const ReturnRefundCompletedTemplate: React.FC<ReturnRefundCompletedTempla
         <Text style={amountStyle}>{formattedAmount}</Text>
 
         <Text style={{ ...labelStyle, marginTop: '14px' }}>DESTINATION VAULT ACCOUNT</Text>
-        <Text style={valueStyle}>GODSMOVE Privilege Credits (Available Immediately for Checkout)</Text>
+        <Text style={valueStyle}>{GODSMOVE_WORDMARK} Privilege Credits (Available Immediately for Checkout)</Text>
       </Section>
 
       <Section style={{ textAlign: 'center', margin: '32px 0 16px 0' }}>

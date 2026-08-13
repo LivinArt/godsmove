@@ -10,6 +10,8 @@ import {
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 
+import { GODSMOVE_WORDMARK } from '../brand';
+
 interface LuxuryEmailLayoutProps {
   previewText: string;
   children: React.ReactNode;
@@ -23,7 +25,7 @@ export const LuxuryEmailLayout: React.FC<LuxuryEmailLayoutProps> = ({
   previewText,
   children,
 }) => {
-  const fullPreviewText = (previewText || 'GODSMOVE Archival Notification') + PREVIEW_PADDING;
+  const fullPreviewText = (previewText || `${GODSMOVE_WORDMARK} Archival Notification`) + PREVIEW_PADDING;
 
   return (
     <Html lang="en">

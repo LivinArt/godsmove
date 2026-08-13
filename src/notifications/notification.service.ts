@@ -79,7 +79,7 @@ export class NotificationService {
     const items = Array.isArray(fullOrder.items)
       ? fullOrder.items.map((item: any) => ({
           id: item.id || item.variantId,
-          title: item.productName || item.name || 'GODSMOVE Statement Piece',
+          title: item.productName || item.name || 'GODSMOVƎ Statement Piece',
           size: item.size || 'L',
           color: item.color || null,
           quantity: Number(item.quantity || 1),
@@ -555,7 +555,7 @@ export class NotificationService {
       customerName: recipientName,
       orderNumber: fullOrder.orderNumber,
       orderId: fullOrder.id,
-      productName: firstItem.productName || product.name || 'GODSMOVE Statement Piece',
+      productName: firstItem.productName || product.name || 'GODSMOVƎ Statement Piece',
       productImage: product.frontImageUrl || product.images?.[0]?.url || null,
       size: firstItem.size || 'L',
       quantity: Number(firstItem.quantity || 1),
@@ -618,7 +618,7 @@ export class NotificationService {
     const payload = {
       customerName: recipientName,
       orderNumber: order.orderNumber,
-      productName: prod.name || firstItem.productName || 'GODSMOVE Statement Piece',
+      productName: prod.name || firstItem.productName || 'GODSMOVƎ Statement Piece',
       productSlug: prod.slug || 'statement-piece',
       productImage: prod.frontImageUrl || prod.images?.[0]?.url || null,
       size: firstItem.size || 'L',
