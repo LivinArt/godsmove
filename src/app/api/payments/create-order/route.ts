@@ -44,34 +44,41 @@ export async function POST(request: Request) {
       );
     }
 
-    // Smart Razorpay Order Reuse Strategy:
-    // Check if the DB Order already has a valid active Razorpay Order ID (< 24 hours old)
+    // Server-side Anti-Tampering: If dbOrderId is provided, use the authoritative DB Order payable amount
+    let effectiveAmount = amount;
     if (dbOrderId && typeof dbOrderId === 'string') {
       const existingOrder = await prisma.order.findUnique({
         where: { id: dbOrderId },
-        select: { id: true, razorpayOrderId: true, createdAt: true, status: true, paymentStatus: true }
+        select: { id: true, razorpayOrderId: true, createdAt: true, status: true, paymentStatus: true, total: true, walletCredit: true }
       });
 
-      if (existingOrder && existingOrder.razorpayOrderId) {
-        const ageMs = Date.now() - new Date(existingOrder.createdAt).getTime();
-        const isFresh = ageMs < 24 * 60 * 60 * 1000; // 24 hours
-        if (isFresh && existingOrder.status === 'PENDING' && existingOrder.paymentStatus !== 'PAID') {
-          console.log(`[SMART_ORDER_REUSE] Reusing active Razorpay Order ID ${existingOrder.razorpayOrderId} for DB Order ${existingOrder.id}`);
-          const amountInPaise = Math.round(amount * 100);
-          return NextResponse.json({
-            orderId: existingOrder.razorpayOrderId,
-            amount: amountInPaise,
-            currency: formattedCurrency,
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
-            reused: true,
-          });
+      if (existingOrder) {
+        const orderPayable = Math.max(0, Math.round(Number(existingOrder.total) - Number(existingOrder.walletCredit)));
+        if (orderPayable > 0) {
+          effectiveAmount = orderPayable;
+        }
+
+        if (existingOrder.razorpayOrderId) {
+          const ageMs = Date.now() - new Date(existingOrder.createdAt).getTime();
+          const isFresh = ageMs < 24 * 60 * 60 * 1000; // 24 hours
+          if (isFresh && existingOrder.status === 'PENDING' && existingOrder.paymentStatus !== 'PAID') {
+            console.log(`[SMART_ORDER_REUSE] Reusing active Razorpay Order ID ${existingOrder.razorpayOrderId} for DB Order ${existingOrder.id}`);
+            const amountInPaise = Math.round(effectiveAmount * 100);
+            return NextResponse.json({
+              orderId: existingOrder.razorpayOrderId,
+              amount: amountInPaise,
+              currency: formattedCurrency,
+              key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+              reused: true,
+            });
+          }
         }
       }
     }
 
     // Create a new Razorpay Order via PaymentService abstraction
     const result = await PaymentService.createOrder({
-      amount,
+      amount: effectiveAmount,
       currency: formattedCurrency,
       orderId: dbOrderId,
     });

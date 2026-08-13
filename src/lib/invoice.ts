@@ -48,6 +48,8 @@ export interface InvoiceData {
   gstAmount?: number;
   total: number;
   paymentMethod: string;
+  lockedOfferType?: string | null;
+  lockedOfferValue?: number | null;
   paymentStatus: string;
   transactionId?: string | null;
   isPreBooking?: boolean;
@@ -281,7 +283,7 @@ export const InvoiceService = {
               </tr>
               ${discountValue > 0 ? `
               <tr class="totals-row">
-                <td class="totals-label">${isPreBooking ? 'PRE-BOOKING SAVINGS' : 'DISCOUNT'}</td>
+                <td class="totals-label">${data.lockedOfferType && data.lockedOfferType.includes('MEMBER_ONLY') ? 'GODSMOVE MEMBER EXCLUSIVE' : (isPreBooking ? 'PRE-BOOKING SAVINGS' : 'DISCOUNT')}</td>
                 <td class="totals-val" style="color: #B08D57;">-${formatINR(discountValue)}</td>
               </tr>
               ` : ''}

@@ -1,10 +1,12 @@
 /**
  * PricingEngine — Centralized Commerce Pricing & Tax Calculator
- * Canonical source of truth for Checkout, Admin CRM Order Details, Invoices, and Order Creation.
+ * Canonical source of truth for Checkout, Admin CRM Order Details, Invoices, Emails, and Order Creation.
+ * Handles Normal Promotional Discounts, Pre-Booking Offers, and Member-Only Product Discounts.
  * Compliant with Indian invoicing standards (GST splits, GST-inclusive prices, discount transparency).
  */
 
-import { GSTService, GstSplit } from './gst-service';
+import { GSTService } from './gst-service';
+import { isPreBookingActive } from './launch-engine-core';
 
 export interface PricingItem {
   price: number;                // selling price per unit (GST-inclusive)
@@ -13,8 +15,20 @@ export interface PricingItem {
   productName: string;
   gstPercentage?: number | null;  // configured GST percentage (e.g. 12 or 18)
   hasMemberDiscount?: boolean;
-  memberDiscountType?: string | null;  // 'PERCENT' | 'FIXED_PRICE'
+  memberDiscountType?: string | null;  // 'PERCENT' | 'PERCENTAGE' | 'FIXED_PRICE'
   memberDiscountValue?: number | null;
+  isPreBooking?: boolean;
+  launchDateTime?: string | Date | null;
+  preBookingOpenDateTime?: string | Date | null;
+  preBookingOfferValue?: number | null;
+  preBookingOfferType?: string | null;
+}
+
+export interface DiscountLine {
+  type: 'PRE_BOOKING' | 'MEMBER_ONLY' | 'NORMAL';
+  label: string;
+  percentage?: number | null;
+  amount: number;
 }
 
 export interface PricingResult {
@@ -23,7 +37,9 @@ export interface PricingResult {
   subtotal: number;             // selling price before coupon / pre-booking savings / member discount
   couponCode: string | null;
   couponDiscount: number;       // total coupon discount applied
+  preBookingDiscount: number;   // total pre-booking discount applied
   memberDiscount: number;       // total member discount applied
+  totalDiscount: number;        // total combined discounts applied (coupon + member)
   netSellingPrice: number;      // net selling price (subtotal - couponDiscount - memberDiscount)
   walletCredit: number;         // vault credits applied (<= grandTotal)
   shippingCost: number;         // concierge shipping charges
@@ -36,6 +52,7 @@ export interface PricingResult {
   grandTotal: number;           // Grand Total (netSellingPrice + shippingCost + codFee)
   roundOff: number;             // round off adjustment
   finalPayable: number;         // Final payable amount (grandTotal - walletCredit)
+  discountLines: DiscountLine[];
   items: {
     productName: string;
     quantity: number;
@@ -72,17 +89,44 @@ export const PricingEngine = {
     hasActiveMembership?: boolean;
     memberDiscountAmount?: number;
   }): PricingResult {
+    // Determine overall order pre-booking status dynamically from items or top-level flag
+    const hasActivePreBookingItem = items.some((item) => {
+      if (item.isPreBooking) {
+        return isPreBookingActive({
+          isPreBooking: item.isPreBooking,
+          launchDateTime: item.launchDateTime,
+          preBookingOpenDateTime: item.preBookingOpenDateTime,
+        });
+      }
+      return false;
+    });
+
+    const isOrderInPreBooking = isPreBooking || hasActivePreBookingItem;
+
     // Enforcement: Pre-Booking orders NEVER allow COD fee
-    const effectiveCodFee = isPreBooking ? 0 : codFee;
+    const effectiveCodFee = isOrderInPreBooking ? 0 : codFee;
 
     // 1. Catalog calculations
     let productTotal = 0;
     let subtotal = 0;
+    let preBookingDiscount = 0;
 
     items.forEach((item) => {
       const itemMrp = item.comparePrice && item.comparePrice > item.price ? item.comparePrice : item.price;
       productTotal += itemMrp * item.quantity;
       subtotal += item.price * item.quantity;
+
+      const itemIsPreBookingActive = item.isPreBooking
+        ? isPreBookingActive({
+            isPreBooking: item.isPreBooking,
+            launchDateTime: item.launchDateTime,
+            preBookingOpenDateTime: item.preBookingOpenDateTime,
+          })
+        : isPreBooking;
+
+      if (itemIsPreBookingActive && item.comparePrice && item.comparePrice > item.price) {
+        preBookingDiscount += (item.comparePrice - item.price) * item.quantity;
+      }
     });
 
     const productDiscount = Math.max(0, productTotal - subtotal);
@@ -90,18 +134,29 @@ export const PricingEngine = {
     // Ensure coupon discount does not exceed subtotal
     const actualCouponDiscount = Math.min(couponDiscount, subtotal);
 
-    // Enforcement: Member discount strictly 0 for Pre-Booking orders (Directive D)
+    // Enforcement: Member-only discount MUST NOT apply while product is in active pre-booking
     let calculatedMemberDiscount = 0;
-    if (hasActiveMembership && !isPreBooking) {
-      if (typeof memberDiscountAmount === 'number' && memberDiscountAmount > 0) {
+    if (hasActiveMembership) {
+      if (typeof memberDiscountAmount === 'number' && memberDiscountAmount > 0 && !isOrderInPreBooking) {
         calculatedMemberDiscount = memberDiscountAmount;
       } else {
         items.forEach((item) => {
-          if (item.hasMemberDiscount && item.memberDiscountValue) {
-            if (item.memberDiscountType === 'PERCENT') {
+          // Dynamic Launch State Check per item:
+          const itemIsPreBooking = item.isPreBooking
+            ? isPreBookingActive({
+                isPreBooking: item.isPreBooking,
+                launchDateTime: item.launchDateTime,
+                preBookingOpenDateTime: item.preBookingOpenDateTime,
+              })
+            : isPreBooking;
+
+          // Member-Only Product Discount applies ONLY IF product is LIVE (not active pre-booking)
+          if (!itemIsPreBooking && item.hasMemberDiscount && item.memberDiscountValue && item.memberDiscountValue > 0) {
+            const discType = (item.memberDiscountType || '').toUpperCase();
+            if (discType === 'PERCENT' || discType === 'PERCENTAGE') {
               const d = (item.price * item.quantity * item.memberDiscountValue) / 100;
               calculatedMemberDiscount += d;
-            } else if (item.memberDiscountType === 'FIXED_PRICE') {
+            } else if (discType === 'FIXED_PRICE' || discType === 'FIXED_AMOUNT') {
               const d = Math.min(item.price * item.quantity, item.memberDiscountValue * item.quantity);
               calculatedMemberDiscount += d;
             }
@@ -111,7 +166,32 @@ export const PricingEngine = {
     }
 
     const actualMemberDiscount = Math.min(calculatedMemberDiscount, Math.max(0, subtotal - actualCouponDiscount));
-    const netSellingPrice = Math.max(0, subtotal - actualCouponDiscount - actualMemberDiscount);
+    const totalDiscount = actualCouponDiscount + actualMemberDiscount;
+    const netSellingPrice = Math.max(0, subtotal - totalDiscount);
+
+    // Build structured discountLines for UI/Invoice/Email transparency
+    const discountLines: DiscountLine[] = [];
+    if (isOrderInPreBooking && (preBookingDiscount > 0 || productDiscount > 0)) {
+      discountLines.push({
+        type: 'PRE_BOOKING',
+        label: 'Pre-Booking Offer',
+        amount: preBookingDiscount > 0 ? preBookingDiscount : productDiscount,
+      });
+    }
+    if (actualMemberDiscount > 0) {
+      discountLines.push({
+        type: 'MEMBER_ONLY',
+        label: 'GODSMOVE Member Exclusive',
+        amount: actualMemberDiscount,
+      });
+    }
+    if (actualCouponDiscount > 0) {
+      discountLines.push({
+        type: 'NORMAL',
+        label: couponCode ? `Coupon (${couponCode})` : 'Promotional Offer',
+        amount: actualCouponDiscount,
+      });
+    }
 
     // 2. Concierge Shipping calculation (free shipping on net orders >= 1999 or 0 subtotal)
     const shippingCost = netSellingPrice >= 1999 || subtotal === 0 ? 0 : 149;
@@ -137,11 +217,10 @@ export const PricingEngine = {
 
     const itemsBreakdown = items.map((item) => {
       const lineSubtotal = item.price * item.quantity;
-      
+
       // Pro-rate discount across items based on subtotal share
-      const totalCombinedDiscount = actualCouponDiscount + actualMemberDiscount;
       const share = subtotal > 0 ? lineSubtotal / subtotal : 0;
-      const itemProDiscount = totalCombinedDiscount * share;
+      const itemProDiscount = totalDiscount * share;
       const itemNetLineValue = Math.max(0, lineSubtotal - itemProDiscount);
 
       const split = GSTService.calculateInclusiveItemGst(
@@ -191,7 +270,9 @@ export const PricingEngine = {
       subtotal,
       couponCode,
       couponDiscount: actualCouponDiscount,
+      preBookingDiscount,
       memberDiscount: actualMemberDiscount,
+      totalDiscount,
       netSellingPrice,
       walletCredit: actualWalletCredit,
       shippingCost,
@@ -204,6 +285,7 @@ export const PricingEngine = {
       grandTotal,
       roundOff,
       finalPayable,
+      discountLines,
       items: itemsBreakdown,
     };
   }

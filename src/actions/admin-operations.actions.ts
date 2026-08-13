@@ -303,6 +303,8 @@ export async function getAdminOrderDetail(id: string) {
     isPreBooking: o.isPreBooking,
     lockedUnitPrice: o.lockedUnitPrice ? Number(o.lockedUnitPrice) : null,
     lockedDiscountAmount: o.lockedDiscountAmount ? Number(o.lockedDiscountAmount) : null,
+    lockedOfferType: o.lockedOfferType || null,
+    lockedOfferValue: o.lockedOfferValue != null ? Number(o.lockedOfferValue) : null,
     trackingNumber: o.fulfillmentRef,
     carrier: o.fulfillmentProvider,
     createdAt: o.createdAt.toISOString(),

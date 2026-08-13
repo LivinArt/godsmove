@@ -198,24 +198,34 @@ export async function getCheckoutData() {
       profile: null,
       addresses: [],
       walletBalance: 0,
+      hasActiveMembership: false,
       codConfig,
       availableDiscounts: JSON.parse(JSON.stringify(discounts)),
     };
   }
 
-  const [profile, addresses, wallet, codConfig, discounts] = await Promise.all([
+  const [profile, addresses, wallet, codConfig, discounts, membership] = await Promise.all([
     prisma.profile.findUnique({ where: { id: user.id } }),
     prisma.address.findMany({ where: { profileId: user.id }, orderBy: { isDefault: 'desc' } }),
     prisma.wallet.findUnique({ where: { profileId: user.id } }),
     codConfigPromise,
     discountsPromise,
+    prisma.membership.findUnique({ where: { profileId: user.id } }),
   ]);
+
+  const now = new Date();
+  const hasActiveMembership = Boolean(
+    membership &&
+    membership.status === 'ACTIVE' &&
+    (!membership.expiresAt || new Date(membership.expiresAt) > now)
+  );
 
   return {
     user: { id: user.id, email: user.email },
     profile: profile ? JSON.parse(JSON.stringify(profile)) : null,
     addresses: Array.isArray(addresses) ? JSON.parse(JSON.stringify(addresses)) : [],
     walletBalance: wallet ? Number(wallet.balance) : 0,
+    hasActiveMembership,
     codConfig,
     availableDiscounts: JSON.parse(JSON.stringify(discounts)),
   };

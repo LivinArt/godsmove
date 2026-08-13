@@ -20,6 +20,7 @@ import { createOrder, confirmOrder, notifyPaymentFailed, getActiveCheckoutSessio
 import { getCodSettings, type CodConfigData } from '@/actions/cod.actions';
 import { resolveProductImages } from '@/lib/image-resolver';
 import { formatGA4Item, trackAddShippingInfo, trackAddPaymentInfo, trackPurchase } from '@/lib/gtag-ecommerce';
+import { PricingEngine, type PricingItem } from '@/lib/pricing-engine';
 import styles from './page.module.css';
 
 export default function CheckoutPage() {
@@ -113,6 +114,7 @@ export default function CheckoutPage() {
 
   // Authentication & Data States
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasActiveMembership, setHasActiveMembership] = useState(false);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [saveAddress, setSaveAddress] = useState(true);
@@ -184,6 +186,10 @@ export default function CheckoutPage() {
 
         if (data.walletBalance !== undefined) {
           setWalletBalance(data.walletBalance);
+        }
+
+        if (data.hasActiveMembership !== undefined) {
+          setHasActiveMembership(Boolean(data.hasActiveMembership));
         }
 
         const userProf = data.profile;
@@ -365,42 +371,65 @@ export default function CheckoutPage() {
   // Mobile Step Wizard State (1: Address, 2: Summary/GST, 3: Payment)
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
-  // Calculate pricing (MRP Inclusive GST Model - Single Source of Truth for Pre-Booking)
+  // Calculate pricing via Canonical PricingEngine
   const hasItems = checkoutItems.length > 0;
 
-  // Pre-Booking offer calculation
-  const preBookingOffer = (() => {
-    if (!isPreBookingCheckout || !hasItems) return null;
-    const itemProd = checkoutItems[0]?.product;
-    if (!itemProd) return null;
-    const variantPrice = itemProd.variants?.find((v: any) => v.size === checkoutItems[0].size)?.price;
-    const basePrice = Number(variantPrice || itemProd.price || subtotal);
-    const offerDetails = getPreBookingOfferDetails(itemProd, basePrice);
-    if (!offerDetails || !offerDetails.isOfferActive) return null;
-    const qty = checkoutItems[0].quantity || 1;
+  const pricingItems: PricingItem[] = checkoutItems.map((item) => {
+    const prod = item.product;
+    const variant = prod?.variants?.find((v: any) => v.size === item.size) || prod?.variants?.[0];
+    const unitPrice = variant ? Number(variant.price) : Number(prod?.mrp || prod?.price || 0);
+    const comparePrice = variant?.comparePrice ? Number(variant.comparePrice) : (prod?.comparePrice ? Number(prod.comparePrice) : null);
+
     return {
-      originalUnitPrice: offerDetails.originalPrice,
-      effectiveUnitPrice: offerDetails.effectivePrice,
-      unitSavings: offerDetails.savingsAmount,
-      totalOriginal: offerDetails.originalPrice * qty,
-      totalSavings: offerDetails.savingsAmount * qty,
-      totalEffective: offerDetails.effectivePrice * qty,
+      price: unitPrice,
+      comparePrice: comparePrice,
+      quantity: item.quantity || 1,
+      productName: prod?.name || 'GODSMOVE Garment',
+      gstPercentage: prod?.gstPercentage ? Number(prod.gstPercentage) : 18.0,
+      hasMemberDiscount: prod?.hasMemberDiscount,
+      memberDiscountType: prod?.memberDiscountType,
+      memberDiscountValue: prod?.memberDiscountValue ? Number(prod.memberDiscountValue) : null,
+      isPreBooking: prod?.isPreBooking,
+      launchDateTime: prod?.launchDateTime,
+      preBookingOpenDateTime: prod?.preBookingOpenDateTime,
+      preBookingOfferValue: prod?.preBookingOfferValue ? Number(prod.preBookingOfferValue) : null,
+      preBookingOfferType: prod?.preBookingOfferType,
     };
-  })();
+  });
 
-  const preBookingSavings = preBookingOffer ? preBookingOffer.totalSavings : 0;
-  const effectiveSubtotal = hasItems ? Math.max(0, subtotal - preBookingSavings) : 0;
+  let rawCodFee = 0;
+  if (paymentMethod === 'cod' && codConfig.isEnabled && !isPreBookingCheckout) {
+    const subtotalAfterCouponTemp = Math.max(0, subtotal - discountAmount);
+    const shippingTemp = subtotalAfterCouponTemp >= 1999 || subtotal === 0 ? 0 : 149;
+    if (codConfig.chargeType === 'PERCENTAGE') {
+      rawCodFee = Math.round((subtotalAfterCouponTemp + shippingTemp) * (codConfig.chargeValue / 100));
+    } else {
+      rawCodFee = Math.round(codConfig.chargeValue);
+    }
+  }
 
-  const subtotalAfterCoupon = hasItems ? Math.max(0, effectiveSubtotal - discountAmount) : 0;
-  const shipping = (!hasItems || subtotal === 0 || subtotalAfterCoupon > 1999 || isPreBookingCheckout) ? 0 : 149;
-  const codFee = (!hasItems || subtotal === 0 || paymentMethod !== 'cod' || !codConfig.isEnabled || isPreBookingCheckout)
-    ? 0
-    : (codConfig.chargeType === 'PERCENTAGE'
-        ? Math.round((subtotalAfterCoupon + shipping) * (codConfig.chargeValue / 100))
-        : Math.round(codConfig.chargeValue));
-  const totalBeforeCredits = hasItems ? subtotalAfterCoupon + shipping + codFee : 0;
-  const walletCreditsToUse = (hasItems && useCredits) ? Math.min(walletBalance, totalBeforeCredits) : 0;
-  const finalPayable = hasItems ? Math.max(0, totalBeforeCredits - walletCreditsToUse) : 0;
+  const canonicalPricing = PricingEngine.calculate({
+    items: pricingItems,
+    couponCode: appliedCoupon,
+    couponDiscount: discountAmount,
+    walletAmountToUse: useCredits ? walletBalance : 0,
+    shippingState: form.state || 'Haryana',
+    codFee: rawCodFee,
+    isPreBooking: isPreBookingCheckout,
+    hasActiveMembership,
+  });
+
+  const shipping = canonicalPricing.shippingCost;
+  const codFee = canonicalPricing.codFee;
+  const walletCreditsToUse = canonicalPricing.walletCredit;
+  const finalPayable = canonicalPricing.finalPayable;
+
+  const pbDiscountLine = canonicalPricing.discountLines.find(l => l.type === 'PRE_BOOKING');
+  const preBookingOffer = isPreBookingCheckout && pbDiscountLine ? {
+    totalOriginal: canonicalPricing.subtotal + pbDiscountLine.amount,
+    totalSavings: pbDiscountLine.amount,
+    totalEffective: canonicalPricing.subtotal,
+  } : null;
 
   const handleStep1Submit = async () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim() || !form.city.trim() || !form.state.trim() || !form.pincode.trim()) {
@@ -1531,7 +1560,7 @@ export default function CheckoutPage() {
                 })}
               </div>
 
-              {/* Promotional Discount Coupon Section */}
+              {/* Promotional & Member Discount Section */}
               <div className={styles.couponBlock}>
                 <div className={styles.couponOfferDisplay}>
                   <div className={styles.offerStatusHeader}>
@@ -1566,6 +1595,22 @@ export default function CheckoutPage() {
                           ✕ Remove Coupon
                         </button>
                       </>
+                    ) : canonicalPricing.memberDiscount > 0 ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Crown size={14} style={{ color: '#B08D57' }} />
+                          <span className={styles.bestOfferAppliedLabel} style={{ color: '#B08D57' }}>GODSMOVE MEMBER EXCLUSIVE APPLIED</span>
+                        </div>
+                        <div className={styles.appliedCodeRow} style={{ marginTop: '4px' }}>
+                          <span className={styles.appliedCodeBadge} style={{ background: 'rgba(176,141,87,0.15)', color: '#B08D57', border: '1px solid rgba(176,141,87,0.3)' }}>
+                            MEMBER EXCLUSIVE • {canonicalPricing.discountLines.find(d => d.type === 'MEMBER_ONLY')?.percentage || 10}% OFF
+                          </span>
+                          <span className={styles.appliedCodeSavings}>Saved ₹{Math.round(canonicalPricing.memberDiscount).toLocaleString('en-IN')}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#888888', marginTop: '4px', display: 'block' }}>
+                          Applied automatically to your member account
+                        </span>
+                      </>
                     ) : (
                       <span className={styles.bestOfferAvailableLabel}>Best Available Offer</span>
                     )}
@@ -1575,7 +1620,7 @@ export default function CheckoutPage() {
                     className={styles.checkOffersLink} 
                     onClick={() => setIsDiscountModalOpen(true)}
                   >
-                    Check Discounts & Offers
+                    {appliedCoupon || canonicalPricing.memberDiscount > 0 ? 'Check Additional Coupons' : 'Check Discounts & Offers'}
                   </button>
                 </div>
               </div>
@@ -1706,7 +1751,7 @@ export default function CheckoutPage() {
                   <>
                     <div className={styles.orderRow}>
                       <span>Subtotal</span>
-                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                      <span>₹{canonicalPricing.subtotal.toLocaleString('en-IN')}</span>
                     </div>
                     <div style={{ fontSize: '10px', color: '#888888', marginTop: '-8px', marginBottom: '8px', letterSpacing: '0.04em', fontFamily: 'var(--font-heading)' }}>
                       Price inclusive of GST
@@ -1714,12 +1759,12 @@ export default function CheckoutPage() {
                   </>
                 )}
 
-                {discountAmount > 0 && (
-                  <div className={styles.orderRow} style={{ color: '#B08D57' }}>
-                    <span>Discount</span>
-                    <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
+                {canonicalPricing.discountLines.map((line, idx) => (
+                  <div key={idx} className={styles.orderRow} style={{ color: '#B08D57', fontWeight: 500 }}>
+                    <span>{line.label}</span>
+                    <span>-₹{Math.round(line.amount).toLocaleString('en-IN')}</span>
                   </div>
-                )}
+                ))}
                 <div className={styles.orderRow}>
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>

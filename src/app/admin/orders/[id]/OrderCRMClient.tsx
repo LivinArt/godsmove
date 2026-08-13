@@ -42,6 +42,8 @@ interface OrderDetail {
   fulfillmentStatus?: string;
   lockedUnitPrice?: number | null;
   lockedDiscountAmount?: number | null;
+  lockedOfferType?: string | null;
+  lockedOfferValue?: number | null;
   trackingNumber: string | null;
   carrier: string | null;
   createdAt: string;
@@ -365,7 +367,11 @@ export default function OrderCRMClient({
 
                 {discountVal > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#c8a46a' }}>
-                    <span>{isPreBooking ? 'Pre-Booking Discount' : 'Discount'}</span>
+                    <span>
+                      {order.lockedOfferType
+                        ? (order.lockedOfferType.includes('MEMBER_ONLY') ? 'GODSMOVE Member Exclusive' : order.lockedOfferType)
+                        : (isPreBooking ? 'Pre-Booking Offer' : 'Discount')}
+                    </span>
                     <span>-{formatINR(discountVal)}</span>
                   </div>
                 )}

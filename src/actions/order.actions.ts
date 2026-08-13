@@ -91,7 +91,7 @@ export async function createOrder(input: CreateOrderInput) {
         where: { id: { in: variantIds } },
         include: {
           inventory: true,
-          product: { select: { name: true, status: true, channel: true, gstPercentage: true, hasPreBookingOffer: true, preBookingOfferType: true, preBookingOfferValue: true, isPreBooking: true, preBookingOpenDateTime: true, maxPreBooking: true, currentPreBookings: true, launchDateTime: true, expectedDispatch: true, customExpectedDispatch: true, frontImageUrl: true, backImageUrl: true, images: true } },
+          product: { select: { name: true, status: true, channel: true, gstPercentage: true, hasMemberDiscount: true, memberDiscountType: true, memberDiscountValue: true, hasPreBookingOffer: true, preBookingOfferType: true, preBookingOfferValue: true, isPreBooking: true, preBookingOpenDateTime: true, maxPreBooking: true, currentPreBookings: true, launchDateTime: true, expectedDispatch: true, customExpectedDispatch: true, frontImageUrl: true, backImageUrl: true, images: true } },
         },
       });
 
@@ -137,7 +137,27 @@ export async function createOrder(input: CreateOrderInput) {
       const orderNumber = generateOrderNumber();
       console.log(`[CHECKOUT STEP 5] Generated Order Number: ${orderNumber}`);
 
-      // Step 6: Build pricing engine items
+      // Step 6: Query Membership status & Build pricing engine items
+      let targetProfileId = user?.id || null;
+      if (!targetProfileId && data.shippingAddress.email) {
+        const prof = await tx.profile.findFirst({
+          where: { email: { equals: data.shippingAddress.email, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (prof) targetProfileId = prof.id;
+      }
+
+      let hasActiveMembership = false;
+      if (targetProfileId) {
+        const mb = await tx.membership.findUnique({
+          where: { profileId: targetProfileId },
+        });
+        const now = new Date();
+        if (mb && mb.status === 'ACTIVE' && (!mb.expiresAt || new Date(mb.expiresAt) > now)) {
+          hasActiveMembership = true;
+        }
+      }
+
       const pricingItems = variants.map((v) => {
         const item = data.items.find((it) => it.variantId === v.id)!;
         let effectivePrice = Number(v.price);
@@ -157,6 +177,14 @@ export async function createOrder(input: CreateOrderInput) {
           quantity: item.quantity,
           productName: v.product.name,
           gstPercentage: v.product.gstPercentage,
+          hasMemberDiscount: v.product.hasMemberDiscount,
+          memberDiscountType: v.product.memberDiscountType,
+          memberDiscountValue: v.product.memberDiscountValue ? Number(v.product.memberDiscountValue) : null,
+          isPreBooking: v.product.isPreBooking,
+          launchDateTime: v.product.launchDateTime,
+          preBookingOpenDateTime: v.product.preBookingOpenDateTime,
+          preBookingOfferValue: v.product.preBookingOfferValue ? Number(v.product.preBookingOfferValue) : null,
+          preBookingOfferType: v.product.preBookingOfferType,
         };
       });
 
@@ -238,6 +266,7 @@ export async function createOrder(input: CreateOrderInput) {
         shippingState,
         codFee: calculatedCodFee,
         isPreBooking: isPreBookingOrderInput,
+        hasActiveMembership,
       });
 
       // Flow 6 Validation: Partial Wallet + COD is strictly forbidden
@@ -322,13 +351,13 @@ export async function createOrder(input: CreateOrderInput) {
           preBookingLaunchDate,
           preBookingExpectedDispatch,
           lockedUnitPrice: isPreBookingOrder ? pricing.subtotal : null,
-          lockedDiscountAmount: isPreBookingOrder ? pricing.couponDiscount : null,
-          lockedOfferType,
-          lockedOfferValue,
+          lockedDiscountAmount: pricing.totalDiscount > 0 ? pricing.totalDiscount : null,
+          lockedOfferType: pricing.discountLines.length > 0 ? pricing.discountLines.map(l => l.type).join(', ') : lockedOfferType,
+          lockedOfferValue: pricing.discountLines.length > 0 ? pricing.discountLines[0].amount : lockedOfferValue,
           subtotal: pricing.subtotal,
           shippingCost: pricing.shippingCost,
           codFee: pricing.codFee,
-          discountAmount: pricing.couponDiscount,
+          discountAmount: pricing.totalDiscount,
           walletCredit: pricing.walletCredit,
           taxableAmount: pricing.taxableAmount,
           gstAmount: pricing.gstAmount,
@@ -452,8 +481,9 @@ export async function createOrder(input: CreateOrderInput) {
       if (createdOrder.paymentMethod === 'RAZORPAY') {
         try {
           const { PaymentService } = await import('@/lib/payments/payment-service');
+          const netPayableForGateway = Math.max(0, Math.round(Number(createdOrder.total) - Number(createdOrder.walletCredit)));
           const rzpRes = await PaymentService.createOrder({
-            amount: Number(createdOrder.total),
+            amount: netPayableForGateway,
             currency: 'INR',
             orderId: createdOrder.id,
           });
