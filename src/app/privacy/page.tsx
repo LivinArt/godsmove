@@ -9,14 +9,14 @@ import { getBreadcrumbSchema } from '@/lib/json-ld';
 import styles from '@/components/LegalPageLayout.module.css';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Privacy Policy — Confidentiality & Data Rights | GODSMOVE',
+  title: 'Privacy Policy | Confidentiality & Data Rights | GODSMOVE',
   description:
     'GODSMOVE Privacy Policy. Learn how we safeguard your personal data, encryption protocols, cookies, and privacy rights across India.',
   path: '/privacy',
   keywords: [
     'GODSMOVE privacy policy',
-    'data privacy streetwear',
-    'luxury ecommerce privacy India',
+    'data privacy GODSMOVE',
+    'modern apparel privacy India',
     'personal data rights GODSMOVE',
   ],
 });

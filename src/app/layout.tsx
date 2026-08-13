@@ -22,17 +22,20 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = constructMetadata({
-  title: "GODSMOVE — Make Your Move | Luxury Streetwear",
+  title: "GODSMOVE | Modern Apparel & Premium Clothing Online India",
   description:
-    "Worn With Intent. GODSMOVE is engineered for decisive creators — architectural silhouettes, heavy 240+ GSM drop-shoulder tees, and limited archival allocations.",
+    "Explore GODSMOVE's modern apparel collection featuring premium T-shirts, oversized tees, hoodies, denim jackets, and distinctive everyday clothing designed in India.",
   path: "/",
   keywords: [
     "GODSMOVE",
-    "luxury streetwear India",
-    "oversized t-shirts India",
-    "drop shoulder heavy t-shirt",
-    "architectural apparel",
-    "decisive creators streetwear",
+    "modern apparel India",
+    "premium clothing brands India",
+    "men's clothing online",
+    "oversized t shirts for men",
+    "premium t shirts India",
+    "hoodies for men",
+    "denim jackets for men",
+    "contemporary clothing",
   ],
 });
 

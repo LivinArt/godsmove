@@ -12,7 +12,7 @@ export function getOrganizationSchema() {
     name: 'GODSMOVE',
     url: BASE_URL,
     logo: `${BASE_URL}/images/campaign/editorial-01.png`,
-    description: 'GODSMOVE is an Indian luxury streetwear atelier built for decisive creators.',
+    description: 'GODSMOVE is a modern apparel brand built around craftsmanship, thoughtful design, and distinctive clothing for decisive creators.',
     sameAs: ['https://instagram.com/godsmove'],
   };
 }

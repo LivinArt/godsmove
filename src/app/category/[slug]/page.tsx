@@ -57,8 +57,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     });
   }
 
-  const categoryTitle = `${category.name} Collection | Luxury Streetwear`;
-  const categoryDesc = `Explore ${category.name} from the GODSMOVE archive. ${EDITORIAL_LINES[slug] || DEFAULT_EDITORIAL_LINES[0]} Premium heavy cotton fabric, boxy drop-shoulder cuts, and limited allocations.`;
+  const categoryTitle = `${category.name} | Premium ${category.name} for Men | GODSMOVE`;
+  const categoryDesc = `Explore ${category.name} from GODSMOVE. ${EDITORIAL_LINES[slug] || DEFAULT_EDITORIAL_LINES[0]} Crafted with premium heavy cotton, contemporary drop-shoulder silhouettes, and distinctive finishes.`;
 
   return constructMetadata({
     title: categoryTitle,
@@ -68,9 +68,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     keywords: [
       category.name,
       `GODSMOVE ${category.name}`,
-      `oversized ${category.name} India`,
-      'streetwear collection',
-      'architectural wear',
+      `premium ${category.name} India`,
+      `${category.name} for men`,
+      'modern apparel collection',
     ],
   });
 }

@@ -8,14 +8,14 @@ import JsonLd from '@/components/JsonLd';
 import { getBreadcrumbSchema } from '@/lib/json-ld';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Terms & Conditions — Official Terms of Service | GODSMOVE',
+  title: 'Terms & Conditions | Official Terms of Service | GODSMOVE',
   description:
     'GODSMOVE Terms & Conditions. Detailed terms of service governing orders, pricing, GODSMOVE Wallet, IP rights, and jurisdiction across India.',
   path: '/terms',
   keywords: [
     'GODSMOVE terms and conditions',
     'terms of service GODSMOVE',
-    'luxury streetwear terms',
+    'modern apparel terms',
     'legal agreement GODSMOVE',
   ],
 });

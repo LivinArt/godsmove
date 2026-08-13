@@ -9,13 +9,13 @@ import { getBreadcrumbSchema } from '@/lib/json-ld';
 import styles from '@/components/LegalPageLayout.module.css';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Shipping & Exchange Policy — Pan-India Delivery & Quality Rules | GODSMOVE',
+  title: 'Shipping & Exchange Policy | Pan-India Delivery & Quality Rules | GODSMOVE',
   description:
-    'GODSMOVE Shipping & Exchange Policy. Complimentary shipping across India, delivery timelines, 7-day return window, quality inspection, and rejected return conditions.',
+    'GODSMOVE Shipping & Exchange Policy. Complimentary shipping across India, delivery timelines, 7-day return window, quality inspection, and exchange guidelines.',
   path: '/shipping-exchange-policy',
   keywords: [
     'GODSMOVE shipping policy',
-    'free delivery India streetwear',
+    'free delivery India clothing',
     'exchange and return guidelines',
     'quality inspection rules GODSMOVE',
   ],

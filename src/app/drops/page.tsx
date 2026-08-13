@@ -11,10 +11,10 @@ import styles from './page.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Shop All Drops & Releases — GODSMOVE',
-  description: 'Explore limited allocations and architectural drops from GODSMOVE. Premium oversized tees, heavy fleece hoodies, and statement wear.',
+  title: 'New Collection & Latest Releases | GODSMOVE',
+  description: 'Discover the latest GODSMOVE clothing collection featuring new T-shirts, oversized tees, hoodies, and jackets available online in India.',
   path: '/drops',
-  keywords: ['streetwear drops India', 'limited edition streetwear', 'GODSMOVE shop', 'oversized collection'],
+  keywords: ['new clothing collection India', 'latest clothing drops', 'premium t shirts for men', 'hoodies online India', 'GODSMOVE shop'],
 });
 
 export default async function ShopPage() {

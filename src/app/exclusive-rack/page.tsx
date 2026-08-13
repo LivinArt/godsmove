@@ -12,10 +12,10 @@ import styles from './page.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Exclusive Rack — Archived Allocations | GODSMOVE',
-  description: 'The permanent archive of curated GODSMOVE artifacts. Rare statement pieces built with intent and allocated to decisive creators.',
+  title: 'Exclusive Collection | Curated Apparel | GODSMOVE',
+  description: 'Explore GODSMOVE Exclusive Rack. Curated limited edition clothing, premium statement pieces, and distinctive apparel crafted in India.',
   path: '/exclusive-rack',
-  keywords: ['exclusive rack', 'GODSMOVE vault', 'archival streetwear', 'rare drop allocations'],
+  keywords: ['exclusive rack', 'GODSMOVE vault', 'curated apparel', 'distinctive clothing India', 'premium clothing online'],
 });
 
 export default async function ExclusiveRackPage() {

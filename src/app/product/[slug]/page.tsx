@@ -45,11 +45,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     image: primaryImage,
     keywords: [
       product.name,
-      product.category?.name || 'Streetwear',
+      product.category?.name || 'Contemporary Clothing',
       product.collectionName || 'Archival Piece',
       'GODSMOVE apparel',
-      'oversized t-shirt',
-      'drop shoulder tee',
+      `buy ${product.name} online`,
+      `premium ${product.category?.name || 'clothing'} India`,
     ],
   });
 }

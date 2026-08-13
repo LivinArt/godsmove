@@ -23,18 +23,20 @@ export function constructMetadata({
   noIndex = false,
 }: ConstructMetadataInput): Metadata {
   const canonicalUrl = `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  const metaTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME}`;
+  const metaTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
   const ogImageUrl = image || `${BASE_URL}/images/campaign/editorial-01.png`;
 
   const defaultKeywords = [
     'GODSMOVE',
-    'luxury streetwear',
-    'Indian streetwear',
-    'oversized t-shirts',
-    'drop shoulder tees',
-    'architectural wear',
-    'decisive creators',
-    'premium apparel India',
+    'modern apparel India',
+    'premium clothing brands India',
+    'men\'s clothing online',
+    'oversized t shirts for men',
+    'premium t shirts India',
+    'hoodies for men',
+    'denim jackets for men',
+    'contemporary clothing',
+    'craftsmanship apparel',
   ];
 
   const mergedKeywords = Array.from(new Set([...keywords, ...defaultKeywords]));
