@@ -31,10 +31,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
-      url: `${baseUrl}/archive`,
+      url: `${baseUrl}/library`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/contact`,
@@ -116,5 +116,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Error querying categories from DB:', error);
   }
 
-  return [...staticPages, ...productPages, ...categoryPages];
+  // 4. Published Library Articles from Database
+  let articlePages: MetadataRoute.Sitemap = [];
+  try {
+    const articles = await prisma.archivePost.findMany({
+      where: {
+        status: 'PUBLISHED',
+        noIndex: false,
+      },
+      select: {
+        slug: true,
+        updatedAt: true,
+        publishedAt: true,
+      },
+    });
+
+    articlePages = articles.map((article) => ({
+      url: `${baseUrl}/library/${article.slug}`,
+      lastModified: article.publishedAt || article.updatedAt ? new Date(article.publishedAt || article.updatedAt) : new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }));
+  } catch (error) {
+    console.error('Sitemap: Error querying library articles from DB:', error);
+  }
+
+  return [...staticPages, ...productPages, ...categoryPages, ...articlePages];
 }

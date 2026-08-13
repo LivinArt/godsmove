@@ -27,11 +27,12 @@ async function requireAdminOrEditor() {
   return user;
 }
 
-// ── ARCHIVE POSTS ─────────────────────────────────────────────────────────────
+// ── ARCHIVE & LIBRARY POSTS ───────────────────────────────────────────────────
 
 export async function getArchivePosts(params?: {
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   type?: string;
+  category?: string;
   take?: number;
   skip?: number;
 }) {
@@ -41,9 +42,10 @@ export async function getArchivePosts(params?: {
         ? { status: params.status }
         : { status: 'PUBLISHED' }), // public default = only published
       ...(params?.type && { type: params.type as any }),
+      ...(params?.category && params.category !== 'ALL' && { category: params.category }),
     },
-    orderBy: { publishedAt: 'desc' },
-    take: params?.take ?? 20,
+    orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
+    take: params?.take ?? 30,
     skip: params?.skip ?? 0,
   });
 }
@@ -52,20 +54,53 @@ export async function getArchivePostBySlug(slug: string) {
   return prisma.archivePost.findUnique({ where: { slug } });
 }
 
+export async function getRelatedArticles(currentSlug: string, category?: string | null, limit = 3) {
+  return prisma.archivePost.findMany({
+    where: {
+      status: 'PUBLISHED',
+      slug: { not: currentSlug },
+      noIndex: false,
+      ...(category ? { category } : {}),
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+  });
+}
+
 const ArchivePostSchema = z.object({
   title: z.string().min(1).max(200),
   slug: z.string().regex(/^[a-z0-9-]+$/),
-  type: z.enum(['EDITORIAL', 'MOODBOARD', 'OBSERVATION', 'ARTIFACT', 'CAMPAIGN']),
+  type: z.enum(['EDITORIAL', 'MOODBOARD', 'OBSERVATION', 'ARTIFACT', 'CAMPAIGN']).default('EDITORIAL'),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
   excerpt: z.string().min(1).max(500),
-  body: z.string().optional(),
-  coverImage: z.string().url().optional().nullable(),
+  body: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
   tags: z.array(z.string()).default([]),
+  subtitle: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  authorName: z.string().optional().nullable(),
+  readingTime: z.string().optional().nullable(),
+  isFeatured: z.boolean().default(false),
+  contentBlocks: z.any().optional().nullable(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable(),
+  seoKeywords: z.array(z.string()).default([]),
+  canonicalUrl: z.string().optional().nullable(),
+  ogTitle: z.string().optional().nullable(),
+  ogDescription: z.string().optional().nullable(),
+  ogImage: z.string().optional().nullable(),
+  noIndex: z.boolean().default(false),
 });
 
 export async function createArchivePost(input: z.infer<typeof ArchivePostSchema>) {
   const user = await requireAdminOrEditor();
   const data = ArchivePostSchema.parse(input);
+
+  // Check unique slug
+  const existingSlug = await prisma.archivePost.findUnique({ where: { slug: data.slug } });
+  if (existingSlug) {
+    throw new Error(`SLUG_EXISTS: The slug "${data.slug}" is already in use.`);
+  }
 
   const post = await prisma.archivePost.create({
     data: {
@@ -75,6 +110,8 @@ export async function createArchivePost(input: z.infer<typeof ArchivePostSchema>
     },
   });
 
+  revalidatePath('/library');
+  revalidatePath(`/library/${post.slug}`);
   revalidatePath('/archive');
   revalidatePath('/admin/editorial');
   return post;
@@ -88,8 +125,17 @@ export async function updateArchivePost(
   const data = ArchivePostSchema.partial().parse(input);
 
   const existing = await prisma.archivePost.findUnique({ where: { id } });
+  if (!existing) throw new Error('POST_NOT_FOUND');
+
+  if (data.slug && data.slug !== existing.slug) {
+    const slugTaken = await prisma.archivePost.findUnique({ where: { slug: data.slug } });
+    if (slugTaken) {
+      throw new Error(`SLUG_EXISTS: The slug "${data.slug}" is already in use.`);
+    }
+  }
+
   const becomingPublished =
-    existing?.status !== 'PUBLISHED' && data.status === 'PUBLISHED';
+    existing.status !== 'PUBLISHED' && data.status === 'PUBLISHED';
 
   const post = await prisma.archivePost.update({
     where: { id },
@@ -99,15 +145,18 @@ export async function updateArchivePost(
     },
   });
 
+  revalidatePath('/library');
+  revalidatePath(`/library/${post.slug}`);
   revalidatePath('/archive');
-  revalidatePath(`/archive/${post.slug}`);
   revalidatePath('/admin/editorial');
   return post;
 }
 
 export async function deleteArchivePost(id: string) {
   await requireAdminOrEditor();
-  await prisma.archivePost.delete({ where: { id } });
+  const post = await prisma.archivePost.delete({ where: { id } });
+  revalidatePath('/library');
+  if (post) revalidatePath(`/library/${post.slug}`);
   revalidatePath('/archive');
   revalidatePath('/admin/editorial');
 }

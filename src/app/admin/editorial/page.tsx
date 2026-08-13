@@ -76,7 +76,7 @@ export default async function EditorialAdminPage() {
                   <td style={{ display: 'flex', gap: 8 }}>
                     <Link href={`/admin/editorial/${p.id}/edit`} className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}>Edit</Link>
                     {p.status === 'PUBLISHED' && (
-                      <Link href={`/archive/${p.slug}`} className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }} target="_blank">View ↗</Link>
+                      <Link href={`/library/${p.slug}`} className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }} target="_blank">View ↗</Link>
                     )}
                   </td>
                 </tr>

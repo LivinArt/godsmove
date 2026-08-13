@@ -154,6 +154,7 @@ export default function Footer() {
             <ul className={styles.colList}>
               <li><Link href="/our-story">Our Story</Link></li>
               <li><Link href="/our-story">Craftsmanship</Link></li>
+              <li><Link href="/library">GODSMOVE Library</Link></li>
               <li><Link href="/contact">Concierge Support</Link></li>
             </ul>
           </div>
