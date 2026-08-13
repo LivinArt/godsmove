@@ -427,34 +427,44 @@ export async function upsertProductRecord(input: UpsertProductInput) {
           });
         }
 
-        // 2. Manage Images (Concurrent Batch Ops)
-        console.log('===> [SERVER] STEP 5B: Managing product images, count:', images?.length);
-        if (images && images.length > 0) {
-          const incomingImageUrls = images.map((img) => img.url);
-          await tx.productImage.deleteMany({
-            where: { productId: p.id, url: { notIn: incomingImageUrls } },
-          });
+        // 2. Manage Product Images (Idempotent Wipe & Bulk Replace with In-Memory URL Deduplication)
+        console.log('===> [SERVER] STEP 5B: Managing product images, input count:', images?.length);
+        
+        // Always wipe existing ProductImage relations for this product inside transaction
+        await tx.productImage.deleteMany({
+          where: { productId: p.id },
+        });
 
-          await Promise.all(
-            images.map((img) => {
-              if (img.id) {
-                return tx.productImage.update({
-                  where: { id: img.id },
-                  data: { position: img.position, isCover: img.isCover, alt: img.alt },
-                });
-              } else {
-                return tx.productImage.create({
-                  data: {
-                    productId: p.id,
-                    url: img.url,
-                    position: img.position,
-                    isCover: img.isCover,
-                    alt: img.alt,
-                  },
-                });
-              }
-            })
-          );
+        if (images && images.length > 0) {
+          // In-memory deduplication by URL (preserve first occurrence, cover status, and alt text)
+          const seenUrls = new Set<string>();
+          const cleanImages: typeof images = [];
+
+          for (const img of images) {
+            if (!img.url || typeof img.url !== 'string' || img.url.trim().length === 0) continue;
+            const normalizedUrl = img.url.trim();
+            if (!seenUrls.has(normalizedUrl)) {
+              seenUrls.add(normalizedUrl);
+              cleanImages.push({
+                ...img,
+                url: normalizedUrl,
+              });
+            }
+          }
+
+          if (cleanImages.length > 0) {
+            const hasCover = cleanImages.some((i) => i.isCover);
+            
+            await tx.productImage.createMany({
+              data: cleanImages.map((img, idx) => ({
+                productId: p.id,
+                url: img.url,
+                alt: img.alt || null,
+                position: idx,
+                isCover: hasCover ? Boolean(img.isCover) : idx === 0,
+              })),
+            });
+          }
         }
 
         // 3. Manage Variants & Inventory (Pre-fetch & Batch Nested Writes)
