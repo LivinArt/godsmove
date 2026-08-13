@@ -527,8 +527,49 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       const productSellingPrice = Number(formData.mrp || 0);
       const productComparePrice = formData.comparePrice ? Number(formData.comparePrice) : null;
 
+      const defaultStorytelling = {
+        detailsEyebrow: formData.storytelling?.detailsEyebrow || 'DESIGN SPECIFICATION',
+        detailsTitle: formData.storytelling?.detailsTitle || 'PRODUCT DETAILS & SYMBOLISM',
+        detailsIntro: formData.storytelling?.detailsIntro || formData.description || '',
+        detailsBlocks: formData.storytelling?.detailsBlocks?.length ? formData.storytelling.detailsBlocks : [
+          {
+            id: 'block-1',
+            eyebrow: 'FABRIC ARCHITECTURE',
+            heading: formData.fabricName || formData.material || 'Heavyweight Combed Cotton',
+            description: formData.fabricWhy || 'Dense knit construction engineered to drape cleanly with minimal cling, maintaining structural form throughout continuous wear.',
+            icon: 'Layers',
+          },
+          {
+            id: 'block-2',
+            eyebrow: 'CONSTRUCTION & SEAMS',
+            heading: formData.constructionName || formData.fit || 'Drop-Shoulder Precision Cut',
+            description: formData.constructionWhy || 'Relaxed proportions tailored across the chest and upper arm, finished with reinforced double-needle stitching on hem and cuffs.',
+            icon: 'Scissors',
+          },
+          {
+            id: 'block-3',
+            eyebrow: 'ARTWORK & FINISH',
+            heading: formData.printName || 'Archival Screen Application',
+            description: formData.printWhy || 'High-density pigment execution cured for exceptional longevity, formulated to evolve with character through time and laundering.',
+            icon: 'Brush',
+          },
+        ],
+        archiveEyebrow: formData.storytelling?.archiveEyebrow || 'TECHNICAL ARCHIVE',
+        archiveTitle: formData.storytelling?.archiveTitle || 'GARMENT SPECIFICATIONS',
+        archiveBadgeText: formData.storytelling?.archiveBadgeText || '01 / 03 • GODSMOVE ATELIER',
+        archiveSpecs: formData.storytelling?.archiveSpecs?.length ? formData.storytelling.archiveSpecs : [
+          { id: 'spec-1', label: 'MATERIAL', value: formData.material || '100% Cotton (280–300 GSM)' },
+          { id: 'spec-2', label: 'FIT TYPE', value: formData.fit || 'Oversized Drop-Shoulder' },
+          { id: 'spec-3', label: 'COUNTRY OF ORIGIN', value: formData.origin || formData.country || 'India' },
+          { id: 'spec-4', label: 'WASH CARE', value: formData.washCare || 'Machine Wash Cold, Dry Flat in Shade' },
+          { id: 'spec-5', label: 'MANUFACTURER', value: formData.manufacturer || 'GODSMOVE Atelier' },
+          { id: 'spec-6', label: 'SHIPPING CLASS', value: formData.shippingClass || 'Standard Ground' },
+        ],
+      };
+
       const payload: UpsertProductInput = {
         ...formData,
+        storytelling: defaultStorytelling,
         isPreBooking: Boolean(formData.isPreBooking),
         launchDateTime,
         preBookingOpenDateTime,

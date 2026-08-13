@@ -81,10 +81,9 @@ export function getStorytellingTheme(product: any): 'dark' | 'light' {
 }
 
 export default function ProductStorytelling({ product, themeMode }: ProductStorytellingProps) {
-  // 1. If product or product.storytelling is missing, render nothing.
-  if (!product || !product.storytelling) return null;
+  if (!product) return null;
 
-  const storytelling: ProductStorytellingData = product.storytelling;
+  const storytelling: ProductStorytellingData = product.storytelling || {};
 
   // 2. Determine theme mode based on product type
   const effectiveTheme = themeMode || getStorytellingTheme(product);
@@ -92,24 +91,69 @@ export default function ProductStorytelling({ product, themeMode }: ProductStory
   // 3. Extract Details & Symbolism
   const detailsEyebrow = storytelling.detailsEyebrow || 'DESIGN SPECIFICATION';
   const detailsTitle = storytelling.detailsTitle || 'PRODUCT DETAILS & SYMBOLISM';
-  const detailsIntro = storytelling.detailsIntro || '';
+  const detailsIntro = storytelling.detailsIntro || product.description || product.shortDesc || '';
 
   const rawBlocks = storytelling.detailsBlocks;
-  const blocks: StorytellingBlock[] = Array.isArray(rawBlocks)
+  let blocks: StorytellingBlock[] = Array.isArray(rawBlocks)
     ? rawBlocks.filter((b) => b && (b.eyebrow || b.heading || b.description))
     : [];
+
+  // Fallback blocks if no custom blocks provided
+  if (blocks.length === 0) {
+    blocks = [
+      {
+        id: 'block-1',
+        eyebrow: 'FABRIC ARCHITECTURE',
+        heading: product.fabricName || product.material || 'Heavyweight Combed Cotton',
+        description:
+          product.fabricWhy ||
+          'Dense knit construction engineered to drape cleanly with minimal cling, maintaining structural form throughout continuous wear.',
+        icon: 'Layers',
+      },
+      {
+        id: 'block-2',
+        eyebrow: 'CONSTRUCTION & SEAMS',
+        heading: product.constructionName || product.fit || 'Drop-Shoulder Precision Cut',
+        description:
+          product.constructionWhy ||
+          'Relaxed proportions tailored across the chest and upper arm, finished with reinforced double-needle stitching on hem and cuffs.',
+        icon: 'Scissors',
+      },
+      {
+        id: 'block-3',
+        eyebrow: 'ARTWORK & FINISH',
+        heading: product.printName || 'Archival Screen Application',
+        description:
+          product.printWhy ||
+          'High-density pigment execution cured for exceptional longevity, formulated to evolve with character through time and laundering.',
+        icon: 'Brush',
+      },
+    ];
+  }
 
   const hasProductDetails = Boolean(detailsIntro.trim() || blocks.length > 0);
 
   // 4. Extract Archive Specs
   const archiveEyebrow = storytelling.archiveEyebrow || 'TECHNICAL ARCHIVE';
   const archiveTitle = storytelling.archiveTitle || 'GARMENT SPECIFICATIONS';
-  const archiveBadgeText = storytelling.archiveBadgeText || '';
+  const archiveBadgeText = storytelling.archiveBadgeText || '01 / 03 • GODSMOVE ATELIER';
 
   const rawSpecs = storytelling.archiveSpecs;
-  const specs: StorytellingArchiveSpec[] = Array.isArray(rawSpecs)
+  let specs: StorytellingArchiveSpec[] = Array.isArray(rawSpecs)
     ? rawSpecs.filter((s) => s && (s.label || s.value))
     : [];
+
+  // Fallback archive specs if no custom specs provided
+  if (specs.length === 0) {
+    specs = [
+      { id: 'spec-1', label: 'MATERIAL', value: product.material || '100% Cotton (280–300 GSM)' },
+      { id: 'spec-2', label: 'FIT TYPE', value: product.fit || 'Oversized Drop-Shoulder' },
+      { id: 'spec-3', label: 'COUNTRY OF ORIGIN', value: product.origin || product.country || 'India' },
+      { id: 'spec-4', label: 'WASH CARE', value: product.washCare || 'Machine Wash Cold, Dry Flat in Shade' },
+      { id: 'spec-5', label: 'MANUFACTURER', value: product.manufacturer || 'GODSMOVE Atelier' },
+      { id: 'spec-6', label: 'SHIPPING CLASS', value: product.shippingClass || 'Standard Ground' },
+    ];
+  }
 
   const hasTechnicalArchive = specs.length > 0;
 
