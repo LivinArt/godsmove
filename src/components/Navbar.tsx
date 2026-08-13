@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/drops', label: 'Drops' },
   { href: '/exclusive-rack', label: 'Exclusive Rack' },
+  { href: '/library', label: 'GODSMOVE Library' },
   { href: '/our-story', label: 'Story' },
 ] as const;
 
@@ -20,6 +21,7 @@ const HAMBURGER_LINKS = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/drops', label: 'Drops', icon: Sparkles },
   { href: '/exclusive-rack', label: 'Exclusive Rack', icon: Star },
+  { href: '/library', label: 'GODSMOVE Library', icon: BookOpen },
   { href: '/our-story', label: 'Story', icon: BookOpen },
 ] as const;
 
@@ -60,6 +62,7 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
     prefetchRoute('/wishlist');
     prefetchRoute('/profile');
     prefetchRoute('/membership');
+    prefetchRoute('/library');
   }, []);
 
   const handleWishlistClick = () => {
