@@ -113,6 +113,7 @@ export class NotificationService {
       items,
       subtotal: Number(fullOrder.subtotal || 0),
       shipping: Number(fullOrder.shippingCost || 0),
+      codFee: Number(fullOrder.codFee || 0),
       walletDiscount: Number(fullOrder.walletCredit || 0),
       couponDiscount: Number(fullOrder.discountAmount || 0),
       total: Number(fullOrder.total || 0),

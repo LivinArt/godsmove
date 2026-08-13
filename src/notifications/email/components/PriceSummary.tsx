@@ -4,6 +4,7 @@ import { Section, Text, Hr } from '@react-email/components';
 interface PriceSummaryProps {
   subtotal: number;
   shipping: number;
+  codFee?: number;
   walletDiscount?: number;
   couponDiscount?: number;
   total: number;
@@ -13,6 +14,7 @@ interface PriceSummaryProps {
 export const PriceSummary: React.FC<PriceSummaryProps> = ({
   subtotal,
   shipping,
+  codFee = 0,
   walletDiscount = 0,
   couponDiscount = 0,
   total,
@@ -31,6 +33,13 @@ export const PriceSummary: React.FC<PriceSummaryProps> = ({
           <td style={labelStyle}>Archival Express Shipping</td>
           <td style={valueStyle}>{shipping === 0 ? 'COMPLIMENTARY' : `₹${shipping.toLocaleString('en-IN')}`}</td>
         </tr>
+
+        {codFee > 0 && (
+          <tr>
+            <td style={labelStyle}>COD Handling Fee</td>
+            <td style={valueStyle}>+ ₹{codFee.toLocaleString('en-IN')}</td>
+          </tr>
+        )}
 
         {walletDiscount > 0 && (
           <tr>

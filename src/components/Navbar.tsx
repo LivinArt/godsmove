@@ -38,9 +38,70 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
   const cartCount = useStore((s) => s.cart.length > 0 ? s.getCartCount() : 0);
   const wishlistCount = useStore((s) => s.wishlist.length);
 
+  const [pendingNav, setPendingNav] = useState<'wishlist' | 'profile' | 'membership' | 'cart' | null>(null);
+
   const isCartActive = isCartOpen || pathname === '/checkout';
   const isWishlistActive = !isCartActive && pathname.startsWith('/wishlist');
   const isProfileActive = !isCartActive && pathname.startsWith('/profile');
+
+  // Reset pending state on route change or cart drawer state update
+  useEffect(() => {
+    setPendingNav(null);
+  }, [pathname, isCartOpen]);
+
+  // Intelligent prefetching for instant route navigation
+  const prefetchRoute = (path: string) => {
+    try {
+      router.prefetch(path);
+    } catch {}
+  };
+
+  useEffect(() => {
+    prefetchRoute('/wishlist');
+    prefetchRoute('/profile');
+    prefetchRoute('/membership');
+  }, []);
+
+  const handleWishlistClick = () => {
+    if (pendingNav === 'wishlist') return;
+    setPendingNav('wishlist');
+    requireAuth(
+      'wishlist',
+      () => {
+        router.push('/wishlist');
+      },
+      { type: 'wishlist' }
+    );
+  };
+
+  const handleProfileClick = () => {
+    if (pendingNav === 'profile') return;
+    setPendingNav('profile');
+    if (user) {
+      router.push('/profile');
+    } else {
+      openAuthModal('profile');
+      setPendingNav(null);
+    }
+  };
+
+  const handleMembershipClick = () => {
+    if (pendingNav === 'membership') return;
+    setPendingNav('membership');
+    if (user) {
+      router.push('/membership');
+    } else {
+      openAuthModal('membership');
+      setPendingNav(null);
+    }
+  };
+
+  const handleCartClick = () => {
+    if (pendingNav === 'cart') return;
+    setPendingNav('cart');
+    setCartOpen(true);
+    setTimeout(() => setPendingNav(null), 200);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,6 +157,7 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
                     key={item.href}
                     href={item.href}
                     className={`${styles.link} ${isActive ? styles.linkActive : ''}`}
+                    onMouseEnter={() => prefetchRoute(item.href)}
                   >
                     {item.label}
                   </Link>
@@ -138,10 +200,10 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
               <div className={styles.actionWrapper}>
                 <button
                   type="button"
-                  onClick={() => {
-                    requireAuth('wishlist', () => router.push('/wishlist'), { type: 'wishlist' });
-                  }}
-                  className={`${styles.actionBtn} ${isWishlistActive ? styles.actionBtnActive : ''}`}
+                  onClick={handleWishlistClick}
+                  onMouseEnter={() => prefetchRoute('/wishlist')}
+                  onTouchStart={() => prefetchRoute('/wishlist')}
+                  className={`${styles.actionBtn} ${isWishlistActive ? styles.actionBtnActive : ''} ${pendingNav === 'wishlist' ? styles.actionBtnPending : ''}`}
                   aria-label="Your Wishlist"
                   id="nav-wishlist"
                 >
@@ -154,14 +216,10 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
               <div className={styles.actionWrapper}>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (user) {
-                      router.push('/profile');
-                    } else {
-                      openAuthModal('profile');
-                    }
-                  }}
-                  className={`${styles.actionBtn} ${isProfileActive ? styles.actionBtnActive : ''}`}
+                  onClick={handleProfileClick}
+                  onMouseEnter={() => prefetchRoute('/profile')}
+                  onTouchStart={() => prefetchRoute('/profile')}
+                  className={`${styles.actionBtn} ${isProfileActive ? styles.actionBtnActive : ''} ${pendingNav === 'profile' ? styles.actionBtnPending : ''}`}
                   aria-label={user ? 'Your Profile' : 'Sign In'}
                   id="nav-profile"
                 >
@@ -174,14 +232,10 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
               <div className={styles.actionWrapper}>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (user) {
-                      router.push('/membership');
-                    } else {
-                      openAuthModal('membership');
-                    }
-                  }}
-                  className={`${styles.actionBtn} ${pathname.startsWith('/membership') ? styles.actionBtnActive : ''}`}
+                  onClick={handleMembershipClick}
+                  onMouseEnter={() => prefetchRoute('/membership')}
+                  onTouchStart={() => prefetchRoute('/membership')}
+                  className={`${styles.actionBtn} ${pathname.startsWith('/membership') ? styles.actionBtnActive : ''} ${pendingNav === 'membership' ? styles.actionBtnPending : ''}`}
                   aria-label="GODSMOVE Membership"
                   id="nav-membership"
                 >
@@ -193,8 +247,8 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
 
               <div className={styles.actionWrapper}>
                 <button
-                  className={`${styles.actionBtn} ${isCartActive ? styles.actionBtnActive : ''}`}
-                  onClick={() => setCartOpen(true)}
+                  className={`${styles.actionBtn} ${isCartActive ? styles.actionBtnActive : ''} ${pendingNav === 'cart' ? styles.actionBtnPending : ''}`}
+                  onClick={handleCartClick}
                   aria-label="Your Bag"
                   id="nav-cart"
                 >

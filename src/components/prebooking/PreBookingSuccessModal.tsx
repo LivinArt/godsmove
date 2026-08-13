@@ -31,36 +31,66 @@ export function PreBookingSuccessModal({
   }, []);
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKey);
     }
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className={styles.overlay} onClick={onClose} role="dialog" aria-modal="true">
+    <div 
+      className={styles.overlay} 
+      style={{
+        paddingTop: 'calc(var(--header-height, 80px) + 24px)',
+        zIndex: 9999,
+        background: 'rgba(5, 5, 5, 0.92)',
+        backdropFilter: 'blur(16px)',
+      }} 
+      role="dialog" 
+      aria-modal="true"
+    >
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerTitleRow}>
-            <span className={styles.headerBadge}>
-              <CheckCircle2 size={13} style={{ color: '#d4af37' }} />
-              ALLOCATION CONFIRMED
-            </span>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: 'rgba(34, 197, 94, 0.12)',
+              border: '1px solid rgba(34, 197, 94, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto',
+              boxShadow: '0 0 20px rgba(34, 197, 94, 0.2)',
+            }}>
+              <CheckCircle2 size={26} style={{ color: '#22c55e' }} />
+            </div>
           </div>
-          <h2 className={styles.modalTitle}>PRE-BOOKING CONFIRMED</h2>
-          <p className={styles.modalSubtitle}>
-            Your allocation is secured.
-            {orderNumber && <span className={styles.orderTag}> #{orderNumber}</span>}
+          <h2 className={styles.modalTitle} style={{ fontSize: '24px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>ORDER PLACED SUCCESSFULLY</h2>
+          <p className={styles.modalSubtitle} style={{ marginTop: '6px' }}>
+            Your order has been confirmed.
           </p>
+          {orderNumber && (
+            <p style={{
+              fontSize: '12px',
+              letterSpacing: '0.14em',
+              color: '#c8a46a',
+              textTransform: 'uppercase',
+              marginTop: '12px',
+              fontWeight: 700,
+              background: 'rgba(200, 164, 106, 0.08)',
+              padding: '6px 14px',
+              borderRadius: '4px',
+              display: 'inline-block',
+            }}>
+              Order #{orderNumber}
+            </p>
+          )}
         </div>
 
         <div className={styles.body}>
@@ -73,16 +103,6 @@ export function PreBookingSuccessModal({
             <p className={styles.memberDesc}>
               Your pre-booking includes complimentary GODSMOVE membership with exclusive privileges and early vault access.
             </p>
-            <button
-              type="button"
-              className={styles.memberLinkBtn}
-              onClick={() => {
-                onClose();
-                router.push('/membership');
-              }}
-            >
-              VIEW MEMBERSHIP PERKS <ArrowRight size={13} />
-            </button>
           </div>
 
           {/* Details Summary */}
@@ -105,24 +125,48 @@ export function PreBookingSuccessModal({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className={styles.ctaGrid}>
+          {/* Action Buttons — EXACT CTA LABELS & DESTINATIONS */}
+          <div className={styles.ctaGrid} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
             <button
               type="button"
               className={styles.primaryCta}
+              style={{
+                width: '100%',
+                padding: '16px 24px',
+                background: '#c8a46a',
+                color: '#0a0a0a',
+                border: 'none',
+                fontFamily: 'var(--font-heading)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
               onClick={() => {
-                onClose();
-                router.push('/exclusive-rack');
+                window.location.href = '/#split-banner';
               }}
             >
-              EXPLORE THE VAULT
+              EXPLORE MORE
             </button>
 
             <button
               type="button"
               className={styles.secondaryCta}
+              style={{
+                width: '100%',
+                padding: '15px 24px',
+                background: 'transparent',
+                color: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(200, 164, 106, 0.35)',
+                fontFamily: 'var(--font-heading)',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
               onClick={() => {
-                onClose();
                 router.push('/profile?tab=prebookings');
               }}
             >

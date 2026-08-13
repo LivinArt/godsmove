@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock, Loader2, Check, X, Pencil, Crown, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowLeft, Lock, Loader2, Check, CheckCircle2, X, Pencil, Crown, ShieldCheck, Tag } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { PreBookingSuccessModal } from '@/components/prebooking/PreBookingSuccessModal';
 import { PreBookingPaymentFailedModal } from '@/components/prebooking/PreBookingPaymentFailedModal';
@@ -41,6 +41,11 @@ export default function CheckoutPage() {
     syncCartLive,
   } = useStore();
 
+  // Order Success Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
+  const [confirmedOrderObj, setConfirmedOrderObj] = useState<any>(null);
+
   // CART mode: sync live catalogue on mount to validate availability.
   useEffect(() => {
     if (checkoutMode === 'CART') {
@@ -53,6 +58,11 @@ export default function CheckoutPage() {
   // If checkoutMode is null, check if cart contains items and set CART mode automatically;
   // otherwise if cart is truly empty or INSTANT session missing, redirect gracefully to home.
   useEffect(() => {
+    // If order success view or modal is active, NEVER auto-redirect to homepage!
+    if (showSuccessModal || confirmedOrderNumber || confirmedOrderObj) {
+      return;
+    }
+
     if (checkoutMode === null) {
       if (cart.length > 0) {
         beginCartCheckout();
@@ -70,7 +80,7 @@ export default function CheckoutPage() {
       clearCheckoutSession();
       router.replace('/');
     }
-  }, [checkoutMode, instantCheckoutSession, cart.length, beginCartCheckout, clearCheckoutSession, router]);
+  }, [showSuccessModal, confirmedOrderNumber, confirmedOrderObj, checkoutMode, instantCheckoutSession, cart.length, beginCartCheckout, clearCheckoutSession, router]);
 
   // ─────────────────────────────────────────────────────────────────
   // EXPLICIT PIPELINE GATE — no implicit fallback, no render-phase side effects
@@ -145,10 +155,6 @@ export default function CheckoutPage() {
   // Processing & Payments Simulation States
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [simulatedPaymentStep, setSimulatedPaymentStep] = useState<string | null>(null);
-
-  // Order Success Modal States
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<any>(null);
   const [phoneWarning, setPhoneWarning] = useState(false);
@@ -546,6 +552,7 @@ export default function CheckoutPage() {
         setDiscountAmount(0);
         setUseCredits(false);
 
+        setConfirmedOrderObj(order);
         setConfirmedOrderNumber(order.orderNumber);
         setShowSuccessModal(true);
         // Clear checkout session. On INSTANT mode, leave the shopping cart untouched.
@@ -629,6 +636,7 @@ export default function CheckoutPage() {
                 setDiscountAmount(0);
                 setUseCredits(false);
 
+                setConfirmedOrderObj(order);
                 setConfirmedOrderNumber(order.orderNumber);
                 setShowSuccessModal(true);
                 // Clear checkout session. On INSTANT mode, leave the shopping cart untouched.
@@ -685,7 +693,7 @@ export default function CheckoutPage() {
           <div className="container">
             <div className={styles.empty}>
               <p>Your cart is empty.</p>
-              <Link href="/drops" className="btn btn-primary">Shop Now</Link>
+              <Link href="/drops" className="btn btn-primary">Explore Drops</Link>
             </div>
           </div>
         </main>
@@ -693,16 +701,21 @@ export default function CheckoutPage() {
     );
   }
 
-  if (showSuccessModal) {
+  if (showSuccessModal || confirmedOrderNumber) {
+    const isConfirmedPreBooking = confirmedOrderObj ? (confirmedOrderObj.isPreBooking || confirmedOrderObj.orderType === 'PRE_BOOKING') : isPreBookingCheckout;
+
     return (
       <div style={{ minHeight: '100vh', background: '#050505', color: '#FAF8F5' }}>
         <Navbar />
         <div style={{
           minHeight: 'calc(100vh - 80px)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
-          padding: '40px 24px',
+          paddingTop: 'clamp(96px, 12vh, 140px)',
+          paddingBottom: '64px',
+          paddingLeft: '24px',
+          paddingRight: '24px',
         }}>
           <div
             style={{
@@ -713,9 +726,25 @@ export default function CheckoutPage() {
               padding: '56px 48px',
               textAlign: 'center',
               boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              position: 'relative',
+              borderRadius: '12px',
             }}
           >
-            <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '0 auto 32px' }} />
+            {/* Green Tick Check Circle Icon */}
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: 'rgba(34, 197, 94, 0.12)',
+              border: '1px solid rgba(34, 197, 94, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px auto',
+              boxShadow: '0 0 24px rgba(34, 197, 94, 0.2)',
+            }}>
+              <CheckCircle2 size={32} style={{ color: '#22c55e' }} />
+            </div>
 
             <span style={{
               fontFamily: 'var(--font-heading)',
@@ -725,80 +754,137 @@ export default function CheckoutPage() {
               textTransform: 'uppercase',
               color: '#c8a46a',
               display: 'block',
-              marginBottom: '32px',
+              marginBottom: '16px',
             }}>
               GODSMOVE ARCHIVE
             </span>
 
             <h2 style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(26px, 4.5vw, 38px)',
-              fontWeight: 300,
-              letterSpacing: '-0.02em',
+              fontSize: 'clamp(22px, 4vw, 32px)',
+              fontWeight: 400,
+              letterSpacing: '0.04em',
               color: '#FAF8F5',
-              margin: '0 0 20px',
-              lineHeight: 1.15,
+              margin: '0 0 12px',
+              lineHeight: 1.2,
+              textTransform: 'uppercase',
             }}>
-              Another piece has been<br />allocated to your collection.
+              ORDER PLACED SUCCESSFULLY
             </h2>
 
             <p style={{
-              fontSize: '13px',
-              lineHeight: 1.85,
-              color: 'rgba(255, 255, 255, 0.55)',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              color: 'rgba(255, 255, 255, 0.75)',
               maxWidth: '380px',
               margin: '0 auto 16px',
               letterSpacing: '0.015em',
+              fontWeight: 400,
             }}>
-              This garment has now been reserved under your archive. Every piece becomes part of a carefully curated collection designed to age with you.
+              Your order has been confirmed.
             </p>
 
             {confirmedOrderNumber && (
-              <p style={{ fontSize: '11px', letterSpacing: '0.14em', color: '#c8a46a', textTransform: 'uppercase', marginBottom: '40px', fontWeight: 600 }}>
-                Archive Reference — #{confirmedOrderNumber}
+              <p style={{
+                fontSize: '12px',
+                letterSpacing: '0.14em',
+                color: '#c8a46a',
+                textTransform: 'uppercase',
+                marginBottom: '36px',
+                fontWeight: 700,
+                background: 'rgba(200, 164, 106, 0.08)',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                display: 'inline-block',
+              }}>
+                Order #{confirmedOrderNumber}
               </p>
             )}
 
+            {/* EXACT PRIMARY ACTION BUTTONS */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
-              <button
-                onClick={() => router.push('/drops')}
-                style={{
-                  padding: '16px 32px',
-                  background: '#c8a46a',
-                  color: '#0a0a0a',
-                  border: 'none',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                Explore Drops
-              </button>
-              <button
-                onClick={() => router.push('/profile?tab=collection')}
-                style={{
-                  padding: '15px 32px',
-                  background: 'transparent',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  border: '1px solid rgba(200, 164, 106, 0.35)',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                Your Collection
-              </button>
+              {isConfirmedPreBooking ? (
+                <>
+                  <button
+                    onClick={() => { window.location.href = '/#split-banner'; }}
+                    style={{
+                      padding: '16px 32px',
+                      background: '#c8a46a',
+                      color: '#0a0a0a',
+                      border: 'none',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    EXPLORE MORE
+                  </button>
+                  <button
+                    onClick={() => router.push('/profile?tab=prebookings')}
+                    style={{
+                      padding: '15px 32px',
+                      background: 'transparent',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      border: '1px solid rgba(200, 164, 106, 0.35)',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    MY PRE-BOOKINGS
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => router.push('/profile?tab=collection')}
+                    style={{
+                      padding: '16px 32px',
+                      background: '#c8a46a',
+                      color: '#0a0a0a',
+                      border: 'none',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    VIEW ORDER
+                  </button>
+                  <button
+                    onClick={() => { window.location.href = '/#split-banner'; }}
+                    style={{
+                      padding: '15px 32px',
+                      background: 'transparent',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      border: '1px solid rgba(200, 164, 106, 0.35)',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    EXPLORE MORE
+                  </button>
+                </>
+              )}
             </div>
 
-            <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '40px auto 0' }} />
+            <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '32px auto 0' }} />
           </div>
         </div>
       </div>
@@ -821,22 +907,32 @@ export default function CheckoutPage() {
       )}
 
       {/* ── Order Success Modal ── */}
-      {showSuccessModal && (
-        isPreBookingCheckout ? (
-          <PreBookingSuccessModal
-            isOpen={true}
-            onClose={() => setShowSuccessModal(false)}
-            orderNumber={confirmedOrderNumber || undefined}
-          />
-        ) : (
+      {showSuccessModal && (() => {
+        const isConfirmedPreBooking = confirmedOrderObj ? (confirmedOrderObj.isPreBooking || confirmedOrderObj.orderType === 'PRE_BOOKING') : isPreBookingCheckout;
+
+        if (isConfirmedPreBooking) {
+          return (
+            <PreBookingSuccessModal
+              isOpen={true}
+              onClose={() => {}}
+              orderNumber={confirmedOrderNumber || undefined}
+            />
+          );
+        }
+
+        return (
           <div
             style={{
               position: 'fixed', inset: 0, zIndex: 9999,
-              background: 'rgba(5, 5, 5, 0.88)',
+              background: 'rgba(5, 5, 5, 0.92)',
               backdropFilter: 'blur(18px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '24px',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+              paddingTop: 'clamp(96px, 12vh, 140px)',
+              paddingBottom: '48px',
+              paddingLeft: '24px',
+              paddingRight: '24px',
               animation: 'successFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              overflowY: 'auto',
             }}
           >
             <style dangerouslySetInnerHTML={{ __html: `
@@ -858,11 +954,27 @@ export default function CheckoutPage() {
                 padding: '56px 48px',
                 textAlign: 'center',
                 position: 'relative',
+                borderRadius: '12px',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.9)',
                 animation: 'successSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Top gold rule */}
-              <div style={{ width: '40px', height: '1px', background: '#c8a46a', margin: '0 auto 32px' }} />
+              {/* Green Tick Check Circle Icon */}
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px auto',
+                boxShadow: '0 0 24px rgba(34, 197, 94, 0.2)',
+              }}>
+                <CheckCircle2 size={32} style={{ color: '#22c55e' }} />
+              </div>
 
               {/* Brand mark */}
               <span style={{
@@ -873,40 +985,58 @@ export default function CheckoutPage() {
                 textTransform: 'uppercase',
                 color: '#c8a46a',
                 display: 'block',
-                marginBottom: '32px',
+                marginBottom: '16px',
               }}>
                 GODSMOVE
               </span>
 
-              {/* Editorial headline */}
+              {/* Headline */}
               <h2 style={{
                 fontFamily: 'var(--font-heading)',
-                fontSize: 'clamp(28px, 5vw, 40px)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
+                fontSize: 'clamp(22px, 4vw, 32px)',
+                fontWeight: 400,
+                letterSpacing: '0.04em',
                 color: '#FAF8F5',
-                margin: '0 0 20px',
-                lineHeight: 1.1,
+                margin: '0 0 12px',
+                lineHeight: 1.2,
+                textTransform: 'uppercase',
               }}>
-                Another piece has been<br />allocated to your collection.
+                ORDER PLACED SUCCESSFULLY
               </h2>
 
-              {/* Editorial paragraph */}
+              {/* Subheading */}
               <p style={{
-                fontSize: '13px',
-                lineHeight: 1.85,
-                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: '14px',
+                lineHeight: 1.6,
+                color: 'rgba(255, 255, 255, 0.75)',
                 maxWidth: '380px',
-                margin: '0 auto 12px',
+                margin: '0 auto 16px',
                 letterSpacing: '0.015em',
               }}>
-                This garment has now been reserved under your archive. Every piece becomes part of a carefully curated collection designed to age with you.
+                Your order has been confirmed.
               </p>
 
-              {/* CTA buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto', marginTop: '32px' }}>
+              {confirmedOrderNumber && (
+                <p style={{
+                  fontSize: '12px',
+                  letterSpacing: '0.14em',
+                  color: '#c8a46a',
+                  textTransform: 'uppercase',
+                  marginBottom: '32px',
+                  fontWeight: 700,
+                  background: 'rgba(200, 164, 106, 0.08)',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  display: 'inline-block',
+                }}>
+                  Order #{confirmedOrderNumber}
+                </p>
+              )}
+
+              {/* EXACT PRIMARY ACTION BUTTONS FOR NORMAL ORDER */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '340px', margin: '0 auto', marginTop: '16px' }}>
                 <button
-                  onClick={() => { setShowSuccessModal(false); router.push('/drops'); }}
+                  onClick={() => { router.push('/profile?tab=collection'); }}
                   style={{
                     padding: '16px 32px',
                     background: '#c8a46a',
@@ -921,15 +1051,15 @@ export default function CheckoutPage() {
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  Explore Drops
+                  VIEW ORDER
                 </button>
                 <button
-                  onClick={() => { router.push('/profile?tab=collection'); }}
+                  onClick={() => { window.location.href = '/#split-banner'; }}
                   style={{
                     padding: '15px 32px',
                     background: 'transparent',
-                    color: 'rgba(255, 255, 255, 0.65)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    border: '1px solid rgba(200, 164, 106, 0.35)',
                     fontFamily: 'var(--font-heading)',
                     fontSize: '11px',
                     fontWeight: 600,
@@ -939,16 +1069,16 @@ export default function CheckoutPage() {
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  Your Collection
+                  EXPLORE MORE
                 </button>
               </div>
 
               {/* Bottom gold rule */}
-              <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '40px auto 0' }} />
+              <div style={{ width: '40px', height: '1px', background: 'rgba(200, 164, 106, 0.3)', margin: '32px auto 0' }} />
             </div>
           </div>
-        )
-      )}
+        );
+      })()}
 
       {/* Pre-Booking Payment Failed Modal */}
       <PreBookingPaymentFailedModal

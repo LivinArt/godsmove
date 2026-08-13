@@ -409,147 +409,169 @@ export async function upsertProductRecord(input: UpsertProductInput) {
     };
 
     console.log('===> [SERVER] STEP 5: Starting $transaction, targetId:', targetId);
-    const product = await prisma.$transaction(async (tx) => {
-      // 1. Resolve Product record update or creation
-      let p;
-      if (targetId) {
-        console.log('===> [SERVER] STEP 5A: tx.product.update for targetId:', targetId);
-        p = await tx.product.update({
-          where: { id: targetId },
-          data: updatePayload,
-        });
-      } else {
-        console.log('===> [SERVER] STEP 5A: tx.product.create');
-        p = await tx.product.create({
-          data: createPayload,
-        });
-      }
-
-      // 2. Manage Images (Delete removed, Upsert active)
-      console.log('===> [SERVER] STEP 5B: Managing product images, count:', images?.length);
-      if (images) {
-        const incomingImageUrls = images.map((img) => img.url);
-        await tx.productImage.deleteMany({
-          where: { productId: p.id, url: { notIn: incomingImageUrls } },
-        });
-
-        for (const img of images) {
-          if (img.id) {
-            await tx.productImage.update({
-              where: { id: img.id },
-              data: { position: img.position, isCover: img.isCover, alt: img.alt },
-            });
-          } else {
-            await tx.productImage.create({
-              data: {
-                productId: p.id,
-                url: img.url,
-                position: img.position,
-                isCover: img.isCover,
-                alt: img.alt,
-              },
-            });
-          }
-        }
-      }
-
-      // 3. Manage Variants & Inventory (Archive removed, Upsert active)
-      console.log('===> [SERVER] STEP 5C: Managing variants, count:', variants.length);
-      const incomingSkus = variants.map((v) => v.sku);
-
-      // Archive variants that are not in the incoming payload
-      await tx.productVariant.updateMany({
-        where: { productId: p.id, sku: { notIn: incomingSkus } },
-        data: { isActive: false },
-      });
-
-      // Variant price override logic: use variant-specific price if edited; otherwise fallback to product default MRP
-      const defaultPrice = Number(scalarFields.mrp || 0);
-      const defaultComparePrice = comparePrice ? Number(comparePrice) : null;
-
-      for (const v of variants) {
-        const { initialStock, ...variantData } = v;
-        const variantPrice = (v.price !== undefined && v.price !== null && Number(v.price) > 0)
-          ? Number(v.price)
-          : defaultPrice;
-        const variantComparePrice = (v.comparePrice !== undefined && v.comparePrice !== null)
-          ? Number(v.comparePrice)
-          : defaultComparePrice;
-
-        const combinedSize = (v.alphaSize && v.numericSize)
-          ? `${v.alphaSize.trim()}-${v.numericSize.trim()}`
-          : (v.alphaSize?.trim() || v.numericSize?.trim() || v.size);
-
-        const syncVariantData = {
-          ...variantData,
-          size: combinedSize,
-          alphaSize: v.alphaSize || null,
-          numericSize: v.numericSize || null,
-          measurements: v.measurements ? (v.measurements as any) : undefined,
-          price: variantPrice,
-          comparePrice: variantComparePrice,
-        };
-
-        const existingVariant = await tx.productVariant.findUnique({ where: { sku: v.sku } });
-        let variantId = existingVariant?.id;
-
-        if (existingVariant) {
-          await tx.productVariant.update({
-            where: { id: existingVariant.id },
-            data: { ...syncVariantData, isActive: true }, // reactivate if archived
+    const startTxTime = Date.now();
+    const product = await prisma.$transaction(
+      async (tx) => {
+        // 1. Resolve Product record update or creation
+        let p;
+        if (targetId) {
+          console.log('===> [SERVER] STEP 5A: tx.product.update for targetId:', targetId);
+          p = await tx.product.update({
+            where: { id: targetId },
+            data: updatePayload,
           });
-          
-          // Update stock if initialStock is provided during edit
-          if (initialStock !== undefined) {
-            await tx.inventory.update({
-               where: { variantId: existingVariant.id },
-               data: { totalStock: initialStock }
-            });
-          }
         } else {
-          const newVar = await tx.productVariant.create({
-            data: {
-              productId: p.id,
-              ...syncVariantData,
-              isActive: true,
-            },
+          console.log('===> [SERVER] STEP 5A: tx.product.create');
+          p = await tx.product.create({
+            data: createPayload,
           });
-          variantId = newVar.id;
-          
-          // Create Inventory record for new variant
-          await tx.inventory.create({
+        }
+
+        // 2. Manage Images (Concurrent Batch Ops)
+        console.log('===> [SERVER] STEP 5B: Managing product images, count:', images?.length);
+        if (images && images.length > 0) {
+          const incomingImageUrls = images.map((img) => img.url);
+          await tx.productImage.deleteMany({
+            where: { productId: p.id, url: { notIn: incomingImageUrls } },
+          });
+
+          await Promise.all(
+            images.map((img) => {
+              if (img.id) {
+                return tx.productImage.update({
+                  where: { id: img.id },
+                  data: { position: img.position, isCover: img.isCover, alt: img.alt },
+                });
+              } else {
+                return tx.productImage.create({
+                  data: {
+                    productId: p.id,
+                    url: img.url,
+                    position: img.position,
+                    isCover: img.isCover,
+                    alt: img.alt,
+                  },
+                });
+              }
+            })
+          );
+        }
+
+        // 3. Manage Variants & Inventory (Pre-fetch & Batch Nested Writes)
+        console.log('===> [SERVER] STEP 5C: Managing variants, count:', variants.length);
+        const incomingSkus = variants.map((v) => v.sku);
+
+        // Archive variants that are not in the incoming payload
+        await tx.productVariant.updateMany({
+          where: { productId: p.id, sku: { notIn: incomingSkus } },
+          data: { isActive: false },
+        });
+
+        // Pre-fetch all existing variants for this product in a single query
+        const existingVariants = await tx.productVariant.findMany({
+          where: { productId: p.id },
+        });
+        const existingSkuMap = new Map(existingVariants.map((v) => [v.sku, v]));
+
+        const defaultPrice = Number(scalarFields.mrp || 0);
+        const defaultComparePrice = comparePrice ? Number(comparePrice) : null;
+
+        await Promise.all(
+          variants.map(async (v) => {
+            const { initialStock, ...variantData } = v;
+            const variantPrice =
+              v.price !== undefined && v.price !== null && Number(v.price) > 0
+                ? Number(v.price)
+                : defaultPrice;
+            const variantComparePrice =
+              v.comparePrice !== undefined && v.comparePrice !== null
+                ? Number(v.comparePrice)
+                : defaultComparePrice;
+
+            const combinedSize =
+              v.alphaSize && v.numericSize
+                ? `${v.alphaSize.trim()}-${v.numericSize.trim()}`
+                : v.alphaSize?.trim() || v.numericSize?.trim() || v.size;
+
+            const syncVariantData = {
+              ...variantData,
+              size: combinedSize,
+              alphaSize: v.alphaSize || null,
+              numericSize: v.numericSize || null,
+              measurements: v.measurements ? (v.measurements as any) : undefined,
+              price: variantPrice,
+              comparePrice: variantComparePrice,
+            };
+
+            const existingVariant = existingSkuMap.get(v.sku);
+
+            if (existingVariant) {
+              await tx.productVariant.update({
+                where: { id: existingVariant.id },
+                data: { ...syncVariantData, isActive: true },
+              });
+
+              if (initialStock !== undefined) {
+                await tx.inventory.upsert({
+                  where: { variantId: existingVariant.id },
+                  update: { totalStock: initialStock },
+                  create: {
+                    variantId: existingVariant.id,
+                    totalStock: initialStock,
+                    type: 'PERMANENT',
+                  },
+                });
+              }
+            } else {
+              await tx.productVariant.create({
+                data: {
+                  productId: p.id,
+                  ...syncVariantData,
+                  isActive: true,
+                  inventory: {
+                    create: {
+                      totalStock: initialStock || 0,
+                      type: 'PERMANENT',
+                    },
+                  },
+                },
+              });
+            }
+          })
+        );
+
+        // 3B. Persist per-product Size Chart configuration
+        const sizeChartEntries = variants
+          .filter((v: any) => v.measurements && Object.keys(v.measurements).length > 0)
+          .map((v: any) => ({
+            size:
+              v.alphaSize && v.numericSize
+                ? `${v.alphaSize.trim()}-${v.numericSize.trim()}`
+                : v.alphaSize || v.numericSize || v.size,
+            alphaSize: v.alphaSize,
+            numericSize: v.numericSize,
+            measurements: v.measurements,
+          }));
+
+        if (sizeChartEntries.length > 0 || scalarFields.sizeChart) {
+          await tx.product.update({
+            where: { id: p.id },
             data: {
-              variantId: newVar.id,
-              totalStock: initialStock || 0,
-              type: 'PERMANENT',
+              sizeChart: scalarFields.sizeChart || { unit: 'INCHES', entries: sizeChartEntries },
             },
           });
         }
+
+        return p;
+      },
+      {
+        timeout: 15000,
+        maxWait: 10000,
       }
+    );
 
-      // 3B. Persist per-product Size Chart configuration
-      const sizeChartEntries = variants
-        .filter((v: any) => v.measurements && Object.keys(v.measurements).length > 0)
-        .map((v: any) => ({
-          size: (v.alphaSize && v.numericSize) ? `${v.alphaSize.trim()}-${v.numericSize.trim()}` : (v.alphaSize || v.numericSize || v.size),
-          alphaSize: v.alphaSize,
-          numericSize: v.numericSize,
-          measurements: v.measurements,
-        }));
-
-      if (sizeChartEntries.length > 0 || scalarFields.sizeChart) {
-        await tx.product.update({
-          where: { id: p.id },
-          data: {
-            sizeChart: scalarFields.sizeChart || { unit: 'INCHES', entries: sizeChartEntries },
-          },
-        });
-      }
-
-      return p;
-    });
-
-    console.log('===> [SERVER] STEP 6: Transaction finished successfully for product:', product.id);
+    const txDuration = Date.now() - startTxTime;
+    console.log(`===> [SERVER] STEP 6: Transaction finished successfully in ${txDuration}ms for product:`, product.id);
 
     if (product.channel === 'EXCLUSIVE_UNLOCK' && product.status === 'ACTIVE') {
       console.log('===> [SERVER] STEP 7: Syncing exclusive draw');

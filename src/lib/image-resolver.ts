@@ -103,9 +103,10 @@ export function resolveOrderItemImageUrl(item: any): string {
     return PRODUCT_NAME_IMAGE_MAP[item.productName];
   }
   
-  // Check if product relation is loaded
-  if (item.product) {
-    return resolveProductImages(item.product).frontImage;
+  // Check if product relation is loaded directly or via variant
+  const prod = item.product || item.variant?.product;
+  if (prod) {
+    return resolveProductImages(prod).frontImage;
   }
   
   return '/images/placeholder.svg';

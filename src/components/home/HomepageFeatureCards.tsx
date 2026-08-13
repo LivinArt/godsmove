@@ -17,7 +17,7 @@ export default function HomepageFeatureCards({ content }: HomepageFeatureCardsPr
   const card2Image = content?.feature_card_2_image || '/images/campaign/editorial-02.png';
 
   return (
-    <section className={styles.section} id="discover-godsmove">
+    <section className={styles.section} id="split-banner">
       <div className={styles.splitBanner}>
         {/* Left Panel: DROPS */}
         <Link href="/drops" className={`${styles.panel} ${styles.panelDrops}`} aria-label="Explore Drops Collection">

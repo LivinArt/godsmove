@@ -874,7 +874,7 @@
 .expandedArticlesWrap {
   background-color: #FDFBF7;
   border-top: 1px solid rgba(200, 164, 106, 0.15);
-  padding: 20px 24px;
+  padding: 24px 28px;
 }
 
 @media (max-width: 600px) {
@@ -886,38 +886,39 @@
 /* Article Card — 3-column editorial grid: image | details | price+actions */
 .orderArticleRow {
   display: grid;
-  grid-template-columns: 72px 1fr auto;
-  align-items: start;
-  gap: 16px;
-  padding: 16px 18px;
+  grid-template-columns: 88px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 22px;
   background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 10px;
-  margin-bottom: 10px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
   overflow: hidden;
 }
 
 .orderArticleRow:hover {
-  border-color: rgba(200, 164, 106, 0.35);
-  box-shadow: 0 4px 18px rgba(200, 164, 106, 0.06);
+  border-color: rgba(200, 164, 106, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .orderArticleRow:last-child {
   margin-bottom: 0;
 }
 
-/* Image container — always exactly 72×90, never overflows */
+/* Image container — enlarged editorial ratio */
 .articleThumb {
-  width: 72px;
-  height: 90px;
+  width: 88px;
+  height: 110px;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
-  background-color: #f0ede6;
+  background-color: #f5f2eb;
   cursor: pointer;
   display: block;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .articleThumb img {
@@ -927,18 +928,18 @@
   height: 100% !important;
   object-fit: cover !important;
   object-position: top center;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .articleThumb:hover img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 /* Details column */
 .articleDetails {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   padding-top: 2px;
 }

@@ -13,6 +13,7 @@ export interface OrderConfirmationTemplateProps {
   items: EmailOrderItem[];
   subtotal: number;
   shipping: number;
+  codFee?: number;
   walletDiscount?: number;
   couponDiscount?: number;
   total: number;
@@ -32,6 +33,7 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
   items = [],
   subtotal = 0,
   shipping = 0,
+  codFee = 0,
   walletDiscount = 0,
   couponDiscount = 0,
   total = 0,
@@ -79,6 +81,7 @@ export const OrderConfirmationTemplate: React.FC<OrderConfirmationTemplateProps>
       <PriceSummary
         subtotal={subtotal}
         shipping={shipping}
+        codFee={codFee}
         walletDiscount={walletDiscount}
         couponDiscount={couponDiscount}
         total={total}

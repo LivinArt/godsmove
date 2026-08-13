@@ -559,10 +559,15 @@ export function ProductForm({ initialData, categories, drops }: ProductFormProps
       router.push(`/product/${savedProduct.slug}`);
       router.refresh();
     } catch (err: any) {
+      console.error('[ADMIN PRODUCT PUBLISH ERROR]:', err);
       if (err instanceof z.ZodError) {
         setError(err.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(' | '));
       } else {
-        setError(err.message || 'An unexpected error occurred during database sync.');
+        const isTxTimeout = err?.message?.includes('expired transaction') || err?.message?.includes('Transaction API error');
+        const userMsg = isTxTimeout
+          ? 'Product publishing timed out during database write. Please try saving again.'
+          : (err.message || 'An unexpected error occurred during database sync.');
+        setError(userMsg);
       }
     } finally {
       setIsPending(false);
