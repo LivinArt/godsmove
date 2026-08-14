@@ -5,7 +5,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import React from 'react';
 import { render } from '@react-email/render';
-import { GODSMOVE_WORDMARK } from '../src/notifications/email/brand';
+import { GODSMOVE_WORDMARK, GODSMOVE_LOGO_WHITE_URL, GODSMOVE_LOGO_BLACK_URL } from '../src/notifications/email/brand';
 import { TEMPLATE_REGISTRY, TemplateResolver } from '../src/notifications/email/templates/registry';
 import { Header } from '../src/notifications/email/components/Header';
 import { Footer } from '../src/notifications/email/components/Footer';
@@ -29,16 +29,19 @@ function assert(condition: boolean, description: string) {
 }
 
 async function runQa() {
-  // 1. Brand Constant Assertions
-  console.log('[1] Testing Single Source of Truth Brand Constant...');
+  // 1. Brand Constant & Asset URL Assertions
+  console.log('[1] Testing Single Source of Truth Brand Constants & Assets...');
   assert(GODSMOVE_WORDMARK === 'GODSMOVƎ', 'GODSMOVE_WORDMARK evaluates to "GODSMOVƎ"');
   assert(GODSMOVE_WORDMARK.includes('Ǝ'), 'GODSMOVE_WORDMARK contains Unicode U+018E (Ǝ)');
+  assert(GODSMOVE_LOGO_WHITE_URL === 'https://godsmove.in/images/logo/godsmove-wordmark-white.svg', 'White logo URL points to official vector asset');
+  assert(GODSMOVE_LOGO_BLACK_URL === 'https://godsmove.in/images/logo/godsmove-wordmark-black.svg', 'Black logo URL points to official vector asset');
 
   // 2. Component Header & Footer Rendering
   console.log('\n[2] Testing Core Header & Footer Components...');
   const headerHtml = await render(React.createElement(Header, {}));
-  assert(headerHtml.includes('GODSMOVƎ'), 'Header renders "GODSMOVƎ" wordmark');
-  assert(!headerHtml.includes('>GODSMOVE<'), 'Header does NOT render plain ">GODSMOVE<"');
+  assert(headerHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'), 'Header renders official SVG logo asset URL');
+  assert(headerHtml.includes('alt="GODSMOVƎ"'), 'Header logo image has alt="GODSMOVƎ"');
+  assert(headerHtml.includes('STATEMENT APPAREL &amp; ARCHIVAL CUTS') || headerHtml.includes('STATEMENT APPAREL & ARCHIVAL CUTS'), 'Header retains tagline STATEMENT APPAREL & ARCHIVAL CUTS');
   assert(headerHtml.includes('https://godsmove.in'), 'Header preserves domain URL https://godsmove.in');
 
   const footerHtml = await render(React.createElement(Footer, {}));
@@ -59,7 +62,12 @@ async function runQa() {
     })
   );
   const cleanEditorialHtml = editorialHtml.replace(/<!--\s*-->/g, '');
-  assert(cleanEditorialHtml.includes('GODSMOVƎ'), 'Editorial layout renders "GODSMOVƎ"');
+  assert(
+    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-black.svg"') ||
+    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'),
+    'Editorial layout renders official SVG logo image asset'
+  );
+  assert(cleanEditorialHtml.includes('alt="GODSMOVƎ"'), 'Editorial layout logo image has alt="GODSMOVƎ"');
   assert(cleanEditorialHtml.includes('— The GODSMOVƎ Archival Team'), 'Sign-off renders "— The GODSMOVƎ Archival Team"');
   assert(cleanEditorialHtml.includes('GODSMOVƎ ARCHIVAL DIVISION'), 'Footer division renders "GODSMOVƎ ARCHIVAL DIVISION"');
   assert(cleanEditorialHtml.includes('support@godsmove.in'), 'Editorial layout preserves support@godsmove.in');
@@ -111,6 +119,7 @@ async function runQa() {
         items: [{ title: 'Statement Piece', size: 'L', quantity: 1, price: 1500 }],
       })
     );
+    assert(renderedHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'), `${eventName} template renders official SVG logo asset`);
     assert(renderedHtml.includes('GODSMOVƎ'), `${eventName} template HTML renders "GODSMOVƎ"`);
     assert(renderedHtml.includes('support@godsmove.in'), `${eventName} template HTML preserves support@godsmove.in`);
   }

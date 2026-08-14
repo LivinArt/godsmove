@@ -1,6 +1,6 @@
 import React from 'react';
-import { Section, Text, Link } from '@react-email/components';
-import { GODSMOVE_WORDMARK } from '../brand';
+import { Section, Text, Link, Img } from '@react-email/components';
+import { GODSMOVE_WORDMARK, GODSMOVE_LOGO_WHITE_URL } from '../brand';
 
 interface HeaderProps {
   logoUrl?: string;
@@ -8,14 +8,20 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  logoUrl = 'https://godsmove.in/logo.png',
+  logoUrl = GODSMOVE_LOGO_WHITE_URL,
   baseUrl = 'https://godsmove.in',
 }) => {
   return (
     <Section style={headerStyle}>
       <Text style={taglineStyle}>STATEMENT APPAREL & ARCHIVAL CUTS</Text>
-      <Link href={baseUrl} style={brandStyle}>
-        {GODSMOVE_WORDMARK}
+      <Link href={baseUrl} style={brandLinkStyle}>
+        <Img
+          src={logoUrl}
+          alt={GODSMOVE_WORDMARK}
+          width="220"
+          height="55"
+          style={logoImgStyle}
+        />
       </Link>
       <Section style={goldDividerStyle} />
     </Section>
@@ -32,19 +38,24 @@ const taglineStyle = {
   fontSize: '9px',
   letterSpacing: '0.25em',
   color: '#8c857b',
-  margin: '0 0 8px 0',
+  margin: '0 0 12px 0',
   fontWeight: 600,
   textTransform: 'uppercase' as const,
 };
 
-const brandStyle = {
-  fontSize: '28px',
-  fontWeight: 800,
-  letterSpacing: '0.3em',
-  color: '#ffffff',
-  textDecoration: 'none',
-  display: 'inline-block',
-  fontFamily: 'Helvetica, Arial, sans-serif',
+const brandLinkStyle = {
+  display: 'inline-block' as const,
+  textDecoration: 'none' as const,
+};
+
+const logoImgStyle = {
+  display: 'block' as const,
+  margin: '0 auto',
+  maxWidth: '220px',
+  height: 'auto',
+  outline: 'none',
+  border: 'none',
+  textDecoration: 'none' as const,
 };
 
 const goldDividerStyle = {

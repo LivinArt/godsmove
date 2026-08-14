@@ -11,7 +11,7 @@ import {
   Img,
 } from '@react-email/components';
 
-import { GODSMOVE_WORDMARK } from '../brand';
+import { GODSMOVE_WORDMARK, GODSMOVE_LOGO_WHITE_URL, GODSMOVE_LOGO_BLACK_URL } from '../brand';
 
 export interface LuxuryEditorialEmailLayoutProps {
   previewText?: string;
@@ -48,9 +48,8 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
   const cardBg = isDark ? '#18181C' : '#F4F0E8';
   const bodyText = isDark ? '#A1A1AA' : '#4A4742';
 
-  // SVG Brand Logo Visual Anchor (Crisp rendering across all clients)
-  const logoColor = isDark ? '%23FFFFFF' : '%231A1918';
-  const logoDataUri = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 60" fill="${logoColor}"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, sans-serif" font-weight="900" font-size="34" letter-spacing="10">GODSMOV%C6%BE</text></svg>`;
+  // Official Brand Logo Visual Anchor (Crisp rendering across all clients)
+  const logoUrl = isDark ? GODSMOVE_LOGO_WHITE_URL : GODSMOVE_LOGO_BLACK_URL;
 
   return (
     <Html lang="en">
@@ -70,10 +69,10 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
           {/* BRAND LOGO HEADER (SCROLL LOGO ON DARK, BANNER LOGO ON LIGHT) */}
           <Section style={headerSectionStyle}>
             <Img
-              src={logoDataUri}
+              src={logoUrl}
               alt={GODSMOVE_WORDMARK}
               width="240"
-              height="34"
+              height="60"
               style={logoImgStyle}
             />
             <Text style={issueTagStyle}>{issueTag}</Text>

@@ -122,13 +122,17 @@ function buildLuxuryEmailTemplate(title: string, bodyHtml: string): string {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">GODSMOVƎ</div>
+            <div class="logo">
+              <img src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg" alt="GODSMOVƎ" style="max-width: 220px; height: auto; display: block; margin: 0 auto;" />
+            </div>
           </div>
           <div class="content">
             ${bodyHtml}
           </div>
           <div class="footer">
-            <div class="footer-logo">GODSMOVƎ</div>
+            <div class="footer-logo">
+              <img src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg" alt="GODSMOVƎ" style="max-width: 140px; height: auto; display: block; margin: 0 auto; opacity: 0.85;" />
+            </div>
             <p>You are receiving this communication regarding your digital purchase account.<br>&copy; ${new Date().getFullYear()} GODSMOVƎ. All rights reserved.</p>
           </div>
         </div>
