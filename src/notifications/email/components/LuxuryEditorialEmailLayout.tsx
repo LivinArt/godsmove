@@ -72,7 +72,7 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
               src={logoUrl}
               alt={GODSMOVE_WORDMARK}
               width="240"
-              height="60"
+              height="37"
               style={logoImgStyle}
             />
             <Text style={issueTagStyle}>{issueTag}</Text>

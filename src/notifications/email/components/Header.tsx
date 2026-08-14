@@ -18,8 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
         <Img
           src={logoUrl}
           alt={GODSMOVE_WORDMARK}
-          width="220"
-          height="55"
+          width="230"
+          height="36"
           style={logoImgStyle}
         />
       </Link>

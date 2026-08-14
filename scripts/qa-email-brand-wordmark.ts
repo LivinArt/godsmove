@@ -12,7 +12,7 @@ import { Footer } from '../src/notifications/email/components/Footer';
 import { LuxuryEditorialEmailLayout } from '../src/notifications/email/components/LuxuryEditorialEmailLayout';
 
 console.log('\n============================================================');
-console.log('GODSMOVƎ EMAIL BRAND WORDMARK QA SUITE');
+console.log('GODSMOVƎ EMAIL BRAND WORDMARK PRODUCTION QA SUITE');
 console.log('============================================================\n');
 
 let totalTests = 0;
@@ -29,18 +29,22 @@ function assert(condition: boolean, description: string) {
 }
 
 async function runQa() {
-  // 1. Brand Constant & Asset URL Assertions
-  console.log('[1] Testing Single Source of Truth Brand Constants & Assets...');
+  // 1. Single Source of Truth Brand Constants & Asset URLs
+  console.log('[1] Testing Single Source of Truth Brand Constants & Production Assets...');
   assert(GODSMOVE_WORDMARK === 'GODSMOVƎ', 'GODSMOVE_WORDMARK evaluates to "GODSMOVƎ"');
   assert(GODSMOVE_WORDMARK.includes('Ǝ'), 'GODSMOVE_WORDMARK contains Unicode U+018E (Ǝ)');
-  assert(GODSMOVE_LOGO_WHITE_URL === 'https://godsmove.in/images/logo/godsmove-wordmark-white.svg', 'White logo URL points to official vector asset');
-  assert(GODSMOVE_LOGO_BLACK_URL === 'https://godsmove.in/images/logo/godsmove-wordmark-black.svg', 'Black logo URL points to official vector asset');
+  assert(GODSMOVE_LOGO_WHITE_URL === 'https://godsmove.in/images/logo/logo-horizontal-white.png', 'White logo URL is canonical production HTTPS URL');
+  assert(GODSMOVE_LOGO_BLACK_URL === 'https://godsmove.in/images/logo/logo-horizontal-black.png', 'Black logo URL is canonical production HTTPS URL');
+  assert(!GODSMOVE_LOGO_WHITE_URL.includes('localhost') && !GODSMOVE_LOGO_WHITE_URL.includes('127.0.0.1'), 'White logo URL has no localhost references');
+  assert(!GODSMOVE_LOGO_WHITE_URL.includes('/_next/image'), 'White logo URL does NOT use /_next/image pipeline');
 
   // 2. Component Header & Footer Rendering
   console.log('\n[2] Testing Core Header & Footer Components...');
   const headerHtml = await render(React.createElement(Header, {}));
-  assert(headerHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'), 'Header renders official SVG logo asset URL');
-  assert(headerHtml.includes('alt="GODSMOVƎ"'), 'Header logo image has alt="GODSMOVƎ"');
+  assert(headerHtml.includes('src="https://godsmove.in/images/logo/logo-horizontal-white.png"'), 'Header renders absolute HTTPS logo URL');
+  assert(headerHtml.includes('alt="GODSMOVƎ"'), 'Header logo image has accessible alt="GODSMOVƎ"');
+  assert(headerHtml.includes('width="230"'), 'Header logo image has explicit width="230"');
+  assert(headerHtml.includes('height="36"'), 'Header logo image has explicit height="36"');
   assert(headerHtml.includes('STATEMENT APPAREL &amp; ARCHIVAL CUTS') || headerHtml.includes('STATEMENT APPAREL & ARCHIVAL CUTS'), 'Header retains tagline STATEMENT APPAREL & ARCHIVAL CUTS');
   assert(headerHtml.includes('https://godsmove.in'), 'Header preserves domain URL https://godsmove.in');
 
@@ -63,16 +67,16 @@ async function runQa() {
   );
   const cleanEditorialHtml = editorialHtml.replace(/<!--\s*-->/g, '');
   assert(
-    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-black.svg"') ||
-    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'),
-    'Editorial layout renders official SVG logo image asset'
+    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/logo-horizontal-black.png"') ||
+    cleanEditorialHtml.includes('src="https://godsmove.in/images/logo/logo-horizontal-white.png"'),
+    'Editorial layout renders canonical production logo asset'
   );
   assert(cleanEditorialHtml.includes('alt="GODSMOVƎ"'), 'Editorial layout logo image has alt="GODSMOVƎ"');
   assert(cleanEditorialHtml.includes('— The GODSMOVƎ Archival Team'), 'Sign-off renders "— The GODSMOVƎ Archival Team"');
   assert(cleanEditorialHtml.includes('GODSMOVƎ ARCHIVAL DIVISION'), 'Footer division renders "GODSMOVƎ ARCHIVAL DIVISION"');
   assert(cleanEditorialHtml.includes('support@godsmove.in'), 'Editorial layout preserves support@godsmove.in');
 
-  // 4. Registry Subject Line Builders
+  // 4. Registry Subject Line Builders & Sender Config
   console.log('\n[4] Testing Registry Subject Line Builders...');
   const testPayload = { orderNumber: '10042', returnId: 'RET-88', productName: 'Bespoke Oversized Hoodie' };
   
@@ -94,7 +98,7 @@ async function runQa() {
   assert(senderConfig.replyTo === 'support@godsmove.in', `Reply-to is "support@godsmove.in": "${senderConfig.replyTo}"`);
 
   // 5. Template Rendering QA across Event Types
-  console.log('\n[5] Testing Full Template Render Output...');
+  console.log('\n[5] Testing Full Template Render Output across Event Types...');
   const sampleEvents: Array<keyof typeof TEMPLATE_REGISTRY> = [
     'WELCOME',
     'ORDER_CREATED',
@@ -119,9 +123,11 @@ async function runQa() {
         items: [{ title: 'Statement Piece', size: 'L', quantity: 1, price: 1500 }],
       })
     );
-    assert(renderedHtml.includes('src="https://godsmove.in/images/logo/godsmove-wordmark-white.svg"'), `${eventName} template renders official SVG logo asset`);
+    assert(renderedHtml.includes('src="https://godsmove.in/images/logo/logo-horizontal-white.png"'), `${eventName} template renders production logo asset`);
     assert(renderedHtml.includes('GODSMOVƎ'), `${eventName} template HTML renders "GODSMOVƎ"`);
     assert(renderedHtml.includes('support@godsmove.in'), `${eventName} template HTML preserves support@godsmove.in`);
+    assert(!renderedHtml.includes('localhost'), `${eventName} template HTML has no localhost URLs`);
+    assert(!renderedHtml.includes('/_next/image'), `${eventName} template HTML has no /_next/image URLs`);
   }
 
   // Final Summary
