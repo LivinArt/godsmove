@@ -241,43 +241,56 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
-  padding: var(--space-md);
+  padding: 16px;
   border: 1px solid var(--border-medium);
+  background: #ffffff;
+  color: #111111;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-smooth);
+  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .paymentOption input {
   margin-top: 3px;
-  accent-color: var(--black);
+  accent-color: #000000;
+}
+
+.paymentOption:hover {
+  border-color: #c8a46a;
+  background: #faf7f2;
 }
 
 .paymentOption.paymentActive {
-  border-color: var(--text-primary);
+  border-color: #c8a46a;
+  background: #faf8f5;
+  box-shadow: 0 2px 10px rgba(200, 164, 106, 0.12);
 }
 
 .paymentName {
   font-family: var(--font-heading);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
+  color: #050505;
   display: block;
 }
 
 .paymentDesc {
-  font-size: 12px;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  font-size: 12.5px;
+  color: #4a4a4a;
+  letter-spacing: 0.01em;
+  margin-top: 2px;
+  display: block;
 }
 
 .recommendedBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(200, 164, 106, 0.12);
-  border: 1px solid rgba(200, 164, 106, 0.35);
-  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.14);
+  border: 1px solid rgba(180, 140, 75, 0.4);
+  color: #8c6d37;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 2px 8px;
@@ -287,11 +300,11 @@
 .codSurchargeBadge {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(200, 164, 106, 0.3);
-  color: #c8a46a;
+  background: rgba(200, 164, 106, 0.14);
+  border: 1px solid rgba(180, 140, 75, 0.4);
+  color: #8c6d37;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   padding: 2px 8px;
   border-radius: 4px;
@@ -300,19 +313,20 @@
 .prepaidFeatureNote {
   display: block;
   font-size: 11px;
-  color: #c8a46a;
-  margin-top: 4px;
-  font-weight: 500;
+  color: #8c6d37;
+  margin-top: 6px;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .codInfoNote {
   display: block;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  margin-top: 4px;
+  font-size: 11.5px;
+  color: #4b5563;
+  margin-top: 6px;
   font-style: normal;
-  line-height: 1.4;
+  line-height: 1.45;
+  font-weight: 400;
 }
 
 /* Sidebar */

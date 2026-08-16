@@ -434,6 +434,10 @@
     font-size: 8.5px;
   }
 
+  .desktopOnlyNavAction {
+    display: none !important;
+  }
+
   .tooltip {
     display: none;
   }

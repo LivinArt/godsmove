@@ -21,6 +21,7 @@ const HAMBURGER_LINKS = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/drops', label: 'Drops', icon: Sparkles },
   { href: '/exclusive-rack', label: 'Exclusive Rack', icon: Star },
+  { href: '/membership', label: 'MEMBERSHIP', icon: Crown },
   { href: '/library', label: 'GODSMOVE Library', icon: BookOpen },
   { href: '/our-story', label: 'Story', icon: BookOpen },
 ] as const;
@@ -231,8 +232,8 @@ export default function Navbar({ variant = 'default' }: NavbarProps) {
                 <span className={styles.tooltip}>{user ? 'Your Profile' : 'Sign In'}</span>
               </div>
 
-              {/* Membership Icon & Indicator */}
-              <div className={styles.actionWrapper}>
+              {/* Membership Icon & Indicator (Desktop Only) */}
+              <div className={`${styles.actionWrapper} ${styles.desktopOnlyNavAction}`}>
                 <button
                   type="button"
                   onClick={handleMembershipClick}

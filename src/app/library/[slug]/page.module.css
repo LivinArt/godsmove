@@ -192,71 +192,74 @@
 }
 
 .quoteBlock {
-  margin: 36px 0;
-  padding: 30px;
-  background-color: #fff;
-  border-top: 2px solid #000;
-  border-bottom: 2px solid #000;
+  margin: 32px 0;
+  padding: 24px 0;
+  background-color: transparent;
+  border-top: 1px solid #c8a46a;
+  border-bottom: 1px solid #c8a46a;
   text-align: center;
 }
 
 .quoteText {
-  font-size: clamp(20px, 2.5vw, 24px);
-  font-weight: 600;
+  font-size: clamp(18px, 2.2vw, 22px);
+  font-weight: 500;
   font-style: italic;
-  line-height: 1.45;
-  color: #000;
-  margin: 0 0 12px;
+  line-height: 1.5;
+  color: #050505;
+  margin: 0 0 10px;
 }
 
 .quoteCite {
-  font-size: 13px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: #8c6d37;
 }
 
 .ctaBlock {
-  background-color: #111;
-  color: #fff;
-  padding: 40px;
-  border-radius: 8px;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  padding: 36px 28px;
+  border-radius: 4px;
   text-align: center;
-  margin: 40px 0;
+  margin: 36px 0;
 }
 
 .ctaEyebrow {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #f59e0b;
+  color: #c8a46a;
   display: block;
   margin-bottom: 8px;
 }
 
 .ctaHeading {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0 0 20px;
-  color: #fff;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 600;
+  margin: 0 0 18px;
+  color: #ffffff;
+  letter-spacing: 0.02em;
 }
 
 .ctaBtn {
   display: inline-block;
-  background-color: #fff;
-  color: #000;
-  font-size: 14px;
+  background-color: #ffffff;
+  color: #0a0a0a;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.08em;
   padding: 12px 24px;
-  border-radius: 4px;
+  border-radius: 2px;
   text-decoration: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 
   &:hover {
-    opacity: 0.9;
+    opacity: 0.92;
+    transform: translateY(-1px);
   }
 }
 
@@ -264,24 +267,25 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 24px 0;
+  background-color: #faf9f6;
+  border: 1px solid rgba(10, 10, 10, 0.08);
+  border-radius: 4px;
+  padding: 16px 20px;
+  margin: 28px 0;
 
   @media (max-width: 600px) {
     flex-direction: column;
     align-items: flex-start;
+    padding: 16px;
   }
 }
 
 .pRefImgWrap {
   position: relative;
-  width: 100px;
-  height: 100px;
-  background-color: #f3f4f6;
-  border-radius: 6px;
+  width: 90px;
+  height: 90px;
+  background-color: #f0ede8;
+  border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -297,31 +301,32 @@
 }
 
 .pRefTag {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #d97706;
+  letter-spacing: 0.14em;
+  color: #8c6d37;
 }
 
 .pRefName {
-  font-size: 16px;
-  font-weight: 700;
-  color: #000;
+  font-size: 15px;
+  font-weight: 600;
+  color: #050505;
   margin: 0;
 }
 
 .pRefPrice {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #4b5563;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .pRefBtn {
   display: inline-block;
   font-size: 12px;
   font-weight: 700;
-  color: #000;
+  letter-spacing: 0.06em;
+  color: #8c6d37;
   text-decoration: none;
 
   &:hover {
@@ -330,16 +335,18 @@
 }
 
 .relatedSection {
-  margin-top: 80px;
-  border-top: 2px solid #000;
-  padding-top: 40px;
+  margin-top: 64px;
+  border-top: 1px solid rgba(10, 10, 10, 0.12);
+  padding-top: 36px;
 }
 
 .relatedTitle {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   margin: 0 0 24px;
+  color: #050505;
 }
 
 .relatedGrid {
@@ -349,49 +356,57 @@
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
 .relatedCard {
-  background-color: #fff;
-  border: 1px solid #eaeaea;
-  border-radius: 6px;
+  background-color: transparent;
+  border: none;
   overflow: hidden;
 }
 
 .relImgWrap {
   position: relative;
   aspect-ratio: 16 / 10;
-  background-color: #eee;
+  background-color: #f0ede8;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .relImg {
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.relatedCard:hover .relImg {
+  transform: scale(1.03);
 }
 
 .relBody {
-  padding: 14px;
+  padding: 12px 0 0 0;
 }
 
 .relCategory {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #d97706;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8c6d37;
 }
 
 .relCardTitle {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 4px 0 0;
-  line-height: 1.35;
+  line-height: 1.4;
 
   a {
-    color: #000;
+    color: #050505;
     text-decoration: none;
 
     &:hover {
-      color: #666;
+      color: #8c6d37;
     }
   }
 }
