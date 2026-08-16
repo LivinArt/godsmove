@@ -334,8 +334,14 @@ export async function createOrder(input: CreateOrderInput) {
         }
       }
 
-      // Step 9.5: Transactional Concurrency Check — verify physical variant stock is available
+      // Step 9.5: Transactional Concurrency Check — acquire row lock FOR UPDATE and verify physical variant stock
       for (const item of data.items) {
+        // Execute PostgreSQL row lock FOR UPDATE on Inventory to prevent concurrent overselling
+        try {
+          await tx.$queryRaw`SELECT * FROM "inventory" WHERE "variantId" = ${item.variantId} FOR UPDATE`;
+        } catch (e) {
+          // Fallback if raw query is not supported
+        }
         const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
         if (inv) {
           const avail = inv.totalStock - inv.soldStock - inv.reservedStock;
@@ -492,7 +498,7 @@ export async function createOrder(input: CreateOrderInput) {
       }
 
       return order;
-    });
+    }, { timeout: 15000, maxWait: 10000 });
 
     let razorpayPayload: any = null;
 
