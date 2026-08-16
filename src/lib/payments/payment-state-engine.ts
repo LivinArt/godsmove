@@ -266,6 +266,10 @@ export class PaymentStateEngine {
 
       // Atomic inventory deduction & movement ledger
       for (const item of order.items) {
+        const existingInv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
+        const currentReserved = existingInv?.reservedStock ?? 0;
+        const reservedDecrement = Math.min(currentReserved, item.quantity);
+
         const inv = await tx.inventory.upsert({
           where: { variantId: item.variantId },
           create: {
@@ -275,7 +279,7 @@ export class PaymentStateEngine {
             soldStock: item.quantity,
           },
           update: {
-            reservedStock: { decrement: Math.min(100, item.quantity) },
+            reservedStock: reservedDecrement > 0 ? { decrement: reservedDecrement } : undefined,
             soldStock: { increment: item.quantity },
           },
         });

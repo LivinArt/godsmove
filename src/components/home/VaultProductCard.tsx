@@ -403,7 +403,7 @@ export default function VaultProductCard({ product, isEven }: VaultProductCardPr
             <div
               className={styles.stockProgressFill}
               style={{
-                width: `${isPreBookingMode ? preBookingPercent : Math.min(100, Math.max(10, (actualAvailableStock / 100) * 100))}%`,
+                width: `${isPreBookingMode ? preBookingPercent : Math.min(100, Math.max(10, Math.round((disp.remaining / Math.max(1, disp.denominator)) * 100)))}%`,
               }}
             />
           </div>

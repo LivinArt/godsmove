@@ -1,3 +1,5 @@
+import { isPreBookingActive } from '@/lib/launch-engine-core';
+
 /**
  * GODSMOVE AUTHORITATIVE CANONICAL INVENTORY SERVICE
  * Single source of truth for physical inventory, pre-booking allocation, reservations, returns, and available stock.
@@ -5,20 +7,42 @@
  * ACCOUNTING MODEL INVARIANTS:
  * 1. TOTAL PHYSICAL INVENTORY = Sum of variant.inventory.totalStock
  * 2. PRE-BOOK ALLOCATION = Configured maxPreBooking for product (0 if not pre-booking)
- * 3. PRE-BOOK RESERVED = Quantity of successful paid pre-booking orders (paymentStatus = 'PAID')
- * 4. ORDERS = Quantity of successful normal product sales outside/after pre-booking (paymentStatus = 'PAID')
+ * 3. PRE-BOOK RESERVED = Quantity of successful placed pre-booking orders
+ * 4. ORDERS = Quantity of successful regular product sales outside/after pre-booking
  * 5. SOLD = PRE-BOOK RESERVED + ORDERS
  * 6. RETURN = Quantity of physical units returned & physically received at warehouse
  * 7. AVAILABLE = TOTAL - SOLD + RETURN
  * 8. REMAINING PRE-BOOK ALLOC = Math.max(0, PRE-BOOK ALLOCATION - PRE-BOOK RESERVED)
  */
 
+/**
+ * Helper to determine if an order represents a successfully placed order
+ * that commits inventory.
+ */
+export function isCommittedOrder(order: any): boolean {
+  if (!order) return false;
+  const status = String(order.status || '').toUpperCase();
+  const paymentStatus = String(order.paymentStatus || '').toUpperCase();
+  const paymentMethod = String(order.paymentMethod || '').toUpperCase();
+
+  // Cancelled or failed orders are NEVER committed
+  if (status === 'CANCELLED' || paymentStatus === 'FAILED') return false;
+
+  // Online orders (e.g. Razorpay) that are still PENDING & UNPAID before payment completion are NOT committed
+  if (status === 'PENDING' && paymentStatus === 'UNPAID' && paymentMethod !== 'COD') {
+    return false;
+  }
+
+  // All active non-cancelled placed orders (COD placed, zero-payable credit, paid online, confirmed/fulfillment statuses) are committed
+  return true;
+}
+
 export interface ProductInventoryState {
   totalInventory: number;                  // Physical stock pool across all variants (sum of totalStock)
   preBookAllocation: number;               // Pre-booking allocation cap configured by admin
-  preBookReserved: number;                 // currentPreBookings (confirmed paid pre-booking orders)
-  normalOrders: number;                    // Confirmed paid normal orders (post-launch / non-prebooking)
-  sold: number;                            // PRE-BOOK RESERVED + ORDERS
+  preBookReserved: number;                 // Confirmed / placed pre-booking orders
+  normalOrders: number;                    // Confirmed / placed regular orders (post-launch / non-prebooking)
+  sold: number;                            // PRE-BOOK RESERVED + ORDERS (Total Committed)
   returnUnits: number;                     // Physical returned units received back at warehouse
   incomingStock: number;                   // Incoming stock en route from suppliers
   available: number;                       // AVAILABLE = TOTAL - SOLD + RETURN
@@ -102,10 +126,11 @@ export function calculateProductInventoryState(product: any): ProductInventorySt
   }
 
   // 2. Pre-Booking vs Normal Orders Breakdown
-  const isPreBooking = Boolean(product.isPreBooking);
+  const isPreBookingConfigured = Boolean(product.isPreBooking);
   const rawMaxPreBooking = product.maxPreBooking != null ? Number(product.maxPreBooking) : null;
   
-  let calculatedPaidPreBookings = 0;
+  let calculatedPreBookReserved = 0;
+  let calculatedNormalOrders = 0;
   let hasCalculatedOrderItems = false;
 
   if (variants.length > 0) {
@@ -113,11 +138,13 @@ export function calculateProductInventoryState(product: any): ProductInventorySt
       if (Array.isArray(v.orderItems)) {
         v.orderItems.forEach((item: any) => {
           const o = item.order;
-          if (o && o.paymentStatus === 'PAID') {
+          if (o && isCommittedOrder(o)) {
+            hasCalculatedOrderItems = true;
             const isPb = Boolean(o.isPreBooking || o.orderType === 'PRE_BOOKING');
             if (isPb) {
-              hasCalculatedOrderItems = true;
-              calculatedPaidPreBookings += Number(item.quantity ?? 1);
+              calculatedPreBookReserved += Number(item.quantity ?? 1);
+            } else {
+              calculatedNormalOrders += Number(item.quantity ?? 1);
             }
           }
         });
@@ -127,11 +154,11 @@ export function calculateProductInventoryState(product: any): ProductInventorySt
 
   // Canonical PRE-BOOK RESERVED formula:
   const preBookReserved = hasCalculatedOrderItems
-    ? calculatedPaidPreBookings
+    ? calculatedPreBookReserved
     : Number(product.currentPreBookings ?? 0);
 
   let preBookAllocation = 0;
-  if (isPreBooking) {
+  if (isPreBookingConfigured) {
     if (rawMaxPreBooking != null && rawMaxPreBooking > 0) {
       preBookAllocation = Math.min(rawMaxPreBooking, totalInventory > 0 ? totalInventory : rawMaxPreBooking);
     } else {
@@ -141,8 +168,11 @@ export function calculateProductInventoryState(product: any): ProductInventorySt
     preBookAllocation = Math.min(rawMaxPreBooking, totalInventory > 0 ? totalInventory : rawMaxPreBooking);
   }
 
-  // Normal orders = sold minus pre-booking reserved
-  normalOrders = Math.max(0, totalSoldFromDb - preBookReserved);
+  // Normal / regular orders
+  normalOrders = hasCalculatedOrderItems
+    ? calculatedNormalOrders
+    : Math.max(0, (totalSoldFromDb + totalReservedFromDb) - preBookReserved);
+
   if (product.normalOrdersCount != null) {
     normalOrders = Number(product.normalOrdersCount);
   }
@@ -153,14 +183,15 @@ export function calculateProductInventoryState(product: any): ProductInventorySt
   // Canonical Available formula: AVAILABLE = TOTAL - SOLD + RETURN
   const available = Math.max(0, totalInventory - sold + returnUnits);
 
-  const remainingPreBookingAllocation = isPreBooking || preBookAllocation > 0
+  const remainingPreBookingAllocation = isPreBookingConfigured || preBookAllocation > 0
     ? Math.max(0, preBookAllocation - preBookReserved)
     : 0;
 
   // At launch, unused pre-booking allocation becomes normal launch inventory
   const normalLaunchAvailable = Math.max(0, totalInventory - preBookReserved - normalOrders + returnUnits);
 
-  const isPreBookingFull = isPreBooking && preBookAllocation > 0 && remainingPreBookingAllocation <= 0;
+  const activePb = isPreBookingActive(product);
+  const isPreBookingFull = activePb && preBookAllocation > 0 && remainingPreBookingAllocation <= 0;
   const isSoldOut = available <= 0;
 
   let status: 'AVAILABLE' | 'PRE_BOOKING_FULL' | 'SOLD_OUT' = 'AVAILABLE';
@@ -198,8 +229,8 @@ export interface StorefrontInventoryDisplay {
   denominator: number;                   // Displayed denominator (preBookAllocation when pre-booking, totalInventory when normal)
   remaining: number;                     // Remaining allocation (if pre-booking) or remaining physical stock (if normal)
   formattedText: string;                 // e.g. "4 / 30 PRE-BOOKED" or "7 / 100 SOLD"
-  badgeText: string;                     // e.g. "PRE-BOOKING ALLOCATION" or "LIMITED EDITION"
-  allocationLabel: string;               // e.g. "RESERVED" or "SOLD"
+  badgeText: string;                     // e.g. "PRE-BOOKING ALLOCATION" or "EXCLUSIVE RACK ALLOCATION"
+  allocationLabel: string;               // e.g. "RESERVED" or "COMMITTED" / "SOLD"
   isAllocationFull: boolean;             // preBookAllocation > 0 && remaining <= 0
   isSoldOut: boolean;                      // physical available <= 0
 }
@@ -207,10 +238,15 @@ export interface StorefrontInventoryDisplay {
 export function getStorefrontInventoryDisplay(product: any): StorefrontInventoryDisplay {
   const invState = calculateProductInventoryState(product);
   
-  // Active pre-booking check
-  const isPreBookingActive = Boolean(product?.isPreBooking);
+  // Active pre-booking check using time-derived launch engine rule
+  const activePreBooking = isPreBookingActive(product);
+  const isExclusiveRack = Boolean(
+    product?.isExclusiveRack ||
+    product?.destination === 'EXCLUSIVE_RACK' ||
+    product?.channel === 'EXCLUSIVE_RACK'
+  );
 
-  if (isPreBookingActive) {
+  if (activePreBooking) {
     const numerator = invState.preBookReserved;
     const denominator = invState.preBookAllocation > 0 ? invState.preBookAllocation : (invState.totalInventory > 0 ? invState.totalInventory : 30);
     const remaining = Math.max(0, denominator - numerator);
@@ -241,10 +277,11 @@ export function getStorefrontInventoryDisplay(product: any): StorefrontInventory
     numerator,
     denominator,
     remaining,
-    formattedText: `${numerator} / ${denominator} SOLD`,
-    badgeText: 'LIMITED EDITION',
-    allocationLabel: 'SOLD',
+    formattedText: isExclusiveRack ? `${numerator} / ${denominator} COMMITTED` : `${numerator} / ${denominator} SOLD`,
+    badgeText: isExclusiveRack ? 'EXCLUSIVE RACK ALLOCATION' : 'LIMITED EDITION',
+    allocationLabel: isExclusiveRack ? 'COMMITTED' : 'SOLD',
     isAllocationFull: false,
     isSoldOut,
   };
 }
+

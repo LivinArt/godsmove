@@ -323,9 +323,10 @@ export async function createOrder(input: CreateOrderInput) {
           throw new Error(`Maximum Pre-Booking allocation limit reached for "${prod.name}".`);
         }
 
-        // Increment currentPreBookings immediately ONLY if order is 100% credit zero-payable (PAID immediately)
+        // Increment currentPreBookings immediately for 100% credit zero-payable or COD pre-booking orders
         const isZeroPayableCheck = pricingItems.reduce((acc, it) => acc + it.price * it.quantity, 0) - couponDiscountVal - (data.walletAmountToUse || 0) <= 0;
-        if (isZeroPayableCheck) {
+        const isCodCheck = data.paymentMethod === 'COD';
+        if (isZeroPayableCheck || isCodCheck) {
           await tx.product.update({
             where: { id: (prod as any).id },
             data: { currentPreBookings: { increment: totalPreBookingQty } },
@@ -333,16 +334,30 @@ export async function createOrder(input: CreateOrderInput) {
         }
       }
 
+      // Step 9.5: Transactional Concurrency Check — verify physical variant stock is available
+      for (const item of data.items) {
+        const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
+        if (inv) {
+          const avail = inv.totalStock - inv.soldStock - inv.reservedStock;
+          if (avail < item.quantity) {
+            const vr = variants.find((v) => v.id === item.variantId);
+            throw new Error(`Insufficient stock available for "${vr?.product?.name || 'item'}" (${vr?.size || 'selected size'}). Only ${Math.max(0, avail)} units remaining.`);
+          }
+        }
+      }
+
       // Step 10: Create Order Record
       console.log('[CHECKOUT STEP 10] Inserting Order into Database...');
       const isZeroPayable = pricing.finalPayable === 0;
+      const isCodOrder = data.paymentMethod === 'COD';
+      const orderInitialStatus = (isZeroPayable || isCodOrder) ? 'CONFIRMED' : 'PENDING';
 
       const order = await tx.order.create({
         data: {
           orderNumber,
           profileId: validProfileId,
           email: data.shippingAddress.email,
-          status: isZeroPayable ? 'CONFIRMED' : 'PENDING',
+          status: orderInitialStatus,
           paymentStatus: isZeroPayable ? 'PAID' : 'UNPAID',
           paidAt: isZeroPayable ? new Date() : null,
           paymentMethod: isZeroPayable ? 'WALLET' : (pricing.walletCredit > 0 ? 'MIXED' : (data.paymentMethod as any)),
@@ -436,32 +451,37 @@ export async function createOrder(input: CreateOrderInput) {
         });
       }
 
-      // Step 12: Reserve inventory safely in parallel
-      console.log('[CHECKOUT STEP 12] Reserving inventory in database...');
-      await Promise.all(data.items.map(async (item) => {
-        const inv = await tx.inventory.upsert({
-          where: { variantId: item.variantId },
-          create: {
-            variantId: item.variantId,
-            totalStock: 100,
-            reservedStock: item.quantity,
-            soldStock: 0,
-          },
-          update: {
-            reservedStock: { increment: item.quantity },
-          },
-        });
+      // Step 12: Commit inventory for placed orders (COD / Zero Payable / Credit)
+      // Unpaid online orders (Razorpay) do NOT consume stock until payment confirmation in PaymentStateEngine
+      if (isZeroPayable || isCodOrder) {
+        console.log('[CHECKOUT STEP 12] Committing inventory for placed order in database...');
+        await Promise.all(data.items.map(async (item) => {
+          const inv = await tx.inventory.upsert({
+            where: { variantId: item.variantId },
+            create: {
+              variantId: item.variantId,
+              totalStock: 100,
+              reservedStock: isCodOrder ? item.quantity : 0,
+              soldStock: isZeroPayable ? item.quantity : 0,
+            },
+            update: isZeroPayable
+              ? { soldStock: { increment: item.quantity } }
+              : { reservedStock: { increment: item.quantity } },
+          });
 
-        await tx.inventoryMovement.create({
-          data: {
-            inventoryId: inv.id,
-            delta: -item.quantity,
-            type: 'RESERVE',
-            reason: `Order ${order.orderNumber} checkout started`,
-            orderId: order.id,
-          },
-        });
-      }));
+          await tx.inventoryMovement.create({
+            data: {
+              inventoryId: inv.id,
+              delta: -item.quantity,
+              type: isZeroPayable ? 'PURCHASE' : 'RESERVE',
+              reason: isZeroPayable
+                ? `Order ${order.orderNumber} completed via wallet credits`
+                : `Order ${order.orderNumber} placed via COD`,
+              orderId: order.id,
+            },
+          });
+        }));
+      }
 
       // Step 13: Increment discount counter
       if (discountId) {

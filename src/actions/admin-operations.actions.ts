@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { NotificationService } from '@/notifications/notification.service';
 import { LogisticsService, calculateETA } from '@/lib/logistics';
-import { calculateProductInventoryState } from '@/lib/inventory-service';
+import { calculateProductInventoryState, isCommittedOrder } from '@/lib/inventory-service';
+import { isPreBookingActive } from '@/lib/launch-engine-core';
 
 function safeRevalidate(path: string) {
   try {
@@ -665,6 +666,7 @@ export async function getAdminInventory() {
                   paymentStatus: true,
                   isPreBooking: true,
                   orderType: true,
+                  status: true,
                 },
               },
               returnItems: {
@@ -691,7 +693,7 @@ export async function getAdminInventory() {
 
   return inventory.map((inv) => {
     const p = inv.variant.product;
-    const isPreBooking = Boolean(p.isPreBooking);
+    const isPreBooking = isPreBookingActive(p);
 
     // 1. Calculate Pre-Book Allocation
     const preBookAllocation = isPreBooking
@@ -705,7 +707,7 @@ export async function getAdminInventory() {
 
     if (Array.isArray(inv.variant.orderItems)) {
       inv.variant.orderItems.forEach((item: any) => {
-        if (item.order?.paymentStatus === 'PAID') {
+        if (item.order && isCommittedOrder(item.order)) {
           const isPbOrder = Boolean(item.order.isPreBooking || item.order.orderType === 'PRE_BOOKING');
           if (isPbOrder) {
             preBookReserved += item.quantity;
