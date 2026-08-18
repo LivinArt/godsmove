@@ -3,6 +3,18 @@ import { Metadata } from 'next';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.godsmove.in';
 const SITE_NAME = 'GODSMOVE';
 
+export function toPlainText(str: string | undefined | null): string {
+  if (!str) return '';
+  return str
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
 interface ConstructMetadataInput {
   title: string;
   description: string;
@@ -22,15 +34,19 @@ export function constructMetadata({
   type = 'website',
   noIndex = false,
 }: ConstructMetadataInput): Metadata {
+  const cleanTitle = toPlainText(title);
+  const cleanDescription = toPlainText(description);
+  const cleanKeywords = keywords.map((k) => toPlainText(k));
+
   const canonicalUrl = `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  const metaTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+  const metaTitle = cleanTitle.includes(SITE_NAME) ? cleanTitle : `${cleanTitle} | ${SITE_NAME}`;
   const ogImageUrl = image || `${BASE_URL}/images/campaign/editorial-01.png`;
 
   const defaultKeywords = [
     'GODSMOVE',
     'modern apparel India',
     'premium clothing brands India',
-    'men\'s clothing online',
+    "men's clothing online",
     'oversized t shirts for men',
     'premium t shirts India',
     'hoodies for men',
@@ -39,11 +55,11 @@ export function constructMetadata({
     'craftsmanship apparel',
   ];
 
-  const mergedKeywords = Array.from(new Set([...keywords, ...defaultKeywords]));
+  const mergedKeywords = Array.from(new Set([...cleanKeywords, ...defaultKeywords]));
 
   return {
     title: metaTitle,
-    description,
+    description: cleanDescription,
     keywords: mergedKeywords,
     metadataBase: new URL(BASE_URL),
     alternates: {
@@ -51,7 +67,7 @@ export function constructMetadata({
     },
     openGraph: {
       title: metaTitle,
-      description,
+      description: cleanDescription,
       url: canonicalUrl,
       siteName: SITE_NAME,
       locale: 'en_IN',
@@ -68,7 +84,7 @@ export function constructMetadata({
     twitter: {
       card: 'summary_large_image',
       title: metaTitle,
-      description,
+      description: cleanDescription,
       images: [ogImageUrl],
     },
     ...(noIndex
@@ -81,3 +97,4 @@ export function constructMetadata({
       : {}),
   };
 }
+

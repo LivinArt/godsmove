@@ -6,7 +6,7 @@ import robots from '../src/app/robots';
 const homepageMetadata = constructMetadata({
   title: "GODSMOVE | Modern Apparel & Premium Clothing Online India",
   description:
-    "Explore GODSMOVE's modern apparel collection featuring premium T-shirts, oversized tees, hoodies, denim jackets, and distinctive everyday clothing designed in India.",
+    "Explore GODSMOVE's modern apparel collection featuring premium T-shirts, oversized tees, hoodies, denim jackets, and distinctive everyday clothing.",
   path: "/",
   keywords: [
     "GODSMOVE",
