@@ -73,13 +73,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user && !loading && profile) {
       const pendingStr = sessionStorage.getItem('godsmove_pending_action');
       if (pendingStr) {
-        const isComplete = isProfileComplete(profile);
-        if (!isComplete) {
-          setIsModalOpen(true);
-          return;
-        }
         try {
           const pending = JSON.parse(pendingStr);
+
+          // Early Access pending action carries profile details & handles completion directly
+          if (pending.type === 'early_access') {
+            sessionStorage.removeItem('godsmove_pending_action');
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('gm_trigger_early_access', { detail: pending }));
+            }
+            return;
+          }
+
+          const isComplete = isProfileComplete(profile);
+          if (!isComplete) {
+            setIsModalOpen(true);
+            return;
+          }
           sessionStorage.removeItem('godsmove_pending_action');
 
           if (pending.timestamp && Date.now() - pending.timestamp > 15 * 60 * 1000) {

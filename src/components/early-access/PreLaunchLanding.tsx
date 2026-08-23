@@ -51,26 +51,31 @@ export default function PreLaunchLanding() {
 
   // Handle post-OAuth return & registration trigger
   useEffect(() => {
-    const handleTriggerEvent = async () => {
+    const handleTriggerEvent = async (e?: any) => {
       setLoading(true);
+      setShowRegisterModal(false);
       try {
-        // Read pending details if saved before OAuth redirection
-        const pendingStr = sessionStorage.getItem('godsmove_pending_action');
-        if (pendingStr) {
-          try {
-            const pending = JSON.parse(pendingStr);
-            if (pending.details) {
-              await updateMyProfileOnboarding({
-                firstName: pending.details.name,
-                phone: pending.details.phone,
-                dob: pending.details.dob,
-                gender: pending.details.gender,
-              });
-              await refreshProfile();
+        let details = e?.detail?.details;
+        if (!details) {
+          const pendingStr = sessionStorage.getItem('godsmove_pending_action');
+          if (pendingStr) {
+            try {
+              const pending = JSON.parse(pendingStr);
+              details = pending.details;
+            } catch (err) {
+              // ignore
             }
-          } catch (e) {
-            // ignore JSON error
           }
+        }
+
+        if (details) {
+          await updateMyProfileOnboarding({
+            firstName: details.name,
+            phone: details.phone,
+            dob: details.dob,
+            gender: details.gender,
+          });
+          await refreshProfile();
         }
 
         const res = await registerEarlyAccessAction();
