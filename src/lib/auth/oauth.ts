@@ -57,16 +57,20 @@ export function setOAuthDestinationCookie(destination: string): void {
 export async function initiateGoogleOAuth(
   supabase: SupabaseClient,
   destination: string,
+  options?: { forceSelectAccount?: boolean },
 ): Promise<{ error: Error | null }> {
   setOAuthDestinationCookie(destination);
+
+  const queryParams: Record<string, string> = {};
+  if (options?.forceSelectAccount) {
+    queryParams.prompt = 'select_account';
+  }
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: getCallbackUrl(),
-      queryParams: {
-        prompt: 'select_account',
-      },
+      ...(Object.keys(queryParams).length > 0 ? { queryParams } : {}),
     },
   });
 

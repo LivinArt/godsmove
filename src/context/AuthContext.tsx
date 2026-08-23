@@ -71,15 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Resume Pending Action on authentication & ensure profile completion
   useEffect(() => {
     if (user && !loading && profile) {
-      const isComplete = isProfileComplete(profile);
-
-      if (!isComplete) {
-        setIsModalOpen(true);
-        return;
-      }
-
       const pendingStr = sessionStorage.getItem('godsmove_pending_action');
       if (pendingStr) {
+        const isComplete = isProfileComplete(profile);
+        if (!isComplete) {
+          setIsModalOpen(true);
+          return;
+        }
         try {
           const pending = JSON.parse(pendingStr);
           sessionStorage.removeItem('godsmove_pending_action');
