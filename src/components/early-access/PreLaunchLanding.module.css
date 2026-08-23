@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: var(--space-lg, 24px) var(--container-padding, 24px);
+  padding: 28px 24px 20px 24px;
   font-family: var(--font-body, system-ui, sans-serif);
   overflow-x: hidden;
   box-sizing: border-box;
@@ -26,8 +26,8 @@
 .bgImage {
   object-fit: cover;
   object-position: center 30%;
-  filter: brightness(0.4) contrast(1.1);
-  transform: scale(1.03);
+  filter: brightness(0.35) contrast(1.1);
+  transform: scale(1.02);
   transition: transform 10s ease;
 }
 
@@ -36,9 +36,9 @@
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(10, 10, 10, 0.85) 0%,
-    rgba(10, 10, 10, 0.65) 40%,
-    rgba(10, 10, 10, 0.92) 85%,
+    rgba(10, 10, 10, 0.88) 0%,
+    rgba(10, 10, 10, 0.60) 35%,
+    rgba(10, 10, 10, 0.90) 80%,
     #0A0A0A 100%
   );
   z-index: 1;
@@ -51,16 +51,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding-top: 16px;
+  gap: 12px;
+  padding-top: 20px;
   padding-bottom: 24px;
 }
 
+.logoWrap {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .logoImage {
-  height: 36px;
+  height: 38px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
 }
 
 .madeInIndiaTag {
@@ -70,68 +77,69 @@
   letter-spacing: 0.35em;
   color: #C5A059;
   text-transform: uppercase;
-  background: rgba(197, 160, 89, 0.08);
-  border: 1px solid rgba(197, 160, 89, 0.25);
-  padding: 4px 14px;
+  background: rgba(197, 160, 89, 0.06);
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  padding: 4px 16px;
   border-radius: 100px;
 }
 
-/* Hero Content Wrapper */
+/* Hero Content Wrapper — Spacious Editorial Rhythm */
 .mainContent {
   position: relative;
   z-index: 2;
-  max-width: 680px;
+  max-width: 640px;
   margin: 0 auto;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 32px 0;
+  padding: 48px 0 32px 0;
 }
 
 .eyebrow {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  color: rgba(250, 248, 245, 0.7);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: #C5A059;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  opacity: 0.95;
 }
 
 .mainHeading {
   font-family: var(--font-heading);
-  font-size: clamp(32px, 6vw, 64px);
+  font-size: clamp(30px, 5.5vw, 60px);
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
   color: #FAF8F5;
-  margin: 0 0 16px 0;
+  margin: 0 0 24px 0;
   text-transform: uppercase;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
 }
 
 .supportingCopy {
-  font-size: clamp(14px, 2.5vw, 17px);
+  font-size: clamp(14px, 2.2vw, 16px);
   font-weight: 400;
-  letter-spacing: 0.03em;
-  color: rgba(250, 248, 245, 0.8);
-  line-height: 1.6;
-  margin: 0 0 36px 0;
-  max-width: 520px;
+  letter-spacing: 0.04em;
+  color: rgba(250, 248, 245, 0.75);
+  line-height: 1.7;
+  margin: 0 0 44px 0;
+  max-width: 500px;
 }
 
-/* Benefits Luxury Glass Card */
+/* Benefits Luxury Glass Card — Subtle & Quiet */
 .benefitsCard {
-  background: rgba(18, 18, 18, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(200, 164, 106, 0.25);
-  border-radius: 12px;
-  padding: 32px 28px;
+  background: rgba(14, 14, 14, 0.55);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(197, 160, 89, 0.16);
+  border-radius: 8px;
+  padding: 36px 32px;
   width: 100%;
-  margin-bottom: 36px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  margin-bottom: 48px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
   text-align: left;
   box-sizing: border-box;
 }
@@ -140,7 +148,7 @@
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.28em;
   color: #C5A059;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -148,8 +156,8 @@
 
 .benefitsSubhead {
   font-size: 13px;
-  color: rgba(250, 248, 245, 0.65);
-  margin-bottom: 24px;
+  color: rgba(250, 248, 245, 0.55);
+  margin-bottom: 28px;
   letter-spacing: 0.02em;
 }
 
@@ -159,7 +167,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .benefitItem {
@@ -169,14 +177,15 @@
   line-height: 1.5;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
 }
 
 .bullet {
   color: #C5A059;
-  font-size: 12px;
+  font-size: 11px;
   margin-top: 3px;
   flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .benefitContent {
@@ -209,16 +218,16 @@
 /* Primary Luxury CTA Button */
 .ctaButton {
   width: 100%;
-  max-width: 440px;
+  max-width: 420px;
   height: 56px;
   background: #FAF8F5;
   color: #0A0A0A;
   border: 1px solid #FAF8F5;
   border-radius: 4px;
   font-family: var(--font-heading);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   cursor: pointer;
   display: flex;
@@ -226,14 +235,14 @@
   justify-content: center;
   gap: 12px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(200, 164, 106, 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(197, 160, 89, 0.18);
 }
 
 .ctaButton:hover {
   background: #FFFFFF;
   border-color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(200, 164, 106, 0.35);
+  box-shadow: 0 16px 44px rgba(197, 160, 89, 0.3);
 }
 
 .ctaButton:disabled {
@@ -243,15 +252,15 @@
 }
 
 .alreadyRegisteredBadge {
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 11px;
   letter-spacing: 0.15em;
   color: #C5A059;
   font-weight: 700;
   text-transform: uppercase;
-  background: rgba(197, 160, 89, 0.12);
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  padding: 10px 20px;
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  padding: 10px 22px;
   border-radius: 100px;
   display: flex;
   align-items: center;
@@ -263,23 +272,16 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  padding-top: 32px;
-  padding-bottom: 12px;
+  padding-top: 40px;
+  padding-bottom: 16px;
   font-size: 11px;
-  color: rgba(250, 248, 245, 0.4);
+  color: rgba(250, 248, 245, 0.35);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-}
-
-.logoWrap {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 10px;
 }
 
 .footerLinks {
@@ -287,7 +289,7 @@
   align-items: center;
   gap: 16px;
   font-size: 10px;
-  color: rgba(250, 248, 245, 0.5);
+  color: rgba(250, 248, 245, 0.45);
 }
 
 .legalLinkBtn {
@@ -296,7 +298,7 @@
   padding: 0;
   font-family: inherit;
   font-size: 10px;
-  color: rgba(250, 248, 245, 0.5);
+  color: rgba(250, 248, 245, 0.45);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -307,32 +309,48 @@
   color: #C5A059;
 }
 
-/* Mobile Responsive Optimization */
+/* Mobile Responsive Optimization (375px, 390px, 412px) */
 @media (max-width: 767px) {
   .heroContainer {
     padding: 16px 16px max(24px, env(safe-area-inset-bottom));
   }
   .header {
-    padding-top: 8px;
+    padding-top: 12px;
     padding-bottom: 16px;
+    gap: 8px;
   }
   .logoImage {
-    height: 28px;
+    height: 30px;
   }
   .madeInIndiaTag {
     font-size: 9px;
-    padding: 3px 10px;
+    padding: 3px 12px;
+    letter-spacing: 0.28em;
   }
   .mainContent {
-    padding: 16px 0;
+    padding: 28px 0 20px 0;
+  }
+  .eyebrow {
+    font-size: 10px;
+    margin-bottom: 16px;
+  }
+  .mainHeading {
+    margin-bottom: 16px;
+  }
+  .supportingCopy {
+    margin-bottom: 32px;
   }
   .benefitsCard {
-    padding: 24px 20px;
-    margin-bottom: 28px;
+    padding: 28px 20px;
+    margin-bottom: 36px;
   }
   .ctaButton {
     height: 52px;
-    font-size: 12px;
-    letter-spacing: 0.18em;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+  }
+  .footer {
+    padding-top: 28px;
+    padding-bottom: 12px;
   }
 }

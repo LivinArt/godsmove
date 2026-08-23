@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared Google OAuth helper for GODSMOVE.
  *
  * WHY THIS EXISTS:
@@ -64,6 +64,9 @@ export async function initiateGoogleOAuth(
     provider: 'google',
     options: {
       redirectTo: getCallbackUrl(),
+      queryParams: {
+        prompt: 'select_account',
+      },
     },
   });
 
