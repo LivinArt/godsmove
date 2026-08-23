@@ -36,8 +36,14 @@ const STATUS_BADGE: Record<string, string> = {
   REFUNDED: 'badge badge-red',
 };
 
+import { getSiteMode } from '@/actions/site-config.actions';
+import StorefrontLaunchControl from '@/components/admin/StorefrontLaunchControl';
+
 export default async function AdminPage() {
-  const data = await getAdminDashboardData();
+  const [data, siteMode] = await Promise.all([
+    getAdminDashboardData(),
+    getSiteMode(),
+  ]);
 
   return (
     <div>
@@ -47,6 +53,9 @@ export default async function AdminPage() {
           <p className="page-sub">GODSMOVE live commerce metrics & logs dashboard</p>
         </div>
       </div>
+
+      {/* ── STOREFRONT LAUNCH SWITCH ─────────────────────────────── */}
+      <StorefrontLaunchControl initialSiteMode={siteMode} />
 
       {/* ── METRICS SUMMARY GRID ─────────────────────────────── */}
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>

@@ -25,9 +25,14 @@ interface Customer {
   tier: string;
   lastPurchaseDate: string | null;
   isMemberActive?: boolean;
+  earlyAccessRegistered?: boolean;
+  earlyAccessRegisteredAt?: string | null;
+  earlyAccessBenefitsEligible?: boolean;
 }
 
 const FILTER_OPTIONS = [
+  { key: 'EARLY_ACCESS', label: 'Early Access' },
+  { key: 'NON_EARLY_ACCESS', label: 'Non-Early-Access' },
   { key: 'REGISTERED_TODAY', label: 'Registered Today' },
   { key: 'REGISTERED_THIS_WEEK', label: 'Registered This Week' },
   { key: 'REGISTERED_THIS_MONTH', label: 'Registered This Month' },
@@ -492,6 +497,11 @@ export default function CustomersListClient({
                                 {c.isMemberActive && (
                                   <span style={{ fontSize: 9, fontWeight: 800, background: 'rgba(197, 160, 89, 0.15)', border: '1px solid rgba(197, 160, 89, 0.3)', color: '#c5a059', padding: '1px 6px', borderRadius: 100, letterSpacing: '0.05em' }}>
                                     MEMBER
+                                  </span>
+                                )}
+                                {c.earlyAccessRegistered && (
+                                  <span style={{ fontSize: 9, fontWeight: 800, background: 'rgba(255, 183, 77, 0.15)', border: '1px solid rgba(255, 183, 77, 0.3)', color: '#FFB74D', padding: '1px 6px', borderRadius: 100, letterSpacing: '0.05em' }}>
+                                    EARLY ACCESS
                                   </span>
                                 )}
                                 {c.godsmoveId && (

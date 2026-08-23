@@ -110,6 +110,9 @@ export async function getAdminCustomers() {
       lastPurchaseDate,
       isMemberActive,
       membership: p.membership,
+      earlyAccessRegistered: p.earlyAccessRegistered,
+      earlyAccessRegisteredAt: p.earlyAccessRegisteredAt ? p.earlyAccessRegisteredAt.toISOString() : null,
+      earlyAccessBenefitsEligible: p.earlyAccessBenefitsEligible,
     };
   });
 }
@@ -505,6 +508,9 @@ export async function getAdminCustomerDetail(id: string) {
     isBlocked: !!authUser?.banned_until && new Date(authUser.banned_until) > new Date(),
     isMemberActive,
     membership: serializedMembership,
+    earlyAccessRegistered: p.earlyAccessRegistered,
+    earlyAccessRegisteredAt: p.earlyAccessRegisteredAt ? p.earlyAccessRegisteredAt.toISOString() : null,
+    earlyAccessBenefitsEligible: p.earlyAccessBenefitsEligible,
     addresses,
     orders,
     wallet,
@@ -544,7 +550,9 @@ export async function adjustCustomerWallet(
     createdBy: 'ADMIN',
   });
 
-  revalidatePath(`/admin/customers/${profileId}`);
+  try {
+    revalidatePath(`/admin/customers/${profileId}`);
+  } catch {}
   return { success: true, balance: Number(res.wallet.balance) };
 }
 

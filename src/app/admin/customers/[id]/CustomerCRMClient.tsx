@@ -132,6 +132,9 @@ interface CustomerDetail {
   lastLogin: string | null;
   loginMethod: string;
   isBlocked: boolean;
+  earlyAccessRegistered?: boolean;
+  earlyAccessRegisteredAt?: string | null;
+  earlyAccessBenefitsEligible?: boolean;
   addresses: Address[];
   orders: Order[];
   wallet: Wallet | null;
@@ -451,6 +454,58 @@ export default function CustomerCRMClient({
 
       {/* RIGHT COLUMN: Tab Panel Detail views */}
       <div className="admin-card" style={{ minHeight: 480, padding: 32 }}>
+        {customer.earlyAccessRegistered && (
+          <div style={{
+            background: 'var(--admin-surface-2, #222222)',
+            border: '1px solid #FFB74D',
+            borderRadius: '8px',
+            padding: '20px',
+            marginBottom: '28px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.15em', color: '#FFB74D', textTransform: 'uppercase' }}>
+                EARLY ACCESS
+              </div>
+              <span style={{ fontSize: '10px', fontWeight: 800, background: '#FFB74D', color: '#000000', padding: '2px 8px', borderRadius: '4px' }}>
+                REGISTERED
+              </span>
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#CCCCCC', marginBottom: 16 }}>
+              Registered: <strong>{customer.earlyAccessRegisteredAt ? formatDate(customer.earlyAccessRegisteredAt) : 'Yes'}</strong>
+            </div>
+
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', marginBottom: 8, textTransform: 'uppercase' }}>
+              Benefits Checklist
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12px', color: '#DDDDDD', marginBottom: 16 }}>
+              <div>✓ 1 Year GODSMOVƎ Membership</div>
+              <div>✓ Priority Launch Access</div>
+              <div>✓ Exclusive Member Benefits</div>
+              <div>✓ Assured Reward Up To ₹1,000</div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #333333', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '12px' }}>
+                <span style={{ color: '#888888' }}>Reward: </span>
+                <strong>{customer.wallet && customer.wallet.balance > 0 ? `₹${customer.wallet.balance} CREDITED` : 'PENDING'}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('credits');
+                  setAdjustmentType('CREDIT');
+                  setAdjustmentDesc('Early Access Assured Reward');
+                }}
+                className="btn-secondary"
+                style={{ fontSize: '11px', padding: '4px 10px' }}
+              >
+                ISSUE / ADJUST REWARD CREDIT
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: General & Timeline */}
         {activeTab === 'notes' && (
           <div>

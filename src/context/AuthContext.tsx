@@ -19,6 +19,9 @@ interface Profile {
   tier: string;
   dob: string | null;
   gender: string | null;
+  earlyAccessRegistered?: boolean;
+  earlyAccessRegisteredAt?: string | null;
+  earlyAccessBenefitsEligible?: boolean;
 }
 
 interface AuthContextType {
@@ -124,6 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           } else if (pending.type === 'navigate' && pending.url) {
             router.push(pending.url);
+          } else if (pending.type === 'early_access') {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('gm_trigger_early_access'));
+            }
           }
         } catch (e) {
           console.error('Failed to execute pending action:', e);
@@ -262,6 +269,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           } else if (pending.type === 'navigate' && pending.url) {
             router.push(pending.url);
+          } else if (pending.type === 'early_access') {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('gm_trigger_early_access'));
+            }
           }
         } catch (e) {
           console.error('Failed to execute pending action:', e);

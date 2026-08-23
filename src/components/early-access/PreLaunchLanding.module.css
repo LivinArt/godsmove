@@ -1,0 +1,338 @@
+.heroContainer {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  background-color: #0A0A0A;
+  color: #FAF8F5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-lg, 24px) var(--container-padding, 24px);
+  font-family: var(--font-body, system-ui, sans-serif);
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Background Image & Ambient Overlay */
+.bgWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bgImage {
+  object-fit: cover;
+  object-position: center 30%;
+  filter: brightness(0.4) contrast(1.1);
+  transform: scale(1.03);
+  transition: transform 10s ease;
+}
+
+.bgOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 10, 0.85) 0%,
+    rgba(10, 10, 10, 0.65) 40%,
+    rgba(10, 10, 10, 0.92) 85%,
+    #0A0A0A 100%
+  );
+  z-index: 1;
+}
+
+/* Header with Brand Logo */
+.header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  padding-bottom: 24px;
+}
+
+.logoImage {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+.madeInIndiaTag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: #C5A059;
+  text-transform: uppercase;
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  padding: 4px 14px;
+  border-radius: 100px;
+}
+
+/* Hero Content Wrapper */
+.mainContent {
+  position: relative;
+  z-index: 2;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: rgba(250, 248, 245, 0.7);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.mainHeading {
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: #FAF8F5;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+.supportingCopy {
+  font-size: clamp(14px, 2.5vw, 17px);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: rgba(250, 248, 245, 0.8);
+  line-height: 1.6;
+  margin: 0 0 36px 0;
+  max-width: 520px;
+}
+
+/* Benefits Luxury Glass Card */
+.benefitsCard {
+  background: rgba(18, 18, 18, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(200, 164, 106, 0.25);
+  border-radius: 12px;
+  padding: 32px 28px;
+  width: 100%;
+  margin-bottom: 36px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.benefitsHeader {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: #C5A059;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.benefitsSubhead {
+  font-size: 13px;
+  color: rgba(250, 248, 245, 0.65);
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
+.benefitsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.benefitItem {
+  font-size: 14px;
+  font-weight: 500;
+  color: #FAF8F5;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bullet {
+  color: #C5A059;
+  font-size: 12px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.benefitContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.membershipLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #C5A059;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  width: fit-content;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  text-transform: uppercase;
+}
+
+.membershipLink:hover {
+  color: #FAF8F5;
+  opacity: 0.9;
+}
+
+/* Primary Luxury CTA Button */
+.ctaButton {
+  width: 100%;
+  max-width: 440px;
+  height: 56px;
+  background: #FAF8F5;
+  color: #0A0A0A;
+  border: 1px solid #FAF8F5;
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(200, 164, 106, 0.2);
+}
+
+.ctaButton:hover {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(200, 164, 106, 0.35);
+}
+
+.ctaButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.alreadyRegisteredBadge {
+  margin-top: 20px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #C5A059;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(197, 160, 89, 0.12);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  padding: 10px 20px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Footer */
+.footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding-top: 32px;
+  padding-bottom: 12px;
+  font-size: 11px;
+  color: rgba(250, 248, 245, 0.4);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoWrap {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footerLinks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 10px;
+  color: rgba(250, 248, 245, 0.5);
+}
+
+.legalLinkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 10px;
+  color: rgba(250, 248, 245, 0.5);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.legalLinkBtn:hover {
+  color: #C5A059;
+}
+
+/* Mobile Responsive Optimization */
+@media (max-width: 767px) {
+  .heroContainer {
+    padding: 16px 16px max(24px, env(safe-area-inset-bottom));
+  }
+  .header {
+    padding-top: 8px;
+    padding-bottom: 16px;
+  }
+  .logoImage {
+    height: 28px;
+  }
+  .madeInIndiaTag {
+    font-size: 9px;
+    padding: 3px 10px;
+  }
+  .mainContent {
+    padding: 16px 0;
+  }
+  .benefitsCard {
+    padding: 24px 20px;
+    margin-bottom: 28px;
+  }
+  .ctaButton {
+    height: 52px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+  }
+}

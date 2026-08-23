@@ -32,6 +32,10 @@ export class NotificationService {
     return this.dispatch({ event: 'WALLET_CREDITED', recipient, payload });
   }
 
+  static async notifyEarlyAccessConfirmation(recipient: NotificationRecipient, payload: Record<string, any>) {
+    return this.dispatch({ event: 'EARLY_ACCESS_CONFIRMED', recipient, payload });
+  }
+
   /**
    * Helper method to map an Order record and dispatch ORDER_CREATED / ORDER_CONFIRMED with stored PDF invoice attachment
    */

@@ -31,6 +31,9 @@ model Profile {
   orderUpdateEmails Boolean  @default(true)
   adminNotes        String?
   dob               DateTime?
+  earlyAccessRegistered       Boolean   @default(false)
+  earlyAccessRegisteredAt     DateTime?
+  earlyAccessBenefitsEligible Boolean   @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1542,5 +1545,15 @@ model PreBookingInterest {
   @@index([profileId])
   @@map("prebooking_interests")
 }
+
+model SiteConfig {
+  id           String   @id @default("default_site_config")
+  siteMode     String   @default("PRELAUNCH") // "PRELAUNCH" | "NORMAL"
+  updatedBy    String?  @default("SYSTEM")
+  updatedAt    DateTime @updatedAt
+
+  @@map("site_configs")
+}
+
 
 

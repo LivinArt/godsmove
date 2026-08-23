@@ -43,6 +43,7 @@ import ReturnPickupScheduledTemplate from './ReturnPickupScheduledTemplate';
 import ReturnRefundCompletedTemplate from './ReturnRefundCompletedTemplate';
 import PreBookingConfirmedTemplate from './PreBookingConfirmedTemplate';
 import PreBookingLaunchedTemplate from './PreBookingLaunchedTemplate';
+import EarlyAccessConfirmationTemplate from './EarlyAccessConfirmationTemplate';
 
 import { GODSMOVE_WORDMARK } from '../brand';
 
@@ -188,6 +189,11 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   EMAIL_VERIFICATION: {
     component: PasswordResetTemplate,
     subjectBuilder: () => `Verify Your Email Address | ${GODSMOVE_WORDMARK}`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  EARLY_ACCESS_CONFIRMED: {
+    component: EarlyAccessConfirmationTemplate,
+    subjectBuilder: () => `${GODSMOVE_WORDMARK} Early Access Confirmed — Launch Benefits Active`,
     senderConfig: DEFAULT_SENDER,
   },
   WELCOME: {

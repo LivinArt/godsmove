@@ -21,6 +21,9 @@ export interface CustomerRecord {
   tier: string; // STANDARD, VIP, INNER_CIRCLE
   lastPurchaseDate: string | null; // ISO string
   isMemberActive?: boolean;
+  earlyAccessRegistered?: boolean;
+  earlyAccessRegisteredAt?: string | null;
+  earlyAccessBenefitsEligible?: boolean;
   membership?: {
     id: string;
     status: string;
@@ -163,6 +166,16 @@ export const CustomerSegmentService = {
           if (!customer.lastPurchaseDate) return false;
           const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           if (new Date(customer.lastPurchaseDate) < sevenDaysAgo) return false;
+        }
+
+        // 17. Early Access Registered Users
+        if (filter === 'EARLY_ACCESS') {
+          if (!customer.earlyAccessRegistered) return false;
+        }
+
+        // 18. Non-Early Access Users
+        if (filter === 'NON_EARLY_ACCESS') {
+          if (customer.earlyAccessRegistered) return false;
         }
       }
 

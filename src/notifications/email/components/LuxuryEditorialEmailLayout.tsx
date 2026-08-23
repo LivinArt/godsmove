@@ -124,10 +124,13 @@ export const LuxuryEditorialEmailLayout: React.FC<LuxuryEditorialEmailLayoutProp
               Built around craftsmanship, permanence and intentional design.
             </Text>
             <Text style={footerAddressStyle}>
-              Mumbai • Tokyo • London | Concierge Support: support@godsmove.in
+              INDIA · Concierge Support: <Link href="mailto:support@godsmove.in" style={{ color: '#C8A46A', textDecoration: 'underline' }}>support@godsmove.in</Link>
             </Text>
             <Text style={footerCopyrightStyle}>
-              © {new Date().getFullYear()} {GODSMOVE_WORDMARK} CLOTHING PRIVATE LIMITED. All rights reserved.
+              LIVINART TECHNOLOGIES PRIVATE LIMITED
+            </Text>
+            <Text style={footerSubCopyrightStyle}>
+              © {new Date().getFullYear()} All rights reserved.
             </Text>
           </Section>
         </Container>
@@ -268,6 +271,15 @@ const footerAddressStyle: React.CSSProperties = {
 
 const footerCopyrightStyle: React.CSSProperties = {
   fontSize: '9px',
-  color: '#B0AA9F',
+  fontWeight: 700,
+  letterSpacing: '0.12em',
+  color: '#C8A46A',
+  margin: '0 0 4px 0',
+  textTransform: 'uppercase',
+};
+
+const footerSubCopyrightStyle: React.CSSProperties = {
+  fontSize: '9px',
+  color: '#8A857C',
   margin: 0,
 };

@@ -19,6 +19,8 @@ import {
 import { getProfileSummary } from '@/actions/profile.actions';
 import { getHomepageFeatureCardsData } from '@/actions/feature-cards.actions';
 import { isPreBookingActive } from '@/lib/launch-engine-core';
+import { getSiteMode } from '@/actions/site-config.actions';
+import PreLaunchLanding from '@/components/early-access/PreLaunchLanding';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +42,12 @@ const FALLBACK_HERO_SLIDES: CinematicHeroSlide[] = [
 ];
 
 export default async function Home() {
+  const siteMode = await getSiteMode();
+
+  if (siteMode === 'PRELAUNCH') {
+    return <PreLaunchLanding />;
+  }
+
   // 1. Fetch Dynamic Stores Metadata & Curation Lists
   const [
     allProducts,
