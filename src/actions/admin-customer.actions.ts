@@ -558,7 +558,7 @@ export async function adjustCustomerWallet(
 }
 
 export async function updateCustomerSecurity(id: string, action: 'block' | 'unblock' | 'logout' | 'delete') {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const supabaseAdmin = await createAdminClient();
 
@@ -581,13 +581,132 @@ export async function updateCustomerSecurity(id: string, action: 'block' | 'unbl
     const { error } = await supabaseAdmin.auth.admin.signOut(id);
     if (error) throw error;
   } else if (action === 'delete') {
-    // Remove authentication user and cascade delete profile
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
-    if (error) throw error;
+    const deleteResult = await deleteCustomerAccount(id, admin);
+    if (!deleteResult.success) {
+      throw new Error(deleteResult.error || 'Failed to delete customer account.');
+    }
+    return deleteResult;
   }
 
   revalidatePath(`/admin/customers/${id}`);
   revalidatePath('/admin/customers');
+  return { success: true };
+}
+
+/**
+ * Production-Grade Atomic Customer Deletion Handler
+ * Enforces:
+ * - Server-side admin authentication & authorization
+ * - Self-deletion safeguard (Admin cannot delete self)
+ * - Administrative role protection (Cannot delete ADMIN / non-CUSTOMER roles)
+ * - Atomic Prisma cleanup of profile, membership, wallet, addresses, wishlist, returns, care requests, etc.
+ * - Order preservation & financial accounting integrity (Order.profileId set to NULL)
+ * - Safe removal of Supabase Auth credentials
+ * - Administrative Audit Trail logging
+ */
+export async function deleteCustomerAccount(targetId: string, adminUserOverride?: { id: string; role: string }) {
+  const admin = adminUserOverride || (await requireAdmin());
+
+  // 1. Self-deletion safeguard
+  if (admin.id === targetId) {
+    return { success: false, error: 'Action prohibited: You cannot delete your active administrator account.' };
+  }
+
+  // 2. Target Profile Inspection
+  const targetProfile = await prisma.profile.findUnique({
+    where: { id: targetId },
+    select: { id: true, email: true, godsmoveId: true, role: true, firstName: true, lastName: true },
+  });
+
+  if (!targetProfile) {
+    return { success: false, error: 'Customer profile not found or already deleted.' };
+  }
+
+  // 3. Admin Account Protection Safeguard
+  if (targetProfile.role !== 'CUSTOMER') {
+    return { success: false, error: 'Action prohibited: Administrative accounts cannot be deleted.' };
+  }
+
+  // 4. Atomic Prisma Database Transaction
+  try {
+    await prisma.$transaction(async (tx) => {
+      // a. Notification logs
+      await tx.notificationHistory.deleteMany({
+        where: {
+          OR: [
+            { profileId: targetId },
+            { email: { equals: targetProfile.email, mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      // b. UnlockAccessTokens unlinking
+      await tx.unlockAccessToken.updateMany({
+        where: { claimedByProfileId: targetId },
+        data: { claimedByProfileId: null },
+      });
+
+      // c. Order unlinking (Financial & sales integrity preserved)
+      await tx.order.updateMany({
+        where: { profileId: targetId },
+        data: { profileId: null },
+      });
+
+      // d. Customer-owned records physical deletion
+      await tx.careRequest.deleteMany({ where: { profileId: targetId } });
+      await tx.returnRequest.deleteMany({ where: { profileId: targetId } });
+      await tx.wishlistItem.deleteMany({ where: { profileId: targetId } });
+      await tx.address.deleteMany({ where: { profileId: targetId } });
+      await tx.preBookingInterest.deleteMany({ where: { profileId: targetId } });
+      await tx.productUnlock.deleteMany({ where: { profileId: targetId } });
+      await tx.exclusiveReservation.deleteMany({ where: { profileId: targetId } });
+      await tx.exclusiveDrawWinner.deleteMany({ where: { profileId: targetId } });
+
+      // e. Wallet & WalletTransactions deletion
+      const wallet = await tx.wallet.findUnique({ where: { profileId: targetId } });
+      if (wallet) {
+        await tx.walletTransaction.deleteMany({ where: { walletId: wallet.id } });
+        await tx.wallet.delete({ where: { id: wallet.id } });
+      }
+
+      // f. Membership deletion
+      await tx.membership.deleteMany({ where: { profileId: targetId } });
+
+      // g. Profile deletion
+      await tx.profile.delete({ where: { id: targetId } });
+    });
+  } catch (dbErr: any) {
+    console.error(`[ADMIN CUSTOMER DELETION DB FAILURE] Target ${targetId}:`, dbErr);
+    return { success: false, error: 'Database constraint failure during profile deletion.' };
+  }
+
+  // 5. Supabase Auth Credentials Removal
+  try {
+    const supabaseAdmin = await createAdminClient();
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(targetId);
+    if (authErr) {
+      console.warn(`[ADMIN CUSTOMER DELETION AUTH WARNING] Supabase Auth removal notice for ${targetId}:`, authErr.message);
+    }
+  } catch (authErr: any) {
+    console.warn(`[ADMIN CUSTOMER DELETION AUTH EXCEPTION]`, authErr);
+  }
+
+  // 6. Server-Side Audit Trail Logging
+  console.log('====================================================================');
+  console.log(`[ADMIN AUDIT LOG] CUSTOMER ACCOUNT PERMANENTLY DELETED`);
+  console.log(`├─ Executed By Admin ID: ${admin.id} (${admin.role})`);
+  console.log(`├─ Target Customer ID: ${targetId}`);
+  console.log(`├─ Target Customer Email: ${targetProfile.email}`);
+  console.log(`├─ Target GM ID: ${targetProfile.godsmoveId || 'NONE'}`);
+  console.log(`└─ Timestamp: ${new Date().toISOString()}`);
+  console.log('====================================================================');
+
+  // 7. Revalidate Caches (if in Next.js request context)
+  try {
+    revalidatePath('/admin/customers');
+    revalidatePath(`/admin/customers/${targetId}`);
+  } catch (err) {}
+
   return { success: true };
 }
 

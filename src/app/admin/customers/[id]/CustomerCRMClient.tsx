@@ -188,6 +188,12 @@ export default function CustomerCRMClient({
   // Security action state
   const [securityLoading, setSecurityLoading] = useState(false);
 
+  // Delete Customer Modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState(false);
+
   const formatINR = (n: number) =>
     new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -272,26 +278,47 @@ export default function CustomerCRMClient({
 
   // Security action handler
   const handleSecurityAction = async (action: 'block' | 'unblock' | 'logout' | 'delete') => {
-    const confirmationMsg =
-      action === 'delete'
-        ? 'WARNING: This will permanently delete the customer account and cascade delete all their profiles, order assignments, and transactions. Continue?'
-        : `Are you sure you want to trigger "${action}" on this account?`;
+    if (action === 'delete') {
+      setDeleteError(null);
+      setDeleteConfirmText('');
+      setDeleteModalOpen(true);
+      return;
+    }
 
-    if (!confirm(confirmationMsg)) return;
+    if (!confirm(`Are you sure you want to trigger "${action}" on this account?`)) return;
 
     setSecurityLoading(true);
     try {
       await updateCustomerSecurity(customer.id, action);
       alert(`Account action "${action}" completed.`);
-      if (action === 'delete') {
-        router.push('/admin/customers');
-      } else {
-        router.refresh();
-      }
+      router.refresh();
     } catch (err: any) {
       alert(err.message || 'Security action failed.');
     } finally {
       setSecurityLoading(false);
+    }
+  };
+
+  const handleExecuteDelete = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+    setDeletingCustomer(true);
+    setDeleteError(null);
+
+    try {
+      const res = await updateCustomerSecurity(customer.id, 'delete');
+      if (res && res.success) {
+        setDeleteModalOpen(false);
+        alert(`Customer ${customer.email} (${customer.godsmoveId || customer.id}) was permanently deleted.`);
+        router.push('/admin/customers');
+        router.refresh();
+      } else {
+        setDeleteError(res?.error || 'Failed to delete customer account.');
+      }
+    } catch (err: any) {
+      console.error('Customer deletion frontend error:', err);
+      setDeleteError(err.message || 'An unexpected error occurred while deleting the customer account.');
+    } finally {
+      setDeletingCustomer(false);
     }
   };
 
@@ -1337,6 +1364,134 @@ export default function CustomerCRMClient({
                 className="btn-primary"
               >
                 {editingAddress ? 'Save Changes' : 'Create Address'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Customer Confirmation Modal */}
+      {deleteModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            style={{
+              width: 480,
+              maxWidth: '90vw',
+              background: 'var(--admin-surface)',
+              border: '1px solid rgba(255, 107, 107, 0.3)',
+              borderRadius: 12,
+              padding: 24,
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,107,107,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--admin-danger)' }}>
+                ⚠️
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--admin-danger)' }}>
+                  DELETE CUSTOMER ACCOUNT
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>
+                  Permanent Administrative Action
+                </span>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--admin-surface-2)', border: '1px solid var(--admin-border)', borderRadius: 8, padding: 14, marginBottom: 16, fontSize: 13 }}>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: 'var(--admin-muted)', fontSize: 11, textTransform: 'uppercase', display: 'block' }}>Customer Name</span>
+                <strong>{customer.firstName || customer.lastName ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : 'Unnamed Account'}</strong>
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: 'var(--admin-muted)', fontSize: 11, textTransform: 'uppercase', display: 'block' }}>Email Address</span>
+                <span className="mono">{customer.email}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', fontSize: 11, textTransform: 'uppercase', display: 'block' }}>GODSMOVƎ ID</span>
+                <span className="mono" style={{ color: 'var(--admin-accent)', fontWeight: 600 }}>{customer.godsmoveId || 'Not Assigned'}</span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+              This action will permanently delete the customer profile, membership entitlements, stored addresses, wallet, wishlist items, and Supabase Auth credentials. Historical sales orders will be safely unlinked to preserve accounting integrity.
+            </p>
+
+            {deleteError && (
+              <div style={{ background: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)', borderRadius: 6, padding: '10px 14px', color: '#ff3b30', fontSize: 12, marginBottom: 16 }}>
+                ❌ {deleteError}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--admin-text)', marginBottom: 6 }}>
+                Type <span style={{ color: 'var(--admin-danger)' }}>DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                disabled={deletingCustomer}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  background: 'var(--admin-surface-2)',
+                  border: '1px solid var(--admin-border)',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setDeleteError(null);
+                  setDeleteConfirmText('');
+                }}
+                disabled={deletingCustomer}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 12 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDelete}
+                disabled={deletingCustomer || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                className="btn-danger"
+                style={{
+                  background: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? 'var(--admin-danger)' : 'rgba(255,107,107,0.2)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? 'pointer' : 'not-allowed',
+                  opacity: deletingCustomer ? 0.7 : 1,
+                }}
+              >
+                {deletingCustomer ? 'Deleting Customer...' : 'DELETE CUSTOMER'}
               </button>
             </div>
           </div>
