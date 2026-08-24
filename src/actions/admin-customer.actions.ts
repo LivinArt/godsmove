@@ -106,6 +106,7 @@ export async function getAdminCustomers() {
       loginMethod: authUser?.app_metadata?.provider || authUser?.identities?.[0]?.provider || 'email',
       isBlocked: !!authUser?.banned_until && new Date(authUser.banned_until) > new Date(),
       dob: p.dob ? p.dob.toISOString() : null,
+      gender: p.gender || null,
       tier: p.tier,
       lastPurchaseDate,
       isMemberActive,

@@ -82,6 +82,7 @@ enum MembershipSource {
   DIRECT_PURCHASE
   MANUAL
   ADMIN_GRANT
+  EARLY_ACCESS
 }
 
 enum UserRole {

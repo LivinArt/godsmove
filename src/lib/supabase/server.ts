@@ -1,37 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { syncCanonicalCustomer } from '@/lib/customer-sync';
 
 // Helper to ensure any logged-in user has an active profile and wallet
-async function ensureProfileSynced(userId: string, email: string) {
+async function ensureProfileSynced(user: any) {
+  if (!user || !user.id) return;
   try {
     await prisma.$transaction(async (tx) => {
-      const profile = await tx.profile.findUnique({ where: { id: userId } });
-      if (!profile) {
-        // If this is the first user, default to ADMIN; otherwise default to CUSTOMER
-        const count = await tx.profile.count();
-        const role = count === 0 ? 'ADMIN' : 'CUSTOMER';
-        await tx.profile.create({
-          data: {
-            id: userId,
-            email,
-            firstName: email.split('@')[0] || 'User',
-            lastName: '',
-            role,
-            tier: 'STANDARD',
-          },
-        });
-      }
-
-      const wallet = await tx.wallet.findUnique({ where: { profileId: userId } });
-      if (!wallet) {
-        await tx.wallet.create({
-          data: {
-            profileId: userId,
-            balance: 0,
-          },
-        });
-      }
+      await syncCanonicalCustomer(tx, {
+        userId: user.id,
+        email: user.email || '',
+        googleMetadata: user.user_metadata,
+      });
     });
   } catch (err) {
     console.error('Failed to sync profile on server client getUser query:', err);
@@ -72,7 +53,7 @@ export async function createClient() {
     const res = await originalGetUser(...args);
     if (res.data?.user) {
       const user = res.data.user;
-      await ensureProfileSynced(user.id, user.email || '');
+      await ensureProfileSynced(user);
     }
     return res;
   };
@@ -120,7 +101,7 @@ export async function createAdminClient() {
     const res = await originalGetUser(...args);
     if (res.data?.user) {
       const user = res.data.user;
-      await ensureProfileSynced(user.id, user.email || '');
+      await ensureProfileSynced(user);
     }
     return res;
   };

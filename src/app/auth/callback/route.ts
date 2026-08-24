@@ -40,36 +40,37 @@ export async function GET(request: Request) {
 
         try {
           const email = user.email || '';
-          let isNewRegistration = false;
+          const rawEaCookie = cookieStore.get('godsmove_ea_details')?.value;
+          let eaDetails: any = null;
+          if (rawEaCookie) {
+            try {
+              eaDetails = JSON.parse(decodeURIComponent(rawEaCookie));
+            } catch (err) {
+              // ignore
+            }
+          }
+
+          const { syncCanonicalCustomer } = await import('@/lib/customer-sync');
 
           await prisma.$transaction(async (tx) => {
-            const profile = await tx.profile.findUnique({ where: { id: user.id } });
-            if (!profile) {
-              isNewRegistration = true;
-              await tx.profile.create({
-                data: {
-                  id: user.id,
-                  email,
-                  firstName: email.split('@')[0] || 'User',
-                  lastName: '',
-                  role: isSuperAdminEmail ? 'ADMIN' : 'CUSTOMER',
-                  tier: 'STANDARD',
-                },
-              });
-            } else if (isSuperAdminEmail && profile.role !== 'ADMIN') {
+            await syncCanonicalCustomer(tx, {
+              userId: user.id,
+              email,
+              role: isSuperAdminEmail ? 'ADMIN' : 'CUSTOMER',
+              details: eaDetails ? {
+                name: eaDetails.name,
+                phone: eaDetails.phone,
+                dob: eaDetails.dob,
+                gender: eaDetails.gender,
+              } : undefined,
+              googleMetadata: user.user_metadata,
+              isEarlyAccessRegistration: Boolean(eaDetails),
+            });
+
+            if (isSuperAdminEmail) {
               await tx.profile.update({
                 where: { id: user.id },
                 data: { role: 'ADMIN' },
-              });
-            }
-
-            const wallet = await tx.wallet.findUnique({ where: { profileId: user.id } });
-            if (!wallet) {
-              await tx.wallet.create({
-                data: {
-                  profileId: user.id,
-                  balance: 0,
-                },
               });
             }
           });
@@ -107,12 +108,14 @@ export async function GET(request: Request) {
         }
       }
 
-      // Clear the OAuth destination cookie now that we've used it
+      // Clear the OAuth destination cookie & Early Access details cookie now that we've used them
       const clearCookieHeader = 'godsmove_oauth_next=; path=/; max-age=0; SameSite=Lax';
+      const clearEaCookieHeader = 'godsmove_ea_details=; path=/; max-age=0; SameSite=Lax';
 
       // Build the redirect response
       const redirectResponse = NextResponse.redirect(`${origin}${next}`);
       redirectResponse.headers.append('Set-Cookie', clearCookieHeader);
+      redirectResponse.headers.append('Set-Cookie', clearEaCookieHeader);
       return redirectResponse;
     }
   }

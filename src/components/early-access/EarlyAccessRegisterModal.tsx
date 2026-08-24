@@ -132,6 +132,8 @@ export default function EarlyAccessRegisterModal({
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('godsmove_pending_action', JSON.stringify(pendingPayload));
+        const cookieVal = encodeURIComponent(JSON.stringify(pendingPayload.details));
+        document.cookie = `godsmove_ea_details=${cookieVal}; path=/; max-age=1800; SameSite=Lax`;
       }
 
       // Initiate Google OAuth with forceSelectAccount: true

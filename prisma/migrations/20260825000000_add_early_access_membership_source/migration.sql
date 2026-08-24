@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "MembershipSource" ADD VALUE IF NOT EXISTS 'EARLY_ACCESS';
