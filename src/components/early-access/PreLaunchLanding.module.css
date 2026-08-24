@@ -53,6 +53,12 @@
   box-sizing: border-box;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .logoWrap {
   cursor: pointer;
   display: flex;
@@ -77,7 +83,7 @@
   text-transform: uppercase;
 }
 
-/* Main Content Area — Spacious & Restrained */
+/* Main Content Area — Quiet, Spacious & Restrained */
 .mainContent {
   position: relative;
   z-index: 10;
@@ -103,6 +109,7 @@
   margin: 0 0 20px 0;
   text-transform: uppercase;
   max-width: 780px;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Supporting Copy */
@@ -114,6 +121,7 @@
   margin: 0 0 48px 0;
   max-width: 520px;
   letter-spacing: 0.01em;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 /* Unboxed Clean Editorial Privileges List */
@@ -131,7 +139,13 @@
   display: flex;
   align-items: baseline;
   gap: 20px;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+.stagger1 { animation-delay: 0.18s; }
+.stagger2 { animation-delay: 0.24s; }
+.stagger3 { animation-delay: 0.30s; }
+.stagger4 { animation-delay: 0.36s; }
 
 .privilegeNumber {
   font-family: var(--font-heading);
@@ -182,6 +196,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
 }
 
 .ctaButton {
@@ -208,13 +223,44 @@
 .ctaButton:hover:not(:disabled) {
   background: #FFFFFF;
   border-color: #C5A059;
-  transform: translateY(-2px);
-  box-shadow: 0 16px 44px rgba(197, 160, 89, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 40px rgba(197, 160, 89, 0.25);
 }
 
 .ctaButton:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Non-clickable status element for registered user (No button hover, no pointer cursor, no CTA shadow) */
+.registeredStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  color: #C5A059;
+  padding: 14px 28px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border-radius: 12px;
+  user-select: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.registeredStatusBadge:hover {
+  background: rgba(197, 160, 89, 0.14);
+  border-color: rgba(197, 160, 89, 0.5);
+}
+
+.checkIcon {
+  color: #C5A059;
+  flex-shrink: 0;
 }
 
 /* Footer */
@@ -253,6 +299,18 @@
   color: #C5A059;
 }
 
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Responsive Media Queries */
 @media (max-width: 1024px) {
   .header {
@@ -270,8 +328,12 @@
   .header {
     padding: 24px;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     align-items: center;
+  }
+  .headerRight {
+    width: 100%;
+    justify-content: space-between;
   }
   .mainHeading {
     font-size: 38px;
@@ -289,6 +351,11 @@
     width: 100%;
     max-width: 380px;
     padding: 16px 32px;
+  }
+  .registeredStatusBadge {
+    width: 100%;
+    max-width: 380px;
+    padding: 14px 20px;
   }
   .footer {
     padding: 24px;

@@ -10,7 +10,8 @@ import PreBookingBenefitsModal from '@/components/PreBookingBenefitsModal';
 import EarlyAccessSuccessModal from './EarlyAccessSuccessModal';
 import EarlyAccessLegalModal from './EarlyAccessLegalModal';
 import EarlyAccessRegisterModal from './EarlyAccessRegisterModal';
-import { Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import EarlyAccessAudio from './EarlyAccessAudio';
+import { Loader2, ArrowRight, Check } from 'lucide-react';
 import styles from './PreLaunchLanding.module.css';
 
 export default function PreLaunchLanding() {
@@ -99,7 +100,7 @@ export default function PreLaunchLanding() {
   }, [refreshProfile]);
 
   async function handleGetEarlyAccess() {
-    // 1. If already registered, show personalized concierge modal
+    // 1. If already registered, show concierge modal
     if (isRegistered) {
       setShowSuccessModal(true);
       return;
@@ -158,37 +159,37 @@ export default function PreLaunchLanding() {
             className={styles.logoImage}
           />
         </div>
-        <span className={styles.madeInIndiaTag}>
-          MADE IN INDIA · MODERN APPAREL
-        </span>
+
+        <div className={styles.headerRight}>
+          <EarlyAccessAudio />
+          <span className={styles.madeInIndiaTag}>
+            MADE IN INDIA · MODERN APPAREL
+          </span>
+        </div>
       </header>
 
-      {/* Main Editorial Hero Content — Quiet, Spacious & Restrained */}
+      {/* Main Editorial Hero Content */}
       <main className={styles.mainContent}>
         <h1 className={styles.mainHeading}>
-          {isRegistered
-            ? firstName
-              ? `${firstName.toUpperCase()}, YOUR PLACE IS RESERVED.`
-              : 'YOUR PLACE IS RESERVED.'
-            : 'THE FIRST RELEASE IS NEAR.'}
+          {isRegistered ? 'YOUR PLACE IS RESERVED.' : 'YOUR PLACE IN THE FIRST RELEASE.'}
         </h1>
 
         <p className={styles.supportingCopy}>
           {isRegistered
             ? "We'll be in touch when GODSMOVƎ is ready for you."
-            : 'Be among the first to experience the first GODSMOVƎ release.'}
+            : 'Be among the first to experience GODSMOVƎ.'}
         </p>
 
-        {/* Clean Editorial Privileges List (No boxed panel, No heavy card) */}
+        {/* Clean Editorial Privileges List */}
         <div className={styles.privilegesListWrap}>
-          <div className={styles.privilegeItem}>
+          <div className={`${styles.privilegeItem} ${styles.stagger1}`}>
             <span className={styles.privilegeNumber}>01</span>
             <span className={styles.privilegeText}>
               Up to ₹1,000 in assured shopping rewards
             </span>
           </div>
 
-          <div className={styles.privilegeItem}>
+          <div className={`${styles.privilegeItem} ${styles.stagger2}`}>
             <span className={styles.privilegeNumber}>02</span>
             <div className={styles.privilegeContent}>
               <span className={styles.privilegeText}>
@@ -204,14 +205,14 @@ export default function PreLaunchLanding() {
             </div>
           </div>
 
-          <div className={styles.privilegeItem}>
+          <div className={`${styles.privilegeItem} ${styles.stagger3}`}>
             <span className={styles.privilegeNumber}>03</span>
             <span className={styles.privilegeText}>
               Complimentary GODSMOVƎ launch gifts
             </span>
           </div>
 
-          <div className={styles.privilegeItem}>
+          <div className={`${styles.privilegeItem} ${styles.stagger4}`}>
             <span className={styles.privilegeNumber}>04</span>
             <span className={styles.privilegeText}>
               Exclusive privileges reserved for GODSMOVƎ members
@@ -219,28 +220,30 @@ export default function PreLaunchLanding() {
           </div>
         </div>
 
-        {/* ONE Dominant CTA */}
+        {/* Primary CTA / Registered Status Element */}
         <div className={styles.ctaWrap}>
-          <button
-            type="button"
-            onClick={handleGetEarlyAccess}
-            disabled={loading}
-            className={styles.ctaButton}
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : isRegistered ? (
-              <>
-                <ShieldCheck size={18} />
-                <span>EARLY ACCESS RESERVED</span>
-              </>
-            ) : (
-              <>
-                <span>GET EARLY ACCESS</span>
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
+          {isRegistered ? (
+            <div className={styles.registeredStatusBadge} onClick={() => setShowSuccessModal(true)}>
+              <Check size={15} className={styles.checkIcon} />
+              <span>EARLY ACCESS RESERVED</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGetEarlyAccess}
+              disabled={loading}
+              className={styles.ctaButton}
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <>
+                  <span>GET EARLY ACCESS</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          )}
         </div>
       </main>
 
@@ -287,6 +290,7 @@ export default function PreLaunchLanding() {
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         customerName={firstName}
+        isReturning={isRegistered}
       />
 
       {/* Early Access Legal Modal (Privacy & Terms Overlay) */}

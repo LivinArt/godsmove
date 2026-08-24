@@ -51,30 +51,34 @@
   flex-shrink: 0;
 }
 
-/* Popover Calendar Container */
+/* Popover Calendar Container — Centered & Mobile Responsive */
 .popover {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
-  width: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 32px));
+  max-width: 320px;
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  padding: 16px 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   z-index: 10050;
   box-sizing: border-box;
   animation: fadeIn 0.2s ease-out;
+  max-height: 380px;
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translate(-50%, -6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
   }
 }
 
@@ -83,21 +87,23 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
 }
 
 .navBtn {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #1A1918;
   cursor: pointer;
   transition: all 0.18s ease;
+  flex-shrink: 0;
 }
 
 .navBtn:hover:not(:disabled) {
@@ -115,16 +121,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1;
+  justify-content: center;
 }
 
 .selectMonth,
 .selectYear {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  padding: 4px 6px;
+  border-radius: 8px;
+  padding: 6px 8px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #1A1918;
   outline: none;
@@ -139,9 +147,10 @@
 .weekGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 2px;
+  margin-bottom: 6px;
   text-align: center;
+  width: 100%;
 }
 
 .weekHeader {
@@ -154,30 +163,32 @@
 .daysGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
   text-align: center;
+  width: 100%;
 }
 
 .emptySlot {
-  height: 32px;
+  height: 38px;
 }
 
 .dayBtn {
   background: transparent;
   border: none;
   border-radius: 50%;
-  height: 32px;
-  width: 32px;
+  height: 38px;
+  width: 38px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #1A1918;
   cursor: pointer;
   transition: all 0.18s ease;
+  box-sizing: border-box;
 }
 
 .dayBtn:hover:not(:disabled):not(.selected) {
@@ -199,7 +210,15 @@
 
 @media (max-width: 480px) {
   .popover {
-    width: 280px;
-    padding: 12px;
+    width: calc(100vw - 32px);
+    padding: 12px 8px;
+  }
+  .dayBtn {
+    height: 36px;
+    width: 36px;
+    font-size: 12px;
+  }
+  .emptySlot {
+    height: 36px;
   }
 }

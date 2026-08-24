@@ -8,9 +8,15 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   customerName?: string | null;
+  isReturning?: boolean;
 }
 
-export default function EarlyAccessSuccessModal({ isOpen, onClose, customerName }: Props) {
+export default function EarlyAccessSuccessModal({
+  isOpen,
+  onClose,
+  customerName,
+  isReturning = false,
+}: Props) {
   if (!isOpen) return null;
 
   const firstName = customerName ? customerName.trim().split(' ')[0].toUpperCase() : null;
@@ -29,15 +35,19 @@ export default function EarlyAccessSuccessModal({ isOpen, onClose, customerName 
 
         <div className={styles.badgeTag}>EARLY ACCESS CONFIRMED</div>
 
-        {firstName && (
-          <h2 className={styles.welcomeHeading}>
-            WELCOME BACK, {firstName}.
-          </h2>
-        )}
+        <h2 className={styles.welcomeHeading}>
+          {isReturning
+            ? firstName
+              ? `${firstName}, YOUR PLACE IS RESERVED.`
+              : 'YOUR PLACE IS RESERVED.'
+            : firstName
+            ? `WELCOME, ${firstName}.`
+            : 'WELCOME.'}
+        </h2>
 
         <div className={styles.content}>
           <p className={styles.primaryText}>
-            OUR CONCIERGE TEAM WILL NOTIFY YOU ONCE WE ARE LIVE.
+            Our concierge team will notify you once we are live.
           </p>
           <p className={styles.secondaryText}>
             THANK YOU FOR TRUSTING US.
@@ -53,17 +63,17 @@ export default function EarlyAccessSuccessModal({ isOpen, onClose, customerName 
             rel="noopener noreferrer"
             className={styles.contactItem}
           >
-            <span className={styles.contactLabel}>Instagram:</span>
+            <span className={styles.contactLabel}>INSTAGRAM</span>
             <span>@godsmove.in</span>
           </a>
 
           <a href="mailto:support@godsmove.in" className={styles.contactItem}>
-            <span className={styles.contactLabel}>Email:</span>
+            <span className={styles.contactLabel}>EMAIL</span>
             <span>support@godsmove.in</span>
           </a>
 
           <a href="tel:+918827175801" className={styles.contactItem}>
-            <span className={styles.contactLabel}>Concierge:</span>
+            <span className={styles.contactLabel}>CONCIERGE</span>
             <span>+91 8827175801</span>
           </a>
         </div>

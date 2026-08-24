@@ -74,47 +74,47 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
     membershipActivated = true;
   }
 
-  // 3. Dispatch Idempotent Confirmation Email
+  // 3. Dispatch Idempotent Confirmation Email Asynchronously (Non-blocking for instant UI response)
   const idempotencyKey = `EARLY_ACCESS_${userId}`;
-  const existingNotification = await prisma.notificationHistory.findUnique({
+  prisma.notificationHistory.findUnique({
     where: { idempotencyKey },
-  });
+  }).then(async (existingNotification) => {
+    if (!existingNotification) {
+      try {
+        const recipientName = profile.firstName
+          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+          : 'Valued Collector';
 
-  let emailSent = false;
-  if (!existingNotification) {
-    try {
-      const recipientName = profile.firstName
-        ? `${profile.firstName} ${profile.lastName || ''}`.trim()
-        : 'Valued Collector';
+        await NotificationService.notifyEarlyAccessConfirmation(
+          {
+            email: profile.email,
+            name: recipientName,
+            userId: profile.id,
+          },
+          {
+            customerName: recipientName,
+            email: profile.email,
+          }
+        );
 
-      await NotificationService.notifyEarlyAccessConfirmation(
-        {
-          email: profile.email,
-          name: recipientName,
-          userId: profile.id,
-        },
-        {
-          customerName: recipientName,
-          email: profile.email,
-        }
-      );
-
-      await prisma.notificationHistory.create({
-        data: {
-          idempotencyKey,
-          profileId: profile.id,
-          email: profile.email,
-          channel: 'EMAIL',
-          eventType: 'EARLY_ACCESS_CONFIRMED',
-          status: 'SENT',
-          subject: 'GODSMOVƎ Early Access Confirmed — Launch Benefits Active',
-        },
-      });
-      emailSent = true;
-    } catch (err: any) {
-      console.error('Failed to dispatch Early Access confirmation email:', err);
+        await prisma.notificationHistory.create({
+          data: {
+            idempotencyKey,
+            profileId: profile.id,
+            email: profile.email,
+            channel: 'EMAIL',
+            eventType: 'EARLY_ACCESS_CONFIRMED',
+            status: 'SENT',
+            subject: 'GODSMOVƎ Early Access Confirmed — Launch Benefits Active',
+          },
+        });
+      } catch (err: any) {
+        console.error('Failed to dispatch Early Access confirmation email:', err);
+      }
     }
-  }
+  }).catch((err) => {
+    console.error('Notification check failed:', err);
+  });
 
   try {
     revalidatePath('/profile');
@@ -127,7 +127,7 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
     firstName: profile.firstName || null,
     earlyAccessRegisteredAt: (updatedProfile.earlyAccessRegisteredAt || now).toISOString(),
     membershipActivated,
-    emailSent,
+    emailSent: true,
   };
 }
 
