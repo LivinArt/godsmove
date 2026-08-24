@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSiteMode } from '@/actions/site-config.actions';
 import { activateScheduledEarlyAccessMemberships } from '@/actions/early-access.actions';
-import { isStoreLaunched } from '@/lib/launch-config';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Production Automated Cron Endpoint for Early Access Membership Activation.
- * Runs on official store launch date (15 September 2026 00:00 IST).
- *
- * Vercel Cron or external scheduler invokes this endpoint.
- * Protected by CRON_SECRET authorization header in production.
+ * Early Access Membership Activation Endpoint.
+ * Storefront launch is controlled 100% by Admin via siteMode ('PRELAUNCH' vs 'NORMAL').
+ * Membership activation occurs when Admin switches the storefront to LIVE.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,19 +20,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { searchParams } = new URL(request.url);
-    const forceRun = searchParams.get('force') === 'true';
-
-    if (!isStoreLaunched() && !forceRun) {
+    const mode = await getSiteMode();
+    if (mode !== 'NORMAL') {
       return NextResponse.json({
         success: true,
         activatedCount: 0,
-        message: 'Store launch date has not arrived yet. Activation skipped.',
+        message: 'Storefront launch is controlled strictly via Admin Dashboard. Store is currently PRELAUNCH.',
       });
     }
 
-    const result = await activateScheduledEarlyAccessMemberships(forceRun);
-    return NextResponse.json({ success: true, ...result });
+    const result = await activateScheduledEarlyAccessMemberships(true);
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error in early access activation cron endpoint:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

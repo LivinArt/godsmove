@@ -1,20 +1,24 @@
 import { prisma } from '../src/lib/prisma';
-import { getOfficialLaunchDate, calculateMembershipExpiry, isStoreLaunched } from '../src/lib/launch-config';
+import { calculateMembershipExpiry } from '../src/lib/launch-config';
 
 async function runReconciliation() {
   const isExecute = process.argv.includes('--execute');
   const isDryRun = !isExecute;
 
+  const siteConfig = await prisma.siteConfig.findUnique({
+    where: { id: 'default_site_config' },
+  });
+  const siteMode = siteConfig?.siteMode || 'PRELAUNCH';
+  const storeLaunched = siteMode === 'NORMAL';
+
   console.log(`====================================================================`);
   console.log(`🔍 GODSMOVƎ EARLY ACCESS MEMBERSHIP RECONCILIATION SCRIPT`);
   console.log(`MODE: ${isDryRun ? 'DRY-RUN (NO DB MUTATIONS)' : 'EXECUTE (DATABASE MUTATIONS ENABLED)'}`);
-  console.log(`CANONICAL LAUNCH DATE: ${getOfficialLaunchDate().toISOString()}`);
+  console.log(`CURRENT STOREFRONT MODE: ${siteMode}`);
   console.log(`====================================================================\n`);
 
-  const launchDate = getOfficialLaunchDate();
-  const launchExpiry = calculateMembershipExpiry(launchDate);
   const now = new Date();
-  const storeLaunched = isStoreLaunched(now);
+  const nowExpiry = calculateMembershipExpiry(now);
 
   // Fetch all Early Access profiles
   const eaProfiles = await prisma.profile.findMany({
@@ -53,8 +57,8 @@ async function runReconciliation() {
     const currentExpiry = mem?.expiresAt ? mem.expiresAt.toISOString().split('T')[0] : 'N/A';
 
     let expectedStatus = storeLaunched ? 'ACTIVE' : 'SCHEDULED';
-    let expectedStart = (storeLaunched ? now : launchDate).toISOString().split('T')[0];
-    let expectedExpiry = (storeLaunched ? calculateMembershipExpiry(now) : launchExpiry).toISOString().split('T')[0];
+    let expectedStart = storeLaunched ? now.toISOString().split('T')[0] : 'UPON_LAUNCH';
+    let expectedExpiry = storeLaunched ? nowExpiry.toISOString().split('T')[0] : 'UPON_LAUNCH+1YR';
 
     const hasRewardTransaction = p.wallet?.transactions.some((t) =>
       t.description?.includes('Early Access Assured Reward')
@@ -102,8 +106,8 @@ async function runReconciliation() {
             profileId: p.id,
             status: expectedStatus as any,
             source: 'EARLY_ACCESS',
-            activatedAt: storeLaunched ? now : launchDate,
-            expiresAt: storeLaunched ? calculateMembershipExpiry(now) : launchExpiry,
+            activatedAt: storeLaunched ? now : now,
+            expiresAt: storeLaunched ? nowExpiry : nowExpiry,
             tier: 'VIP',
           },
         });
@@ -112,8 +116,8 @@ async function runReconciliation() {
           where: { id: mem.id },
           data: {
             status: expectedStatus as any,
-            activatedAt: storeLaunched ? now : launchDate,
-            expiresAt: storeLaunched ? calculateMembershipExpiry(now) : launchExpiry,
+            activatedAt: storeLaunched ? now : mem.activatedAt,
+            expiresAt: storeLaunched ? nowExpiry : mem.expiresAt,
           },
         });
       }

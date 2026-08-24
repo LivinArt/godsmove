@@ -1,44 +1,25 @@
 /**
  * CANONICAL GODSMOVƎ STORE LAUNCH CONFIGURATION
- * Single source of truth for the official website launch date.
+ * Sole launch authority is controlled via Admin Dashboard siteMode setting.
  *
- * BUSINESS LAUNCH INSTANT:
- * 15 September 2026, 00:00:00 IST (Indian Standard Time, UTC+5:30)
- * Equivalent UTC Instant: 2026-09-14T18:30:00.000Z
+ * There is NO automatic calendar-based launch.
+ * Storefront launch happens strictly when Admin clicks "SWITCH STOREFRONT TO LIVE".
  */
-
-export const GODSMOVE_LAUNCH_DATE_IST_TEXT = '15 September 2026, 00:00 IST';
-export const GODSMOVE_LAUNCH_DATE_ISO = process.env.GODSMOVE_LAUNCH_DATE || '2026-09-14T18:30:00.000Z';
-
-/**
- * Returns the canonical Date object for the official GODSMOVƎ store launch.
- */
-export function getOfficialLaunchDate(): Date {
-  const d = new Date(GODSMOVE_LAUNCH_DATE_ISO);
-  return isNaN(d.getTime()) ? new Date('2026-09-14T18:30:00.000Z') : d;
-}
 
 /**
  * Calculates 1-year membership expiry date from launch activation date.
- * Guarantees zero timezone or leap day drift (15 Sept 2026 -> 15 Sept 2027 IST).
+ * Guarantees exactly 1 year of VIP membership (365/366 days).
  */
-export function calculateMembershipExpiry(launchDate: Date = getOfficialLaunchDate()): Date {
-  const expiry = new Date(launchDate.getTime());
+export function calculateMembershipExpiry(activationDate: Date = new Date()): Date {
+  const expiry = new Date(activationDate.getTime());
   expiry.setFullYear(expiry.getFullYear() + 1);
   return expiry;
 }
 
 /**
- * Checks whether the official GODSMOVƎ launch date has arrived.
+ * Formats a Date into a human-readable IST string for Admin / Customer views.
  */
-export function isStoreLaunched(now: Date = new Date()): boolean {
-  return now.getTime() >= getOfficialLaunchDate().getTime();
-}
-
-/**
- * Formats a Date into a human-readable IST string.
- */
-export function formatLaunchDateIST(date: Date = getOfficialLaunchDate()): string {
+export function formatLaunchDateIST(date: Date = new Date()): string {
   try {
     return new Intl.DateTimeFormat('en-IN', {
       timeZone: 'Asia/Kolkata',
@@ -50,6 +31,6 @@ export function formatLaunchDateIST(date: Date = getOfficialLaunchDate()): strin
       hour12: true,
     }).format(date);
   } catch {
-    return GODSMOVE_LAUNCH_DATE_IST_TEXT;
+    return date.toISOString();
   }
 }

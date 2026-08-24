@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { calculateMembershipExpiry } from '@/lib/launch-config';
 
 async function requireAdmin() {
   if (process.env.SKIP_AUTH_CHECK === 'true') {
@@ -46,6 +47,7 @@ async function requireAdmin() {
 
 /**
  * Retrieves current storefront mode: 'PRELAUNCH' | 'NORMAL'
+ * Sole source of truth is DB siteConfig.siteMode
  */
 export async function getSiteMode(): Promise<'PRELAUNCH' | 'NORMAL'> {
   try {
@@ -63,52 +65,82 @@ export async function getSiteMode(): Promise<'PRELAUNCH' | 'NORMAL'> {
 }
 
 /**
- * One-Time Launch Switch: Admin converts store mode from PRELAUNCH -> NORMAL.
- * Does NOT delete or alter products, inventory, orders, customers, memberships, discounts, or payments.
+ * Admin One-Time Launch Action: Admin converts store mode from PRELAUNCH -> NORMAL (LIVE).
+ * Atomically activates all SCHEDULED Early Access memberships starting from exact launch instant.
  */
 export async function switchSiteModeToNormal() {
-  const admin = await requireAdmin();
-
-  const updated = await prisma.siteConfig.upsert({
-    where: { id: 'default_site_config' },
-    update: {
-      siteMode: 'NORMAL',
-      updatedBy: admin.id,
-    },
-    create: {
-      id: 'default_site_config',
-      siteMode: 'NORMAL',
-      updatedBy: admin.id,
-    },
-  });
-
-  try {
-    revalidatePath('/');
-    revalidatePath('/admin');
-    revalidatePath('/admin/settings');
-  } catch {}
-
-  return { success: true, siteMode: updated.siteMode };
+  return setSiteModeAction('NORMAL');
 }
 
 /**
- * Admin action to set site mode directly (for testing / admin toggling if needed)
+ * Admin action to set site mode directly ('PRELAUNCH' | 'NORMAL')
+ * When transitioning to NORMAL:
+ * 1. Atomically changes siteMode to NORMAL
+ * 2. Sets exact launch timestamp on memberships
+ * 3. Activates all SCHEDULED Early Access memberships starting at launch timestamp with 1-year expiry
+ * 4. Dispatches activation emails
  */
 export async function setSiteModeAction(mode: 'PRELAUNCH' | 'NORMAL') {
   const admin = await requireAdmin();
+  const launchNow = new Date();
+  const launchExpiry = calculateMembershipExpiry(launchNow);
 
-  const updated = await prisma.siteConfig.upsert({
-    where: { id: 'default_site_config' },
-    update: {
-      siteMode: mode,
-      updatedBy: admin.id,
-    },
-    create: {
-      id: 'default_site_config',
-      siteMode: mode,
-      updatedBy: admin.id,
-    },
-  });
+  let activatedCount = 0;
+
+  if (mode === 'NORMAL') {
+    // Atomic Database Transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.siteConfig.upsert({
+        where: { id: 'default_site_config' },
+        update: {
+          siteMode: 'NORMAL',
+          updatedBy: admin.id,
+        },
+        create: {
+          id: 'default_site_config',
+          siteMode: 'NORMAL',
+          updatedBy: admin.id,
+        },
+      });
+
+      // Activate all SCHEDULED Early Access memberships atomically starting at exact launch timestamp
+      const res = await tx.membership.updateMany({
+        where: {
+          source: 'EARLY_ACCESS',
+          status: 'SCHEDULED',
+        },
+        data: {
+          status: 'ACTIVE',
+          activatedAt: launchNow,
+          expiresAt: launchExpiry,
+        },
+      });
+      activatedCount = res.count;
+    });
+
+    // Trigger async activation emails for activated Early Access members
+    if (activatedCount > 0) {
+      try {
+        const { activateScheduledEarlyAccessMemberships } = await import('@/actions/early-access.actions');
+        await activateScheduledEarlyAccessMemberships(true, launchNow);
+      } catch (err) {
+        console.error('Error dispatching EA activation emails post launch:', err);
+      }
+    }
+  } else {
+    await prisma.siteConfig.upsert({
+      where: { id: 'default_site_config' },
+      update: {
+        siteMode: 'PRELAUNCH',
+        updatedBy: admin.id,
+      },
+      create: {
+        id: 'default_site_config',
+        siteMode: 'PRELAUNCH',
+        updatedBy: admin.id,
+      },
+    });
+  }
 
   try {
     revalidatePath('/');
@@ -116,5 +148,5 @@ export async function setSiteModeAction(mode: 'PRELAUNCH' | 'NORMAL') {
     revalidatePath('/admin/settings');
   } catch {}
 
-  return { success: true, siteMode: updated.siteMode };
+  return { success: true, siteMode: mode, activatedCount };
 }

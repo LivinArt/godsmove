@@ -284,15 +284,16 @@ export async function syncCanonicalCustomer(
 
   // 9. Membership Entitlement Provisioning (1-Year VIP Early Access Membership)
   let membershipActivated = false;
-  const { getOfficialLaunchDate, calculateMembershipExpiry, isStoreLaunched } = await import('@/lib/launch-config');
-  const launchDate = getOfficialLaunchDate();
-  const launchExpiry = calculateMembershipExpiry(launchDate);
-  const now = new Date();
-  const storeAlreadyLaunched = isStoreLaunched(now);
+  const { calculateMembershipExpiry } = await import('@/lib/launch-config');
+  const now = registrationTimestamp || new Date();
+  const nowExpiry = calculateMembershipExpiry(now);
+
+  const siteConfig = await tx.siteConfig.findUnique({ where: { id: 'default_site_config' } });
+  const storeAlreadyLaunched = siteConfig?.siteMode === 'NORMAL';
 
   const targetStatus = storeAlreadyLaunched ? 'ACTIVE' : ('SCHEDULED' as any);
-  const targetActivatedAt = storeAlreadyLaunched ? now : launchDate;
-  const targetExpiresAt = storeAlreadyLaunched ? calculateMembershipExpiry(now) : launchExpiry;
+  const targetActivatedAt = now;
+  const targetExpiresAt = storeAlreadyLaunched ? calculateMembershipExpiry(now) : nowExpiry;
 
   if (earlyAccessRegistered) {
     if (!profile.membership) {

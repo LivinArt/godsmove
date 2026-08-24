@@ -1,6 +1,6 @@
 import { prisma } from '../src/lib/prisma';
 import { syncCanonicalCustomer } from '../src/lib/customer-sync';
-import { getOfficialLaunchDate, calculateMembershipExpiry } from '../src/lib/launch-config';
+import { calculateMembershipExpiry } from '../src/lib/launch-config';
 import { activateScheduledEarlyAccessMemberships } from '../src/actions/early-access.actions';
 import { issueEarlyAccessRewardAction } from '../src/actions/admin-customer.actions';
 
@@ -12,7 +12,7 @@ async function runLifecycleQA() {
   let passedCases = 0;
   let failedCases = 0;
   const timestamp = Date.now();
-  const launchDate = getOfficialLaunchDate();
+  const launchDate = new Date();
   const launchExpiry = calculateMembershipExpiry(launchDate);
 
   function pass(caseName: string, detail: string) {
@@ -75,15 +75,12 @@ async function runLifecycleQA() {
     });
 
     const mem = await prisma.membership.findUnique({ where: { profileId: userId } });
-    const isBeforeLaunch = new Date() < launchDate;
 
-    if (isBeforeLaunch && mem?.status === 'SCHEDULED' && mem?.activatedAt.toISOString() === launchDate.toISOString()) {
-      pass('CASE 2: Membership does NOT start before launch date',
-        `ActivatedAt set to launch date (${mem.activatedAt.toISOString().split('T')[0]}), Status: SCHEDULED`);
-    } else if (!isBeforeLaunch) {
-      pass('CASE 2: Store is already launched (skipped before-launch check)', `Status: ${mem?.status}`);
+    if (mem?.status === 'SCHEDULED') {
+      pass('CASE 2: Membership remains SCHEDULED prior to Admin storefront launch',
+        `Status: SCHEDULED (VIP membership countdown holds until Admin launch)`);
     } else {
-      fail('CASE 2: Early Access registration before launch', `Incorrect activatedAt: ${mem?.activatedAt}`);
+      fail('CASE 2: Early Access registration before launch', `Incorrect status: ${mem?.status}`);
     }
   } catch (err: any) {
     fail('CASE 2: Early Access registration before launch', err.message);
@@ -91,10 +88,10 @@ async function runLifecycleQA() {
 
   // --- CASE 3: Launch activation ---
   try {
-    const res = await activateScheduledEarlyAccessMemberships(true);
+    const res = await activateScheduledEarlyAccessMemberships(true, launchDate);
 
     if (res.success && res.activatedCount >= 2) {
-      pass('CASE 3: Launch activation transitions SCHEDULED memberships to ACTIVE',
+      pass('CASE 3: Admin launch activation transitions SCHEDULED memberships to ACTIVE starting at launch instant',
         `Activated Count: ${res.activatedCount}, Message: "${res.message}"`);
     } else {
       fail('CASE 3: Launch activation', `Activation response: ${JSON.stringify(res)}`);
@@ -105,7 +102,7 @@ async function runLifecycleQA() {
 
   // --- CASE 4: Run activation twice (Idempotency) ---
   try {
-    const res = await activateScheduledEarlyAccessMemberships(true);
+    const res = await activateScheduledEarlyAccessMemberships(true, launchDate);
 
     if (res.success && res.activatedCount === 0) {
       pass('CASE 4: Re-running activation is idempotent (0 re-activations)',
@@ -233,14 +230,13 @@ async function runLifecycleQA() {
 
   // --- CASE 11: Timezone boundary check ---
   try {
-    const launchUTC = getOfficialLaunchDate();
-    const expiryUTC = calculateMembershipExpiry(launchUTC);
+    const expiryUTC = calculateMembershipExpiry(launchDate);
 
-    if (expiryUTC.getFullYear() - launchUTC.getFullYear() === 1 && expiryUTC.getMonth() === launchUTC.getMonth() && expiryUTC.getDate() === launchUTC.getDate()) {
+    if (expiryUTC.getFullYear() - launchDate.getFullYear() === 1 && expiryUTC.getMonth() === launchDate.getMonth() && expiryUTC.getDate() === launchDate.getDate()) {
       pass('CASE 11: Timezone boundary calculation has zero off-by-one day drift',
-        `Launch Date: ${launchUTC.toISOString()} -> Expiry: ${expiryUTC.toISOString()}`);
+        `Launch Date: ${launchDate.toISOString()} -> Expiry: ${expiryUTC.toISOString()}`);
     } else {
-      fail('CASE 11: Timezone boundary', `Drift detected: launch=${launchUTC.toISOString()}, expiry=${expiryUTC.toISOString()}`);
+      fail('CASE 11: Timezone boundary', `Drift detected: launch=${launchDate.toISOString()}, expiry=${expiryUTC.toISOString()}`);
     }
   } catch (err: any) {
     fail('CASE 11: Timezone boundary', err.message);
@@ -248,13 +244,13 @@ async function runLifecycleQA() {
 
   // --- CASE 12: Concurrent activation safety ---
   try {
-    const p1 = activateScheduledEarlyAccessMemberships(true);
-    const p2 = activateScheduledEarlyAccessMemberships(true);
+    const p1 = activateScheduledEarlyAccessMemberships(true, launchDate);
+    const p2 = activateScheduledEarlyAccessMemberships(true, launchDate);
     const [res1, res2] = await Promise.all([p1, p2]);
 
     const totalActivated = res1.activatedCount + res2.activatedCount;
     // Sequential re-check to guarantee complete idempotency
-    const res3 = await activateScheduledEarlyAccessMemberships(true);
+    const res3 = await activateScheduledEarlyAccessMemberships(true, launchDate);
 
     if (res3.activatedCount === 0) {
       pass('CASE 12: Concurrent activation requests run safely with zero double activations',

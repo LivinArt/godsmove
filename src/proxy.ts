@@ -57,6 +57,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── PRELAUNCH ROUTE GATE ─────────────────────────────────────────────
+  // Operational routes exempt from PRELAUNCH lock:
   const isOperationalRoute =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/api') ||
@@ -69,44 +70,38 @@ export async function proxy(request: NextRequest) {
     pathname === '/favicon.ico';
 
   if (!isOperationalRoute) {
-    const launchIso = process.env.GODSMOVE_LAUNCH_DATE || '2026-09-14T18:30:00.000Z';
-    const launchTime = new Date(launchIso).getTime();
-    const isTimeLaunched = Date.now() >= launchTime;
+    try {
+      const origin = request.nextUrl.origin;
+      const modeRes = await fetch(`${origin}/api/site-mode`, {
+        headers: { 'x-internal-middleware-check': 'true' },
+        cache: 'no-store',
+      });
 
-    if (!isTimeLaunched) {
-      try {
-        const origin = request.nextUrl.origin;
-        const modeRes = await fetch(`${origin}/api/site-mode`, {
-          headers: { 'x-internal-middleware-check': 'true' },
-          cache: 'no-store',
-        });
-
-        if (modeRes.ok) {
-          const data = await modeRes.json();
-          if (data?.siteMode !== 'NORMAL' && pathname !== '/') {
-            const url = request.nextUrl.clone();
-            url.pathname = '/';
-            return NextResponse.rewrite(url);
-          }
-        }
-      } catch {
-        if (pathname !== '/') {
+      if (modeRes.ok) {
+        const data = await modeRes.json();
+        if (data?.siteMode !== 'NORMAL' && pathname !== '/') {
           const url = request.nextUrl.clone();
           url.pathname = '/';
           return NextResponse.rewrite(url);
         }
       }
+    } catch {
+      if (pathname !== '/') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.rewrite(url);
+      }
     }
   }
 
   // ── PROTECTED ROUTES PROTECTION ────────────────────────────────────────
-  const isProtectedRoute = 
-    pathname.startsWith('/profile') || 
-    pathname.startsWith('/checkout') || 
-    pathname.startsWith('/wishlist') || 
-    pathname.startsWith('/orders') || 
-    pathname.startsWith('/wallet') || 
-    pathname.startsWith('/returns') || 
+  const isProtectedRoute =
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/wishlist') ||
+    pathname.startsWith('/orders') ||
+    pathname.startsWith('/wallet') ||
+    pathname.startsWith('/returns') ||
     pathname.startsWith('/cart');
 
   // Redirect unauthenticated storefront protected routes directly to home page (no standalone /login page)

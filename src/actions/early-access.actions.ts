@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { getOfficialLaunchDate, calculateMembershipExpiry, isStoreLaunched } from '@/lib/launch-config';
+import { calculateMembershipExpiry } from '@/lib/launch-config';
 
 async function requireAdmin() {
   if (process.env.SKIP_AUTH_CHECK === 'true') {
@@ -46,21 +46,12 @@ async function requireAdmin() {
 }
 
 /**
- * Server-Side Idempotent Launch Activation Job / Action
- * Transitions all SCHEDULED Early Access memberships to ACTIVE on store launch.
+ * Server-Side Idempotent Launch Activation Action
+ * Transitions all SCHEDULED Early Access memberships to ACTIVE upon Admin storefront launch.
  */
-export async function activateScheduledEarlyAccessMemberships(forceLaunch: boolean = false) {
-  const now = new Date();
-  const launchDate = getOfficialLaunchDate();
+export async function activateScheduledEarlyAccessMemberships(forceLaunch: boolean = true, launchDateOverride?: Date) {
+  const launchDate = launchDateOverride || new Date();
   const launchExpiry = calculateMembershipExpiry(launchDate);
-
-  if (!forceLaunch && !isStoreLaunched(now)) {
-    return {
-      success: false,
-      message: `Store has not launched yet. Launch date is ${launchDate.toISOString()}`,
-      activatedCount: 0,
-    };
-  }
 
   // 1. Find all SCHEDULED Early Access memberships
   const scheduledMemberships = await prisma.membership.findMany({
