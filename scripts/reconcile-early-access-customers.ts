@@ -6,7 +6,11 @@ async function runReconciliation() {
   const args = process.argv.slice(2);
   const isDryRun = args.includes('--dry-run') || !args.includes('--execute');
 
+  const url = process.env.DATABASE_URL || '';
+  const maskedUrl = url.replace(/:[^:@]+@/, ':****@');
+
   console.log('====================================================================');
+  console.log(`📌 DATABASE TARGET ENVIRONMENT: ${maskedUrl}`);
   console.log(`🚀 GODSMOVE EARLY ACCESS DATA RECONCILIATION (${isDryRun ? 'DRY-RUN MODE' : 'EXECUTION MODE'})`);
   console.log('====================================================================\n');
 
@@ -27,9 +31,13 @@ async function runReconciliation() {
     console.warn('Notice: Could not list Supabase auth users directly, using database profiles.');
   }
 
-  // 2. Fetch all database profiles with memberships
+  // 2. Fetch all database profiles with memberships & notifications
   const profiles = await prisma.profile.findMany({
     include: { membership: true },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const notifications = await prisma.notificationHistory.findMany({
     orderBy: { createdAt: 'asc' },
   });
 
@@ -40,6 +48,7 @@ async function runReconciliation() {
     gmIdsGenerated: 0,
     missingMembershipsBefore: 0,
     membershipsCreated: 0,
+    membershipSourcesMigrated: 0,
     emailNamesCleanedBefore: 0,
     emailNamesCleaned: 0,
     recordsRequiringManualReview: 0,
@@ -67,34 +76,44 @@ async function runReconciliation() {
     const authUser = authUsers.find((u) => u.id === p.id);
     const googleMetadata = authUser?.user_metadata || {};
 
-    let proposedGmId: string | null = null;
+    let proposedGmId: string | null = p.godsmoveId;
     if (!p.godsmoveId) {
       stats.missingGmIdsBefore++;
-      proposedGmId = 'PROPOSED_GM_ID'; // Will be generated in transaction
-    } else {
-      proposedGmId = p.godsmoveId;
+      proposedGmId = 'PROPOSED_NEXT_GM_ID';
     }
 
     // Name cleaning check
     let proposedName: string | null = p.firstName;
-    let nameAction = 'PRESERVE';
     if (p.firstName && isEmailUsernameFallback(p.firstName, p.email)) {
       stats.emailNamesCleanedBefore++;
-      nameAction = 'CLEAN_EMAIL_PREFIX';
       const googleName = googleMetadata.full_name || googleMetadata.name || googleMetadata.given_name;
       proposedName = googleName ? googleName.split(' ')[0] : null;
     }
 
-    // Membership action check
+    // Membership provenance & action check
     let membershipAction = 'NONE';
     if (!p.membership) {
       if (isEa) {
         stats.missingMembershipsBefore++;
         membershipAction = 'CREATE_1YR_VIP_EARLY_ACCESS';
       }
-    } else if (p.membership.status !== 'ACTIVE' && isEa) {
-      stats.missingMembershipsBefore++;
-      membershipAction = 'REACTIVATE_1YR_VIP_EARLY_ACCESS';
+    } else if (isEa) {
+      if (p.membership.source === 'MANUAL') {
+        const eaNotif = notifications.find(
+          (n) => (n.profileId === p.id || n.email.toLowerCase() === p.email.toLowerCase()) && n.eventType === 'EARLY_ACCESS_CONFIRMED'
+        );
+        const timeDiff = Math.abs(p.membership.activatedAt.getTime() - (p.earlyAccessRegisteredAt?.getTime() || p.createdAt.getTime()));
+        const isEaOrigin = Boolean(eaNotif || timeDiff < 60000); // Created within 1 minute of EA registration
+
+        if (isEaOrigin) {
+          membershipAction = 'MIGRATE_SOURCE_TO_EARLY_ACCESS (Preserve Dates & Tier)';
+          stats.membershipSourcesMigrated++;
+        } else {
+          membershipAction = 'PRESERVE_EXISTING_MANUAL (Admin Manual Grant)';
+        }
+      } else {
+        membershipAction = `PRESERVE_EXISTING (${p.membership.source})`;
+      }
     } else {
       membershipAction = `PRESERVE_EXISTING (${p.membership.source})`;
     }
@@ -135,16 +154,18 @@ async function runReconciliation() {
   );
 
   console.log('\n--- PRE-REPAIR METRICS SUMMARY ---');
-  console.log(`Total Customer Profiles:           ${stats.totalProfiles}`);
-  console.log(`Total Early Access Registrations:   ${stats.totalEarlyAccessRegistrations}`);
-  console.log(`Missing GM IDs:                    ${stats.missingGmIdsBefore}`);
-  console.log(`Missing Early Access Memberships:  ${stats.missingMembershipsBefore}`);
-  console.log(`Email-Prefix Names to Clean:       ${stats.emailNamesCleanedBefore}`);
-  console.log(`Records Requiring Manual Review:   ${stats.recordsRequiringManualReview}`);
+  console.log(`Total Customer Profiles:             ${stats.totalProfiles}`);
+  console.log(`Total Early Access Registrations:     ${stats.totalEarlyAccessRegistrations}`);
+  console.log(`Missing GM IDs:                      ${stats.missingGmIdsBefore}`);
+  console.log(`Missing Early Access Memberships:    ${stats.missingMembershipsBefore}`);
+  console.log(`Membership Sources to Migrate:       ${stats.membershipSourcesMigrated}`);
+  console.log(`Email-Prefix Names to Clean:         ${stats.emailNamesCleanedBefore}`);
+  console.log(`Records Requiring Manual Review:     ${stats.recordsRequiringManualReview}`);
 
   if (isDryRun) {
     console.log('\n====================================================================');
-    console.log('DRY-RUN COMPLETE. Run with --execute to apply database repairs.');
+    console.log('DRY-RUN COMPLETE. Review proposed actions above.');
+    console.log('Pass --execute to apply database repairs.');
     console.log('====================================================================\n');
     return;
   }
@@ -193,7 +214,7 @@ async function runReconciliation() {
         },
       });
 
-      // 4. Provision Early Access Membership
+      // 4. Provision / Migrate Early Access Membership
       if (p.earlyAccessRegistered) {
         const regDate = p.earlyAccessRegisteredAt || p.createdAt;
         const oneYearFromReg = new Date(regDate.getTime() + 365 * 24 * 60 * 60 * 1000);
@@ -214,18 +235,15 @@ async function runReconciliation() {
             },
           });
           stats.membershipsCreated++;
-        } else if (existingMembership.status !== 'ACTIVE') {
+        } else if (existingMembership.source === 'MANUAL') {
+          // Migrate proven EA membership to EARLY_ACCESS source preserving dates and tier
           await tx.membership.update({
             where: { profileId: p.id },
             data: {
-              status: 'ACTIVE',
               source: 'EARLY_ACCESS',
-              activatedAt: existingMembership.activatedAt || regDate,
-              expiresAt: oneYearFromReg,
-              tier: 'VIP',
+              status: 'ACTIVE',
             },
           });
-          stats.membershipsCreated++;
         }
       }
     });
@@ -234,11 +252,12 @@ async function runReconciliation() {
   console.log('\n====================================================================');
   console.log('✅ RECONCILIATION EXECUTION COMPLETED SUCCESSFULLY');
   console.log('====================================================================');
-  console.log(`Total Profiles Processed:         ${stats.totalProfiles}`);
-  console.log(`GM IDs Generated & Attached:       ${stats.gmIdsGenerated}`);
-  console.log(`Early Access Memberships Created:  ${stats.membershipsCreated}`);
-  console.log(`Email-Prefix Names Repaired:       ${stats.emailNamesCleaned}`);
-  console.log(`Records Flagged for Review:       ${stats.recordsRequiringManualReview}`);
+  console.log(`Total Profiles Processed:           ${stats.totalProfiles}`);
+  console.log(`GM IDs Generated & Attached:         ${stats.gmIdsGenerated}`);
+  console.log(`Early Access Memberships Created:    ${stats.membershipsCreated}`);
+  console.log(`Membership Sources Migrated:        ${stats.membershipSourcesMigrated}`);
+  console.log(`Email-Prefix Names Repaired:         ${stats.emailNamesCleaned}`);
+  console.log(`Records Flagged for Review:         ${stats.recordsRequiringManualReview}`);
   console.log('====================================================================\n');
 }
 

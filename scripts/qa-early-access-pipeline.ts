@@ -23,15 +23,26 @@ async function runPipelineQA() {
   }
 
   const timestamp = Date.now();
+  const createdUserIds: string[] = [];
+  let createdOrderId: string | null = null;
+
+  const user1Id = `qa_pipeline_u1_${timestamp}`;
+  const user5Id = `qa_pipeline_u5_${timestamp}`;
+  const user7Id = `qa_pipeline_u7_${timestamp}`;
+  const user8Id = `qa_pipeline_u8_${timestamp}`;
+  const user10AId = `qa_pipeline_u10a_${timestamp}`;
+  const user10BId = `qa_pipeline_u10b_${timestamp}`;
+  const user15Id = `qa_pipeline_u15_${timestamp}`;
+
+  createdUserIds.push(user1Id, user5Id, user7Id, user8Id, user10AId, user10BId, user15Id);
 
   try {
     // -------------------------------------------------------------------------
     // CASE 1: New Early Access user registration
     // -------------------------------------------------------------------------
-    const user1Id = `qa_pipeline_u1_${timestamp}`;
     const user1Email = `qa_pipeline_u1_${timestamp}@godsmove.test`;
 
-    const p1 = await prisma.profile.create({
+    await prisma.profile.create({
       data: {
         id: user1Id,
         email: user1Email,
@@ -39,7 +50,7 @@ async function runPipelineQA() {
       },
     });
 
-    const reg1Res = await executeEarlyAccessRegistration(user1Id, {
+    await executeEarlyAccessRegistration(user1Id, {
       name: 'Rohan Sharma',
       phone: '9876543210',
       dob: '2000-01-15',
@@ -70,7 +81,7 @@ async function runPipelineQA() {
     // CASE 2: Existing customer registration (reuses profile & GM ID)
     // -------------------------------------------------------------------------
     const initialGmId = dbP1?.godsmoveId;
-    const reg2Res = await executeEarlyAccessRegistration(user1Id, {
+    await executeEarlyAccessRegistration(user1Id, {
       name: 'Rohan Sharma Updated',
     });
 
@@ -123,7 +134,6 @@ async function runPipelineQA() {
     // -------------------------------------------------------------------------
     // CASE 5: Missing GM ID repair
     // -------------------------------------------------------------------------
-    const user5Id = `qa_pipeline_u5_${timestamp}`;
     const user5Email = `qa_pipeline_u5_${timestamp}@godsmove.test`;
 
     await prisma.profile.create({
@@ -163,7 +173,6 @@ async function runPipelineQA() {
     // -------------------------------------------------------------------------
     // CASE 7: Non-Early Access customer isolation
     // -------------------------------------------------------------------------
-    const user7Id = `qa_pipeline_u7_${timestamp}`;
     const user7Email = `qa_pipeline_u7_${timestamp}@godsmove.test`;
 
     await prisma.profile.create({
@@ -192,7 +201,6 @@ async function runPipelineQA() {
     // -------------------------------------------------------------------------
     // CASE 8: User-submitted data survives OAuth simulation
     // -------------------------------------------------------------------------
-    const user8Id = `qa_pipeline_u8_${timestamp}`;
     const user8Email = `qa_pipeline_u8_${timestamp}@godsmove.test`;
 
     await prisma.profile.create({
@@ -240,9 +248,6 @@ async function runPipelineQA() {
     // -------------------------------------------------------------------------
     // CASE 10: Concurrency safety
     // -------------------------------------------------------------------------
-    const user10AId = `qa_pipeline_u10a_${timestamp}`;
-    const user10BId = `qa_pipeline_u10b_${timestamp}`;
-
     await prisma.profile.create({ data: { id: user10AId, email: `u10a_${timestamp}@test.com` } });
     await prisma.profile.create({ data: { id: user10BId, email: `u10b_${timestamp}@test.com` } });
 
@@ -300,6 +305,7 @@ async function runPipelineQA() {
         shippingAddress: { city: 'Mumbai', pincode: '400001' },
       },
     });
+    createdOrderId = testOrder.id;
 
     const fetchedOrder = await prisma.order.findUnique({
       where: { id: testOrder.id },
@@ -313,14 +319,13 @@ async function runPipelineQA() {
     );
 
     // -------------------------------------------------------------------------
-    // CASE 14: Reconciliation idempotency
+    // CASE 14: Reconciliation script idempotency
     // -------------------------------------------------------------------------
     assert(true, 'CASE 14: Reconciliation script idempotency', 'Reconciliation script verified dry-run and execution');
 
     // -------------------------------------------------------------------------
     // CASE 15: Paid membership preservation
     // -------------------------------------------------------------------------
-    const user15Id = `qa_pipeline_u15_${timestamp}`;
     await prisma.profile.create({
       data: {
         id: user15Id,
@@ -367,27 +372,33 @@ async function runPipelineQA() {
       `Admin record GM ID: ${customerInAdmin?.godsmoveId}, EA: ${customerInAdmin?.earlyAccessRegistered}`
     );
 
-    // -------------------------------------------------------------------------
-    // CLEANUP QA TEST DATA
-    // -------------------------------------------------------------------------
-    console.log('\nCleaning up QA test records...');
-    await prisma.order.deleteMany({ where: { id: testOrder.id } });
-    await prisma.notificationHistory.deleteMany({
-      where: { profileId: { in: [user1Id, user5Id, user7Id, user8Id, user10AId, user10BId, user15Id] } },
-    });
-    await prisma.membership.deleteMany({
-      where: { profileId: { in: [user1Id, user5Id, user7Id, user8Id, user10AId, user10BId, user15Id] } },
-    });
-    await prisma.wallet.deleteMany({
-      where: { profileId: { in: [user1Id, user5Id, user7Id, user8Id, user10AId, user10BId, user15Id] } },
-    });
-    await prisma.profile.deleteMany({
-      where: { id: { in: [user1Id, user5Id, user7Id, user8Id, user10AId, user10BId, user15Id] } },
-    });
-
   } catch (err: any) {
     console.error('CRITICAL QA PIPELINE ERROR:', err);
     failed++;
+  } finally {
+    // -------------------------------------------------------------------------
+    // MANDATORY GUARANTEED CLEANUP OF ALL QA TEST ARTIFACTS
+    // -------------------------------------------------------------------------
+    console.log('\nCleaning up QA test records safely...');
+    if (createdOrderId) {
+      await prisma.order.deleteMany({ where: { id: createdOrderId } });
+    }
+    await prisma.notificationHistory.deleteMany({
+      where: { profileId: { in: createdUserIds } },
+    });
+    await prisma.membership.deleteMany({
+      where: { profileId: { in: createdUserIds } },
+    });
+    await prisma.walletTransaction.deleteMany({
+      where: { wallet: { profileId: { in: createdUserIds } } },
+    });
+    await prisma.wallet.deleteMany({
+      where: { profileId: { in: createdUserIds } },
+    });
+    await prisma.profile.deleteMany({
+      where: { id: { in: createdUserIds } },
+    });
+    console.log('✅ QA test artifact cleanup complete.');
   }
 
   console.log('\n====================================================================');

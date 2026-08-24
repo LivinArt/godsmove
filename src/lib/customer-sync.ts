@@ -37,7 +37,7 @@ export async function generateUniqueGodsmoveId(
 
   let maxNum = 0;
   for (const p of existingProfiles) {
-    if (p.godsmoveId) {
+    if (p.godsmoveId && !p.godsmoveId.startsWith('GM-QA-')) {
       const parts = p.godsmoveId.split('-');
       if (parts.length === 2) {
         const num = parseInt(parts[1], 10);
