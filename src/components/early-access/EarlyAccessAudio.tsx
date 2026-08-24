@@ -6,11 +6,7 @@ import styles from './EarlyAccessAudio.module.css';
 
 export default function EarlyAccessAudio() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const isSetupRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Check saved local preference
@@ -20,86 +16,48 @@ export default function EarlyAccessAudio() {
     }
   }, []);
 
-  // Web Audio Ambient Synthesizer — Solo Violin / Warm Archival Drone
-  function startAmbientSynth() {
-    if (isSetupRef.current) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
+  useEffect(() => {
+    // Initialize HTML5 Audio instance with low-volume ambient audio
+    const audio = new Audio('/audio/early-access-ambient.mp3');
+    audio.loop = true;
+    audio.volume = 0.15;
+    audioRef.current = audio;
 
-      const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, []);
 
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0, ctx.currentTime);
-      masterGain.connect(ctx.destination);
-      gainNodeRef.current = masterGain;
+  // Handle Play / Pause based on state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-      // Frequencies for a warm solo violin A minor chord texture (A3, E4, C5)
-      const freqs = [220.0, 329.63, 523.25];
-
-      freqs.forEach((freq) => {
-        const osc = ctx.createOscillator();
-        const oscGain = ctx.createGain();
-
-        // Sawtooth / Warm violin harmonic blend
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-        // Lowpass filter for smooth, intimate string body tone
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(420, ctx.currentTime);
-
-        // Slight LFO vibrato for natural solo violin string feel
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
-        lfo.frequency.setValueAtTime(4.8, ctx.currentTime); // 4.8 Hz vibrato
-        lfoGain.gain.setValueAtTime(2.5, ctx.currentTime);
-        lfo.connect(osc.frequency);
-        lfo.start();
-
-        oscGain.gain.setValueAtTime(0.12, ctx.currentTime);
-        osc.connect(filter);
-        filter.connect(oscGain);
-        oscGain.connect(masterGain);
-        osc.start();
-      });
-
-      // Fade in master gain over 1.5 seconds
-      masterGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 1.5);
-      isSetupRef.current = true;
-      setIsPlaying(true);
-    } catch (e) {
-      console.error('Ambient audio setup error:', e);
-    }
-  }
-
-  function stopAmbientSynth() {
-    if (gainNodeRef.current && audioCtxRef.current) {
-      try {
-        const ctx = audioCtxRef.current;
-        gainNodeRef.current.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
-        setTimeout(() => {
-          ctx.close();
-          audioCtxRef.current = null;
-          gainNodeRef.current = null;
-          isSetupRef.current = false;
-          setIsPlaying(false);
-        }, 800);
-      } catch (e) {
-        setIsPlaying(false);
+    if (isEnabled) {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          // Autoplay blocked by browser policy until user click
+          console.log('Audio playback waiting for user interaction:', err.message);
+        });
       }
+    } else {
+      audio.pause();
     }
-  }
+  }, [isEnabled]);
 
-  // Handle visibility change (pause on tab switch)
+  // Handle Visibility Change (pause when tab hidden)
   useEffect(() => {
     function handleVisibility() {
-      if (document.hidden && audioCtxRef.current && audioCtxRef.current.state === 'running') {
-        audioCtxRef.current.suspend();
-      } else if (!document.hidden && audioCtxRef.current && audioCtxRef.current.state === 'suspended' && isEnabled) {
-        audioCtxRef.current.resume();
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (document.hidden) {
+        audio.pause();
+      } else if (!document.hidden && isEnabled) {
+        audio.play().catch(() => {});
       }
     }
 
@@ -109,35 +67,29 @@ export default function EarlyAccessAudio() {
     };
   }, [isEnabled]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      stopAmbientSynth();
-    };
-  }, []);
-
   function toggleSound() {
     if (isEnabled) {
       setIsEnabled(false);
       localStorage.setItem('godsmove_early_access_sound', 'disabled');
-      stopAmbientSynth();
     } else {
       setIsEnabled(true);
       localStorage.setItem('godsmove_early_access_sound', 'enabled');
-      startAmbientSynth();
     }
   }
 
   return (
     <button
       type="button"
-      className={styles.soundControl}
+      className={styles.soundIconButton}
       onClick={toggleSound}
-      title={isEnabled ? 'Mute Background Audio' : 'Enable Background Audio'}
+      aria-label={isEnabled ? 'Mute sound' : 'Enable sound'}
+      title={isEnabled ? 'Mute sound' : 'Enable sound'}
     >
-      <span className={styles.indicatorDot} style={{ background: isEnabled ? '#C5A059' : 'rgba(250,248,245,0.3)' }} />
-      {isEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-      <span className={styles.label}>{isEnabled ? 'SOUND ON' : 'SOUND'}</span>
+      {isEnabled ? (
+        <Volume2 size={16} className={styles.iconActive} />
+      ) : (
+        <VolumeX size={16} className={styles.iconMuted} />
+      )}
     </button>
   );
 }

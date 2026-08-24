@@ -69,21 +69,21 @@ export default function PreLaunchLanding() {
           }
         }
 
-        if (details) {
-          await updateMyProfileOnboarding({
-            firstName: details.name,
-            phone: details.phone,
-            dob: details.dob,
-            gender: details.gender,
-          });
-          await refreshProfile();
-        }
+        const onboardingPayload = details
+          ? {
+              firstName: details.name,
+              phone: details.phone,
+              dob: details.dob,
+              gender: details.gender,
+            }
+          : undefined;
 
-        const res = await registerEarlyAccessAction();
+        const res = await registerEarlyAccessAction(undefined, onboardingPayload);
         if (res.success) {
           setIsRegistered(true);
           if (res.firstName) setRegisteredName(res.firstName);
           setShowSuccessModal(true);
+          refreshProfile();
         }
       } catch (err) {
         console.error('Early Access registration error:', err);

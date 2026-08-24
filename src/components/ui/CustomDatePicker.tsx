@@ -37,6 +37,7 @@ export default function CustomDatePicker({
   id,
 }: CustomDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
@@ -57,20 +58,51 @@ export default function CustomDatePicker({
     }
   }, [value]);
 
-  // Close calendar on click outside
+  // Handle click outside and Escape key
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
+
+  // Viewport-aware positioning on open
+  function handleTriggerClick() {
+    if (disabled) return;
+
+    if (!isOpen && containerRef.current) {
+      // Dismiss active soft keyboard to free up mobile viewport
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const spaceBelow = vh - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // If space below is less than calendar height (330px) and space above is greater, flip upwards
+      setOpenUpwards(spaceBelow < 330 && spaceAbove > spaceBelow);
+    }
+
+    setIsOpen(!isOpen);
+  }
 
   // Format displayed value as DD / MM / YYYY
   const formattedDisplay = validValue
@@ -80,7 +112,7 @@ export default function CustomDatePicker({
       )} / ${validValue.getFullYear()}`
     : '';
 
-  // Generate Year Options (e.g. 1930 to currentYear)
+  // Generate Year Options (1930 to currentYear)
   const years = Array.from({ length: currentYear - 1930 + 1 }, (_, i) => currentYear - i);
 
   // Month navigation
@@ -124,7 +156,7 @@ export default function CustomDatePicker({
     <div className={styles.datePickerContainer} ref={containerRef}>
       <div
         className={`${styles.inputTrigger} ${isOpen ? styles.active : ''} ${disabled ? styles.disabled : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleTriggerClick}
         tabIndex={disabled ? -1 : 0}
         id={id}
         role="button"
@@ -138,7 +170,7 @@ export default function CustomDatePicker({
       </div>
 
       {isOpen && (
-        <div className={styles.popover}>
+        <div className={`${styles.popover} ${openUpwards ? styles.popoverUpward : ''}`}>
           {/* Header Controls: Month & Year Selectors */}
           <div className={styles.header}>
             <button

@@ -1,35 +1,32 @@
-.soundControl {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.soundIconButton {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-family: var(--font-heading);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: rgba(250, 248, 245, 0.7);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(250, 248, 245, 0.65);
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.soundControl:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FAF8F5;
+.soundIconButton:hover {
+  background: rgba(255, 255, 255, 0.1);
   border-color: rgba(197, 160, 89, 0.4);
+  color: #FAF8F5;
+  transform: scale(1.05);
 }
 
-.indicatorDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+.iconActive {
+  color: #C5A059;
 }
 
-.label {
-  text-transform: uppercase;
+.iconMuted {
+  color: rgba(250, 248, 245, 0.45);
 }

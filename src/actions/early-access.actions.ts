@@ -15,7 +15,17 @@ async function getAuthUser() {
   }
 }
 
-export async function registerEarlyAccessAction(userIdOverride?: string) {
+export interface EarlyAccessRegistrationPayload {
+  firstName?: string;
+  phone?: string;
+  dob?: string;
+  gender?: string;
+}
+
+export async function registerEarlyAccessAction(
+  userIdOverride?: string,
+  onboardingDetails?: EarlyAccessRegistrationPayload
+) {
   let userId = userIdOverride;
 
   if (!userId) {
@@ -39,14 +49,22 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
   const now = new Date();
   const oneYearFromNow = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
-  // 1. Update Profile Early Access state
+  // Prepare profile update data, merging onboarding details if provided
+  const updateData: any = {
+    earlyAccessRegistered: true,
+    earlyAccessRegisteredAt: profile.earlyAccessRegisteredAt || now,
+    earlyAccessBenefitsEligible: true,
+  };
+
+  if (onboardingDetails?.firstName) updateData.firstName = onboardingDetails.firstName;
+  if (onboardingDetails?.phone) updateData.phone = onboardingDetails.phone;
+  if (onboardingDetails?.dob) updateData.dob = new Date(onboardingDetails.dob);
+  if (onboardingDetails?.gender) updateData.gender = onboardingDetails.gender;
+
+  // 1. Update Profile Early Access & onboarding details atomically
   const updatedProfile = await prisma.profile.update({
     where: { id: userId },
-    data: {
-      earlyAccessRegistered: true,
-      earlyAccessRegisteredAt: profile.earlyAccessRegisteredAt || now,
-      earlyAccessBenefitsEligible: true,
-    },
+    data: updateData,
   });
 
   // 2. Ensure 1 Year Membership eligibility / activation
@@ -74,34 +92,34 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
     membershipActivated = true;
   }
 
-  // 3. Dispatch Idempotent Confirmation Email Asynchronously (Non-blocking for instant UI response)
+  // 3. Non-blocking Asynchronous Email Dispatch (Zero impact on UI response time)
   const idempotencyKey = `EARLY_ACCESS_${userId}`;
   prisma.notificationHistory.findUnique({
     where: { idempotencyKey },
   }).then(async (existingNotification) => {
     if (!existingNotification) {
       try {
-        const recipientName = profile.firstName
-          ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+        const recipientName = updatedProfile.firstName
+          ? `${updatedProfile.firstName} ${updatedProfile.lastName || ''}`.trim()
           : 'Valued Collector';
 
         await NotificationService.notifyEarlyAccessConfirmation(
           {
-            email: profile.email,
+            email: updatedProfile.email,
             name: recipientName,
-            userId: profile.id,
+            userId: updatedProfile.id,
           },
           {
             customerName: recipientName,
-            email: profile.email,
+            email: updatedProfile.email,
           }
         );
 
         await prisma.notificationHistory.create({
           data: {
             idempotencyKey,
-            profileId: profile.id,
-            email: profile.email,
+            profileId: updatedProfile.id,
+            email: updatedProfile.email,
             channel: 'EMAIL',
             eventType: 'EARLY_ACCESS_CONFIRMED',
             status: 'SENT',
@@ -109,7 +127,7 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
           },
         });
       } catch (err: any) {
-        console.error('Failed to dispatch Early Access confirmation email:', err);
+        console.error('Non-critical background email dispatch warning:', err);
       }
     }
   }).catch((err) => {
@@ -124,7 +142,7 @@ export async function registerEarlyAccessAction(userIdOverride?: string) {
   return {
     success: true,
     alreadyRegistered,
-    firstName: profile.firstName || null,
+    firstName: updatedProfile.firstName || profile.firstName || null,
     earlyAccessRegisteredAt: (updatedProfile.earlyAccessRegisteredAt || now).toISOString(),
     membershipActivated,
     emailSent: true,
