@@ -4,14 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { isProfileComplete } from '@/lib/profile-utils';
-import { updateMyProfileOnboarding } from '@/actions/profile.actions';
 import { registerEarlyAccessAction, getEarlyAccessStatusAction } from '@/actions/early-access.actions';
 import PreBookingBenefitsModal from '@/components/PreBookingBenefitsModal';
 import EarlyAccessSuccessModal from './EarlyAccessSuccessModal';
 import EarlyAccessLegalModal from './EarlyAccessLegalModal';
 import EarlyAccessRegisterModal from './EarlyAccessRegisterModal';
 import EarlyAccessAudio from './EarlyAccessAudio';
-import { Loader2, ArrowRight, Check } from 'lucide-react';
+import EarlyAccessVideo from './EarlyAccessVideo';
+import EarlyAccessSkyCanvas from './EarlyAccessSkyCanvas';
+import { Loader2, ArrowRight, Check, ChevronDown } from 'lucide-react';
 import styles from './PreLaunchLanding.module.css';
 
 export default function PreLaunchLanding() {
@@ -100,6 +101,11 @@ export default function PreLaunchLanding() {
   }, [refreshProfile]);
 
   async function handleGetEarlyAccess() {
+    // Notify audio engine of user interaction to start audio if browser autoplay was delayed
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gm_user_interaction'));
+    }
+
     // 1. If already registered, show concierge modal
     if (isRegistered) {
       setShowSuccessModal(true);
@@ -130,126 +136,185 @@ export default function PreLaunchLanding() {
   }
 
   return (
-    <div className={styles.heroContainer}>
-      {/* Background Campaign Visual & Ambient Dark Overlay */}
-      <div className={styles.bgWrap}>
-        <Image
-          src="/images/hero/hero-main.png"
-          alt="GODSMOVƎ SS26 Collection"
-          fill
-          priority
-          className={styles.bgImage}
-        />
-        <div className={styles.bgOverlay} />
-      </div>
+    <div className={styles.pageWrap}>
+      {/* ── SECTION 01: CINEMATIC EARLY ACCESS HERO (position: relative) ── */}
+      <section className={styles.heroViewport}>
+        {/* Background Visual Layer */}
+        <EarlyAccessVideo backgroundImage="/images/early-access/early-access-background.jpg" />
 
-      {/* Brand Header */}
-      <header className={styles.header}>
+        {/* Top Center Masthead Logo (Mathematically Centered: left 50%, transform translateX(-50%)) */}
         <div
-          className={styles.logoWrap}
+          className={`${styles.topCenterLogo} ${styles.fadeInLogo}`}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          title="GODSMOVƎ Archival Release"
+          title="GODSMOVƎ"
         >
           <Image
             src="/images/logo/logo-horizontal-white.png"
             alt="GODSMOVƎ"
-            width={150}
-            height={34}
+            width={170}
+            height={38}
             priority
             className={styles.logoImage}
           />
         </div>
 
-        <div className={styles.headerRight}>
+        {/* Top Right Sound Icon (position: absolute inside heroViewport) */}
+        <div className={styles.soundIconAbsoluteWrap}>
           <EarlyAccessAudio />
-          <span className={styles.madeInIndiaTag}>
-            MADE IN INDIA · MODERN APPAREL
-          </span>
         </div>
-      </header>
 
-      {/* Main Editorial Hero Content */}
-      <main className={styles.mainContent}>
-        <h1 className={styles.mainHeading}>
-          {isRegistered ? 'YOUR PLACE IS RESERVED.' : 'YOUR PLACE IN THE FIRST RELEASE.'}
-        </h1>
-
-        <p className={styles.supportingCopy}>
-          {isRegistered
-            ? "We'll be in touch when GODSMOVƎ is ready for you."
-            : 'Be among the first to experience GODSMOVƎ.'}
-        </p>
-
-        {/* Clean Editorial Privileges List */}
-        <div className={styles.privilegesListWrap}>
-          <div className={`${styles.privilegeItem} ${styles.stagger1}`}>
-            <span className={styles.privilegeNumber}>01</span>
-            <span className={styles.privilegeText}>
-              Up to ₹1,000 in assured shopping rewards
-            </span>
+        {/* Hero Central Content */}
+        <div className={styles.heroInner}>
+          <div className={`${styles.madeInIndiaTag} ${styles.fadeInTag}`}>
+            <span>MADE IN INDIA</span>
           </div>
 
-          <div className={`${styles.privilegeItem} ${styles.stagger2}`}>
-            <span className={styles.privilegeNumber}>02</span>
-            <div className={styles.privilegeContent}>
-              <span className={styles.privilegeText}>
-                One year of GODSMOVƎ Membership
-              </span>
+          <h1 className={`${styles.heroTitle} ${styles.fadeInTitle}`}>
+            YOU&apos;RE EARLY.
+          </h1>
+
+          <p className={`${styles.heroSubtitle} ${styles.fadeInSubtitle}`}>
+            Be among the first to enter GODSMOVƎ.
+          </p>
+
+          <div className={`${styles.ctaWrap} ${styles.fadeInCta}`}>
+            {isRegistered ? (
+              <div
+                className={styles.registeredStatusBadge}
+                onClick={() => setShowSuccessModal(true)}
+                role="button"
+                tabIndex={0}
+              >
+                <Check size={14} className={styles.checkIcon} />
+                <span>
+                  ✓ EARLY ACCESS RESERVED
+                  {firstName && ` · ${firstName}`}
+                </span>
+              </div>
+            ) : (
               <button
                 type="button"
-                className={styles.membershipPerksBtn}
-                onClick={() => setShowBenefitsModal(true)}
+                onClick={handleGetEarlyAccess}
+                disabled={loading}
+                className={styles.ctaButton}
+                aria-label="Get Early Access"
               >
-                VIEW MEMBERSHIP PERKS
+                {loading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    <span>GET EARLY ACCESS</span>
+                    <ArrowRight size={15} className={styles.ctaArrow} />
+                  </>
+                )}
               </button>
-            </div>
-          </div>
-
-          <div className={`${styles.privilegeItem} ${styles.stagger3}`}>
-            <span className={styles.privilegeNumber}>03</span>
-            <span className={styles.privilegeText}>
-              Complimentary GODSMOVƎ launch gifts
-            </span>
-          </div>
-
-          <div className={`${styles.privilegeItem} ${styles.stagger4}`}>
-            <span className={styles.privilegeNumber}>04</span>
-            <span className={styles.privilegeText}>
-              Exclusive privileges reserved for GODSMOVƎ members
-            </span>
+            )}
           </div>
         </div>
 
-        {/* Primary CTA / Registered Status Element */}
-        <div className={styles.ctaWrap}>
-          {isRegistered ? (
-            <div className={styles.registeredStatusBadge} onClick={() => setShowSuccessModal(true)}>
-              <Check size={15} className={styles.checkIcon} />
-              <span>EARLY ACCESS RESERVED</span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleGetEarlyAccess}
-              disabled={loading}
-              className={styles.ctaButton}
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <>
-                  <span>GET EARLY ACCESS</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          )}
+        {/* Bottom Center Animated Scroll Indicator (position: absolute inside heroViewport) */}
+        <div
+          className={`${styles.scrollIndicatorWrap} ${styles.fadeInScroll}`}
+          aria-hidden="true"
+        >
+          <div className={styles.scrollVerticalLine} />
+          <div className={styles.chevronGroup}>
+            <ChevronDown size={13} className={styles.chevron1} />
+            <ChevronDown size={13} className={styles.chevron2} />
+          </div>
         </div>
-      </main>
+      </section>
 
-      {/* Minimal Footer */}
+      {/* ── SECTION 02: EDITORIAL PRIVILEGES STORY + DREAMLIKE SKY & VINTAGE AIRSHIPS ── */}
+      <section className={styles.storySection}>
+        {/* Fine-Line Architectural Cloud & Airship Canvas */}
+        <EarlyAccessSkyCanvas />
+
+        <div className={styles.storyContainer}>
+          <div className={styles.storyHeader}>
+            <span className={styles.storyEyebrow}>THE PRE-LAUNCH ADVANTAGE</span>
+            <h2 className={styles.storyTitle}>
+              SOMETHING WORTH ARRIVING EARLY FOR.
+            </h2>
+          </div>
+
+          {/* Editorial Vertical List (01 to 04) */}
+          <div className={styles.benefitsVerticalList}>
+            <div className={styles.benefitItem}>
+              <div className={styles.benefitNumberWrap}>
+                <span className={styles.benefitNumber}>01</span>
+                <div className={styles.benefitLine} />
+              </div>
+              <div className={styles.benefitBody}>
+                <h3 className={styles.benefitHeading}>
+                  UP TO ₹1,000 IN ASSURED SHOPPING REWARDS
+                </h3>
+                <p className={styles.benefitDesc}>
+                  Allocated automatically to your GODSMOVƎ account ledger upon launch.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.benefitItem}>
+              <div className={styles.benefitNumberWrap}>
+                <span className={styles.benefitNumber}>02</span>
+                <div className={styles.benefitLine} />
+              </div>
+              <div className={styles.benefitBody}>
+                <h3 className={styles.benefitHeading}>
+                  ONE YEAR OF GODSMOVƎ MEMBERSHIP
+                </h3>
+                <p className={styles.benefitDesc}>
+                  Complimentary tier unlock with priority dispatch and private curation.
+                </p>
+                <button
+                  type="button"
+                  className={styles.membershipPerksLink}
+                  onClick={() => setShowBenefitsModal(true)}
+                >
+                  VIEW MEMBERSHIP PERKS →
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.benefitItem}>
+              <div className={styles.benefitNumberWrap}>
+                <span className={styles.benefitNumber}>03</span>
+                <div className={styles.benefitLine} />
+              </div>
+              <div className={styles.benefitBody}>
+                <h3 className={styles.benefitHeading}>
+                  COMPLIMENTARY GODSMOVƎ LAUNCH GIFTS
+                </h3>
+                <p className={styles.benefitDesc}>
+                  Curated physical artifacts included with initial collection orders.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.benefitItem}>
+              <div className={styles.benefitNumberWrap}>
+                <span className={styles.benefitNumber}>04</span>
+                <div className={styles.benefitLine} />
+              </div>
+              <div className={styles.benefitBody}>
+                <h3 className={styles.benefitHeading}>
+                  EXCLUSIVE PRIVILEGES RESERVED FOR GODSMOVƎ MEMBERS
+                </h3>
+                <p className={styles.benefitDesc}>
+                  Private door access to drop allocations prior to public releases.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Minimal Editorial Footer */}
       <footer className={styles.footer}>
-        <div>MADE IN INDIA · GODSMOVƎ ARCHIVAL MOVEMENT</div>
+        <div className={styles.footerTag}>
+          MADE IN INDIA · GODSMOVƎ ARCHIVAL MOVEMENT
+        </div>
         <div className={styles.footerLinks}>
           <button
             type="button"
@@ -258,7 +323,7 @@ export default function PreLaunchLanding() {
           >
             Privacy Policy
           </button>
-          <span>•</span>
+          <span className={styles.dot}>•</span>
           <button
             type="button"
             className={styles.legalLinkBtn}

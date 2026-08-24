@@ -1,32 +1,32 @@
 .soundIconButton {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  background: transparent;
+  border: none;
   border-radius: 50%;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(250, 248, 245, 0.65);
+  color: rgba(249, 248, 246, 0.7);
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 0;
   box-sizing: border-box;
+  transition: opacity 0.25s ease, color 0.25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .soundIconButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(197, 160, 89, 0.4);
-  color: #FAF8F5;
-  transform: scale(1.05);
+  color: #f9f8f6;
+  opacity: 1;
 }
 
 .iconActive {
-  color: #C5A059;
+  color: #f9f8f6;
+  opacity: 0.9;
 }
 
 .iconMuted {
-  color: rgba(250, 248, 245, 0.45);
+  color: rgba(249, 248, 246, 0.4);
 }

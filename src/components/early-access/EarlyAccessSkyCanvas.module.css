@@ -1,0 +1,104 @@
+.skyContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Sky Background Ambient Gradient */
+.skyGradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      circle at 50% 20%,
+      rgba(24, 22, 18, 0.6) 0%,
+      rgba(14, 14, 14, 0.95) 75%,
+      rgba(10, 10, 10, 1) 100%
+    );
+  z-index: 1;
+}
+
+.skySvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.cloudsGroup {
+  opacity: 0.85;
+  transition: opacity 1s ease;
+}
+
+/* Airship 1: Drifting Left to Right (Top Sky) */
+.airship1 {
+  animation: driftRight 50s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transform-origin: center;
+}
+
+/* Airship 2: Drifting Right to Left (Mid Sky) */
+.airship2 {
+  animation: driftLeft 62s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transform-origin: center;
+}
+
+/* Airship 3: Diagonal Slow Float (Lower Sky) */
+.airship3 {
+  animation: driftDiagonal 72s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transform-origin: center;
+}
+
+@keyframes driftRight {
+  0% {
+    transform: translate3d(-100px, 160px, 0);
+  }
+  50% {
+    transform: translate3d(650px, 148px, 0);
+  }
+  100% {
+    transform: translate3d(1500px, 160px, 0);
+  }
+}
+
+@keyframes driftLeft {
+  0% {
+    transform: translate3d(1500px, 350px, 0);
+  }
+  50% {
+    transform: translate3d(750px, 362px, 0);
+  }
+  100% {
+    transform: translate3d(-120px, 350px, 0);
+  }
+}
+
+@keyframes driftDiagonal {
+  0% {
+    transform: translate3d(100px, 580px, 0);
+  }
+  50% {
+    transform: translate3d(700px, 565px, 0);
+  }
+  100% {
+    transform: translate3d(1450px, 580px, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .airship3 {
+    display: none; /* Keep mobile lightweight */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .airship1,
+  .airship2,
+  .airship3 {
+    animation: none;
+  }
+}
