@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { updateMyProfileOnboarding } from '@/actions/profile.actions';
 import { isProfileComplete } from '@/lib/profile-utils';
 import styles from './AuthModal.module.css';
+import CustomDatePicker from '@/components/ui/CustomDatePicker';
 
 import { LuxuryAuthLoader } from './LuxuryAuthLoader';
 
@@ -338,14 +339,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, redirectPath, fo
                   <label htmlFor="onboarding-dob" className={styles.inputLabel}>
                     DATE OF BIRTH
                   </label>
-                  <input
+                  <CustomDatePicker
                     id="onboarding-dob"
-                    type="date"
-                    required
-                    max={new Date().toISOString().split('T')[0]}
                     value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className={styles.inputField}
+                    onChange={(dateStr) => setDob(dateStr)}
                     disabled={loading}
                   />
                 </div>

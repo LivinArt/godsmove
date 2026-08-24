@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { initiateGoogleOAuth } from '@/lib/auth/oauth';
 import styles from './EarlyAccessRegisterModal.module.css';
+import CustomDatePicker from '@/components/ui/CustomDatePicker';
 
 interface Props {
   isOpen: boolean;
@@ -237,14 +238,10 @@ export default function EarlyAccessRegisterModal({
                 <label htmlFor="ea-dob" className={styles.inputLabel}>
                   DATE OF BIRTH
                 </label>
-                <input
+                <CustomDatePicker
                   id="ea-dob"
-                  type="date"
-                  required
-                  max={new Date().toISOString().split('T')[0]}
                   value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className={styles.inputField}
+                  onChange={(dateStr) => setDob(dateStr)}
                   disabled={loading}
                 />
               </div>

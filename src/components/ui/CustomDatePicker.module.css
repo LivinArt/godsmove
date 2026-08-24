@@ -1,0 +1,205 @@
+.datePickerContainer {
+  position: relative;
+  width: 100%;
+}
+
+.inputTrigger {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.inputTrigger:hover {
+  border-color: rgba(197, 160, 89, 0.6);
+}
+
+.inputTrigger.active {
+  border-color: #C5A059;
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+}
+
+.inputTrigger.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #F5F5F5;
+}
+
+.inputText {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1918;
+}
+
+.placeholderText {
+  font-family: inherit;
+  font-size: 13px;
+  color: rgba(26, 25, 24, 0.4);
+}
+
+.calendarIcon {
+  color: #C5A059;
+  flex-shrink: 0;
+}
+
+/* Popover Calendar Container */
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 300px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  z-index: 10050;
+  box-sizing: border-box;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+
+.navBtn {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1A1918;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: #C5A059;
+  color: #FFFFFF;
+  border-color: #C5A059;
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.selectWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selectMonth,
+.selectYear {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1A1918;
+  outline: none;
+  cursor: pointer;
+}
+
+.selectMonth:focus,
+.selectYear:focus {
+  border-color: #C5A059;
+}
+
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.weekHeader {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8A857C;
+  padding: 4px 0;
+}
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.emptySlot {
+  height: 32px;
+}
+
+.dayBtn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  height: 32px;
+  width: 32px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1A1918;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.dayBtn:hover:not(:disabled):not(.selected) {
+  background: rgba(197, 160, 89, 0.15);
+  color: #C5A059;
+}
+
+.dayBtn.selected {
+  background: #C5A059;
+  color: #0A0A0A;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.35);
+}
+
+.futureDay {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .popover {
+    width: 280px;
+    padding: 12px;
+  }
+}
