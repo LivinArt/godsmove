@@ -70,11 +70,11 @@ async function runPipelineQA() {
         dbP1.phone === '9876543210' &&
         dbP1.godsmoveId?.startsWith('GM-') &&
         dbP1.earlyAccessRegistered &&
-        dbP1.membership?.status === 'ACTIVE' &&
+        (dbP1.membership?.status === 'SCHEDULED' || dbP1.membership?.status === 'ACTIVE') &&
         dbP1.membership?.source === 'EARLY_ACCESS'
       ),
       'CASE 1: New Early Access user registration',
-      `GM ID: ${dbP1?.godsmoveId}, Membership Source: ${dbP1?.membership?.source}`
+      `GM ID: ${dbP1?.godsmoveId}, Membership Status: ${dbP1?.membership?.status}, Source: ${dbP1?.membership?.source}`
     );
 
     // -------------------------------------------------------------------------
@@ -163,11 +163,15 @@ async function runPipelineQA() {
     // -------------------------------------------------------------------------
     // CASE 6: Missing Early Access membership repair
     // -------------------------------------------------------------------------
-    const dbP5Membership = await prisma.membership.findUnique({ where: { profileId: user5Id } });
+    const dbP6 = await prisma.profile.findUnique({ where: { id: user5Id }, include: { membership: true } });
     assert(
-      dbP5Membership?.status === 'ACTIVE' && dbP5Membership?.source === 'EARLY_ACCESS',
+      Boolean(
+        dbP6?.membership &&
+        (dbP6.membership.status === 'SCHEDULED' || dbP6.membership.status === 'ACTIVE') &&
+        dbP6.membership.source === 'EARLY_ACCESS'
+      ),
       'CASE 6: Missing Early Access membership repair creates 1-year VIP membership',
-      `Membership status: ${dbP5Membership?.status}, source: ${dbP5Membership?.source}`
+      `Membership status: ${dbP6?.membership?.status}, source: ${dbP6?.membership?.source}`
     );
 
     // -------------------------------------------------------------------------
@@ -366,7 +370,7 @@ async function runPipelineQA() {
         customerInAdmin &&
         customerInAdmin.godsmoveId === initialGmId &&
         customerInAdmin.earlyAccessRegistered === true &&
-        customerInAdmin.isMemberActive === true
+        (customerInAdmin.membership?.status === 'SCHEDULED' || customerInAdmin.isMemberActive === true)
       ),
       'CASE 16: Admin Customers query returns complete canonical customer state',
       `Admin record GM ID: ${customerInAdmin?.godsmoveId}, EA: ${customerInAdmin?.earlyAccessRegistered}`

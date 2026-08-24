@@ -34,8 +34,17 @@ export default function PreLaunchLanding() {
     ? registeredName.trim().split(' ')[0]
     : null;
 
-  // Synchronize Early Access registration status from DB
+  // Synchronize Early Access registration status & detect post-OAuth redirect
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('ea_success') === 'true') {
+        setIsRegistered(true);
+        setShowSuccessModal(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
     if (user && profile) {
       if (profile.earlyAccessRegistered) {
         setIsRegistered(true);

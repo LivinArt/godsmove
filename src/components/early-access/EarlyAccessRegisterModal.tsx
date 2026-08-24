@@ -140,7 +140,8 @@ export default function EarlyAccessRegisterModal({
       const { error } = await initiateGoogleOAuth(supabase, '/', { forceSelectAccount: true });
       if (error) throw error;
     } catch (err: any) {
-      setError(err.message || 'Google authentication failed. Please try again.');
+      console.error('Google authentication error:', err);
+      setError('Something interrupted your registration. Please try again.');
       setLoading(false);
     }
   }

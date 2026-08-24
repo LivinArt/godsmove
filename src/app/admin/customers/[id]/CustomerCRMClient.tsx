@@ -431,6 +431,16 @@ export default function CustomerCRMClient({
               )}
             </div>
             <div>
+              <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Early Access Status</span>
+              {customer.earlyAccessRegistered ? (
+                <span className="badge" style={{ background: 'rgba(200, 164, 106, 0.15)', color: '#C8A46A', border: '1px solid rgba(200, 164, 106, 0.4)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em' }}>
+                  EARLY ACCESS · REGISTERED
+                </span>
+              ) : (
+                <span className="badge badge-grey">STANDARD</span>
+              )}
+            </div>
+            <div>
               <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: 10, textTransform: 'uppercase', fontWeight: 600 }}>Joined Date</span>
               <span>{formatDate(customer.createdAt)}</span>
             </div>
@@ -481,57 +491,6 @@ export default function CustomerCRMClient({
 
       {/* RIGHT COLUMN: Tab Panel Detail views */}
       <div className="admin-card" style={{ minHeight: 480, padding: 32 }}>
-        {customer.earlyAccessRegistered && (
-          <div style={{
-            background: 'var(--admin-surface-2, #222222)',
-            border: '1px solid #FFB74D',
-            borderRadius: '8px',
-            padding: '20px',
-            marginBottom: '28px',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.15em', color: '#FFB74D', textTransform: 'uppercase' }}>
-                EARLY ACCESS
-              </div>
-              <span style={{ fontSize: '10px', fontWeight: 800, background: '#FFB74D', color: '#000000', padding: '2px 8px', borderRadius: '4px' }}>
-                REGISTERED
-              </span>
-            </div>
-
-            <div style={{ fontSize: '12px', color: '#CCCCCC', marginBottom: 16 }}>
-              Registered: <strong>{customer.earlyAccessRegisteredAt ? formatDate(customer.earlyAccessRegisteredAt) : 'Yes'}</strong>
-            </div>
-
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', marginBottom: 8, textTransform: 'uppercase' }}>
-              Benefits Checklist
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12px', color: '#DDDDDD', marginBottom: 16 }}>
-              <div>✓ 1 Year GODSMOVƎ Membership</div>
-              <div>✓ Priority Launch Access</div>
-              <div>✓ Exclusive Member Benefits</div>
-              <div>✓ Assured Reward Up To ₹1,000</div>
-            </div>
-
-            <div style={{ borderTop: '1px solid #333333', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '12px' }}>
-                <span style={{ color: '#888888' }}>Reward: </span>
-                <strong>{customer.wallet && customer.wallet.balance > 0 ? `₹${customer.wallet.balance} CREDITED` : 'PENDING'}</strong>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('credits');
-                  setAdjustmentType('CREDIT');
-                  setAdjustmentDesc('Early Access Assured Reward');
-                }}
-                className="btn-secondary"
-                style={{ fontSize: '11px', padding: '4px 10px' }}
-              >
-                ISSUE / ADJUST REWARD CREDIT
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* TAB 1: General & Timeline */}
         {activeTab === 'notes' && (
@@ -1096,8 +1055,12 @@ export default function CustomerCRMClient({
               </h3>
               {customer.membership && (
                 <div>
-                  {customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? (
-                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(197, 160, 89, 0.15)', color: '#c5a059', border: '1px solid rgba(197, 160, 89, 0.3)', padding: '4px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.05em' }}>
+                  {customer.membership.status === 'SCHEDULED' ? (
+                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(197, 160, 89, 0.15)', color: '#c5a059', border: '1px solid rgba(197, 160, 89, 0.4)', padding: '4px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.05em' }}>
+                      <Crown size={14} /> SCHEDULED · ACTIVATES ON LAUNCH
+                    </span>
+                  ) : customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? (
+                    <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(76, 217, 100, 0.15)', color: '#4cd964', border: '1px solid rgba(76, 217, 100, 0.3)', padding: '4px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.05em' }}>
                       <Crown size={14} /> ACTIVE
                     </span>
                   ) : customer.membership.status === 'CANCELLED' ? (
@@ -1118,8 +1081,8 @@ export default function CustomerCRMClient({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Membership Status</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? '#4cd964' : '#ff3b30' }}>
-                      ● {customer.membership.status}
+                    <span style={{ fontSize: 14, fontWeight: 700, color: customer.membership.status === 'SCHEDULED' ? '#c5a059' : customer.membership.status === 'ACTIVE' && customer.membership.expiresAt && new Date(customer.membership.expiresAt) > new Date() ? '#4cd964' : '#ff3b30' }}>
+                      ● {customer.membership.status === 'SCHEDULED' ? 'SCHEDULED (PENDING STORE LAUNCH)' : customer.membership.status}
                     </span>
                   </div>
 
@@ -1131,9 +1094,11 @@ export default function CustomerCRMClient({
                   </div>
 
                   <div>
-                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Member Since</span>
+                    <span style={{ fontSize: 11, color: 'var(--admin-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>
+                      {customer.membership.status === 'SCHEDULED' ? 'Scheduled Activation' : 'Member Since'}
+                    </span>
                     <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>
-                      {customer.membership.activatedAt ? new Date(customer.membership.activatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      {customer.membership.activatedAt ? new Date(customer.membership.activatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'On Store Launch'}
                     </span>
                   </div>
 

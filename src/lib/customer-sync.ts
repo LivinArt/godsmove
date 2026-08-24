@@ -24,11 +24,16 @@ export interface GoogleAuthMetadata {
 export async function generateUniqueGodsmoveId(
   tx: Prisma.TransactionClient
 ): Promise<string> {
-  const existingProfiles = await tx.profile.findMany({
+  // Fast-path: O(1) indexed lookup for highest GM ID
+  const latestProfile = await tx.profile.findFirst({
     where: {
       godsmoveId: {
         startsWith: 'GM-',
+        not: { startsWith: 'GM-QA-' },
       },
+    },
+    orderBy: {
+      godsmoveId: 'desc',
     },
     select: {
       godsmoveId: true,
@@ -36,13 +41,26 @@ export async function generateUniqueGodsmoveId(
   });
 
   let maxNum = 0;
-  for (const p of existingProfiles) {
-    if (p.godsmoveId && !p.godsmoveId.startsWith('GM-QA-')) {
-      const parts = p.godsmoveId.split('-');
-      if (parts.length === 2) {
-        const num = parseInt(parts[1], 10);
-        if (!isNaN(num) && num > maxNum) {
-          maxNum = num;
+  if (latestProfile?.godsmoveId) {
+    const parts = latestProfile.godsmoveId.split('-');
+    if (parts.length === 2) {
+      const num = parseInt(parts[1], 10);
+      if (!isNaN(num)) maxNum = num;
+    }
+  }
+
+  // Fallback scan if fast-path parsing returns 0
+  if (maxNum === 0) {
+    const existingProfiles = await tx.profile.findMany({
+      where: { godsmoveId: { startsWith: 'GM-' } },
+      select: { godsmoveId: true },
+    });
+    for (const p of existingProfiles) {
+      if (p.godsmoveId && !p.godsmoveId.startsWith('GM-QA-')) {
+        const parts = p.godsmoveId.split('-');
+        if (parts.length === 2) {
+          const num = parseInt(parts[1], 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
         }
       }
     }
@@ -71,8 +89,8 @@ export function isEmailUsernameFallback(name: string | null | undefined, email: 
  * - Idempotent 1-year VIP Early Access membership creation if requested.
  */
 export async function syncCanonicalCustomer(
-  tx: Prisma.TransactionClient,
-  params: {
+  txOrParams: any,
+  maybeParams?: {
     userId: string;
     email: string;
     role?: UserRole;
@@ -82,6 +100,25 @@ export async function syncCanonicalCustomer(
     registrationTimestamp?: Date;
   }
 ) {
+  let tx: Prisma.TransactionClient;
+  let params: {
+    userId: string;
+    email: string;
+    role?: UserRole;
+    details?: CustomerDetailsInput;
+    googleMetadata?: GoogleAuthMetadata;
+    isEarlyAccessRegistration?: boolean;
+    registrationTimestamp?: Date;
+  };
+
+  if (txOrParams && typeof txOrParams === 'object' && 'userId' in txOrParams) {
+    params = txOrParams;
+    tx = prisma;
+  } else {
+    tx = txOrParams;
+    params = maybeParams!;
+  }
+
   const {
     userId,
     email,
@@ -247,33 +284,41 @@ export async function syncCanonicalCustomer(
 
   // 9. Membership Entitlement Provisioning (1-Year VIP Early Access Membership)
   let membershipActivated = false;
-  const oneYearFromReg = new Date(registrationTimestamp.getTime() + 365 * 24 * 60 * 60 * 1000);
+  const { getOfficialLaunchDate, calculateMembershipExpiry, isStoreLaunched } = await import('@/lib/launch-config');
+  const launchDate = getOfficialLaunchDate();
+  const launchExpiry = calculateMembershipExpiry(launchDate);
+  const now = new Date();
+  const storeAlreadyLaunched = isStoreLaunched(now);
+
+  const targetStatus = storeAlreadyLaunched ? 'ACTIVE' : ('SCHEDULED' as any);
+  const targetActivatedAt = storeAlreadyLaunched ? now : launchDate;
+  const targetExpiresAt = storeAlreadyLaunched ? calculateMembershipExpiry(now) : launchExpiry;
 
   if (earlyAccessRegistered) {
     if (!profile.membership) {
       await tx.membership.create({
         data: {
           profileId: userId,
-          status: 'ACTIVE',
+          status: targetStatus,
           source: 'EARLY_ACCESS',
-          activatedAt: registrationTimestamp,
-          expiresAt: oneYearFromReg,
+          activatedAt: targetActivatedAt,
+          expiresAt: targetExpiresAt,
           tier: 'VIP',
         },
       });
-      membershipActivated = true;
-    } else if (profile.membership.status !== 'ACTIVE') {
+      membershipActivated = storeAlreadyLaunched;
+    } else if (profile.membership.source === 'EARLY_ACCESS' && profile.membership.status !== 'ACTIVE') {
       await tx.membership.update({
         where: { profileId: userId },
         data: {
-          status: 'ACTIVE',
+          status: targetStatus,
           source: 'EARLY_ACCESS',
-          activatedAt: profile.membership.activatedAt || registrationTimestamp,
-          expiresAt: oneYearFromReg,
+          activatedAt: targetActivatedAt,
+          expiresAt: targetExpiresAt,
           tier: 'VIP',
         },
       });
-      membershipActivated = true;
+      membershipActivated = storeAlreadyLaunched;
     }
   }
 
@@ -335,50 +380,89 @@ export async function executeEarlyAccessRegistration(
   }
 
   if (result?.profile) {
-    const profile = result.profile;
-    const idempotencyKey = `EARLY_ACCESS_${userId}`;
-
-    prisma.notificationHistory.findUnique({
-      where: { idempotencyKey },
-    }).then(async (existingNotification) => {
-      if (!existingNotification) {
-        try {
-          const { NotificationService } = await import('@/notifications/notification.service');
-          const recipientName = profile.firstName
-            ? `${profile.firstName} ${profile.lastName || ''}`.trim()
-            : 'Valued Collector';
-
-          await NotificationService.notifyEarlyAccessConfirmation(
-            {
-              email: profile.email,
-              name: recipientName,
-              userId: profile.id,
-            },
-            {
-              customerName: recipientName,
-              email: profile.email,
-            }
-          );
-
-          await prisma.notificationHistory.create({
-            data: {
-              idempotencyKey,
-              profileId: profile.id,
-              email: profile.email,
-              channel: 'EMAIL',
-              eventType: 'EARLY_ACCESS_CONFIRMED',
-              status: 'SENT',
-              subject: 'GODSMOVƎ Early Access Confirmed — Launch Benefits Active',
-            },
-          });
-        } catch (err: any) {
-          console.error('Non-critical background email dispatch error:', err);
-        }
-      }
-    }).catch((err) => {
-      console.error('Notification check warning:', err);
+    // Schedule asynchronous non-blocking email dispatches
+    setImmediate(() => {
+      dispatchEarlyAccessEmailsAsync(userId, result.profile).catch((err) => {
+        console.error('Async Early Access email dispatch background error:', err);
+      });
     });
   }
 
   return result;
+}
+
+/**
+  * Asynchronous, Idempotent Early Access & Membership Activation Email Dispatcher.
+  * Dispatches 2 separate transactional emails:
+  * 1. EARLY_ACCESS_CONFIRMED
+  * 2. EARLY_ACCESS_MEMBERSHIP_ACTIVATED
+  */
+export async function dispatchEarlyAccessEmailsAsync(userId: string, profile: any) {
+  if (!profile || !profile.email) return;
+
+  const cleanEmail = profile.email.toLowerCase().trim();
+  const recipientName = profile.firstName
+    ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+    : 'Valued Collector';
+
+  // 1. Dispatch EARLY_ACCESS_CONFIRMED Email (Idempotent)
+  const confirmIdempotencyKey = `EA_CONFIRM_${userId}`;
+  try {
+    const { NotificationService } = await import('@/notifications/notification.service');
+    await NotificationService.dispatch({
+      event: 'EARLY_ACCESS_CONFIRMED',
+      recipient: {
+        email: cleanEmail,
+        name: recipientName,
+        userId: profile.id,
+      },
+      payload: {
+        entityId: userId,
+        idempotencyKey: confirmIdempotencyKey,
+        customerName: recipientName,
+        email: cleanEmail,
+        godsmoveId: profile.godsmoveId || '',
+      },
+    });
+  } catch (err: any) {
+    console.error('EARLY_ACCESS_CONFIRMED async dispatch error:', err);
+  }
+
+  // 2. Dispatch EARLY_ACCESS_MEMBERSHIP_ACTIVATED Email (Idempotent)
+  try {
+    const membership = profile.membership || (await prisma.membership.findUnique({ where: { profileId: userId } }));
+    if (membership && membership.status === 'ACTIVE') {
+      const membIdempotencyKey = `EA_MEMBERSHIP_${userId}`;
+      const { NotificationService } = await import('@/notifications/notification.service');
+
+      const startDateStr = membership.activatedAt
+        ? new Date(membership.activatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+        : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      const expiryDateStr = membership.expiresAt
+        ? new Date(membership.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+        : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      await NotificationService.dispatch({
+        event: 'EARLY_ACCESS_MEMBERSHIP_ACTIVATED',
+        recipient: {
+          email: cleanEmail,
+          name: recipientName,
+          userId: profile.id,
+        },
+        payload: {
+          entityId: userId,
+          idempotencyKey: membIdempotencyKey,
+          customerName: recipientName,
+          email: cleanEmail,
+          godsmoveId: profile.godsmoveId || '',
+          activatedAt: startDateStr,
+          expiresAt: expiryDateStr,
+          tier: membership.tier || 'VIP',
+        },
+      });
+    }
+  } catch (err: any) {
+    console.error('EARLY_ACCESS_MEMBERSHIP_ACTIVATED async dispatch error:', err);
+  }
 }

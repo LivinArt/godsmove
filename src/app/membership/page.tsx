@@ -55,6 +55,9 @@ export default function MembershipPage() {
       membership.expiresAt &&
       new Date(membership.expiresAt) > now
   );
+  const isScheduledMember = Boolean(
+    membership && membership.status === 'SCHEDULED'
+  );
 
   const daysRemaining = membership?.expiresAt
     ? Math.max(0, Math.ceil((new Date(membership.expiresAt).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
@@ -68,6 +71,53 @@ export default function MembershipPage() {
           {authLoading || loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0' }}>
               <Loader2 size={24} className="animate-spin" style={{ color: '#c5a059' }} />
+            </div>
+          ) : isScheduledMember ? (
+            /* STATE SCHEDULED — RESERVED EARLY ACCESS MEMBERSHIP */
+            <div className={styles.memberDashboard}>
+              <div className={styles.memberHeaderRow}>
+                <div className={styles.memberInfo}>
+                  <span className={styles.memberStatusBadge}>
+                    <Crown size={14} /> 1-YEAR MEMBERSHIP RESERVED
+                  </span>
+                  <h1 className={styles.title}>MEMBERSHIP ACTIVATES AT LAUNCH</h1>
+                  <p className={styles.subtitle}>
+                    Your 1-year GODSMOVƎ VIP Membership entitlement is reserved and will activate on the official GODSMOVƎ store launch.
+                  </p>
+                </div>
+              </div>
+
+              {/* Membership Meta Details */}
+              <div className={styles.memberMetaRow}>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Status</span>
+                  <span className={styles.metaValue} style={{ color: '#c5a059' }}>
+                    ● SCHEDULED (PENDING LAUNCH)
+                  </span>
+                </div>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Membership Source</span>
+                  <span className={styles.metaValue}>
+                    {membership?.source === 'EARLY_ACCESS' ? 'EARLY ACCESS REGISTRATION' : membership?.source || 'RESERVED'}
+                  </span>
+                </div>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Activation Date</span>
+                  <span className={styles.metaValue}>
+                    {membership?.activatedAt
+                      ? new Date(membership.activatedAt).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'On Official Store Launch'}
+                  </span>
+                </div>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Duration</span>
+                  <span className={styles.metaValue}>1 Year VIP (From Launch)</span>
+                </div>
+              </div>
             </div>
           ) : isActiveMember ? (
             /* STATE B — ACTIVE MEMBER DASHBOARD */

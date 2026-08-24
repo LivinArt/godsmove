@@ -16,7 +16,7 @@ export class EmailService {
     const startTime = new Date();
     const entityId = payload.entityId || payload.returnId || payload.orderId || payload.orderNumber || payload.id || 'GENERIC';
     const templateVersion = payload.templateVersion || 1;
-    const idempotencyKey = `${event}_${entityId}_${recipient.email}_v${templateVersion}`;
+    const idempotencyKey = payload.idempotencyKey || `${event}_${entityId}_${recipient.email}_v${templateVersion}`;
 
     // Priority 6: Idempotency protection check
     const isDuplicate = await NotificationLogger.checkIdempotent(idempotencyKey);

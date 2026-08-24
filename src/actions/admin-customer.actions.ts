@@ -557,6 +557,43 @@ export async function adjustCustomerWallet(
   return { success: true, balance: Number(res.wallet.balance) };
 }
 
+export async function issueEarlyAccessRewardAction(profileId: string) {
+  const admin = await requireAdmin();
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: profileId },
+    include: { wallet: { include: { transactions: true } } },
+  });
+
+  if (!profile) {
+    return { success: false, error: 'Customer profile not found.' };
+  }
+
+  // Idempotency check: prevent duplicate reward credit
+  const existingReward = profile.wallet?.transactions.find(
+    (t) => t.description?.includes('Early Access Assured Reward') || t.description?.includes('Assured Reward')
+  );
+
+  if (existingReward) {
+    return { success: false, error: 'Early Access Assured Reward has already been credited to this customer.' };
+  }
+
+  const { WalletService } = await import('@/lib/wallet-service');
+  const res = await WalletService.adjustBalanceDirect({
+    profileId,
+    amount: 1000,
+    type: 'CREDIT_PROMOTIONAL',
+    description: `Early Access Assured Reward (Issued by Admin ${admin.id})`,
+    createdBy: admin.id,
+  });
+
+  try {
+    revalidatePath(`/admin/customers/${profileId}`);
+  } catch {}
+
+  return { success: true, balance: Number(res.wallet.balance) };
+}
+
 export async function updateCustomerSecurity(id: string, action: 'block' | 'unblock' | 'logout' | 'delete') {
   const admin = await requireAdmin();
 

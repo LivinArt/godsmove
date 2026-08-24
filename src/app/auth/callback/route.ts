@@ -16,8 +16,8 @@ export async function GET(request: Request) {
   const cookieNext = rawCookieNext ? decodeURIComponent(rawCookieNext) : undefined;
   const queryNext = searchParams.get('redirectTo') || searchParams.get('next');
   // Ensure destination is always a relative path (security: never allow external redirects)
-  const rawNext = cookieNext || queryNext || '/profile';
-  const next = rawNext.startsWith('/') ? rawNext : '/profile';
+  const rawNext = cookieNext || queryNext || '/';
+  const next = rawNext.startsWith('/') ? rawNext : '/';
 
   if (code) {
     const supabase = await createClient();
@@ -49,11 +49,12 @@ export async function GET(request: Request) {
               // ignore
             }
           }
+          const isEa = Boolean(eaDetails);
 
-          const { syncCanonicalCustomer } = await import('@/lib/customer-sync');
+          const { syncCanonicalCustomer, dispatchEarlyAccessEmailsAsync } = await import('@/lib/customer-sync');
 
-          await prisma.$transaction(async (tx) => {
-            await syncCanonicalCustomer(tx, {
+          const syncRes = await prisma.$transaction(async (tx) => {
+            const res = await syncCanonicalCustomer(tx, {
               userId: user.id,
               email,
               role: isSuperAdminEmail ? 'ADMIN' : 'CUSTOMER',
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
                 gender: eaDetails.gender,
               } : undefined,
               googleMetadata: user.user_metadata,
-              isEarlyAccessRegistration: Boolean(eaDetails),
+              isEarlyAccessRegistration: isEa,
             });
 
             if (isSuperAdminEmail) {
@@ -73,7 +74,17 @@ export async function GET(request: Request) {
                 data: { role: 'ADMIN' },
               });
             }
+
+            return res;
           });
+
+          if (isEa && syncRes?.profile) {
+            setImmediate(() => {
+              dispatchEarlyAccessEmailsAsync(user.id, syncRes.profile).catch((err) => {
+                console.error('[auth/callback] EA async email dispatch error:', err);
+              });
+            });
+          }
 
           // Check if Welcome email has ever been dispatched for this recipient
           const existingWelcome = await prisma.notificationHistory.findFirst({
@@ -112,8 +123,11 @@ export async function GET(request: Request) {
       const clearCookieHeader = 'godsmove_oauth_next=; path=/; max-age=0; SameSite=Lax';
       const clearEaCookieHeader = 'godsmove_ea_details=; path=/; max-age=0; SameSite=Lax';
 
-      // Build the redirect response
-      const redirectResponse = NextResponse.redirect(`${origin}${next}`);
+      // Build the redirect response with ea_success parameter if Early Access was completed
+      const rawEaCookie = cookieStore.get('godsmove_ea_details')?.value;
+      const destination = rawEaCookie ? (next.includes('?') ? `${next}&ea_success=true` : `${next}?ea_success=true`) : next;
+
+      const redirectResponse = NextResponse.redirect(`${origin}${destination}`);
       redirectResponse.headers.append('Set-Cookie', clearCookieHeader);
       redirectResponse.headers.append('Set-Cookie', clearEaCookieHeader);
       return redirectResponse;

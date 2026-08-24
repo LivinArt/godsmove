@@ -11,35 +11,53 @@ import {
   Img,
 } from '@react-email/components';
 
-export interface EarlyAccessConfirmationProps {
+export interface EarlyAccessMembershipActivatedProps {
   customerName?: string;
   email?: string;
   godsmoveId?: string;
+  activatedAt?: string;
+  expiresAt?: string;
+  tier?: string;
 }
 
-export const EarlyAccessConfirmationTemplate: React.FC<EarlyAccessConfirmationProps> = ({
+export const EarlyAccessMembershipActivatedTemplate: React.FC<EarlyAccessMembershipActivatedProps> = ({
   customerName = 'Valued Collector',
   email = '',
   godsmoveId = '',
+  activatedAt = '',
+  expiresAt = '',
+  tier = 'VIP',
 }) => {
   const firstName = customerName ? customerName.trim().split(' ')[0] : 'Valued Collector';
+
+  const formattedActivatedAt = activatedAt
+    ? typeof activatedAt === 'string'
+      ? activatedAt
+      : new Date(activatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
+
+  const formattedExpiresAt = expiresAt
+    ? typeof expiresAt === 'string'
+      ? expiresAt
+      : new Date(expiresAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
 
   return (
     <Html lang="en">
       <Head>
-        <title>GODSMOVƎ Early Access Confirmed</title>
+        <title>GODSMOVƎ Membership Activated</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="light dark" />
         <meta name="supported-color-schemes" content="light dark" />
       </Head>
 
       <div style={{ display: 'none', maxHeight: '0px', overflow: 'hidden' }}>
-        Your place in the first GODSMOVƎ release is reserved.
+        Your 1-Year GODSMOVƎ VIP Membership is now active.
       </div>
 
       <Body style={mainBodyStyle}>
         <Container style={containerStyle}>
-          {/* BRAND HEADER WITH OFFICIAL UPLOADED LOGO ARTWORK (DARK MODE IMMUNE) */}
+          {/* BRAND HEADER WITH OFFICIAL LOGO ARTWORK */}
           <Section style={headerSectionStyle}>
             <Img
               src="https://godsmove.in/images/logo/godsmove-official-logo-white.png"
@@ -52,107 +70,88 @@ export const EarlyAccessConfirmationTemplate: React.FC<EarlyAccessConfirmationPr
 
           {/* SUBHEADER BADGE */}
           <Section style={badgeSectionStyle}>
-            <Text style={badgeTextStyle}>EARLY ACCESS CONFIRMED</Text>
+            <Text style={badgeTextStyle}>YOUR MEMBERSHIP IS ACTIVE</Text>
           </Section>
 
           <Hr style={dividerStyle} />
 
-          {/* SALUTATION & PERSONALIZED INTRO */}
+          {/* SALUTATION & PERSONALIZED ANNOUNCEMENT */}
           <Section style={bodySectionStyle}>
             <Text style={greetingStyle}>{firstName},</Text>
 
             <Text style={leadTextStyle}>
-              Your place in the first GODSMOVƎ release is reserved.
-            </Text>
-
-            <Text style={subTextStyle}>
-              You are now part of the people who arrived before the doors opened.
+              Your GODSMOVƎ Membership is now active.
             </Text>
           </Section>
 
-          {/* PRIVILEGES GRID SECTION */}
+          {/* MEMBERSHIP SUMMARY CARD */}
           <Section style={cardSectionStyle}>
-            <Text style={sectionHeaderStyle}>YOUR EARLY ACCESS PRIVILEGES</Text>
+            <Text style={sectionHeaderStyle}>MEMBERSHIP DETAILS</Text>
 
             <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                {/* 01: Assured Rewards */}
                 <tr>
-                  <td style={numColStyle} valign="top">01</td>
-                  <td style={descColStyle} valign="top">
-                    <div style={benefitTitleStyle}>UP TO ₹1,000</div>
-                    <div style={benefitSubStyle}>IN ASSURED SHOPPING REWARDS</div>
-                  </td>
+                  <td style={labelStyle}>MEMBERSHIP TIER</td>
+                  <td style={valStyle}>1 YEAR {tier.toUpperCase()}</td>
                 </tr>
+                {formattedActivatedAt ? (
+                  <tr>
+                    <td style={labelStyle}>ACTIVE FROM</td>
+                    <td style={valStyle}>{formattedActivatedAt}</td>
+                  </tr>
+                ) : null}
+                {formattedExpiresAt ? (
+                  <tr>
+                    <td style={labelStyle}>VALID UNTIL</td>
+                    <td style={valStyle}>{formattedExpiresAt}</td>
+                  </tr>
+                ) : null}
+                {godsmoveId ? (
+                  <tr>
+                    <td style={labelStyle}>GODSMOVƎ ID</td>
+                    <td style={{ ...valStyle, color: '#C8A46A' }}>{godsmoveId}</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </Section>
 
-                {/* Divider Line */}
-                <tr>
-                  <td colSpan={2} style={innerDividerStyle} />
+          {/* ACTIVE BENEFITS (ACCORDING TO EXISTING MEMBERSHIP ENGINE) */}
+          <Section style={cardSectionStyle}>
+            <Text style={sectionHeaderStyle}>ACTIVE MEMBERSHIP PRIVILEGES</Text>
+
+            <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr style={{ marginBottom: '10px' }}>
+                  <td style={checkColStyle} valign="top">✔</td>
+                  <td style={perkTextStyle}>Up to ₹1,000 Assured Shopping Rewards</td>
                 </tr>
-
-                {/* 02: 1-Year Membership Reserved */}
                 <tr>
-                  <td style={numColStyle} valign="top">02</td>
-                  <td style={descColStyle} valign="top">
-                    <div style={benefitTitleStyle}>ONE YEAR MEMBERSHIP RESERVED</div>
-                    <div style={benefitSubStyle}>ACTIVATES AT OFFICIAL GODSMOVƎ LAUNCH</div>
-                    <div style={{ marginTop: '6px' }}>
-                      <Link href="https://godsmove.in/membership" style={perksLinkStyle}>
-                        [ VIEW MEMBERSHIP PERKS ]
-                      </Link>
-                    </div>
-                  </td>
+                  <td style={checkColStyle} valign="top">✔</td>
+                  <td style={perkTextStyle}>Priority Access to Drops & Exclusive Rack</td>
                 </tr>
-
-                {/* Divider Line */}
                 <tr>
-                  <td colSpan={2} style={innerDividerStyle} />
+                  <td style={checkColStyle} valign="top">✔</td>
+                  <td style={perkTextStyle}>Complimentary Launch Shipping Benefits</td>
                 </tr>
-
-                {/* 03: Complimentary Gifts */}
                 <tr>
-                  <td style={numColStyle} valign="top">03</td>
-                  <td style={descColStyle} valign="top">
-                    <div style={benefitTitleStyle}>COMPLIMENTARY</div>
-                    <div style={benefitSubStyle}>GODSMOVƎ LAUNCH GIFTS</div>
-                  </td>
-                </tr>
-
-                {/* Divider Line */}
-                <tr>
-                  <td colSpan={2} style={innerDividerStyle} />
-                </tr>
-
-                {/* 04: Member Privileges */}
-                <tr>
-                  <td style={numColStyle} valign="top">04</td>
-                  <td style={descColStyle} valign="top">
-                    <div style={benefitTitleStyle}>EXCLUSIVE</div>
-                    <div style={benefitSubStyle}>GODSMOVƎ MEMBER PRIVILEGES</div>
-                  </td>
+                  <td style={checkColStyle} valign="top">✔</td>
+                  <td style={perkTextStyle}>Dedicated Concierge Member Support</td>
                 </tr>
               </tbody>
             </table>
           </Section>
 
-          {/* STATUS BLOCK */}
-          <Section style={statusSectionStyle}>
-            <Text style={statusTitleStyle}>YOUR PLACE IS RESERVED.</Text>
-            <Text style={statusSubStyle}>
-              Our Concierge team will notify you once GODSMOVƎ goes live.
-            </Text>
-          </Section>
-
           {/* PRIMARY CTA */}
           <Section style={ctaSectionStyle}>
-            <Link href="https://godsmove.in" style={ctaButtonStyle}>
-              [ VISIT GODSMOVE ]
+            <Link href="https://www.godsmove.in/" style={ctaButtonStyle}>
+              [ EXPLORE GODSMOVƎ ]
             </Link>
           </Section>
 
           <Hr style={dividerStyle} />
 
-          {/* BRAND FOOTER (HARDCODED STYLES FOR THEME IMMUNITY) */}
+          {/* BRAND FOOTER (THEME IMMUNE) */}
           <Section style={footerSectionStyle}>
             <Text style={footerLogoStyle}>GODSMOVƎ</Text>
             <Text style={footerTaglineStyle}>MADE IN INDIA</Text>
@@ -237,13 +236,6 @@ const leadTextStyle: React.CSSProperties = {
   fontWeight: 600,
   lineHeight: '24px',
   color: '#FFFFFF',
-  margin: '0 0 8px 0',
-};
-
-const subTextStyle: React.CSSProperties = {
-  fontSize: '13px',
-  lineHeight: '20px',
-  color: '#888888',
   margin: 0,
 };
 
@@ -251,8 +243,8 @@ const cardSectionStyle: React.CSSProperties = {
   backgroundColor: '#121215',
   border: '1px solid #222225',
   borderRadius: '6px',
-  padding: '24px 20px',
-  margin: '24px 0',
+  padding: '20px',
+  margin: '20px 0',
 };
 
 const sectionHeaderStyle: React.CSSProperties = {
@@ -260,68 +252,41 @@ const sectionHeaderStyle: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '0.2em',
   color: '#C8A46A',
-  margin: '0 0 20px 0',
+  margin: '0 0 16px 0',
   textTransform: 'uppercase',
 };
 
-const numColStyle: React.CSSProperties = {
-  width: '36px',
-  fontSize: '12px',
-  fontWeight: 800,
-  color: '#C8A46A',
-  paddingTop: '2px',
-};
-
-const descColStyle: React.CSSProperties = {
-  paddingBottom: '12px',
-};
-
-const benefitTitleStyle: React.CSSProperties = {
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#FFFFFF',
-  letterSpacing: '0.05em',
-};
-
-const benefitSubStyle: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   fontSize: '11px',
   fontWeight: 600,
   color: '#888888',
-  letterSpacing: '0.1em',
-  marginTop: '2px',
+  letterSpacing: '0.05em',
+  padding: '6px 0',
+  width: '40%',
 };
 
-const perksLinkStyle: React.CSSProperties = {
-  fontSize: '10px',
+const valStyle: React.CSSProperties = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#FFFFFF',
+  letterSpacing: '0.05em',
+  padding: '6px 0',
+  textAlign: 'right',
+};
+
+const checkColStyle: React.CSSProperties = {
+  width: '24px',
+  fontSize: '12px',
   fontWeight: 800,
   color: '#C8A46A',
-  textDecoration: 'none',
-  letterSpacing: '0.15em',
+  padding: '6px 0',
 };
 
-const innerDividerStyle: React.CSSProperties = {
-  borderBottom: '1px solid #1E1E22',
-  paddingTop: '12px',
-  marginBottom: '12px',
-};
-
-const statusSectionStyle: React.CSSProperties = {
-  textAlign: 'center',
-  padding: '16px 0',
-};
-
-const statusTitleStyle: React.CSSProperties = {
+const perkTextStyle: React.CSSProperties = {
   fontSize: '12px',
-  fontWeight: 800,
-  letterSpacing: '0.2em',
+  fontWeight: 600,
   color: '#FFFFFF',
-  margin: '0 0 6px 0',
-};
-
-const statusSubStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#888888',
-  margin: 0,
+  padding: '6px 0',
 };
 
 const ctaSectionStyle: React.CSSProperties = {
@@ -389,4 +354,4 @@ const footerCountryStyle: React.CSSProperties = {
   margin: 0,
 };
 
-export default EarlyAccessConfirmationTemplate;
+export default EarlyAccessMembershipActivatedTemplate;

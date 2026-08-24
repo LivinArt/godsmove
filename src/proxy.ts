@@ -56,6 +56,49 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // ── PRELAUNCH ROUTE GATE ─────────────────────────────────────────────
+  const isOperationalRoute =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/logo') ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/favicon.ico';
+
+  if (!isOperationalRoute) {
+    const launchIso = process.env.GODSMOVE_LAUNCH_DATE || '2026-09-14T18:30:00.000Z';
+    const launchTime = new Date(launchIso).getTime();
+    const isTimeLaunched = Date.now() >= launchTime;
+
+    if (!isTimeLaunched) {
+      try {
+        const origin = request.nextUrl.origin;
+        const modeRes = await fetch(`${origin}/api/site-mode`, {
+          headers: { 'x-internal-middleware-check': 'true' },
+          cache: 'no-store',
+        });
+
+        if (modeRes.ok) {
+          const data = await modeRes.json();
+          if (data?.siteMode !== 'NORMAL' && pathname !== '/') {
+            const url = request.nextUrl.clone();
+            url.pathname = '/';
+            return NextResponse.rewrite(url);
+          }
+        }
+      } catch {
+        if (pathname !== '/') {
+          const url = request.nextUrl.clone();
+          url.pathname = '/';
+          return NextResponse.rewrite(url);
+        }
+      }
+    }
+  }
+
   // ── PROTECTED ROUTES PROTECTION ────────────────────────────────────────
   const isProtectedRoute = 
     pathname.startsWith('/profile') || 

@@ -75,6 +75,7 @@ enum MembershipStatus {
   INACTIVE
   EXPIRED
   CANCELLED
+  SCHEDULED
 }
 
 enum MembershipSource {

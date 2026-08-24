@@ -44,6 +44,7 @@ import ReturnRefundCompletedTemplate from './ReturnRefundCompletedTemplate';
 import PreBookingConfirmedTemplate from './PreBookingConfirmedTemplate';
 import PreBookingLaunchedTemplate from './PreBookingLaunchedTemplate';
 import EarlyAccessConfirmationTemplate from './EarlyAccessConfirmationTemplate';
+import EarlyAccessMembershipActivatedTemplate from './EarlyAccessMembershipActivatedTemplate';
 
 import { GODSMOVE_WORDMARK } from '../brand';
 
@@ -193,7 +194,12 @@ export const TEMPLATE_REGISTRY: Record<NotificationEvent, EmailTemplateDefinitio
   },
   EARLY_ACCESS_CONFIRMED: {
     component: EarlyAccessConfirmationTemplate,
-    subjectBuilder: () => `${GODSMOVE_WORDMARK} Early Access Confirmed — Launch Benefits Active`,
+    subjectBuilder: () => `${GODSMOVE_WORDMARK} Early Access Confirmed`,
+    senderConfig: DEFAULT_SENDER,
+  },
+  EARLY_ACCESS_MEMBERSHIP_ACTIVATED: {
+    component: EarlyAccessMembershipActivatedTemplate,
+    subjectBuilder: () => `${GODSMOVE_WORDMARK} Membership Activated — 1 Year VIP Access`,
     senderConfig: DEFAULT_SENDER,
   },
   WELCOME: {
