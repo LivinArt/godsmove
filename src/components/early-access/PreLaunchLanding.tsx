@@ -142,20 +142,22 @@ export default function PreLaunchLanding() {
         {/* Background Visual Layer */}
         <EarlyAccessVideo backgroundImage="/images/early-access/early-access-background.jpg" />
 
-        {/* Top Center Masthead Logo (Mathematically Centered: left 50%, transform translateX(-50%)) */}
-        <div
-          className={`${styles.topCenterLogo} ${styles.fadeInLogo}`}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          title="GODSMOVƎ"
-        >
-          <Image
-            src="/images/logo/logo-horizontal-white.png"
-            alt="GODSMOVƎ"
-            width={170}
-            height={38}
-            priority
-            className={styles.logoImage}
-          />
+        {/* Dedicated Full-Bleed Brand Layer for True Mathematical Viewport Centering */}
+        <div className={styles.brandLayer}>
+          <div
+            className={`${styles.topCenterLogo} ${styles.fadeInLogo}`}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            title="GODSMOVƎ"
+          >
+            <Image
+              src="/images/logo/logo-horizontal-white.png"
+              alt="GODSMOVƎ"
+              width={170}
+              height={38}
+              priority
+              className={styles.logoImage}
+            />
+          </div>
         </div>
 
         {/* Top Right Sound Icon (position: absolute inside heroViewport) */}
@@ -212,15 +214,14 @@ export default function PreLaunchLanding() {
           </div>
         </div>
 
-        {/* Bottom Center Animated Scroll Indicator (position: absolute inside heroViewport) */}
-        <div
-          className={`${styles.scrollIndicatorWrap} ${styles.fadeInScroll}`}
-          aria-hidden="true"
-        >
-          <div className={styles.scrollVerticalLine} />
-          <div className={styles.chevronGroup}>
-            <ChevronDown size={13} className={styles.chevron1} />
-            <ChevronDown size={13} className={styles.chevron2} />
+        {/* Dedicated Full-Bleed Scroll Indicator Layer for True Viewport Centering */}
+        <div className={`${styles.scrollIndicatorLayer} ${styles.fadeInScroll}`} aria-hidden="true">
+          <div className={styles.scrollIndicatorInner}>
+            <div className={styles.scrollVerticalLine} />
+            <div className={styles.chevronGroup}>
+              <ChevronDown size={13} className={styles.chevron1} />
+              <ChevronDown size={13} className={styles.chevron2} />
+            </div>
           </div>
         </div>
       </section>

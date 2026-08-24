@@ -27,20 +27,29 @@
   overflow: hidden;
 }
 
-/* Top Center Masthead Logo (Mathematically Centered at 50% Viewport Width) */
-.topCenterLogo {
+/* Dedicated Full-Bleed Brand Layer for True Mathematical Viewport Centering */
+.brandLayer {
   position: absolute;
-  top: clamp(28px, 4vw, 52px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
   z-index: 20;
-  cursor: pointer;
+}
+
+.topCenterLogo {
+  pointer-events: auto;
+  margin-top: clamp(28px, 4vw, 52px);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: opacity 0.25s ease;
-  margin: 0;
-  padding: 0;
+  padding: 4px;
 }
 
 .topCenterLogo:hover {
@@ -173,28 +182,35 @@
   color: #c5a059;
 }
 
-/* ── BOTTOM CENTER ANIMATED SCROLL INDICATOR ── */
-.scrollIndicatorWrap {
+/* ── DEDICATED FULL-BLEED BOTTOM SCROLL INDICATOR LAYER ── */
+.scrollIndicatorLayer {
   position: absolute;
-  bottom: clamp(20px, 4vh, 40px);
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: clamp(28px, 4vh, 42px);
+  left: 0;
+  right: 0;
+  width: 100%;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end;
   pointer-events: none;
   z-index: 15;
 }
 
+.scrollIndicatorInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .scrollVerticalLine {
   width: 1px;
-  height: 40px;
+  height: 38px;
   background: linear-gradient(
     180deg,
-    rgba(249, 248, 246, 0.1) 0%,
-    rgba(249, 248, 246, 0.5) 70%,
-    rgba(197, 160, 89, 0.8) 100%
+    rgba(249, 248, 246, 0.2) 0%,
+    rgba(249, 248, 246, 0.65) 60%,
+    rgba(197, 160, 89, 0.85) 100%
   );
   animation: linePulse 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -203,48 +219,49 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: -6px;
+  margin-top: -5px;
   animation: chevronsMove 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-.chevron1,
-.chevron2 {
-  color: rgba(249, 248, 246, 0.5);
-  stroke-width: 1.5px;
-  margin-top: -7px;
+.chevron1 {
+  color: rgba(249, 248, 246, 0.65);
+  stroke-width: 1px;
+  margin-top: -6px;
 }
 
 .chevron2 {
-  color: rgba(197, 160, 89, 0.75);
+  color: rgba(197, 160, 89, 0.85);
+  stroke-width: 1.2px;
+  margin-top: -7px;
 }
 
 @keyframes linePulse {
   0% {
     height: 32px;
-    opacity: 0.35;
+    opacity: 0.5;
   }
   50% {
-    height: 46px;
+    height: 44px;
     opacity: 0.85;
   }
   100% {
     height: 32px;
-    opacity: 0.35;
+    opacity: 0.5;
   }
 }
 
 @keyframes chevronsMove {
   0% {
     transform: translateY(0);
-    opacity: 0.4;
+    opacity: 0.5;
   }
   50% {
-    transform: translateY(5px);
-    opacity: 0.95;
+    transform: translateY(7px);
+    opacity: 0.85;
   }
   100% {
     transform: translateY(0);
-    opacity: 0.4;
+    opacity: 0.5;
   }
 }
 
@@ -463,9 +480,7 @@
 /* ── MOBILE RESPONSIVE ART DIRECTION ── */
 @media (max-width: 768px) {
   .topCenterLogo {
-    top: calc(env(safe-area-inset-top, 0px) + 22px);
-    left: 50%;
-    transform: translateX(-50%);
+    margin-top: calc(env(safe-area-inset-top, 0px) + 22px);
   }
 
   .soundIconAbsoluteWrap {
@@ -477,8 +492,8 @@
     height: 28px;
   }
 
-  .scrollIndicatorWrap {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  .scrollIndicatorLayer {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .scrollVerticalLine {
