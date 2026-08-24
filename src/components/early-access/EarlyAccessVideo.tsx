@@ -8,9 +8,9 @@ interface EarlyAccessVideoProps {
 }
 
 export default function EarlyAccessVideo({
-  backgroundImage = '/images/early-access/early-access-background.jpg',
+  backgroundImage = '/images/early-access/early-access-hero.jpg',
 }: EarlyAccessVideoProps) {
-  const [videoError, setVideoError] = useState(true); // Default to background image unless video source exists
+  const [videoError, setVideoError] = useState(true); // Default to uploaded campaign background image
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -41,7 +41,7 @@ export default function EarlyAccessVideo({
 
   return (
     <div className={styles.videoWrap}>
-      {/* Primary Background Image Layer (Uploaded Campaign Visual) */}
+      {/* Primary Background Image Layer (Uploaded GODSMOVƎ Campaign Visual) */}
       <div
         className={`${styles.posterLayer} ${videoLoaded && !videoError ? styles.posterFaded : ''}`}
         style={{ backgroundImage: `url(${backgroundImage})` }}

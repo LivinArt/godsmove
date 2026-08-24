@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import styles from './EarlyAccessAudio.module.css';
 
-const AUDIO_SRC = '/audio/early-access.mp3';
-const TARGET_VOLUME = 0.15;
+const AUDIO_PRIMARY = '/audio/early-access-ambient.mp3';
+const AUDIO_FALLBACK = '/audio/early-access.mp3';
+const TARGET_VOLUME = 0.22;
 
 export default function EarlyAccessAudio() {
   // Default to ON unless explicitly saved as 'disabled'
@@ -57,11 +58,20 @@ export default function EarlyAccessAudio() {
     fadeAnimRef.current = requestAnimationFrame(step);
   }, []);
 
-  // Initialize HTML5 Audio instance
+  // Initialize HTML5 Audio instance with fallback audio path
   useEffect(() => {
-    const audio = new Audio(AUDIO_SRC);
+    const audio = new Audio(AUDIO_PRIMARY);
     audio.loop = true;
     audio.volume = 0;
+    audio.preload = 'auto';
+
+    // Fallback if primary URL triggers error
+    audio.onerror = () => {
+      if (audio.src.endsWith(AUDIO_PRIMARY)) {
+        audio.src = AUDIO_FALLBACK;
+      }
+    };
+
     audioRef.current = audio;
 
     return () => {
@@ -84,7 +94,7 @@ export default function EarlyAccessAudio() {
           setIsPlaying(true);
           rampVolume(TARGET_VOLUME, 1000);
         })
-        .catch((err) => {
+        .catch(() => {
           // Autoplay blocked by browser policy until user interaction
           setIsPlaying(false);
         });
@@ -126,11 +136,15 @@ export default function EarlyAccessAudio() {
 
     window.addEventListener('click', handleFirstInteraction, { passive: true });
     window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true });
+    window.addEventListener('keydown', handleFirstInteraction, { passive: true });
     window.addEventListener('gm_user_interaction', handleFirstInteraction, { passive: true });
 
     return () => {
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('pointerdown', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
       window.removeEventListener('gm_user_interaction', handleFirstInteraction);
     };
   }, [isEnabled, playWithFade]);

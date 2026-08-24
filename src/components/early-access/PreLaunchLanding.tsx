@@ -140,7 +140,7 @@ export default function PreLaunchLanding() {
       {/* ── SECTION 01: CINEMATIC EARLY ACCESS HERO (position: relative) ── */}
       <section className={styles.heroViewport}>
         {/* Background Visual Layer */}
-        <EarlyAccessVideo backgroundImage="/images/early-access/early-access-background.jpg" />
+        <EarlyAccessVideo backgroundImage="/images/early-access/early-access-hero.jpg" />
 
         {/* Dedicated Full-Bleed Brand Layer for True Mathematical Viewport Centering */}
         <div className={styles.brandLayer}>
